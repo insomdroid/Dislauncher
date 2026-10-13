@@ -1,6 +1,6 @@
 # dislauncher
 
-A minimalist Android launcher inspired by the calm interaction model of Indistractable Launcher, implemented independently.
+A minimalist, text-first Android launcher focused on a calm, low-distraction experience.
 
 ## Home screen
 
@@ -32,7 +32,7 @@ Settings are persisted locally and include:
 
 ## Permissions and limitations
 
-- **Weather:** requires location permission and an internet connection. Weather data comes from Open-Meteo. Location is used to request the weather for the device's approximate/current position.
+- **Weather:** requires location permission and an internet connection. Weather data comes from Open-Meteo. Location is used to request the weather for the device's current position.
 - **Screen time:** Android's Usage Access permission must be granted in system settings.
 - **Double-tap to lock:** Android asks the user to explicitly enable dislauncher as a device administrator.
 - **Swipe down for notifications:** this is best-effort; Android versions and device manufacturers can block third-party apps from expanding the system notification shade.
@@ -44,4 +44,4 @@ Settings are persisted locally and include:
 
 GitHub Actions builds `app-release.apk`, verifies that it exists, and uploads the `dislauncher-release` artifact. The CI APK is signed with Android's debug key for installation/testing; it is not a production-signed release.
 
-The build follows the verified NeoBrutalauncher-Pro CI method: JDK 17, Gradle 8.13, Android Gradle Plugin 8.13.2, Kotlin 2.2.21, and Compose BOM 2025.10.00, with `compileSdk` and `targetSdk` set to 36.
+The build uses JDK 17, Gradle 8.13, Android Gradle Plugin 8.13.2, Kotlin 2.2.21, and Compose BOM 2025.10.00, with `compileSdk` and `targetSdk` set to 36.
