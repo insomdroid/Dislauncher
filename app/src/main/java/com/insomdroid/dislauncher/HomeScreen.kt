@@ -31,6 +31,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -417,7 +418,6 @@ internal fun HomeScreen(
                 ) {
                     if (preferences.showAppIcons) {
                         AppIcon(app, preferences.iconPack, size = 17.dp)
-                        Spacer(Modifier.height(0.dp).padding(start = 0.dp))
                     }
                     Text(
                         text = app.label,
