@@ -15,10 +15,83 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Inspect uploaded React Native bundle
+        run: |
+          set +e
+          python -m pip install --disable-pip-version-check hermes-dec
+          echo "=== BUNDLE METADATA ==="
+          file index.android.bundle
+          python - <<'PY'
+          from pathlib import Path
+          p = Path("index.android.bundle")
+          data = p.read_bytes()
+          print("size_bytes:", len(data))
+          print("header_hex:", data[:32].hex())
+          print("header_ascii:", repr(data[:32]))
+          PY
+          mkdir -p /tmp/bundle-analysis
+          if command -v hbc-file-parser >/dev/null 2>&1 && hbc-file-parser index.android.bundle >/tmp/bundle-analysis/header.txt 2>&1; then
+            echo "=== HERMES HEADER ==="
+            head -c 12000 /tmp/bundle-analysis/header.txt
+            hbc-decompiler index.android.bundle /tmp/bundle-analysis/decompiled.txt >/tmp/bundle-analysis/decompiler.log 2>&1
+            echo "decompiler_exit_code=$?"
+            head -c 5000 /tmp/bundle-analysis/decompiler.log
+            SOURCE="/tmp/bundle-analysis/decompiled.txt"
+          else
+            echo "Bundle is not accepted by hermes-dec; extracting readable strings."
+            python - <<'PY'
+          from pathlib import Path
+          import re
+          data = Path("index.android.bundle").read_bytes()
+          strings = re.findall(rb"[ -~]{5,}", data)
+          Path("/tmp/bundle-analysis/readable-strings.txt").write_text("\n".join(x.decode("latin1") for x in strings), encoding="utf-8")
+          print("readable_strings:", len(strings))
+          PY
+            SOURCE="/tmp/bundle-analysis/readable-strings.txt"
+          fi
+          export SOURCE
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          p = Path(os.environ["SOURCE"])
+          if not p.exists():
+              print("No decoded source file was produced.")
+              raise SystemExit(0)
+          s = p.read_text(encoding="utf-8", errors="replace")
+          Path("/tmp/bundle-analysis/source.txt").write_text(s, encoding="utf-8")
+          print("=== SOURCE SIZE ===")
+          print("characters:", len(s))
+          terms = [
+              "YEAR IN PROGRESS", "DAY IN PROGRESS", "WEATHER", "BATTERY",
+              "temperature", "humidity", "progress", "forecast", "screen time",
+              "clock", "widget", "fontSize", "font-size", "padding", "margin"
+          ]
+          found = []
+          for term in terms:
+              start = 0
+              count = 0
+              while True:
+                  i = s.casefold().find(term.casefold(), start)
+                  if i < 0:
+                      break
+                  left, right = max(0, i - 220), min(len(s), i + len(term) + 360)
+                  snippet = s[left:right].replace("\n", " ")
+                  item = (term, snippet)
+                  if all(snippet not in old[1] and old[1] not in snippet for old in found):
+                      found.append(item)
+                  count += 1
+                  start = i + len(term)
+                  if count >= 3:
+                      break
+          print("=== MATCHED CONTEXTS ===")
+          for term, snippet in found[:45]:
+              print(f"\n--- {term} ---\n{snippet}")
+          print("\nunique_contexts:", min(len(found), 45))
+          PY
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
