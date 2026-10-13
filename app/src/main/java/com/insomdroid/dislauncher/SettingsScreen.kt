@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -113,20 +114,47 @@ internal fun SettingsScreen(
                     ChoiceRow(
                         "Theme",
                         preferences.themeMode,
-                        listOf("system" to "Auto", "light" to "Light", "dark" to "Dark")
+                        listOf(
+                            "system" to "Auto",
+                            "dark" to "Black",
+                            "light" to "White",
+                            "dim" to "Dim",
+                            "twitter-dim" to "Twitter Dim",
+                            "midnight-blue" to "Midnight Blue",
+                            "pale-silver" to "Pale Silver",
+                            "middle-blue" to "Middle Blue",
+                            "parchment" to "Parchment",
+                            "blue-radiance" to "Blue Radiance",
+                            "dark-indigo" to "Dark Indigo",
+                            "carbon" to "Carbon"
+                        )
                     ) { onPreferencesChange(preferences.copy(themeMode = it)) }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                     ChoiceRow(
                         "Font",
                         preferences.fontMode,
-                        listOf("sans" to "Sans", "serif" to "Serif", "mono" to "Mono")
+                        listOf(
+                            "sans" to "Roboto",
+                            "writer" to "iAWriter",
+                            "quicksand" to "Quicksand",
+                            "opensans" to "Open Sans",
+                            "menlo" to "Menlo",
+                            "nunito" to "Nunito",
+                            "writer-mono" to "iAWriter Mono",
+                            "ubuntu" to "Ubuntu",
+                            "opensans-light" to "Open Sans Light",
+                            "nunito-light" to "Nunito Light"
+                        )
                     ) { onPreferencesChange(preferences.copy(fontMode = it)) }
-                    Text("The selected font applies to Home, the app drawer and settings.", style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        "Uses the closest installed Android typeface for fonts not bundled with this app.",
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     ChoiceRow(
                         "Font size",
                         preferences.fontSize,
-                        listOf("small" to "Small", "medium" to "Default", "large" to "Large")
+                        listOf("small" to "Small", "medium" to "Medium", "large" to "Large")
                     ) { onPreferencesChange(preferences.copy(fontSize = it)) }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                     SettingToggle(
@@ -383,9 +411,10 @@ private fun ChoiceRow(
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            maxItemsInEachRow = 3
         ) {
             options.forEach { (value, label) ->
                 Text(

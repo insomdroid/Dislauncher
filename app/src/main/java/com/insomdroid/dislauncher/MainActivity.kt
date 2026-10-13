@@ -53,7 +53,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
-internal enum class LauncherScreen { HOME, APPS, SETTINGS }
+internal enum class LauncherScreen { HOME, APPS, SETTINGS, TASKS, WEATHER }
 
 internal data class LauncherApp(
     val packageName: String,
@@ -86,6 +86,8 @@ private fun DislauncherRoot() {
     var hiddenApps by remember {
         mutableStateOf(prefsStore.getStringSet("hidden_packages", emptySet())?.toSet().orEmpty())
     }
+    var tasks by remember { mutableStateOf(readLauncherTasks(prefsStore)) }
+    var favoriteOrder by remember { mutableStateOf(readFavoriteOrder(prefsStore, favorites)) }
     var apps by remember { mutableStateOf<List<LauncherApp>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
     var screen by remember { mutableStateOf(LauncherScreen.HOME) }
@@ -101,7 +103,31 @@ private fun DislauncherRoot() {
     fun toggleFavorite(packageName: String) {
         val next = if (packageName in favorites) favorites - packageName else favorites + packageName
         favorites = next
+        val nextOrder = if (packageName in next) {
+            (favoriteOrder.filter { it in next } + packageName).distinct()
+        } else {
+            favoriteOrder.filter { it in next }
+        }
+        favoriteOrder = nextOrder
         prefsStore.edit().putStringSet("favorite_packages", next.toMutableSet()).apply()
+        saveFavoriteOrder(prefsStore, nextOrder)
+    }
+
+    fun moveFavorite(sourcePackage: String, targetPackage: String) {
+        val order = readFavoriteOrder(prefsStore, favorites).toMutableList()
+        val sourceIndex = order.indexOf(sourcePackage)
+        val targetIndex = order.indexOf(targetPackage)
+        if (sourceIndex < 0 || targetIndex < 0 || sourceIndex == targetIndex) return
+        val moving = order[sourceIndex]
+        order[sourceIndex] = order[targetIndex]
+        order[targetIndex] = moving
+        favoriteOrder = order
+        saveFavoriteOrder(prefsStore, order)
+    }
+
+    fun updateTasks(next: List<LauncherTask>) {
+        tasks = next
+        saveLauncherTasks(prefsStore, next)
     }
 
     fun toggleHidden(packageName: String) {
@@ -149,61 +175,100 @@ private fun DislauncherRoot() {
     }
 
     LaunchedEffect(pagerState.settledPage) {
-        if (screen != LauncherScreen.SETTINGS) {
+        if (screen == LauncherScreen.HOME || screen == LauncherScreen.APPS) {
             screen = if (pagerState.settledPage == 0) LauncherScreen.HOME else LauncherScreen.APPS
         }
     }
     LaunchedEffect(screen) {
-        if (screen != LauncherScreen.SETTINGS) {
+        if (screen == LauncherScreen.HOME || screen == LauncherScreen.APPS) {
             val wantedPage = if (screen == LauncherScreen.HOME) 0 else 1
             if (pagerState.currentPage != wantedPage) pagerState.animateScrollToPage(wantedPage)
         }
     }
 
-    BackHandler(enabled = screen == LauncherScreen.SETTINGS || pagerState.settledPage == 1) {
-        if (screen == LauncherScreen.SETTINGS) {
-            screen = LauncherScreen.HOME
-        } else {
-            scope.launch { pagerState.animateScrollToPage(0) }
+    BackHandler(
+        enabled = screen == LauncherScreen.SETTINGS || screen == LauncherScreen.TASKS ||
+            screen == LauncherScreen.WEATHER || pagerState.settledPage == 1
+    ) {
+        when (screen) {
+            LauncherScreen.SETTINGS, LauncherScreen.TASKS, LauncherScreen.WEATHER ->
+                screen = LauncherScreen.HOME
+            LauncherScreen.APPS -> scope.launch { pagerState.animateScrollToPage(0) }
+            else -> Unit
         }
     }
 
     val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
     val isDark = when (preferences.themeMode) {
-        "light" -> false
-        "dark" -> true
-        else -> systemDark
+        "system" -> systemDark
+        "light", "pale-silver", "middle-blue", "parchment", "blue-radiance" -> false
+        else -> true
+    }
+    val backgroundColor = when (preferences.themeMode) {
+        "system" -> if (systemDark) Color.Black else Color.White
+        "light" -> Color.White
+        "dim" -> Color(0xFF151E29)
+        "twitter-dim" -> Color(0xFF16202A)
+        "midnight-blue" -> Color(0xFF191970)
+        "pale-silver" -> Color(0xFFD7CEC9)
+        "middle-blue" -> Color(0xFF90E0EF)
+        "parchment" -> Color(0xFFF3ECD8)
+        "blue-radiance" -> Color(0xFF57CAD5)
+        "dark-indigo" -> Color(0xFF171D4B)
+        "carbon" -> Color(0xFF333333)
+        else -> Color.Black
+    }
+    val foregroundColor = when (preferences.themeMode) {
+        "system" -> if (systemDark) Color.White else Color.Black
+        "light", "pale-silver", "middle-blue", "parchment" -> Color.Black
+        else -> Color.White
+    }
+    val secondaryColor = when (preferences.themeMode) {
+        "dark" -> Color(0xFFBDBDBD)
+        "light" -> Color(0xFF666666)
+        "pale-silver", "middle-blue", "parchment" -> Color.Black.copy(alpha = 0.72f)
+        else -> foregroundColor.copy(alpha = 0.78f)
+    }
+    val surfaceVariantColor = when (preferences.themeMode) {
+        "dark" -> Color(0xFF121212)
+        "dim" -> Color(0xFF1D2A39)
+        "twitter-dim" -> Color(0xFF1B2935)
+        "midnight-blue" -> Color(0xFF22227D)
+        "dark-indigo" -> Color(0xFF202858)
+        "carbon" -> Color(0xFF424242)
+        "pale-silver" -> Color(0xFFC8BEB9)
+        "middle-blue" -> Color(0xFF7ACBD9)
+        "parchment" -> Color(0xFFE8DFC9)
+        else -> backgroundColor
     }
     val colorScheme = if (isDark) {
         darkColorScheme(
-            primary = Color.White,
-            onPrimary = Color.Black,
-            secondary = Color(0xFFBDBDBD),
-            tertiary = Color.White,
-            background = Color.Black,
-            surface = Color.Black,
-            surfaceVariant = Color(0xFF121212)
+            primary = foregroundColor, onPrimary = backgroundColor,
+            secondary = secondaryColor, tertiary = foregroundColor,
+            background = backgroundColor, onBackground = foregroundColor,
+            surface = backgroundColor, onSurface = foregroundColor,
+            surfaceVariant = surfaceVariantColor, onSurfaceVariant = secondaryColor
         )
     } else {
         lightColorScheme(
-            primary = Color.Black,
-            onPrimary = Color.White,
-            secondary = Color(0xFF666666),
-            tertiary = Color.Black,
-            background = Color.White,
-            surface = Color.White,
-            surfaceVariant = Color(0xFFF3F3F3)
+            primary = foregroundColor, onPrimary = backgroundColor,
+            secondary = secondaryColor, tertiary = foregroundColor,
+            background = backgroundColor, onBackground = foregroundColor,
+            surface = backgroundColor, onSurface = foregroundColor,
+            surfaceVariant = surfaceVariantColor, onSurfaceVariant = secondaryColor
         )
     }
     val fontFamily = when (preferences.fontMode) {
         "serif" -> FontFamily.Serif
-        "mono" -> FontFamily.Monospace
+        "mono", "menlo", "writer-mono" -> FontFamily.Monospace
+        "quicksand", "nunito" -> FontFamily(android.graphics.Typeface.create("sans-serif-rounded", android.graphics.Typeface.NORMAL))
+        "opensans-light", "nunito-light" -> FontFamily(android.graphics.Typeface.create("sans-serif-light", android.graphics.Typeface.NORMAL))
         else -> FontFamily.SansSerif
     }
     val fontScale = when (preferences.fontSize) {
         "medium" -> 1.0f
-        "large" -> 1.12f
-        else -> 0.86f
+        "large" -> 1.25f
+        else -> 0.75f
     }
     val baseTypography = Typography()
     fun scaled(style: TextStyle): TextStyle = style.copy(
@@ -271,6 +336,17 @@ private fun DislauncherRoot() {
                 onToggleHidden = ::toggleHidden,
                 onBack = { screen = LauncherScreen.HOME }
             )
+        } else if (screen == LauncherScreen.TASKS) {
+            TasksScreen(
+                tasks = tasks,
+                onTasksChange = ::updateTasks,
+                onBack = { screen = LauncherScreen.HOME }
+            )
+        } else if (screen == LauncherScreen.WEATHER) {
+            WeatherScreen(
+                weatherUnit = preferences.weatherUnit,
+                onBack = { screen = LauncherScreen.HOME }
+            )
         } else {
             Box(Modifier.fillMaxSize().background(colorScheme.background)) {
                 HorizontalPager(
@@ -283,16 +359,15 @@ private fun DislauncherRoot() {
                         HomeScreen(
                             apps = visibleApps,
                             favorites = favorites,
+                            favoriteOrder = favoriteOrder,
                             preferences = preferences,
                             isDark = isDark,
                             fontFamily = fontFamily,
                             fontScale = fontScale,
                             onLaunch = { launchApp(context, it) },
-                            onToggleFavorite = ::toggleFavorite,
-                            onOpenApps = {
-                                searchQuery = ""
-                                scope.launch { pagerState.animateScrollToPage(1) }
-                            },
+                            onMoveFavorite = ::moveFavorite,
+                            onOpenTasks = { screen = LauncherScreen.TASKS },
+                            onOpenWeather = { screen = LauncherScreen.WEATHER },
                             onOpenSettings = { screen = LauncherScreen.SETTINGS },
                             onDoubleTapToLock = { lockDevice(context, adminComponent, devicePolicyManager) }
                         )

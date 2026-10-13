@@ -70,7 +70,7 @@ internal fun AppsScreen(
     onLaunch: (LauncherApp) -> Unit,
     onToggleFavorite: (String) -> Unit
 ) {
-    val background = if (isDark) Color.Black else Color(0xFFFFFCF7)
+    val background = MaterialTheme.colorScheme.background
     val mainText = MaterialTheme.colorScheme.onBackground
     val secondary = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.62f)
     val filtered = remember(apps, query) {

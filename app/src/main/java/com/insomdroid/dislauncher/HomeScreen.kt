@@ -8,12 +8,11 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Process
 import android.provider.Settings
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,29 +23,26 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -83,13 +79,15 @@ private val inspirationQuotes = listOf(
 internal fun HomeScreen(
     apps: List<LauncherApp>,
     favorites: Set<String>,
+    favoriteOrder: List<String>,
     preferences: LauncherPreferences,
     isDark: Boolean,
     fontFamily: FontFamily,
     fontScale: Float,
     onLaunch: (LauncherApp) -> Unit,
-    onToggleFavorite: (String) -> Unit,
-    onOpenApps: () -> Unit,
+    onMoveFavorite: (String, String) -> Unit,
+    onOpenTasks: () -> Unit,
+    onOpenWeather: () -> Unit,
     onOpenSettings: () -> Unit,
     onDoubleTapToLock: () -> Unit
 ) {
@@ -103,29 +101,6 @@ internal fun HomeScreen(
     var screenTimeMinutes by remember { mutableStateOf(readScreenTimeMinutes(context)) }
     var weatherInfo by remember { mutableStateOf<WeatherInfo?>(null) }
     var weatherStatus by remember { mutableStateOf("Tap to allow location") }
-    var weatherRefreshKey by remember { mutableIntStateOf(0) }
-    var showTaskDialog by remember { mutableStateOf(false) }
-    var newTask by remember { mutableStateOf("") }
-    val sharedPrefs = remember {
-        context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
-    }
-    val tasks = remember {
-        mutableStateListOf<String>().apply {
-            addAll(sharedPrefs.getStringSet("home_tasks", emptySet())?.toList().orEmpty())
-        }
-    }
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { results ->
-        val granted = results[Manifest.permission.ACCESS_COARSE_LOCATION] == true ||
-            results[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
-                PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
-                PackageManager.PERMISSION_GRANTED
-        if (granted) weatherRefreshKey++ else weatherStatus = "Location denied · tap to retry"
-    }
-
     val today = LocalDate.now()
     val systemTimeFormat = android.text.format.DateFormat.is24HourFormat(context)
     val timePattern = when (preferences.timeFormat) {
@@ -135,13 +110,20 @@ internal fun HomeScreen(
     }
     val timeText = now.format(DateTimeFormatter.ofPattern(timePattern, Locale.getDefault()))
     val dateText = today.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.getDefault()))
-    val background = if (isDark) Color.Black else Color.White
-    val primaryText = if (isDark) Color.White else Color.Black
-    val secondaryText = if (isDark) Color(0xFFA8A5AE) else Color(0xFF68656D)
-    val visibleFavorites = remember(apps, favorites) {
+    val background = MaterialTheme.colorScheme.background
+    val primaryText = MaterialTheme.colorScheme.onBackground
+    val secondaryText = MaterialTheme.colorScheme.onSurfaceVariant
+    val visibleFavorites = remember(apps, favorites, favoriteOrder) {
         apps.filter { it.packageName in favorites }
-            .sortedBy { it.label.lowercase(Locale.getDefault()) }
+            .sortedBy { app ->
+                val position = favoriteOrder.indexOf(app.packageName)
+                if (position < 0) Int.MAX_VALUE else position
+            }
     }
+    var draggingFavorite by remember { mutableStateOf<String?>(null) }
+    var dragDistance by remember { mutableFloatStateOf(0f) }
+    val latestVisibleFavorites = rememberUpdatedState(visibleFavorites)
+    val latestMoveFavorite = rememberUpdatedState(onMoveFavorite)
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -152,7 +134,7 @@ internal fun HomeScreen(
         }
     }
 
-    LaunchedEffect(preferences.showWeather, preferences.weatherUnit, weatherRefreshKey) {
+    LaunchedEffect(preferences.showWeather, preferences.weatherUnit) {
         if (!preferences.showWeather) return@LaunchedEffect
         val hasLocation = ContextCompat.checkSelfPermission(
             context, Manifest.permission.ACCESS_COARSE_LOCATION
@@ -168,10 +150,6 @@ internal fun HomeScreen(
             weatherInfo = fetched
             weatherStatus = if (fetched == null) "Weather unavailable · tap to retry" else ""
         }
-    }
-
-    fun saveTasks() {
-        sharedPrefs.edit().putStringSet("home_tasks", tasks.toSet()).apply()
     }
 
     Column(
@@ -227,8 +205,8 @@ internal fun HomeScreen(
                 percent = (today.dayOfYear * 100f / today.lengthOfYear()).toInt(),
                 primaryText = primaryText,
                 secondaryText = secondaryText,
-                fill = if (isDark) Color.White else Color(0xFF25232A),
-                track = if (isDark) Color(0xFF29282D) else Color(0xFFE8E3DD),
+                fill = primaryText,
+                track = secondaryText.copy(alpha = 0.22f),
                 fontScale = fontScale
             )
         }
@@ -240,8 +218,8 @@ internal fun HomeScreen(
                     label = "YEAR",
                     percent = (today.dayOfYear * 100f / today.lengthOfYear()).toInt(),
                     primaryText = primaryText, secondaryText = secondaryText,
-                    fill = if (isDark) Color.White else Color(0xFF25232A),
-                    track = if (isDark) Color(0xFF29282D) else Color(0xFFE8E3DD),
+                    fill = primaryText,
+                    track = secondaryText.copy(alpha = 0.22f),
                     fontScale = fontScale
                 )
             }
@@ -251,8 +229,8 @@ internal fun HomeScreen(
                     label = "DAY",
                     percent = (now.toSecondOfDay() * 100f / 86400f).toInt(),
                     primaryText = primaryText, secondaryText = secondaryText,
-                    fill = if (isDark) Color.White else Color(0xFF25232A),
-                    track = if (isDark) Color(0xFF29282D) else Color(0xFFE8E3DD),
+                    fill = primaryText,
+                    track = secondaryText.copy(alpha = 0.22f),
                     fontScale = fontScale
                 )
             }
@@ -283,18 +261,7 @@ internal fun HomeScreen(
                         fontSize = 9.sp * fontScale,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f).padding(end = 8.dp).clickable {
-                            if (!hasLocation) {
-                                permissionLauncher.launch(
-                                    arrayOf(
-                                        Manifest.permission.ACCESS_COARSE_LOCATION,
-                                        Manifest.permission.ACCESS_FINE_LOCATION
-                                    )
-                                )
-                            } else {
-                                weatherRefreshKey++
-                            }
-                        }
+                        modifier = Modifier.weight(1f).padding(end = 8.dp).clickable(onClick = onOpenWeather)
                     )
                 }
                 if (preferences.showScreenTime) {
@@ -337,7 +304,7 @@ internal fun HomeScreen(
                     fontSize = 20.sp * fontScale,
                     lineHeight = 25.sp * fontScale,
                     fontFamily = fontFamily,
-                    modifier = Modifier.fillMaxWidth().clickable { showTaskDialog = true }
+                    modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenTasks)
                         .padding(vertical = 3.dp)
                 )
             }
@@ -384,10 +351,44 @@ internal fun HomeScreen(
         } else {
             visibleFavorites.forEach { app ->
                 Row(
-                    modifier = Modifier.fillMaxWidth().combinedClickable(
-                        onClick = { onLaunch(app) },
-                        onLongClick = { onToggleFavorite(app.packageName) }
-                    ).padding(vertical = 3.dp),
+                    modifier = Modifier.fillMaxWidth()
+                        .alpha(if (draggingFavorite == app.packageName) 0.62f else 1f)
+                        .pointerInput(app.packageName) {
+                            detectDragGesturesAfterLongPress(
+                                onDragStart = {
+                                    draggingFavorite = app.packageName
+                                    dragDistance = 0f
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                },
+                                onDragEnd = {
+                                    draggingFavorite = null
+                                    dragDistance = 0f
+                                },
+                                onDragCancel = {
+                                    draggingFavorite = null
+                                    dragDistance = 0f
+                                },
+                                onDrag = { change, dragAmount ->
+                                    change.consume()
+                                    dragDistance += dragAmount.y
+                                    val threshold = 28.dp.toPx()
+                                    if (kotlin.math.abs(dragDistance) >= threshold) {
+                                        val order = latestVisibleFavorites.value.map { it.packageName }
+                                        val current = order.indexOf(app.packageName)
+                                        val direction = if (dragDistance > 0f) 1 else -1
+                                        val target = order.getOrNull(current + direction)
+                                        if (target != null) {
+                                            latestMoveFavorite.value(app.packageName, target)
+                                            dragDistance -= direction * threshold
+                                        } else {
+                                            dragDistance = 0f
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                        .clickable { onLaunch(app) }
+                        .padding(vertical = 3.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (preferences.showAppIcons) {
@@ -436,47 +437,7 @@ internal fun HomeScreen(
         Spacer(Modifier.height(14.dp))
     }
 
-    if (showTaskDialog) {
-        AlertDialog(
-            onDismissRequest = { showTaskDialog = false },
-            title = { Text("Tasks") },
-            text = {
-                Column(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 340.dp)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(5.dp)
-                ) {
-                    if (tasks.isEmpty()) Text("No tasks yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    tasks.toList().forEach { task ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(task, modifier = Modifier.weight(1f), fontSize = 14.sp)
-                            TextButton(onClick = {
-                                tasks.remove(task)
-                                saveTasks()
-                            }) { Text("Remove") }
-                        }
-                    }
-                    OutlinedTextField(
-                        value = newTask,
-                        onValueChange = { newTask = it },
-                        label = { Text("New task") },
-                        singleLine = true
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    if (newTask.isNotBlank()) {
-                        tasks.add(newTask.trim())
-                        saveTasks()
-                        newTask = ""
-                    }
-                    showTaskDialog = false
-                }) { Text("Save") }
-            },
-            dismissButton = { TextButton(onClick = { showTaskDialog = false }) { Text("Close") } }
-        )
-    }
+
 }
 
 @Composable
