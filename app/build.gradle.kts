@@ -5,7 +5,7 @@ plugins {
 }
 android {
     namespace = "com.insomdroid.dislauncher"
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig {
         applicationId = "com.insomdroid.dislauncher"
         minSdk = 26
