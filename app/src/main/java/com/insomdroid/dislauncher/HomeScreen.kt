@@ -15,7 +15,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -139,7 +138,6 @@ internal fun HomeScreen(
     val background = if (isDark) Color.Black else Color(0xFFFFFCF7)
     val primaryText = if (isDark) Color(0xFFF6F3FA) else Color(0xFF1A191D)
     val secondaryText = if (isDark) Color(0xFFA8A5AE) else Color(0xFF68656D)
-    val dividerColor = if (isDark) Color(0xFF343238) else Color(0xFFE4DFDA)
     val visibleFavorites = remember(apps, favorites) {
         apps.filter { it.packageName in favorites }
             .sortedBy { it.label.lowercase(Locale.getDefault()) }
@@ -223,7 +221,7 @@ internal fun HomeScreen(
             )
         }
         if (preferences.showYearProgress && preferences.pinYearProgress) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(6.dp))
             ProgressLine(
                 label = "YEAR",
                 percent = (today.dayOfYear * 100f / today.lengthOfYear()).toInt(),
@@ -236,7 +234,7 @@ internal fun HomeScreen(
         }
 
         if (preferences.showWeather || preferences.showBattery) {
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(7.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -256,8 +254,8 @@ internal fun HomeScreen(
                     Text(
                         weatherText,
                         color = secondaryText,
-                        fontSize = 10.sp * fontScale,
-                        maxLines = 2,
+                        fontSize = 9.sp * fontScale,
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f).padding(end = 8.dp).clickable {
                             if (!hasLocation) {
@@ -275,9 +273,9 @@ internal fun HomeScreen(
                 }
                 if (preferences.showBattery) {
                     Text(
-                        batteryPercent?.let { "$it% battery" } ?: "Battery",
+                        batteryPercent?.let { "$it%" } ?: "--%",
                         color = secondaryText,
-                        fontSize = 10.sp * fontScale,
+                        fontSize = 9.sp * fontScale,
                         maxLines = 1
                     )
                 }
@@ -285,12 +283,10 @@ internal fun HomeScreen(
         }
 
         if (preferences.showYearProgress && !preferences.pinYearProgress || preferences.showDayProgress) {
-            Spacer(Modifier.height(10.dp))
-            Box(Modifier.fillMaxWidth().height(1.dp).background(dividerColor))
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(6.dp))
             if (preferences.showYearProgress && !preferences.pinYearProgress) {
                 ProgressLine(
-                    label = "YEAR IN PROGRESS",
+                    label = "YEAR",
                     percent = (today.dayOfYear * 100f / today.lengthOfYear()).toInt(),
                     primaryText = primaryText, secondaryText = secondaryText,
                     fill = if (isDark) Color.White else Color(0xFF25232A),
@@ -299,9 +295,9 @@ internal fun HomeScreen(
                 )
             }
             if (preferences.showDayProgress) {
-                if (preferences.showYearProgress && !preferences.pinYearProgress) Spacer(Modifier.height(8.dp))
+                if (preferences.showYearProgress && !preferences.pinYearProgress) Spacer(Modifier.height(4.dp))
                 ProgressLine(
-                    label = "DAY IN PROGRESS",
+                    label = "DAY",
                     percent = (now.toSecondOfDay() * 100f / 86400f).toInt(),
                     primaryText = primaryText, secondaryText = secondaryText,
                     fill = if (isDark) Color.White else Color(0xFF25232A),
@@ -314,16 +310,14 @@ internal fun HomeScreen(
         val activeMiniWidgets = preferences.showScreenTime || preferences.showTasks ||
             preferences.showCall || preferences.showMusic || preferences.showCalendarShortcut
         if (activeMiniWidgets) {
-            Spacer(Modifier.height(12.dp))
-            Box(Modifier.fillMaxWidth().height(1.dp).background(dividerColor))
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(7.dp))
             if (preferences.showScreenTime) {
                 val screenText = screenTimeMinutes?.let { "SCREEN TIME  ·  ${formatMinutes(it)}" }
                     ?: "SCREEN TIME  ·  allow access"
                 Text(
                     screenText,
                     color = secondaryText,
-                    fontSize = 10.sp * fontScale,
+                    fontSize = 9.sp * fontScale,
                     modifier = Modifier.fillMaxWidth().clickable {
                         if (screenTimeMinutes == null) {
                             runCatching {
@@ -332,7 +326,7 @@ internal fun HomeScreen(
                         } else {
                             screenTimeMinutes = readScreenTimeMinutes(context)
                         }
-                    }.padding(vertical = 3.dp)
+                    }.padding(vertical = 2.dp)
                 )
             }
             if (preferences.showTasks) {
@@ -375,7 +369,7 @@ internal fun HomeScreen(
         }
 
         if (preferences.showQuote) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
             Text(
                 text = "“${inspirationQuotes[quoteIndex]}”",
                 color = secondaryText,
@@ -388,9 +382,7 @@ internal fun HomeScreen(
             )
         }
 
-        Spacer(Modifier.height(14.dp))
-        Box(Modifier.fillMaxWidth().height(1.dp).background(dividerColor))
-        Spacer(Modifier.height(9.dp))
+        Spacer(Modifier.height(8.dp))
         Text("FAVOURITES", color = secondaryText, fontSize = 9.sp * fontScale, letterSpacing = 0.9.sp)
         Spacer(Modifier.height(4.dp))
         if (visibleFavorites.isEmpty()) {
@@ -501,18 +493,18 @@ private fun ProgressLine(
     track: Color,
     fontScale: Float
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(label, color = secondaryText, fontSize = 8.sp * fontScale, letterSpacing = 0.45.sp)
-            Text("$percent%", color = primaryText, fontSize = 9.sp * fontScale)
+            Text(label, color = secondaryText, fontSize = 7.sp * fontScale, letterSpacing = 0.2.sp)
+            Text("$percent%", color = primaryText, fontSize = 8.sp * fontScale)
         }
-        Box(Modifier.fillMaxWidth().height(2.dp).clip(RoundedCornerShape(99.dp)).background(track)) {
+        Box(Modifier.fillMaxWidth().height(1.5.dp).clip(RoundedCornerShape(99.dp)).background(track)) {
             Box(
-                Modifier.fillMaxWidth(percent.coerceIn(0, 100) / 100f).height(2.dp)
+                Modifier.fillMaxWidth(percent.coerceIn(0, 100) / 100f).height(1.5.dp)
                     .clip(RoundedCornerShape(99.dp)).background(fill)
             )
         }
