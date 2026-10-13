@@ -3,8 +3,11 @@ package com.insomdroid.dislauncher
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -28,14 +31,19 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -69,7 +77,6 @@ internal fun AppsScreen(
             .sortedBy { it.label.lowercase(Locale.getDefault()) }
     }
     val listState = rememberLazyListState()
-    val scope = rememberCoroutineScope()
     val keyboard = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
     val firstIndexByLetter = remember(filtered) {
@@ -81,6 +88,9 @@ internal fun AppsScreen(
     val scrubberLetters = remember(firstIndexByLetter) {
         firstIndexByLetter.keys.sortedWith(compareBy<String> { if (it == "#") "" else it })
     }
+    var isScrubbing by remember { mutableStateOf(false) }
+    var activeLetter by remember { mutableStateOf("") }
+    var scrubFraction by remember { mutableFloatStateOf(0.5f) }
 
     LaunchedEffect(isActive, preferences.autoLaunchKeyboard, preferences.showSearchBar) {
         if (isActive && preferences.autoLaunchKeyboard && preferences.showSearchBar) {
@@ -119,7 +129,7 @@ internal fun AppsScreen(
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             LazyColumn(
                 state = listState,
-                modifier = Modifier.fillMaxSize().padding(end = if (preferences.showCharacterScroll) 18.dp else 0.dp),
+                modifier = Modifier.fillMaxSize().padding(end = if (preferences.showCharacterScroll) 20.dp else 0.dp),
                 contentPadding = PaddingValues(bottom = 16.dp, top = 2.dp),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
@@ -163,35 +173,72 @@ internal fun AppsScreen(
             }
 
             if (preferences.showCharacterScroll && scrubberLetters.isNotEmpty()) {
-                Column(
-                    modifier = Modifier.align(Alignment.CenterEnd)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 3.dp, vertical = 2.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    scrubberLetters.forEach { letter ->
-                        Text(
-                            letter,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontSize = 8.sp * fontScale,
-                            lineHeight = 11.sp * fontScale,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.clip(RoundedCornerShape(3.dp))
-                                .combinedClickable(
-                                    onClick = {
-                                        val index = firstIndexByLetter[letter] ?: 0
-                                        scope.launch { listState.animateScrollToItem(index) }
-                                    },
-                                    onLongClick = {
-                                        val index = firstIndexByLetter[letter] ?: 0
-                                        scope.launch { listState.scrollToItem(index) }
+                BoxWithConstraints(
+                    modifier = Modifier.align(Alignment.CenterEnd).fillMaxSize().width(22.dp)
+                        .pointerInput(scrubberLetters, filtered) {
+                            awaitEachGesture {
+                                val down = awaitFirstDown(requireUnconsumed = false)
+                                isScrubbing = true
+                                var previousIndex = -1
+                                suspend fun updateFromY(y: Float) {
+                                    val fraction = (y / size.height.toFloat()).coerceIn(0f, 0.9999f)
+                                    scrubFraction = fraction
+                                    val index = (fraction * scrubberLetters.size).toInt()
+                                        .coerceIn(0, scrubberLetters.lastIndex)
+                                    if (index != previousIndex) {
+                                        previousIndex = index
+                                        activeLetter = scrubberLetters[index]
+                                        val row = firstIndexByLetter[activeLetter] ?: 0
+                                        listState.scrollToItem(row)
                                     }
+                                }
+                                try {
+                                    updateFromY(down.position.y)
+                                    var pressed = true
+                                    while (pressed) {
+                                        val event = awaitPointerEvent()
+                                        val change = event.changes.firstOrNull() ?: break
+                                        if (change.pressed) {
+                                            updateFromY(change.position.y)
+                                            change.consume()
+                                        } else {
+                                            pressed = false
+                                        }
+                                    }
+                                } finally {
+                                    isScrubbing = false
+                                }
+                            }
+                        }
+                ) {
+                    if (isScrubbing) {
+                        Column(
+                            modifier = Modifier.align(Alignment.CenterEnd)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.96f))
+                                .verticalScroll(rememberScrollState())
+                                .padding(horizontal = 3.dp, vertical = 3.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            scrubberLetters.forEach { letter ->
+                                val active = letter == activeLetter
+                                Text(
+                                    letter,
+                                    color = if (active) MaterialTheme.colorScheme.onPrimaryContainer
+                                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 8.sp * fontScale,
+                                    lineHeight = 10.sp * fontScale,
+                                    fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
+                                    modifier = Modifier.clip(RoundedCornerShape(3.dp))
+                                        .background(
+                                            if (active) MaterialTheme.colorScheme.primaryContainer
+                                            else Color.Transparent
+                                        )
+                                        .padding(vertical = 1.dp, horizontal = 2.dp)
                                 )
-                                .padding(vertical = 1.dp, horizontal = 1.dp)
-                        )
+                            }
+                        }
                     }
                 }
             }
