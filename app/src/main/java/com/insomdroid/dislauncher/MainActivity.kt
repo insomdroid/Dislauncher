@@ -174,27 +174,25 @@ private fun DislauncherRoot() {
         "dark" -> true
         else -> systemDark
     }
-    val colorScheme = when {
-        preferences.themeMode == "system" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            if (systemDark) androidx.compose.material3.dynamicDarkColorScheme(context)
-            else androidx.compose.material3.dynamicLightColorScheme(context)
-        }
-        isDark -> darkColorScheme(
-            primary = Color(0xFFC4C8FF),
-            onPrimary = Color(0xFF171A35),
-            secondary = Color(0xFFD8C2FF),
-            tertiary = Color(0xFFFFB8AA),
-            background = Color(0xFF101014),
-            surface = Color(0xFF19191F),
-            surfaceVariant = Color(0xFF292932)
+    val colorScheme = if (isDark) {
+        darkColorScheme(
+            primary = Color.White,
+            onPrimary = Color.Black,
+            secondary = Color(0xFFBDBDBD),
+            tertiary = Color.White,
+            background = Color.Black,
+            surface = Color.Black,
+            surfaceVariant = Color(0xFF121212)
         )
-        else -> lightColorScheme(
-            primary = Color(0xFF4A4F8F),
-            secondary = Color(0xFF625B71),
-            tertiary = Color(0xFF805347),
-            background = Color(0xFFFFF8FC),
-            surface = Color(0xFFFFF8FC),
-            surfaceVariant = Color(0xFFECE7F1)
+    } else {
+        lightColorScheme(
+            primary = Color.Black,
+            onPrimary = Color.White,
+            secondary = Color(0xFF666666),
+            tertiary = Color.Black,
+            background = Color.White,
+            surface = Color.White,
+            surfaceVariant = Color(0xFFF3F3F3)
         )
     }
     val fontFamily = when (preferences.fontMode) {

@@ -81,15 +81,21 @@ internal fun AppsScreen(
     val scope = rememberCoroutineScope()
     val keyboard = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
-    val firstIndexByLetter = remember(filtered) {
-        filtered.mapIndexedNotNull { index, app ->
-            val first = app.label.firstOrNull()?.uppercaseChar()?.toString() ?: "#"
-            first to index
-        }.groupBy({ it.first }, { it.second }).mapValues { it.value.first() }
+    val groupedApps = remember(filtered) {
+        filtered.groupBy { app ->
+            app.label.firstOrNull()?.uppercaseChar()?.toString() ?: "#"
+        }.toSortedMap(compareBy<String> { if (it == "#") "" else it })
     }
-    val scrubberLetters = remember(firstIndexByLetter) {
-        firstIndexByLetter.keys.sortedWith(compareBy<String> { if (it == "#") "" else it })
+    val firstIndexByLetter = remember(groupedApps) {
+        val result = linkedMapOf<String, Int>()
+        var rowIndex = 0
+        groupedApps.forEach { (letter, sectionApps) ->
+            result[letter] = rowIndex
+            rowIndex += sectionApps.size + 1
+        }
+        result
     }
+    val scrubberLetters = remember(groupedApps) { groupedApps.keys.toList() }
     var isScrubbing by remember { mutableStateOf(false) }
     var activeLetter by remember { mutableStateOf("") }
     var scrubFraction by remember { mutableFloatStateOf(0.5f) }
@@ -107,24 +113,15 @@ internal fun AppsScreen(
             .windowInsetsPadding(WindowInsets.systemBars)
             .padding(start = 20.dp, end = 10.dp, top = 14.dp, bottom = 8.dp)
     ) {
-        Text(
-            "All apps",
-            color = mainText,
-            fontSize = 25.sp * fontScale,
-            fontWeight = FontWeight.Light,
-            fontFamily = fontFamily,
-            maxLines = 1
-        )
-        Text("${filtered.size} applications", color = secondary, fontSize = 10.sp * fontScale)
         if (preferences.showSearchBar) {
-            Spacer(Modifier.height(7.dp))
+            Spacer(Modifier.height(3.dp))
             OutlinedTextField(
                 value = query,
                 onValueChange = onQueryChange,
                 modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
                 singleLine = true,
                 placeholder = { Text("Search apps", fontSize = 13.sp * fontScale) },
-                shape = MaterialTheme.shapes.large
+                shape = RoundedCornerShape(4.dp)
             )
         }
         Spacer(Modifier.height(5.dp))
@@ -145,7 +142,17 @@ internal fun AppsScreen(
                         )
                     }
                 }
-                items(filtered, key = { it.packageName }) { app ->
+                groupedApps.forEach { (letter, sectionApps) ->
+                    item(key = "section-$letter") {
+                        Text(
+                            letter,
+                            color = secondary,
+                            fontSize = 10.sp * fontScale,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.fillMaxWidth().padding(top = 11.dp, bottom = 3.dp)
+                        )
+                    }
+                    items(sectionApps, key = { it.packageName }) { app ->
                     Row(
                         modifier = Modifier.fillMaxWidth().combinedClickable(
                             onClick = { onLaunch(app) },
@@ -160,8 +167,8 @@ internal fun AppsScreen(
                         Text(
                             app.label,
                             color = mainText,
-                            fontSize = 15.sp * fontScale,
-                            lineHeight = 19.sp * fontScale,
+                            fontSize = 17.sp * fontScale,
+                            lineHeight = 22.sp * fontScale,
                             fontFamily = fontFamily,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -171,6 +178,7 @@ internal fun AppsScreen(
                             Text("•", color = secondary, fontSize = 12.sp, modifier = Modifier.padding(start = 4.dp))
                         }
                     }
+                }
                 }
             }
 

@@ -134,9 +134,9 @@ internal fun HomeScreen(
         else -> if (systemTimeFormat) "HH:mm" else "h:mm"
     }
     val timeText = now.format(DateTimeFormatter.ofPattern(timePattern, Locale.getDefault()))
-    val dateText = today.format(DateTimeFormatter.ofPattern("EEE, d MMM", Locale.getDefault()))
-    val background = if (isDark) Color.Black else Color(0xFFFFFCF7)
-    val primaryText = if (isDark) Color(0xFFF6F3FA) else Color(0xFF1A191D)
+    val dateText = today.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.getDefault()))
+    val background = if (isDark) Color.Black else Color.White
+    val primaryText = if (isDark) Color.White else Color.Black
     val secondaryText = if (isDark) Color(0xFFA8A5AE) else Color(0xFF68656D)
     val visibleFavorites = remember(apps, favorites) {
         apps.filter { it.packageName in favorites }
@@ -197,9 +197,9 @@ internal fun HomeScreen(
             Text(
                 timeText,
                 color = primaryText,
-                fontSize = 38.sp * fontScale,
-                lineHeight = 41.sp * fontScale,
-                letterSpacing = (-1.8).sp,
+                fontSize = 49.sp * fontScale,
+                lineHeight = 52.sp * fontScale,
+                letterSpacing = (-1.6).sp,
                 fontWeight = FontWeight.Light,
                 fontFamily = fontFamily,
                 maxLines = 1,
@@ -232,6 +232,32 @@ internal fun HomeScreen(
                 fontScale = fontScale
             )
         }
+
+        if (preferences.showYearProgress && !preferences.pinYearProgress || preferences.showDayProgress) {
+            Spacer(Modifier.height(6.dp))
+            if (preferences.showYearProgress && !preferences.pinYearProgress) {
+                ProgressLine(
+                    label = "YEAR",
+                    percent = (today.dayOfYear * 100f / today.lengthOfYear()).toInt(),
+                    primaryText = primaryText, secondaryText = secondaryText,
+                    fill = if (isDark) Color.White else Color(0xFF25232A),
+                    track = if (isDark) Color(0xFF29282D) else Color(0xFFE8E3DD),
+                    fontScale = fontScale
+                )
+            }
+            if (preferences.showDayProgress) {
+                if (preferences.showYearProgress && !preferences.pinYearProgress) Spacer(Modifier.height(4.dp))
+                ProgressLine(
+                    label = "DAY",
+                    percent = (now.toSecondOfDay() * 100f / 86400f).toInt(),
+                    primaryText = primaryText, secondaryText = secondaryText,
+                    fill = if (isDark) Color.White else Color(0xFF25232A),
+                    track = if (isDark) Color(0xFF29282D) else Color(0xFFE8E3DD),
+                    fontScale = fontScale
+                )
+            }
+        }
+
 
         if (preferences.showWeather || preferences.showBattery) {
             Spacer(Modifier.height(7.dp))
@@ -279,31 +305,6 @@ internal fun HomeScreen(
                         maxLines = 1
                     )
                 }
-            }
-        }
-
-        if (preferences.showYearProgress && !preferences.pinYearProgress || preferences.showDayProgress) {
-            Spacer(Modifier.height(6.dp))
-            if (preferences.showYearProgress && !preferences.pinYearProgress) {
-                ProgressLine(
-                    label = "YEAR",
-                    percent = (today.dayOfYear * 100f / today.lengthOfYear()).toInt(),
-                    primaryText = primaryText, secondaryText = secondaryText,
-                    fill = if (isDark) Color.White else Color(0xFF25232A),
-                    track = if (isDark) Color(0xFF29282D) else Color(0xFFE8E3DD),
-                    fontScale = fontScale
-                )
-            }
-            if (preferences.showDayProgress) {
-                if (preferences.showYearProgress && !preferences.pinYearProgress) Spacer(Modifier.height(4.dp))
-                ProgressLine(
-                    label = "DAY",
-                    percent = (now.toSecondOfDay() * 100f / 86400f).toInt(),
-                    primaryText = primaryText, secondaryText = secondaryText,
-                    fill = if (isDark) Color.White else Color(0xFF25232A),
-                    track = if (isDark) Color(0xFF29282D) else Color(0xFFE8E3DD),
-                    fontScale = fontScale
-                )
             }
         }
 
@@ -383,16 +384,9 @@ internal fun HomeScreen(
         }
 
         Spacer(Modifier.height(8.dp))
-        Text("FAVOURITES", color = secondaryText, fontSize = 9.sp * fontScale, letterSpacing = 0.9.sp)
         Spacer(Modifier.height(4.dp))
         if (visibleFavorites.isEmpty()) {
-            Text(
-                "Hold an app in the drawer to pin it here.",
-                color = secondaryText,
-                fontSize = 11.sp * fontScale,
-                lineHeight = 15.sp * fontScale,
-                fontFamily = fontFamily
-            )
+            Spacer(Modifier.height(1.dp))
         } else {
             visibleFavorites.forEach { app ->
                 Row(
@@ -408,8 +402,8 @@ internal fun HomeScreen(
                     Text(
                         text = app.label,
                         color = primaryText,
-                        fontSize = 16.sp * fontScale,
-                        lineHeight = 21.sp * fontScale,
+                        fontSize = 20.sp * fontScale,
+                        lineHeight = 25.sp * fontScale,
                         fontFamily = fontFamily,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -419,22 +413,16 @@ internal fun HomeScreen(
             }
         }
 
-        Spacer(Modifier.height(12.dp))
-        Text(
-            "All apps  →",
-            color = primaryText,
-            fontSize = 12.sp * fontScale,
-            fontFamily = fontFamily,
-            modifier = Modifier.clip(RoundedCornerShape(5.dp)).clickable(onClick = onOpenApps)
-                .padding(vertical = 4.dp, horizontal = 1.dp)
-        )
+        Spacer(Modifier.height(8.dp))
         if (preferences.showSettingsButton) {
             Text(
-                "Settings",
+                "⋯",
                 color = secondaryText,
-                fontSize = 10.sp * fontScale,
+                fontSize = 25.sp,
+                lineHeight = 28.sp,
+                fontWeight = FontWeight.Light,
                 modifier = Modifier.clip(RoundedCornerShape(5.dp)).clickable(onClick = onOpenSettings)
-                    .padding(vertical = 4.dp, horizontal = 1.dp)
+                    .padding(vertical = 1.dp, horizontal = 1.dp)
             )
         }
         Spacer(Modifier.height(14.dp))
