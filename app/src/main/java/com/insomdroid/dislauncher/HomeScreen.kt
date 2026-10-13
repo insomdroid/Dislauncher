@@ -298,7 +298,7 @@ internal fun HomeScreen(
                     )
                 }
                 if (preferences.showScreenTime) {
-                    val screenText = screenTimeMinutes?.let { ${formatMinutes(it)} } ?: "SCREEN TIME"
+                    val screenText = screenTimeMinutes?.let { formatMinutes(it) } ?: "SCREEN TIME"
                     Text(
                         screenText,
                         color = secondaryText,
