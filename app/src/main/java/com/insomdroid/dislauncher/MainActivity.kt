@@ -1,21 +1,30 @@
 package com.insomdroid.dislauncher
 
 import android.app.Activity
+import android.app.admin.DevicePolicyManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ApplicationInfo
 import android.os.Build
-import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -24,16 +33,23 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
@@ -47,7 +63,7 @@ internal data class LauncherApp(
 )
 
 class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = android.graphics.Color.TRANSPARENT
@@ -60,29 +76,106 @@ class MainActivity : ComponentActivity() {
 private fun DislauncherRoot() {
     val context = LocalContext.current
     val view = LocalView.current
-    val prefs = remember {
+    val prefsStore = remember {
         context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
     }
-    var screen by remember { mutableStateOf(LauncherScreen.HOME) }
-    var themeMode by remember { mutableStateOf(prefs.getString("theme_mode", "dark") ?: "dark") }
-    var fontMode by remember { mutableStateOf(prefs.getString("font_mode", "sans") ?: "sans") }
-    var showProgress by remember { mutableStateOf(prefs.getBoolean("show_progress", true)) }
-    var showQuote by remember { mutableStateOf(prefs.getBoolean("show_quote", true)) }
-    var hideSystemApps by remember { mutableStateOf(prefs.getBoolean("hide_system_apps", false)) }
+    var preferences by remember { mutableStateOf(LauncherPreferences.load(prefsStore)) }
     var favorites by remember {
-        mutableStateOf(prefs.getStringSet("favorite_packages", emptySet())?.toSet().orEmpty())
+        mutableStateOf(prefsStore.getStringSet("favorite_packages", emptySet())?.toSet().orEmpty())
     }
-    var searchQuery by remember { mutableStateOf("") }
+    var hiddenApps by remember {
+        mutableStateOf(prefsStore.getStringSet("hidden_packages", emptySet())?.toSet().orEmpty())
+    }
     var apps by remember { mutableStateOf<List<LauncherApp>>(emptyList()) }
+    var searchQuery by remember { mutableStateOf("") }
+    var screen by remember { mutableStateOf(LauncherScreen.HOME) }
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 2 })
+    val scope = rememberCoroutineScope()
+    val iconPacks = remember { findIconPacks(context) }
+
+    fun updatePreferences(next: LauncherPreferences) {
+        preferences = next
+        next.save(prefsStore)
+    }
+
+    fun toggleFavorite(packageName: String) {
+        val next = if (packageName in favorites) favorites - packageName else favorites + packageName
+        favorites = next
+        prefsStore.edit().putStringSet("favorite_packages", next.toMutableSet()).apply()
+    }
+
+    fun toggleHidden(packageName: String) {
+        val next = if (packageName in hiddenApps) hiddenApps - packageName else hiddenApps + packageName
+        hiddenApps = next
+        prefsStore.edit().putStringSet("hidden_packages", next.toMutableSet()).apply()
+    }
+
+    val adminComponent = remember { ComponentName(context, DislauncherAdminReceiver::class.java) }
+    val devicePolicyManager = remember {
+        context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+    }
+    val adminRequest = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        val active = runCatching { devicePolicyManager.isAdminActive(adminComponent) }.getOrDefault(false)
+        updatePreferences(preferences.copy(doubleTapToLock = active))
+    }
+
+    fun changeDoubleTapLock(enabled: Boolean) {
+        if (!enabled) {
+            updatePreferences(preferences.copy(doubleTapToLock = false))
+            runCatching {
+                if (devicePolicyManager.isAdminActive(adminComponent)) {
+                    devicePolicyManager.removeActiveAdmin(adminComponent)
+                }
+            }
+            return
+        }
+        if (devicePolicyManager.isAdminActive(adminComponent)) {
+            updatePreferences(preferences.copy(doubleTapToLock = true))
+        } else {
+            val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+                .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent)
+                .putExtra(
+                    DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+                    "Allow dislauncher to lock the screen when you double-tap an empty area of Home."
+                )
+            adminRequest.launch(intent)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        apps = withContext(Dispatchers.IO) { loadLauncherApps(context) }
+    }
+
+    LaunchedEffect(pagerState.settledPage) {
+        if (screen != LauncherScreen.SETTINGS) {
+            screen = if (pagerState.settledPage == 0) LauncherScreen.HOME else LauncherScreen.APPS
+        }
+    }
+    LaunchedEffect(screen) {
+        if (screen != LauncherScreen.SETTINGS) {
+            val wantedPage = if (screen == LauncherScreen.HOME) 0 else 1
+            if (pagerState.currentPage != wantedPage) pagerState.animateScrollToPage(wantedPage)
+        }
+    }
+
+    BackHandler(enabled = screen == LauncherScreen.SETTINGS || pagerState.settledPage == 1) {
+        if (screen == LauncherScreen.SETTINGS) {
+            screen = LauncherScreen.HOME
+        } else {
+            scope.launch { pagerState.animateScrollToPage(0) }
+        }
+    }
 
     val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
-    val isDark = when (themeMode) {
+    val isDark = when (preferences.themeMode) {
         "light" -> false
         "dark" -> true
         else -> systemDark
     }
     val colorScheme = when {
-        themeMode == "system" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+        preferences.themeMode == "system" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             if (systemDark) androidx.compose.material3.dynamicDarkColorScheme(context)
             else androidx.compose.material3.dynamicLightColorScheme(context)
         }
@@ -104,10 +197,41 @@ private fun DislauncherRoot() {
             surfaceVariant = Color(0xFFECE7F1)
         )
     }
-    val fontFamily = when (fontMode) {
-        "serif" -> androidx.compose.ui.text.font.FontFamily.Serif
-        "mono" -> androidx.compose.ui.text.font.FontFamily.Monospace
-        else -> androidx.compose.ui.text.font.FontFamily.SansSerif
+    val fontFamily = when (preferences.fontMode) {
+        "serif" -> FontFamily.Serif
+        "mono" -> FontFamily.Monospace
+        else -> FontFamily.SansSerif
+    }
+    val fontScale = when (preferences.fontSize) {
+        "medium" -> 1.0f
+        "large" -> 1.12f
+        else -> 0.86f
+    }
+    val baseTypography = Typography()
+    fun scaled(style: TextStyle): TextStyle = style.copy(
+        fontFamily = fontFamily,
+        fontSize = style.fontSize * fontScale,
+        lineHeight = if (style.lineHeight == TextUnit.Unspecified) style.lineHeight else style.lineHeight * fontScale
+    )
+    val typography = baseTypography.copy(
+        displayLarge = scaled(baseTypography.displayLarge),
+        displayMedium = scaled(baseTypography.displayMedium),
+        displaySmall = scaled(baseTypography.displaySmall),
+        headlineLarge = scaled(baseTypography.headlineLarge),
+        headlineMedium = scaled(baseTypography.headlineMedium),
+        headlineSmall = scaled(baseTypography.headlineSmall),
+        titleLarge = scaled(baseTypography.titleLarge),
+        titleMedium = scaled(baseTypography.titleMedium),
+        titleSmall = scaled(baseTypography.titleSmall),
+        bodyLarge = scaled(baseTypography.bodyLarge),
+        bodyMedium = scaled(baseTypography.bodyMedium),
+        bodySmall = scaled(baseTypography.bodySmall),
+        labelLarge = scaled(baseTypography.labelLarge),
+        labelMedium = scaled(baseTypography.labelMedium),
+        labelSmall = scaled(baseTypography.labelSmall)
+    )
+    val visibleApps = remember(apps, preferences.hideSystemApps, hiddenApps) {
+        apps.filter { (!preferences.hideSystemApps || !it.isSystem) && it.packageName !in hiddenApps }
     }
 
     SideEffect {
@@ -119,45 +243,15 @@ private fun DislauncherRoot() {
                 WindowCompat.getInsetsController(activity.window, view)
             controller.isAppearanceLightStatusBars = !isDark
             controller.isAppearanceLightNavigationBars = !isDark
+            if (preferences.hideStatusBar) controller.hide(WindowInsetsCompat.Type.statusBars())
+            else controller.show(WindowInsetsCompat.Type.statusBars())
+            controller.show(WindowInsetsCompat.Type.navigationBars())
         }
-    }
-
-    LaunchedEffect(hideSystemApps) {
-        apps = withContext(Dispatchers.IO) { loadLauncherApps(context, hideSystemApps) }
-    }
-
-    fun saveTheme(value: String) {
-        themeMode = value
-        prefs.edit().putString("theme_mode", value).apply()
-    }
-    fun saveFont(value: String) {
-        fontMode = value
-        prefs.edit().putString("font_mode", value).apply()
-    }
-    fun saveProgress(value: Boolean) {
-        showProgress = value
-        prefs.edit().putBoolean("show_progress", value).apply()
-    }
-    fun saveQuote(value: Boolean) {
-        showQuote = value
-        prefs.edit().putBoolean("show_quote", value).apply()
-    }
-    fun saveHideSystemApps(value: Boolean) {
-        hideSystemApps = value
-        prefs.edit().putBoolean("hide_system_apps", value).apply()
-    }
-    fun toggleFavorite(packageName: String) {
-        val updated = if (packageName in favorites) favorites - packageName else favorites + packageName
-        favorites = updated
-        prefs.edit().putStringSet("favorite_packages", updated.toMutableSet()).apply()
-    }
-
-    BackHandler(enabled = screen != LauncherScreen.HOME) {
-        screen = LauncherScreen.HOME
     }
 
     MaterialTheme(
         colorScheme = colorScheme,
+        typography = typography,
         shapes = androidx.compose.material3.Shapes(
             extraSmall = RoundedCornerShape(8.dp),
             small = RoundedCornerShape(14.dp),
@@ -166,83 +260,82 @@ private fun DislauncherRoot() {
             extraLarge = RoundedCornerShape(36.dp)
         )
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize().background(colorScheme.background)
-                .pointerInputScreen(screen) { screen = it }
-        ) {
-            when (screen) {
-                LauncherScreen.HOME -> HomeScreen(
-                    apps = apps,
-                    favorites = favorites,
-                    showProgress = showProgress,
-                    showQuote = showQuote,
-                    isDark = isDark,
-                    fontFamily = fontFamily,
-                    onLaunch = { launchApp(context, it) },
-                    onToggleFavorite = { toggleFavorite(it) },
-                    onOpenApps = {
-                        searchQuery = ""
-                        screen = LauncherScreen.APPS
-                    },
-                    onOpenSettings = { screen = LauncherScreen.SETTINGS }
-                )
-                LauncherScreen.APPS -> AppsScreen(
-                    apps = apps,
-                    favorites = favorites,
-                    query = searchQuery,
-                    onQueryChange = { searchQuery = it },
-                    isDark = isDark,
-                    fontFamily = fontFamily,
-                    onLaunch = { launchApp(context, it) },
-                    onToggleFavorite = { toggleFavorite(it) },
-                    onBack = { screen = LauncherScreen.HOME }
-                )
-                LauncherScreen.SETTINGS -> SettingsScreen(
-                    themeMode = themeMode,
-                    fontMode = fontMode,
-                    showProgress = showProgress,
-                    showQuote = showQuote,
-                    hideSystemApps = hideSystemApps,
-                    onThemeModeChange = { saveTheme(it) },
-                    onFontModeChange = { saveFont(it) },
-                    onProgressChange = { saveProgress(it) },
-                    onQuoteChange = { saveQuote(it) },
-                    onHideSystemAppsChange = { saveHideSystemApps(it) },
-                    onBack = { screen = LauncherScreen.HOME }
-                )
+        if (screen == LauncherScreen.SETTINGS) {
+            SettingsScreen(
+                preferences = preferences,
+                apps = apps,
+                favorites = favorites,
+                hiddenApps = hiddenApps,
+                iconPacks = iconPacks,
+                onPreferencesChange = ::updatePreferences,
+                onDoubleTapLockChange = ::changeDoubleTapLock,
+                onToggleFavorite = ::toggleFavorite,
+                onToggleHidden = ::toggleHidden,
+                onBack = { screen = LauncherScreen.HOME }
+            )
+        } else {
+            Box(Modifier.fillMaxSize().background(colorScheme.background)) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize(),
+                    beyondViewportPageCount = 1,
+                    pageSpacing = 0.dp
+                ) { page ->
+                    if (page == 0) {
+                        HomeScreen(
+                            apps = visibleApps,
+                            favorites = favorites,
+                            preferences = preferences,
+                            isDark = isDark,
+                            fontFamily = fontFamily,
+                            fontScale = fontScale,
+                            onLaunch = { launchApp(context, it) },
+                            onToggleFavorite = ::toggleFavorite,
+                            onOpenApps = {
+                                searchQuery = ""
+                                scope.launch { pagerState.animateScrollToPage(1) }
+                            },
+                            onOpenSettings = { screen = LauncherScreen.SETTINGS },
+                            onDoubleTapToLock = { lockDevice(context, adminComponent, devicePolicyManager) }
+                        )
+                    } else {
+                        AppsScreen(
+                            apps = visibleApps,
+                            favorites = favorites,
+                            query = searchQuery,
+                            onQueryChange = { searchQuery = it },
+                            preferences = preferences,
+                            isDark = isDark,
+                            isActive = page == pagerState.currentPage,
+                            fontFamily = fontFamily,
+                            fontScale = fontScale,
+                            onLaunch = { launchApp(context, it) },
+                            onToggleFavorite = ::toggleFavorite
+                        )
+                    }
+                }
+                if (screen == LauncherScreen.HOME && pagerState.currentPage == 0 && preferences.swipeDownNotifications) {
+                    Box(
+                        modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().height(22.dp)
+                            .pointerInput(Unit) {
+                                var totalDrag = 0f
+                                detectVerticalDragGestures(
+                                    onVerticalDrag = { _, dragAmount -> totalDrag += dragAmount },
+                                    onDragEnd = {
+                                        if (totalDrag > 24.dp.toPx()) expandNotificationPanel(context)
+                                        totalDrag = 0f
+                                    },
+                                    onDragCancel = { totalDrag = 0f }
+                                )
+                            }
+                    )
+                }
             }
         }
     }
 }
 
-private fun Modifier.pointerInputScreen(
-    screen: LauncherScreen,
-    onNavigate: (LauncherScreen) -> Unit
-): Modifier = pointerInput(screen) {
-    if (screen == LauncherScreen.HOME || screen == LauncherScreen.APPS) {
-        var totalDrag = 0f
-        var handled = false
-        val threshold = 76.dp.toPx()
-        detectHorizontalDragGestures(
-            onHorizontalDrag = { _, dragAmount ->
-                if (!handled) {
-                    totalDrag += dragAmount
-                    if (screen == LauncherScreen.HOME && totalDrag <= -threshold) {
-                        handled = true
-                        onNavigate(LauncherScreen.APPS)
-                    } else if (screen == LauncherScreen.APPS && totalDrag >= threshold) {
-                        handled = true
-                        onNavigate(LauncherScreen.HOME)
-                    }
-                }
-            },
-            onDragEnd = { totalDrag = 0f; handled = false },
-            onDragCancel = { totalDrag = 0f; handled = false }
-        )
-    }
-}
-
-private fun loadLauncherApps(context: Context, hideSystemApps: Boolean): List<LauncherApp> {
+private fun loadLauncherApps(context: Context): List<LauncherApp> {
     val pm = context.packageManager
     val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
     val results = pm.queryIntentActivities(intent, 0)
@@ -252,23 +345,79 @@ private fun loadLauncherApps(context: Context, hideSystemApps: Boolean): List<La
         val pkg = activity.packageName
         if (pkg == context.packageName) return@mapNotNull null
         val info = activity.applicationInfo ?: return@mapNotNull null
-        val system = (info.flags and systemFlags) != 0
-        if (hideSystemApps && system) return@mapNotNull null
         LauncherApp(
             packageName = pkg,
             activityName = activity.name,
             label = resolveInfo.loadLabel(pm).toString().ifBlank { pkg },
-            isSystem = system
+            isSystem = (info.flags and systemFlags) != 0
         )
     }.distinctBy { it.packageName }.sortedBy { it.label.lowercase(Locale.getDefault()) }
 }
 
-private fun launchApp(context: Context, app: LauncherApp) {
+internal fun launchApp(context: Context, app: LauncherApp) {
     val intent = Intent(Intent.ACTION_MAIN)
         .addCategory(Intent.CATEGORY_LAUNCHER)
         .setClassName(app.packageName, app.activityName)
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     runCatching { context.startActivity(intent) }
+}
+
+internal fun openClock(context: Context) {
+    val candidates = listOf(
+        Intent(android.provider.AlarmClock.ACTION_SHOW_ALARMS),
+        Intent(android.provider.AlarmClock.ACTION_SET_ALARM)
+    )
+    candidates.firstOrNull { it.resolveActivity(context.packageManager) != null }?.let {
+        runCatching { context.startActivity(it) }
+    }
+}
+
+internal fun openCalendar(context: Context) {
+    val appIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_CALENDAR)
+    val viewIntent = Intent(Intent.ACTION_VIEW, android.provider.CalendarContract.CONTENT_URI)
+    listOf(appIntent, viewIntent).firstOrNull {
+        it.resolveActivity(context.packageManager) != null
+    }?.let { runCatching { context.startActivity(it) } }
+}
+
+internal fun openMusicPlayer(context: Context, apps: List<LauncherApp>) {
+    val intent = Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_MUSIC)
+    if (intent.resolveActivity(context.packageManager) != null) {
+        runCatching { context.startActivity(intent) }
+        return
+    }
+    val keywords = listOf("spotify", "youtube music", "music", "soundcloud", "deezer", "vlc", "poweramp", "podcast")
+    val candidate = apps.firstOrNull { app ->
+        val label = app.label.lowercase(Locale.getDefault())
+        val pkg = app.packageName.lowercase(Locale.getDefault())
+        keywords.any { label.contains(it) || pkg.contains(it.replace(" ", "")) }
+    }
+    if (candidate != null) launchApp(context, candidate)
+    else runCatching { context.startActivity(Intent(Settings.ACTION_SOUND_SETTINGS)) }
+}
+
+private fun lockDevice(
+    context: Context,
+    adminComponent: ComponentName,
+    manager: DevicePolicyManager
+) {
+    if (runCatching { manager.isAdminActive(adminComponent) }.getOrDefault(false)) {
+        runCatching { manager.lockNow() }
+    } else {
+        runCatching {
+            context.startActivity(
+                Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+                    .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent)
+            )
+        }
+    }
+}
+
+private fun expandNotificationPanel(context: Context) {
+    runCatching {
+        val manager = context.getSystemService("statusbar") ?: return
+        manager.javaClass.getMethod("expandNotificationsPanel").invoke(manager)
+    }
 }
 
 internal fun readBatteryPercent(context: Context): Int? {
