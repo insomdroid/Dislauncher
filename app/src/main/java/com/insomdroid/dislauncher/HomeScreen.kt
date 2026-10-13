@@ -1,6 +1,7 @@
 package com.insomdroid.dislauncher
 
 import android.Manifest
+import android.content.Intent
 import android.app.AppOpsManager
 import android.app.usage.UsageStatsManager
 import android.content.Context
@@ -13,6 +14,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,6 +51,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
@@ -219,15 +222,6 @@ internal fun HomeScreen(
                 modifier = Modifier.clip(RoundedCornerShape(5.dp)).clickable { openCalendar(context) }
             )
         }
-        if (preferences.showCalendarShortcut && !preferences.showDate) {
-            Text(
-                "CALENDAR  →",
-                color = secondaryText,
-                fontSize = 10.sp * fontScale,
-                modifier = Modifier.clickable { openCalendar(context) }.padding(top = 2.dp)
-            )
-        }
-
         if (preferences.showYearProgress && preferences.pinYearProgress) {
             Spacer(Modifier.height(12.dp))
             ProgressLine(
