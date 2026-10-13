@@ -78,6 +78,7 @@ internal fun AppsScreen(
             .sortedBy { it.label.lowercase(Locale.getDefault()) }
     }
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
     val keyboard = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
     val firstIndexByLetter = remember(filtered) {
@@ -181,7 +182,7 @@ internal fun AppsScreen(
                                 val down = awaitFirstDown(requireUnconsumed = false)
                                 isScrubbing = true
                                 var previousIndex = -1
-                                suspend fun updateFromY(y: Float) {
+                                fun updateFromY(y: Float) {
                                     val fraction = (y / size.height.toFloat()).coerceIn(0f, 0.9999f)
                                     scrubFraction = fraction
                                     val index = (fraction * scrubberLetters.size).toInt()
@@ -190,7 +191,7 @@ internal fun AppsScreen(
                                         previousIndex = index
                                         activeLetter = scrubberLetters[index]
                                         val row = firstIndexByLetter[activeLetter] ?: 0
-                                        listState.scrollToItem(row)
+                                        scope.launch { listState.scrollToItem(row) }
                                     }
                                 }
                                 try {
