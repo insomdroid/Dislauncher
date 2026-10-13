@@ -142,7 +142,7 @@ jobs:
           print("header_hex:", data[:32].hex())
           PY
           if command -v hbc-file-parser >/dev/null 2>&1 && hbc-file-parser index.android.bundle >/tmp/bundle-analysis/header.txt 2>&1; then
-            cat /tmp/bundle-analysis/header.txt
+            head -c 2500 /tmp/bundle-analysis/header.txt
             hbc-decompiler index.android.bundle /tmp/bundle-analysis/decompiled.txt >/tmp/bundle-analysis/decompiler.log 2>&1
             echo "decompiler_exit_code=$?"
             SOURCE="/tmp/bundle-analysis/decompiled.txt"
@@ -159,30 +159,39 @@ jobs:
           fi
           export SOURCE
           python - <<'PY'
-          import os
+          import os, re
           from pathlib import Path
           p = Path(os.environ["SOURCE"])
           s = p.read_text(encoding="utf-8", errors="replace") if p.exists() else ""
-          terms = ["YEAR IN PROGRESS", "DAY IN PROGRESS", "weather", "battery", "temperature", "humidity", "forecast", "progress", "clock", "widget", "fontSize", "padding", "margin", "fontFamily"]
-          found = []
+          terms = ["YEAR_IN_PROGRESS", "DAY_IN_PROGRESS", "YIP_PINNED", "SHOW_WEATHER", "SHOW_BATTERY_LEVEL", "SHOW_DAY_PERCENT", "weatherCondition", "temperature", "humidity", "fontSize"]
+          out = [f"bundle characters: {len(s)}"]
           for term in terms:
+              positions = []
               start = 0
-              count = 0
               while True:
-                  i = s.casefold().find(term.casefold(), start)
-                  if i < 0:
+                  k = s.casefold().find(term.casefold(), start)
+                  if k < 0:
                       break
-                  left, right = max(0, i - 220), min(len(s), i + len(term) + 360)
-                  snippet = s[left:right].replace("\n", " ")
-                  if all(snippet not in old[1] and old[1] not in snippet for old in found):
-                      found.append((term, snippet))
-                  count += 1
-                  start = i + len(term)
-                  if count >= 3:
-                      break
-          report = "bundle characters: " + str(len(s)) + "\n\n" + "\n".join(f"--- {term} ---\n{snippet}" for term, snippet in found[:45])
+                  positions.append(k)
+                  start = k + len(term)
+              out.append(f"\\n### {term}: {len(positions)} occurrences")
+              chosen = positions[-2:] if len(positions) > 1 else positions
+              for k in chosen:
+                  prior = s.rfind("Original name: ", max(0, k - 5000), k)
+                  fname = "unknown"
+                  if prior >= 0:
+                      ns = prior + len("Original name: ")
+                      comma = s.find(",", ns)
+                      fname = s[ns:comma if comma >= 0 else ns + 80][:100]
+                  snippet = s[max(0, k - 520):min(len(s), k + 760)].replace("\\n", " ")
+                  out.append(f"function={fname} offset={k}\\n{snippet}")
+          names = re.findall(r"Original name: ([^,\\n]{1,100})", s)
+          relevant = sorted(set(n for n in names if re.search(r"home|weather|battery|year|day|clock|date|widget|progress|screen", n, re.I)))
+          out.append("\\n### Relevant original function names")
+          out.extend(relevant[:120])
+          report = "\\n\\n".join(out)
           Path("/tmp/bundle-analysis/report.txt").write_text(report, encoding="utf-8")
-          print("=== MATCHED CONTEXTS ===")
+          print("=== TARGETED CODE CONTEXTS ===")
           print(report)
           PY
 
