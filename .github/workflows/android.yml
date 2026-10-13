@@ -161,37 +161,53 @@ jobs:
           python - <<'PY'
           import os, re
           from pathlib import Path
-          p = Path(os.environ["SOURCE"])
-          s = p.read_text(encoding="utf-8", errors="replace") if p.exists() else ""
-          terms = ["YEAR_IN_PROGRESS", "DAY_IN_PROGRESS", "YIP_PINNED", "SHOW_WEATHER", "SHOW_BATTERY_LEVEL", "SHOW_DAY_PERCENT", "weatherCondition", "temperature", "humidity", "fontSize"]
+          s = Path(os.environ["SOURCE"]).read_text(encoding="utf-8", errors="replace")
           out = [f"bundle characters: {len(s)}"]
-          for term in terms:
+          function_names = ["YearProgressWidget", "DayProgression", "DayProgressionWidget", "Battery", "Clock", "WeatherScreen", "Weather", "ProgressTracker", "getProgressText", "getDayInPercent", "getYearInRatio", "getDayInRatio"]
+          for name in function_names:
+              needle = "Original name: " + name
               positions = []
-              start = 0
+              pos = 0
               while True:
-                  k = s.casefold().find(term.casefold(), start)
+                  k = s.find(needle, pos)
                   if k < 0:
                       break
                   positions.append(k)
-                  start = k + len(term)
-              out.append(f"\\n### {term}: {len(positions)} occurrences")
-              chosen = positions[-2:] if len(positions) > 1 else positions
-              for k in chosen:
+                  pos = k + len(needle)
+              if not positions:
+                  out.append(f"\\n### FUNCTION {name}: not found")
+                  continue
+              k = positions[-1]
+              next_fn = s.find("Original name: ", k + len(needle))
+              end = min(next_fn if next_fn >= 0 else k + 6500, k + 6500)
+              out.append(f"\\n### FUNCTION {name}: {len(positions)} match(es), offset={k}")
+              out.append(s[max(0, k - 240):end].replace("\\n", " "))
+          terms = ["YEAR_IN_PROGRESS", "DAY_IN_PROGRESS", "YIP_PINNED", "SHOW_WEATHER", "SHOW_BATTERY_LEVEL", "SHOW_DAY_PERCENT", "weatherCondition", "temperature", "humidity", "fontSize"]
+          for term in terms:
+              positions = []
+              pos = 0
+              while True:
+                  k = s.casefold().find(term.casefold(), pos)
+                  if k < 0:
+                      break
+                  positions.append(k)
+                  pos = k + len(term)
+              out.append(f"\\n### {term}: {len(positions)} occurrence(s)")
+              for k in (positions[-1:] if positions else []):
                   prior = s.rfind("Original name: ", max(0, k - 5000), k)
                   fname = "unknown"
                   if prior >= 0:
                       ns = prior + len("Original name: ")
                       comma = s.find(",", ns)
                       fname = s[ns:comma if comma >= 0 else ns + 80][:100]
-                  snippet = s[max(0, k - 520):min(len(s), k + 760)].replace("\\n", " ")
-                  out.append(f"function={fname} offset={k}\\n{snippet}")
+                  out.append(f"near function={fname}, offset={k}: " + s[max(0, k - 350):min(len(s), k + 850)].replace("\\n", " "))
           names = re.findall(r"Original name: ([^,\\n]{1,100})", s)
           relevant = sorted(set(n for n in names if re.search(r"home|weather|battery|year|day|clock|date|widget|progress|screen", n, re.I)))
           out.append("\\n### Relevant original function names")
           out.extend(relevant[:120])
           report = "\\n\\n".join(out)
           Path("/tmp/bundle-analysis/report.txt").write_text(report, encoding="utf-8")
-          print("=== TARGETED CODE CONTEXTS ===")
+          print("=== WIDGET COMPONENT CONTEXTS ===")
           print(report)
           PY
 
