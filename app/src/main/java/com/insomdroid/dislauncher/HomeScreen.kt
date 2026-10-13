@@ -1,10 +1,21 @@
 package com.insomdroid.dislauncher
 
-import android.text.format.DateFormat
+import android.Manifest
+import android.content.Intent
+import android.app.AppOpsManager
+import android.app.usage.UsageStatsManager
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Process
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,30 +25,44 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -59,142 +84,410 @@ private val inspirationQuotes = listOf(
 internal fun HomeScreen(
     apps: List<LauncherApp>,
     favorites: Set<String>,
-    showProgress: Boolean,
-    showQuote: Boolean,
+    preferences: LauncherPreferences,
     isDark: Boolean,
     fontFamily: FontFamily,
+    fontScale: Float,
     onLaunch: (LauncherApp) -> Unit,
     onToggleFavorite: (String) -> Unit,
     onOpenApps: () -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    onDoubleTapToLock: () -> Unit
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
+    val currentOpenSettings by rememberUpdatedState(onOpenSettings)
+    val currentLockScreen by rememberUpdatedState(onDoubleTapToLock)
     var now by remember { mutableStateOf(LocalTime.now()) }
     var quoteIndex by remember { mutableIntStateOf(LocalDate.now().dayOfYear % inspirationQuotes.size) }
+    var batteryPercent by remember { mutableStateOf(readBatteryPercent(context)) }
+    var screenTimeMinutes by remember { mutableStateOf(readScreenTimeMinutes(context)) }
+    var weatherInfo by remember { mutableStateOf<WeatherInfo?>(null) }
+    var weatherStatus by remember { mutableStateOf("Tap to allow location") }
+    var weatherRefreshKey by remember { mutableIntStateOf(0) }
+    var showTaskDialog by remember { mutableStateOf(false) }
+    var newTask by remember { mutableStateOf("") }
+    val sharedPrefs = remember {
+        context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
+    }
+    val tasks = remember {
+        mutableStateListOf<String>().apply {
+            addAll(sharedPrefs.getStringSet("home_tasks", emptySet())?.toList().orEmpty())
+        }
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        val granted = results[Manifest.permission.ACCESS_COARSE_LOCATION] == true ||
+            results[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED
+        if (granted) weatherRefreshKey++ else weatherStatus = "Location denied · tap to retry"
+    }
+
     val today = LocalDate.now()
-    val timeFormat = if (DateFormat.is24HourFormat(context)) "HH:mm" else "h:mm"
-    val dateText = today.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.getDefault()))
-    val timeText = now.format(DateTimeFormatter.ofPattern(timeFormat, Locale.getDefault()))
+    val systemTimeFormat = android.text.format.DateFormat.is24HourFormat(context)
+    val timePattern = when (preferences.timeFormat) {
+        "12" -> "h:mm"
+        "24" -> "HH:mm"
+        else -> if (systemTimeFormat) "HH:mm" else "h:mm"
+    }
+    val timeText = now.format(DateTimeFormatter.ofPattern(timePattern, Locale.getDefault()))
+    val dateText = today.format(DateTimeFormatter.ofPattern("EEE, d MMM", Locale.getDefault()))
     val background = if (isDark) Color.Black else Color(0xFFFFFCF7)
     val primaryText = if (isDark) Color(0xFFF6F3FA) else Color(0xFF1A191D)
     val secondaryText = if (isDark) Color(0xFFA8A5AE) else Color(0xFF68656D)
+    val dividerColor = if (isDark) Color(0xFF343238) else Color(0xFFE4DFDA)
     val visibleFavorites = remember(apps, favorites) {
-        apps.filter { it.packageName in favorites }.sortedBy { it.label.lowercase(Locale.getDefault()) }
+        apps.filter { it.packageName in favorites }
+            .sortedBy { it.label.lowercase(Locale.getDefault()) }
     }
-    val batteryPercent = remember { readBatteryPercent(context) }
 
     LaunchedEffect(Unit) {
         while (true) {
             delay(60_000L)
             now = LocalTime.now()
+            batteryPercent = readBatteryPercent(context)
+            screenTimeMinutes = readScreenTimeMinutes(context)
         }
     }
 
+    LaunchedEffect(preferences.showWeather, preferences.weatherUnit, weatherRefreshKey) {
+        if (!preferences.showWeather) return@LaunchedEffect
+        val hasLocation = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        if (!hasLocation) {
+            weatherInfo = null
+            weatherStatus = "Tap to allow location"
+        } else {
+            weatherStatus = "Loading weather…"
+            val fetched = withContext(Dispatchers.IO) { fetchWeather(context, preferences.weatherUnit) }
+            weatherInfo = fetched
+            weatherStatus = if (fetched == null) "Weather unavailable · tap to retry" else ""
+        }
+    }
+
+    fun saveTasks() {
+        sharedPrefs.edit().putStringSet("home_tasks", tasks.toSet()).apply()
+    }
+
     Column(
-        modifier = Modifier.fillMaxSize().background(background)
+        modifier = Modifier.fillMaxSize()
+            .background(background)
             .windowInsetsPadding(WindowInsets.systemBars)
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 28.dp, vertical = 24.dp),
+            .pointerInput(preferences.doubleTapToLock) {
+                detectTapGestures(
+                    onLongPress = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        currentOpenSettings()
+                    },
+                    onDoubleTap = {
+                        if (preferences.doubleTapToLock) currentLockScreen()
+                    }
+                )
+            }
+            .padding(horizontal = 22.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.Top
     ) {
-        Text(
-            timeText,
-            color = primaryText,
-            fontSize = 46.sp,
-            lineHeight = 50.sp,
-            letterSpacing = (-2.4).sp,
-            fontWeight = FontWeight.Light,
-            fontFamily = fontFamily,
-            maxLines = 1,
-            softWrap = false
-        )
-        Spacer(Modifier.height(2.dp))
-        Text(dateText, color = secondaryText, fontSize = 12.sp, fontFamily = fontFamily, maxLines = 1,
-            overflow = TextOverflow.Ellipsis)
-
-        if (showProgress) {
-            Spacer(Modifier.height(28.dp))
-            ProgressLine(
-                label = "YEAR IN PROGRESS",
-                percent = (today.dayOfYear * 100f / today.lengthOfYear()).toInt(),
-                primaryText = primaryText, secondaryText = secondaryText,
-                fill = if (isDark) Color.White else Color(0xFF25232A),
-                track = if (isDark) Color(0xFF29282D) else Color(0xFFE8E3DD)
-            )
-            Spacer(Modifier.height(15.dp))
-            ProgressLine(
-                label = "DAY IN PROGRESS",
-                percent = (now.toSecondOfDay() * 100f / 86400f).toInt(),
-                primaryText = primaryText, secondaryText = secondaryText,
-                fill = if (isDark) Color.White else Color(0xFF25232A),
-                track = if (isDark) Color(0xFF29282D) else Color(0xFFE8E3DD)
-            )
-        }
-
-        Spacer(Modifier.height(24.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("AT A GLANCE", color = secondaryText, fontSize = 9.sp, letterSpacing = 1.2.sp)
-            Text(batteryPercent?.let { "BATTERY  $it%" } ?: "BATTERY",
-                color = secondaryText, fontSize = 9.sp, maxLines = 1)
-        }
-        Spacer(Modifier.height(12.dp))
-        Box(Modifier.fillMaxWidth().height(1.dp)
-            .background(if (isDark) Color(0xFF343238) else Color(0xFFE4DFDA)))
-        Spacer(Modifier.height(18.dp))
-
-        if (showQuote) {
+        if (preferences.showClock) {
             Text(
-                text = "“${inspirationQuotes[quoteIndex]}”",
-                color = secondaryText,
-                fontSize = 13.sp,
-                lineHeight = 19.sp,
+                timeText,
+                color = primaryText,
+                fontSize = 38.sp * fontScale,
+                lineHeight = 41.sp * fontScale,
+                letterSpacing = (-1.8).sp,
+                fontWeight = FontWeight.Light,
                 fontFamily = fontFamily,
-                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-                    .clickable { quoteIndex = (quoteIndex + 1) % inspirationQuotes.size }
-                    .padding(vertical = 4.dp)
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier.clip(RoundedCornerShape(5.dp))
+                    .clickable { openClock(context) }
             )
-            Spacer(Modifier.height(20.dp))
+        }
+        if (preferences.showDate) {
+            Spacer(Modifier.height(1.dp))
+            Text(
+                dateText,
+                color = secondaryText,
+                fontSize = 11.sp * fontScale,
+                fontFamily = fontFamily,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.clip(RoundedCornerShape(5.dp)).clickable { openCalendar(context) }
+            )
+        }
+        if (preferences.showYearProgress && preferences.pinYearProgress) {
+            Spacer(Modifier.height(12.dp))
+            ProgressLine(
+                label = "YEAR",
+                percent = (today.dayOfYear * 100f / today.lengthOfYear()).toInt(),
+                primaryText = primaryText,
+                secondaryText = secondaryText,
+                fill = if (isDark) Color.White else Color(0xFF25232A),
+                track = if (isDark) Color(0xFF29282D) else Color(0xFFE8E3DD),
+                fontScale = fontScale
+            )
         }
 
-        Text("YOUR APPS", color = secondaryText, fontSize = 9.sp, letterSpacing = 1.2.sp)
-        Spacer(Modifier.height(8.dp))
-        if (visibleFavorites.isEmpty()) {
-            Text("Your space, your pace.", color = primaryText, fontSize = 18.sp, fontFamily = fontFamily)
-            Spacer(Modifier.height(4.dp))
-            Text("Open All apps and hold an app name to add it here.",
-                color = secondaryText, fontSize = 12.sp, lineHeight = 18.sp)
-        } else {
-            visibleFavorites.forEach { app ->
-                Text(
-                    text = app.label,
-                    color = primaryText,
-                    fontSize = 20.sp,
-                    lineHeight = 27.sp,
-                    fontFamily = fontFamily,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.fillMaxWidth().combinedClickable(
-                        onClick = { onLaunch(app) },
-                        onLongClick = { onToggleFavorite(app.packageName) }
-                    ).padding(vertical = 5.dp)
+        if (preferences.showWeather || preferences.showBattery) {
+            Spacer(Modifier.height(14.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (preferences.showWeather) {
+                    val hasLocation = ContextCompat.checkSelfPermission(
+                        context, Manifest.permission.ACCESS_COARSE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(
+                        context, Manifest.permission.ACCESS_FINE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED
+                    val weatherText = when {
+                        weatherInfo != null -> weatherInfo!!.summary()
+                        !hasLocation -> "WEATHER · $weatherStatus"
+                        else -> "WEATHER · $weatherStatus"
+                    }
+                    Text(
+                        weatherText,
+                        color = secondaryText,
+                        fontSize = 10.sp * fontScale,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f).padding(end = 8.dp).clickable {
+                            if (!hasLocation) {
+                                permissionLauncher.launch(
+                                    arrayOf(
+                                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                                        Manifest.permission.ACCESS_FINE_LOCATION
+                                    )
+                                )
+                            } else {
+                                weatherRefreshKey++
+                            }
+                        }
+                    )
+                }
+                if (preferences.showBattery) {
+                    Text(
+                        batteryPercent?.let { "$it% battery" } ?: "Battery",
+                        color = secondaryText,
+                        fontSize = 10.sp * fontScale,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+
+        if (preferences.showYearProgress && !preferences.pinYearProgress || preferences.showDayProgress) {
+            Spacer(Modifier.height(10.dp))
+            Box(Modifier.fillMaxWidth().height(1.dp).background(dividerColor))
+            Spacer(Modifier.height(10.dp))
+            if (preferences.showYearProgress && !preferences.pinYearProgress) {
+                ProgressLine(
+                    label = "YEAR IN PROGRESS",
+                    percent = (today.dayOfYear * 100f / today.lengthOfYear()).toInt(),
+                    primaryText = primaryText, secondaryText = secondaryText,
+                    fill = if (isDark) Color.White else Color(0xFF25232A),
+                    track = if (isDark) Color(0xFF29282D) else Color(0xFFE8E3DD),
+                    fontScale = fontScale
+                )
+            }
+            if (preferences.showDayProgress) {
+                if (preferences.showYearProgress && !preferences.pinYearProgress) Spacer(Modifier.height(8.dp))
+                ProgressLine(
+                    label = "DAY IN PROGRESS",
+                    percent = (now.toSecondOfDay() * 100f / 86400f).toInt(),
+                    primaryText = primaryText, secondaryText = secondaryText,
+                    fill = if (isDark) Color.White else Color(0xFF25232A),
+                    track = if (isDark) Color(0xFF29282D) else Color(0xFFE8E3DD),
+                    fontScale = fontScale
                 )
             }
         }
 
-        Spacer(Modifier.height(26.dp))
-        Text("All apps  →", color = primaryText, fontSize = 14.sp, fontFamily = fontFamily,
-            modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable(onClick = onOpenApps)
-                .padding(vertical = 8.dp, horizontal = 1.dp))
-        Spacer(Modifier.height(5.dp))
-        Text("Settings", color = secondaryText, fontSize = 12.sp,
-            modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable(onClick = onOpenSettings)
-                .padding(vertical = 7.dp, horizontal = 1.dp))
-        Spacer(Modifier.height(20.dp))
-        Text("SWIPE LEFT FOR APPS", color = secondaryText, fontSize = 8.sp, letterSpacing = 1.1.sp)
+        val activeMiniWidgets = preferences.showScreenTime || preferences.showTasks ||
+            preferences.showCall || preferences.showMusic || preferences.showCalendarShortcut
+        if (activeMiniWidgets) {
+            Spacer(Modifier.height(12.dp))
+            Box(Modifier.fillMaxWidth().height(1.dp).background(dividerColor))
+            Spacer(Modifier.height(8.dp))
+            if (preferences.showScreenTime) {
+                val screenText = screenTimeMinutes?.let { "SCREEN TIME  ·  ${formatMinutes(it)}" }
+                    ?: "SCREEN TIME  ·  allow access"
+                Text(
+                    screenText,
+                    color = secondaryText,
+                    fontSize = 10.sp * fontScale,
+                    modifier = Modifier.fillMaxWidth().clickable {
+                        if (screenTimeMinutes == null) {
+                            runCatching {
+                                context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                            }
+                        } else {
+                            screenTimeMinutes = readScreenTimeMinutes(context)
+                        }
+                    }.padding(vertical = 3.dp)
+                )
+            }
+            if (preferences.showTasks) {
+                Text(
+                    "TASKS  ·  ${tasks.size}  +",
+                    color = secondaryText,
+                    fontSize = 10.sp * fontScale,
+                    modifier = Modifier.fillMaxWidth().clickable { showTaskDialog = true }
+                        .padding(vertical = 3.dp)
+                )
+            }
+            if (preferences.showCall) {
+                Text(
+                    "CALL  →",
+                    color = secondaryText,
+                    fontSize = 10.sp * fontScale,
+                    modifier = Modifier.fillMaxWidth().clickable {
+                        runCatching { context.startActivity(Intent(Intent.ACTION_DIAL)) }
+                    }.padding(vertical = 3.dp)
+                )
+            }
+            if (preferences.showMusic) {
+                Text(
+                    "MUSIC  →",
+                    color = secondaryText,
+                    fontSize = 10.sp * fontScale,
+                    modifier = Modifier.fillMaxWidth().clickable { openMusicPlayer(context, apps) }
+                        .padding(vertical = 3.dp)
+                )
+            }
+            if (preferences.showCalendarShortcut) {
+                Text(
+                    "CALENDAR  →",
+                    color = secondaryText,
+                    fontSize = 10.sp * fontScale,
+                    modifier = Modifier.fillMaxWidth().clickable { openCalendar(context) }
+                        .padding(vertical = 3.dp)
+                )
+            }
+        }
+
+        if (preferences.showQuote) {
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = "“${inspirationQuotes[quoteIndex]}”",
+                color = secondaryText,
+                fontSize = 12.sp * fontScale,
+                lineHeight = 17.sp * fontScale,
+                fontFamily = fontFamily,
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
+                    .clickable { quoteIndex = (quoteIndex + 1) % inspirationQuotes.size }
+                    .padding(vertical = 3.dp)
+            )
+        }
+
+        Spacer(Modifier.height(14.dp))
+        Box(Modifier.fillMaxWidth().height(1.dp).background(dividerColor))
+        Spacer(Modifier.height(9.dp))
+        Text("FAVOURITES", color = secondaryText, fontSize = 9.sp * fontScale, letterSpacing = 0.9.sp)
+        Spacer(Modifier.height(4.dp))
+        if (visibleFavorites.isEmpty()) {
+            Text(
+                "Hold an app in the drawer to pin it here.",
+                color = secondaryText,
+                fontSize = 11.sp * fontScale,
+                lineHeight = 15.sp * fontScale,
+                fontFamily = fontFamily
+            )
+        } else {
+            visibleFavorites.forEach { app ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().combinedClickable(
+                        onClick = { onLaunch(app) },
+                        onLongClick = { onToggleFavorite(app.packageName) }
+                    ).padding(vertical = 3.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (preferences.showAppIcons) {
+                        AppIcon(app, preferences.iconPack, size = 17.dp)
+                    }
+                    Text(
+                        text = app.label,
+                        color = primaryText,
+                        fontSize = 16.sp * fontScale,
+                        lineHeight = 21.sp * fontScale,
+                        fontFamily = fontFamily,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f).padding(start = if (preferences.showAppIcons) 8.dp else 0.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+        Text(
+            "All apps  →",
+            color = primaryText,
+            fontSize = 12.sp * fontScale,
+            fontFamily = fontFamily,
+            modifier = Modifier.clip(RoundedCornerShape(5.dp)).clickable(onClick = onOpenApps)
+                .padding(vertical = 4.dp, horizontal = 1.dp)
+        )
+        if (preferences.showSettingsButton) {
+            Text(
+                "Settings",
+                color = secondaryText,
+                fontSize = 10.sp * fontScale,
+                modifier = Modifier.clip(RoundedCornerShape(5.dp)).clickable(onClick = onOpenSettings)
+                    .padding(vertical = 4.dp, horizontal = 1.dp)
+            )
+        }
+        Spacer(Modifier.height(14.dp))
+    }
+
+    if (showTaskDialog) {
+        AlertDialog(
+            onDismissRequest = { showTaskDialog = false },
+            title = { Text("Tasks") },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 340.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    if (tasks.isEmpty()) Text("No tasks yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    tasks.toList().forEach { task ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(task, modifier = Modifier.weight(1f), fontSize = 14.sp)
+                            TextButton(onClick = {
+                                tasks.remove(task)
+                                saveTasks()
+                            }) { Text("Remove") }
+                        }
+                    }
+                    OutlinedTextField(
+                        value = newTask,
+                        onValueChange = { newTask = it },
+                        label = { Text("New task") },
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (newTask.isNotBlank()) {
+                        tasks.add(newTask.trim())
+                        saveTasks()
+                        newTask = ""
+                    }
+                    showTaskDialog = false
+                }) { Text("Save") }
+            },
+            dismissButton = { TextButton(onClick = { showTaskDialog = false }) { Text("Close") } }
+        )
     }
 }
 
@@ -205,17 +498,43 @@ private fun ProgressLine(
     primaryText: Color,
     secondaryText: Color,
     fill: Color,
-    track: Color
+    track: Color,
+    fontScale: Float
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically) {
-            Text(label, color = secondaryText, fontSize = 9.sp, letterSpacing = 0.55.sp)
-            Text("$percent%", color = primaryText, fontSize = 10.sp)
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(label, color = secondaryText, fontSize = 8.sp * fontScale, letterSpacing = 0.45.sp)
+            Text("$percent%", color = primaryText, fontSize = 9.sp * fontScale)
         }
-        Box(Modifier.fillMaxWidth().height(3.dp).clip(RoundedCornerShape(99.dp)).background(track)) {
-            Box(Modifier.fillMaxWidth(percent.coerceIn(0, 100) / 100f).height(3.dp)
-                .clip(RoundedCornerShape(99.dp)).background(fill))
+        Box(Modifier.fillMaxWidth().height(2.dp).clip(RoundedCornerShape(99.dp)).background(track)) {
+            Box(
+                Modifier.fillMaxWidth(percent.coerceIn(0, 100) / 100f).height(2.dp)
+                    .clip(RoundedCornerShape(99.dp)).background(fill)
+            )
         }
     }
+}
+
+private fun readScreenTimeMinutes(context: Context): Long? {
+    val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager ?: return null
+    val mode = runCatching {
+        appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName)
+    }.getOrDefault(AppOpsManager.MODE_DEFAULT)
+    if (mode != AppOpsManager.MODE_ALLOWED) return null
+    val manager = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager ?: return null
+    val start = LocalDate.now().atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+    val end = System.currentTimeMillis()
+    val usage = runCatching { manager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, start, end) }
+        .getOrNull() ?: return null
+    return usage.sumOf { it.totalTimeInForeground } / 60_000L
+}
+
+private fun formatMinutes(minutes: Long): String {
+    val hours = minutes / 60
+    val remaining = minutes % 60
+    return if (hours > 0) "${hours}h ${remaining}m" else "${remaining}m"
 }
