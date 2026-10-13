@@ -66,31 +66,31 @@ internal fun SettingsScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            LargeTopAppBar(
-                title = {
-                    Column {
-                        Text("Settings")
-                        Text(
-                            "Launcher preference",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
-                navigationIcon = {
-                    TextButton(onClick = onBack) { Text("‹  Home", fontSize = 13.sp) }
-                },
-                colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+            Box(
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "Settings",
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium
                 )
-            )
+                Text(
+                    "‹",
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontSize = 27.sp,
+                    modifier = Modifier.align(Alignment.CenterStart).clickable(onClick = onBack)
+                        .padding(start = 20.dp, end = 16.dp, top = 2.dp, bottom = 2.dp)
+                )
+            }
         }
     ) { innerPadding ->
         Column(
             modifier = Modifier.fillMaxSize().padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+                .padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             SettingsGroup("Manage apps", "Choose what appears on the Home screen and in the drawer.") {
                 SettingAction(
@@ -376,14 +376,25 @@ private fun ChoiceRow(
     options: List<Pair<String, String>>,
     onSelected: (String) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            title,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             options.forEach { (value, label) ->
-                FilterChip(
-                    selected = selected == value,
-                    onClick = { onSelected(value) },
-                    label = { Text(label, maxLines = 1) }
+                Text(
+                    label,
+                    fontSize = 12.sp,
+                    fontWeight = if (selected == value) FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (selected == value) MaterialTheme.colorScheme.onBackground
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.clickable { onSelected(value) }.padding(vertical = 4.dp)
                 )
             }
         }
@@ -396,19 +407,29 @@ private fun SettingsGroup(
     subtitle: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.padding(horizontal = 2.dp)) {
-            Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.large,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(top = 5.dp),
+        verticalArrangement = Arrangement.spacedBy(5.dp)
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            modifier = Modifier.padding(horizontal = 2.dp, vertical = 1.dp)
         ) {
-            Column(content = content)
+            Text(
+                title.uppercase(),
+                fontSize = 10.sp,
+                letterSpacing = 1.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                subtitle,
+                fontSize = 10.sp,
+                lineHeight = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
+        Column(content = content)
     }
 }
 
@@ -421,22 +442,30 @@ private fun SettingToggle(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().clickable { onCheckedChange(!checked) }
-            .padding(horizontal = 15.dp, vertical = 10.dp),
+            .padding(horizontal = 2.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(
-            modifier = Modifier.weight(1f).padding(end = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
+            modifier = Modifier.weight(1f).padding(end = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(1.dp)
         ) {
-            Text(title, style = MaterialTheme.typography.titleSmall)
+            Text(title, fontSize = 13.sp, fontWeight = FontWeight.Normal)
             Text(
                 description,
-                style = MaterialTheme.typography.bodySmall,
+                fontSize = 10.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = 17.sp
+                lineHeight = 12.sp,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Text(
+            if (checked) "✓" else "·",
+            fontSize = 15.sp,
+            color = if (checked) MaterialTheme.colorScheme.onBackground
+                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+            modifier = Modifier.padding(start = 8.dp)
+        )
     }
 }
 
@@ -449,17 +478,28 @@ private fun SettingAction(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
-            .padding(horizontal = 15.dp, vertical = 11.dp),
+            .padding(horizontal = 2.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(
             modifier = Modifier.weight(1f).padding(end = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
+            verticalArrangement = Arrangement.spacedBy(1.dp)
         ) {
-            Text(title, style = MaterialTheme.typography.titleSmall)
-            Text(description, style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 17.sp)
+            Text(title, fontSize = 13.sp)
+            Text(
+                description,
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 12.sp,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
         }
-        TextButton(onClick = onClick) { Text(actionLabel, maxLines = 1) }
+        Text(
+            actionLabel,
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 8.dp)
+        )
     }
 }
