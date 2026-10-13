@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -174,7 +175,7 @@ internal fun AppsScreen(
 
             if (preferences.showCharacterScroll && scrubberLetters.isNotEmpty()) {
                 BoxWithConstraints(
-                    modifier = Modifier.align(Alignment.CenterEnd).fillMaxSize().width(22.dp)
+                    modifier = Modifier.align(Alignment.CenterEnd).width(22.dp).fillMaxHeight()
                         .pointerInput(scrubberLetters, filtered) {
                             awaitEachGesture {
                                 val down = awaitFirstDown(requireUnconsumed = false)
