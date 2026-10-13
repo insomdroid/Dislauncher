@@ -259,7 +259,7 @@ internal fun HomeScreen(
         }
 
 
-        if (preferences.showWeather || preferences.showBattery) {
+        if (preferences.showWeather || preferences.showBattery || preferences.showScreenTime) {
             Spacer(Modifier.height(7.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -297,6 +297,24 @@ internal fun HomeScreen(
                         }
                     )
                 }
+                if (preferences.showScreenTime) {
+                    val screenText = screenTimeMinutes?.let { ${formatMinutes(it)} } ?: "SCREEN TIME"
+                    Text(
+                        screenText,
+                        color = secondaryText,
+                        fontSize = 9.sp * fontScale,
+                        maxLines = 1,
+                        modifier = Modifier.padding(end = 8.dp).clickable {
+                            if (screenTimeMinutes == null) {
+                                runCatching {
+                                    context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                                }
+                            } else {
+                                screenTimeMinutes = readScreenTimeMinutes(context)
+                            }
+                        }
+                    )
+                }
                 if (preferences.showBattery) {
                     Text(
                         batteryPercent?.let { "$it%" } ?: "--%",
@@ -308,42 +326,28 @@ internal fun HomeScreen(
             }
         }
 
-        val activeMiniWidgets = preferences.showScreenTime || preferences.showTasks ||
+        val activeMiniWidgets = preferences.showTasks ||
             preferences.showCall || preferences.showMusic || preferences.showCalendarShortcut
         if (activeMiniWidgets) {
             Spacer(Modifier.height(7.dp))
-            if (preferences.showScreenTime) {
-                val screenText = screenTimeMinutes?.let { "SCREEN TIME  ·  ${formatMinutes(it)}" }
-                    ?: "SCREEN TIME  ·  allow access"
-                Text(
-                    screenText,
-                    color = secondaryText,
-                    fontSize = 9.sp * fontScale,
-                    modifier = Modifier.fillMaxWidth().clickable {
-                        if (screenTimeMinutes == null) {
-                            runCatching {
-                                context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
-                            }
-                        } else {
-                            screenTimeMinutes = readScreenTimeMinutes(context)
-                        }
-                    }.padding(vertical = 2.dp)
-                )
-            }
             if (preferences.showTasks) {
                 Text(
-                    "TASKS  ·  ${tasks.size}  +",
-                    color = secondaryText,
-                    fontSize = 10.sp * fontScale,
+                    "TASKS",
+                    color = primaryText,
+                    fontSize = 20.sp * fontScale,
+                    lineHeight = 25.sp * fontScale,
+                    fontFamily = fontFamily,
                     modifier = Modifier.fillMaxWidth().clickable { showTaskDialog = true }
                         .padding(vertical = 3.dp)
                 )
             }
             if (preferences.showCall) {
                 Text(
-                    "CALL  →",
-                    color = secondaryText,
-                    fontSize = 10.sp * fontScale,
+                    "CALLS",
+                    color = primaryText,
+                    fontSize = 20.sp * fontScale,
+                    lineHeight = 25.sp * fontScale,
+                    fontFamily = fontFamily,
                     modifier = Modifier.fillMaxWidth().clickable {
                         runCatching { context.startActivity(Intent(Intent.ACTION_DIAL)) }
                     }.padding(vertical = 3.dp)
@@ -351,36 +355,26 @@ internal fun HomeScreen(
             }
             if (preferences.showMusic) {
                 Text(
-                    "MUSIC  →",
-                    color = secondaryText,
-                    fontSize = 10.sp * fontScale,
+                    "MUSIC",
+                    color = primaryText,
+                    fontSize = 20.sp * fontScale,
+                    lineHeight = 25.sp * fontScale,
+                    fontFamily = fontFamily,
                     modifier = Modifier.fillMaxWidth().clickable { openMusicPlayer(context, apps) }
                         .padding(vertical = 3.dp)
                 )
             }
             if (preferences.showCalendarShortcut) {
                 Text(
-                    "CALENDAR  →",
-                    color = secondaryText,
-                    fontSize = 10.sp * fontScale,
+                    "CALENDAR",
+                    color = primaryText,
+                    fontSize = 20.sp * fontScale,
+                    lineHeight = 25.sp * fontScale,
+                    fontFamily = fontFamily,
                     modifier = Modifier.fillMaxWidth().clickable { openCalendar(context) }
                         .padding(vertical = 3.dp)
                 )
             }
-        }
-
-        if (preferences.showQuote) {
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = "“${inspirationQuotes[quoteIndex]}”",
-                color = secondaryText,
-                fontSize = 12.sp * fontScale,
-                lineHeight = 17.sp * fontScale,
-                fontFamily = fontFamily,
-                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
-                    .clickable { quoteIndex = (quoteIndex + 1) % inspirationQuotes.size }
-                    .padding(vertical = 3.dp)
-            )
         }
 
         Spacer(Modifier.height(8.dp))
@@ -414,6 +408,20 @@ internal fun HomeScreen(
         }
 
         Spacer(Modifier.height(8.dp))
+        if (preferences.showQuote) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "“${inspirationQuotes[quoteIndex]}”",
+                color = secondaryText,
+                fontSize = 12.sp * fontScale,
+                lineHeight = 17.sp * fontScale,
+                fontFamily = fontFamily,
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
+                    .clickable { quoteIndex = (quoteIndex + 1) % inspirationQuotes.size }
+                    .padding(vertical = 3.dp)
+            )
+        }
+
         if (preferences.showSettingsButton) {
             Text(
                 "⋯",
