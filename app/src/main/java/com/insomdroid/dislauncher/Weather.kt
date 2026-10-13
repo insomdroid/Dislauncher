@@ -19,7 +19,10 @@ internal data class WeatherInfo(
     val temperature: String,
     val condition: String,
     val humidity: Int?,
-    val wind: String?
+    val wind: String?,
+    val feelsLike: String? = null,
+    val high: String? = null,
+    val low: String? = null
 ) {
     fun summary(): String {
         val extras = listOfNotNull(humidity?.let { "$it% humidity" }, wind)
@@ -51,7 +54,8 @@ internal suspend fun fetchWeather(context: Context, unit: String): WeatherInfo? 
         val url = URL(
             "https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}" +
                 "&longitude=${location.longitude}" +
-                "&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code" +
+                "&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code" +
+                "&daily=temperature_2m_max,temperature_2m_min&forecast_days=1" +
                 "&temperature_unit=$temperatureUnit&wind_speed_unit=kmh&timezone=auto"
         )
         val connection = (url.openConnection() as HttpURLConnection).apply {
@@ -61,15 +65,23 @@ internal suspend fun fetchWeather(context: Context, unit: String): WeatherInfo? 
         }
         try {
             val payload = connection.inputStream.bufferedReader().use { it.readText() }
-            val current = JSONObject(payload).getJSONObject("current")
+            val response = JSONObject(payload)
+            val current = response.getJSONObject("current")
             val temp = current.getDouble("temperature_2m")
+            val feels = current.optDouble("apparent_temperature").takeIf { !it.isNaN() }
             val humidityValue = current.optInt("relative_humidity_2m").takeIf { it in 0..100 }
             val windValue = current.optDouble("wind_speed_10m").takeIf { !it.isNaN() }?.toInt()
+            val daily = response.optJSONObject("daily")
+            val highValue = daily?.optJSONArray("temperature_2m_max")?.optDouble(0)?.takeIf { !it.isNaN() }
+            val lowValue = daily?.optJSONArray("temperature_2m_min")?.optDouble(0)?.takeIf { !it.isNaN() }
             WeatherInfo(
                 temperature = "${temp.toInt()}°$unit",
                 condition = weatherCondition(current.getInt("weather_code")),
                 humidity = humidityValue,
-                wind = windValue?.let { "${it} km/h" }
+                wind = windValue?.let { "${it} km/h" },
+                feelsLike = feels?.let { "${it.toInt()}°$unit" },
+                high = highValue?.let { "${it.toInt()}°$unit" },
+                low = lowValue?.let { "${it.toInt()}°$unit" }
             )
         } finally {
             connection.disconnect()
