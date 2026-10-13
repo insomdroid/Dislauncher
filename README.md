@@ -18,7 +18,7 @@ Further planned features—app hiding and renaming, compatible icon packs, font 
 
 ## Build
 
-Pushes to the main branch run GitHub Actions and upload a dislauncher-debug APK artifact.
+Pushes to the main branch run GitHub Actions and upload a `dislauncher-debug` APK artifact. Download the APK from the workflow run's Artifacts section.
 
 The build uses JDK 17, Gradle 9.6.0, Android Gradle Plugin 9.4.0, Kotlin 2.4.10, Compose UI 1.12.1, and Material 3 1.4.0. Versions are pinned explicitly.
 
