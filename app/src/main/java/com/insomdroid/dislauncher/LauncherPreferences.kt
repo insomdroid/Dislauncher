@@ -30,7 +30,7 @@ internal data class LauncherPreferences(
     val hideSystemApps: Boolean = false,
     val doubleTapToLock: Boolean = false,
     val swipeDownNotifications: Boolean = false,
-    val showCalendarShortcut: Boolean = true
+    val showCalendarShortcut: Boolean = false
 ) {
     fun save(p: SharedPreferences) {
         p.edit()
@@ -96,7 +96,7 @@ internal data class LauncherPreferences(
                 hideSystemApps = p.getBoolean("hide_system_apps", false),
                 doubleTapToLock = p.getBoolean("double_tap_to_lock", false),
                 swipeDownNotifications = p.getBoolean("swipe_down_notifications", false),
-                showCalendarShortcut = p.getBoolean("show_calendar_shortcut", true)
+                showCalendarShortcut = p.getBoolean("show_calendar_shortcut", false)
             )
         }
     }
