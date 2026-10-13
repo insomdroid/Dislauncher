@@ -35,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -350,6 +351,7 @@ internal fun HomeScreen(
             Spacer(Modifier.height(1.dp))
         } else {
             visibleFavorites.forEach { app ->
+                key(app.packageName) {
                 Row(
                     modifier = Modifier.fillMaxWidth()
                         .alpha(if (draggingFavorite == app.packageName) 0.62f else 1f)
@@ -404,6 +406,7 @@ internal fun HomeScreen(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f).padding(start = if (preferences.showAppIcons) 8.dp else 0.dp)
                     )
+                }
                 }
             }
         }

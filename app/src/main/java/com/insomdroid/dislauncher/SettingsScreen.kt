@@ -135,6 +135,8 @@ internal fun SettingsScreen(
                         preferences.fontMode,
                         listOf(
                             "sans" to "Roboto",
+                            "serif" to "Serif",
+                            "mono" to "Monospace",
                             "writer" to "iAWriter",
                             "quicksand" to "Quicksand",
                             "opensans" to "Open Sans",
