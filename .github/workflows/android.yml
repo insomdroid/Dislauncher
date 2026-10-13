@@ -14,6 +14,7 @@ permissions:
 
 jobs:
   build:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -65,11 +66,7 @@ jobs:
           Path("/tmp/bundle-analysis/source.txt").write_text(s, encoding="utf-8")
           print("=== SOURCE SIZE ===")
           print("characters:", len(s))
-          terms = [
-              "YEAR IN PROGRESS", "DAY IN PROGRESS", "WEATHER", "BATTERY",
-              "temperature", "humidity", "progress", "forecast", "screen time",
-              "clock", "widget", "fontSize", "font-size", "padding", "margin"
-          ]
+          terms = ["YEAR IN PROGRESS", "DAY IN PROGRESS", "weather", "battery", "temperature", "humidity", "forecast", "progress", "clock", "widget", "fontSize", "padding", "margin", "fontFamily"]
           found = []
           for term in terms:
               start = 0
@@ -80,16 +77,16 @@ jobs:
                       break
                   left, right = max(0, i - 220), min(len(s), i + len(term) + 360)
                   snippet = s[left:right].replace("\n", " ")
-                  item = (term, snippet)
                   if all(snippet not in old[1] and old[1] not in snippet for old in found):
-                      found.append(item)
+                      found.append((term, snippet))
                   count += 1
                   start = i + len(term)
                   if count >= 3:
                       break
+          report = "\n".join(f"--- {term} ---\n{snippet}" for term, snippet in found[:45])
+          Path("/tmp/bundle-analysis/report.txt").write_text("characters: " + str(len(s)) + "\n\n" + report, encoding="utf-8")
           print("=== MATCHED CONTEXTS ===")
-          for term, snippet in found[:45]:
-              print(f"\n--- {term} ---\n{snippet}")
+          print(report)
           print("\nunique_contexts:", min(len(found), 45))
           PY
 
@@ -123,3 +120,76 @@ jobs:
           path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 30
+
+  analyze-bundle:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Analyze bundle and print UI-related matches
+        run: |
+          set +e
+          python -m pip install --disable-pip-version-check hermes-dec
+          mkdir -p /tmp/bundle-analysis
+          echo "=== BUNDLE METADATA ==="
+          file index.android.bundle
+          python - <<'PY'
+          from pathlib import Path
+          data = Path("index.android.bundle").read_bytes()
+          print("size_bytes:", len(data))
+          print("header_hex:", data[:32].hex())
+          PY
+          if command -v hbc-file-parser >/dev/null 2>&1 && hbc-file-parser index.android.bundle >/tmp/bundle-analysis/header.txt 2>&1; then
+            cat /tmp/bundle-analysis/header.txt
+            hbc-decompiler index.android.bundle /tmp/bundle-analysis/decompiled.txt >/tmp/bundle-analysis/decompiler.log 2>&1
+            echo "decompiler_exit_code=$?"
+            SOURCE="/tmp/bundle-analysis/decompiled.txt"
+          else
+            python - <<'PY'
+          from pathlib import Path
+          import re
+          data = Path("index.android.bundle").read_bytes()
+          strings = re.findall(rb"[ -~]{5,}", data)
+          Path("/tmp/bundle-analysis/readable-strings.txt").write_text("\n".join(x.decode("latin1") for x in strings), encoding="utf-8")
+          print("readable_strings:", len(strings))
+          PY
+            SOURCE="/tmp/bundle-analysis/readable-strings.txt"
+          fi
+          export SOURCE
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          p = Path(os.environ["SOURCE"])
+          s = p.read_text(encoding="utf-8", errors="replace") if p.exists() else ""
+          terms = ["YEAR IN PROGRESS", "DAY IN PROGRESS", "weather", "battery", "temperature", "humidity", "forecast", "progress", "clock", "widget", "fontSize", "padding", "margin", "fontFamily"]
+          found = []
+          for term in terms:
+              start = 0
+              count = 0
+              while True:
+                  i = s.casefold().find(term.casefold(), start)
+                  if i < 0:
+                      break
+                  left, right = max(0, i - 220), min(len(s), i + len(term) + 360)
+                  snippet = s[left:right].replace("\n", " ")
+                  if all(snippet not in old[1] and old[1] not in snippet for old in found):
+                      found.append((term, snippet))
+                  count += 1
+                  start = i + len(term)
+                  if count >= 3:
+                      break
+          report = "bundle characters: " + str(len(s)) + "\n\n" + "\n".join(f"--- {term} ---\n{snippet}" for term, snippet in found[:45])
+          Path("/tmp/bundle-analysis/report.txt").write_text(report, encoding="utf-8")
+          print("=== MATCHED CONTEXTS ===")
+          print(report)
+          PY
+
+      - name: Upload analysis report
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-inspection-report
+          path: /tmp/bundle-analysis/report.txt
+          if-no-files-found: warn
+          retention-days: 1
