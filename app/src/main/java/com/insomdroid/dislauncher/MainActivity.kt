@@ -80,6 +80,8 @@ internal data class LauncherApp(
     val isSystem: Boolean
 )
 
+private const val MAX_PINNED_APPS = 5
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
@@ -87,6 +89,27 @@ class MainActivity : ComponentActivity() {
         window.statusBarColor = android.graphics.Color.TRANSPARENT
         window.navigationBarColor = android.graphics.Color.TRANSPARENT
         setContent { DislauncherRoot() }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        applyStatusBarPreference()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) applyStatusBarPreference()
+    }
+
+    private fun applyStatusBarPreference() {
+        window.statusBarColor = android.graphics.Color.TRANSPARENT
+        val hidden = getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
+            .getBoolean("hide_status_bar", false)
+        val controller = WindowCompat.getInsetsController(window, window.decorView)
+        controller.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        if (hidden) controller.hide(WindowInsetsCompat.Type.statusBars())
+        else controller.show(WindowInsetsCompat.Type.statusBars())
     }
 }
 
@@ -101,7 +124,12 @@ private fun DislauncherRoot() {
     }
     var preferences by remember { mutableStateOf(LauncherPreferences.load(prefsStore)) }
     var favorites by remember {
-        mutableStateOf(prefsStore.getStringSet("favorite_packages", emptySet())?.toSet().orEmpty())
+        mutableStateOf(
+            prefsStore.getStringSet("favorite_packages", emptySet())
+                .orEmpty()
+                .take(MAX_PINNED_APPS)
+                .toSet()
+        )
     }
     var appNameOverrides by remember { mutableStateOf(readAppNameOverrides(prefsStore)) }
     var solarWeather by remember { mutableStateOf<WeatherInfo?>(null) }
@@ -132,6 +160,14 @@ private fun DislauncherRoot() {
     }
 
     fun toggleFavorite(packageName: String) {
+        if (packageName !in favorites && favorites.size >= MAX_PINNED_APPS) {
+            android.widget.Toast.makeText(
+                context,
+                "You can pin up to 5 apps.",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
         val next = if (packageName in favorites) favorites - packageName else favorites + packageName
         favorites = next
         val nextOrder = if (packageName in next) {
