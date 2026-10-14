@@ -42,10 +42,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -78,6 +79,7 @@ class MainActivity : ComponentActivity() {
 private fun DislauncherRoot() {
     val context = LocalContext.current
     val view = LocalView.current
+    val baseDensity = LocalDensity.current
     val prefsStore = remember {
         context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
     }
@@ -276,11 +278,7 @@ private fun DislauncherRoot() {
         else -> 0.75f
     }
     val baseTypography = Typography()
-    fun scaled(style: TextStyle): TextStyle = style.copy(
-        fontFamily = fontFamily,
-        fontSize = style.fontSize * fontScale,
-        lineHeight = if (style.lineHeight == TextUnit.Unspecified) style.lineHeight else style.lineHeight * fontScale
-    )
+    fun scaled(style: TextStyle): TextStyle = style.copy(fontFamily = fontFamily)
     val typography = baseTypography.copy(
         displayLarge = scaled(baseTypography.displayLarge),
         displayMedium = scaled(baseTypography.displayMedium),
@@ -329,6 +327,10 @@ private fun DislauncherRoot() {
         )
     ) {
         CompositionLocalProvider(
+            LocalDensity provides Density(
+                density = baseDensity.density,
+                fontScale = baseDensity.fontScale * fontScale
+            ),
             LocalTextStyle provides LocalTextStyle.current.copy(fontFamily = fontFamily)
         ) {
         if (screen == LauncherScreen.SETTINGS) {
