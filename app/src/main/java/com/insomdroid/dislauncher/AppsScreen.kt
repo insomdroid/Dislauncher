@@ -297,28 +297,28 @@ internal fun AppsScreen(
                             )
                         }
                     }
-                    AnimatedVisibility(
-                        visible = isScrubbing && activeLetter.isNotBlank(),
+                    Crossfade(
+                        targetState = isScrubbing && activeLetter.isNotBlank(),
                         modifier = Modifier.align(Alignment.CenterEnd).offset(x = (-30).dp),
-                        enter = fadeIn(animationSpec = tween(110)) +
-                            scaleIn(initialScale = 0.72f, animationSpec = tween(110)),
-                        exit = fadeOut(animationSpec = tween(90)) +
-                            scaleOut(targetScale = 0.86f, animationSpec = tween(90))
-                    ) {
-                        Crossfade(
-                            targetState = activeLetter,
-                            animationSpec = tween(85),
-                            label = "scrubber-active-letter"
-                        ) { letter ->
-                            Text(
-                                letter,
-                                color = mainText,
-                                fontSize = 34.sp,
-                                lineHeight = 38.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.width(40.dp)
-                            )
+                        animationSpec = tween(110),
+                        label = "scrubber-letter-visibility"
+                    ) { visible ->
+                        if (visible) {
+                            Crossfade(
+                                targetState = activeLetter,
+                                animationSpec = tween(85),
+                                label = "scrubber-active-letter"
+                            ) { letter ->
+                                Text(
+                                    letter,
+                                    color = mainText,
+                                    fontSize = 34.sp,
+                                    lineHeight = 38.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.width(40.dp)
+                                )
+                            }
                         }
                     }
                 }
