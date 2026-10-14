@@ -93,7 +93,7 @@ internal const val HOME_ITEM_CALLS = "builtin:calls"
 internal const val HOME_ITEM_MUSIC = "builtin:music"
 
 internal fun readHomeItemOrder(prefs: SharedPreferences, favorites: Set<String>): List<String> {
-    val available = listOf(HOME_ITEM_TASKS, HOME_ITEM_CALLS, HOME_ITEM_MUSIC) + favorites.sorted()
+    val available = listOf(HOME_ITEM_TASKS, HOME_ITEM_CALLS, HOME_ITEM_MUSIC) + readFavoriteOrder(prefs, favorites)
     val saved = prefs.getString("home_item_order_json", null)?.let { encoded ->
         runCatching {
             val array = JSONArray(encoded)
