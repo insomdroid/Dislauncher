@@ -67,13 +67,9 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
-import java.time.LocalTime
-import java.time.ZoneId
-import java.time.ZonedDateTime
 import org.json.JSONObject
 
 internal enum class LauncherScreen { ONBOARDING, HOME, APPS, SETTINGS, TASKS, WEATHER }
@@ -147,14 +143,7 @@ private fun DislauncherRoot() {
     var appNameOverrides by remember { mutableStateOf(readAppNameOverrides(prefsStore)) }
     var solarWeather by remember { mutableStateOf<WeatherInfo?>(null) }
     var weatherForScreen by remember { mutableStateOf<WeatherInfo?>(null) }
-    var solarTick by remember { mutableStateOf(0L) }
     var homeItemOrder by remember { mutableStateOf(readHomeItemOrder(prefsStore, favorites)) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(60_000L)
-            solarTick++
-        }
-    }
     var hiddenApps by remember {
         mutableStateOf(prefsStore.getStringSet("hidden_packages", emptySet())?.toSet().orEmpty())
     }
@@ -481,10 +470,9 @@ private fun DislauncherRoot() {
             WelcomeOnboardingScreen(
                 preferences = preferences,
                 onPreferencesChange = ::updatePreferences,
-                onFinish = {
-                    prefsStore.edit().putBoolean("onboarding_completed", true).apply()
-                    screen = LauncherScreen.HOME
-                }
+                apps = apps,
+                favorites = favorites,
+                onFinish = ::finishOnboarding
             )
         } else if (screen == LauncherScreen.SETTINGS) {
             SettingsScreen(
