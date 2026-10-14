@@ -165,63 +165,109 @@ internal fun MusicPlayerWidget(
     val foreground = MaterialTheme.colorScheme.onBackground
     val track = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.22f)
 
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    val title = metadata?.getString(MediaMetadata.METADATA_KEY_DISPLAY_TITLE)
+        ?: metadata?.getString(MediaMetadata.METADATA_KEY_TITLE)
+        ?: "Nothing playing"
+    val artist = metadata?.getString(MediaMetadata.METADATA_KEY_ARTIST)
+        ?: metadata?.getString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST)
+        ?: if (metadata == null) "Tap to open your music app" else "Unknown artist"
+    val secondary = MaterialTheme.colorScheme.onSurfaceVariant
+
+    Column(
+        modifier = modifier.fillMaxWidth().padding(vertical = 2.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Box(
-            modifier = Modifier.size(40.dp)
-                .clip(RoundedCornerShape(7.dp))
-                .background(fallbackBackground)
-                .clickable(onClick = onOpenMusicApp),
-            contentAlignment = Alignment.Center
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            if (artwork != null) {
-                Image(
-                    bitmap = artwork.asImageBitmap(),
-                    contentDescription = "Album art",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+            Box(
+                modifier = Modifier.size(64.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(fallbackBackground)
+                    .clickable(onClick = onOpenMusicApp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (artwork != null) {
+                    Image(
+                        bitmap = artwork.asImageBitmap(),
+                        contentDescription = "Album art",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Text("♪", color = foreground, fontSize = 30.sp, fontWeight = FontWeight.Light)
+                }
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(3.dp)
+            ) {
+                Text(
+                    title,
+                    color = foreground,
+                    fontSize = 16.sp,
+                    lineHeight = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenMusicApp)
                 )
-            } else {
-                Text("♪", color = foreground, fontSize = 28.sp, fontWeight = FontWeight.Light)
+                Text(
+                    artist,
+                    color = secondary,
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "|◀",
+                        color = foreground,
+                        fontSize = 14.sp,
+                        modifier = Modifier.clickable {
+                            if (controller != null) runCatching { controller.transportControls.skipToPrevious() }
+                            else onOpenMusicApp()
+                        }.padding(vertical = 2.dp, horizontal = 2.dp)
+                    )
+                    Text(
+                        if (playing) "Ⅱ" else "▶",
+                        color = foreground,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.clickable {
+                            if (controller != null && metadata != null) {
+                                runCatching {
+                                    if (playing) controller.transportControls.pause()
+                                    else controller.transportControls.play()
+                                }
+                            } else onOpenMusicApp()
+                        }.padding(vertical = 1.dp, horizontal = 2.dp)
+                    )
+                    Text(
+                        "▶|",
+                        color = foreground,
+                        fontSize = 14.sp,
+                        modifier = Modifier.clickable {
+                            if (controller != null) runCatching { controller.transportControls.skipToNext() }
+                            else onOpenMusicApp()
+                        }.padding(vertical = 2.dp, horizontal = 2.dp)
+                    )
+                }
             }
         }
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(5.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("|◀", color = foreground, fontSize = 14.sp,
-                    modifier = Modifier.clickable {
-                        if (controller != null) runCatching { controller.transportControls.skipToPrevious() }
-                        else onOpenMusicApp()
-                    }.padding(horizontal = 5.dp, vertical = 1.dp))
-                Text(
-                    if (playing) "Ⅱ" else "▶",
-                    color = foreground,
-                    fontSize = 17.sp,
-                    modifier = Modifier.clickable {
-                        if (controller != null && metadata != null) {
-                            runCatching {
-                                if (playing) controller.transportControls.pause()
-                                else controller.transportControls.play()
-                            }
-                        } else onOpenMusicApp()
-                    }.padding(horizontal = 5.dp, vertical = 1.dp)
-                )
-                Text("▶|", color = foreground, fontSize = 14.sp,
-                    modifier = Modifier.clickable {
-                        if (controller != null) runCatching { controller.transportControls.skipToNext() }
-                        else onOpenMusicApp()
-                    }.padding(horizontal = 5.dp, vertical = 1.dp))
-            }
-            Canvas(modifier = Modifier.fillMaxWidth().height(2.dp).clip(CircleShape)) {
+            Text(formatMediaTime(position), color = secondary, fontSize = 10.sp, lineHeight = 12.sp)
+            Canvas(modifier = Modifier.weight(1f).height(3.dp)) {
                 drawRoundRect(
                     color = track,
                     topLeft = Offset.Zero,
@@ -237,8 +283,15 @@ internal fun MusicPlayerWidget(
                     )
                 }
             }
+            Text(formatMediaTime(duration), color = secondary, fontSize = 10.sp, lineHeight = 12.sp)
         }
     }
+}
+
+private fun formatMediaTime(positionMs: Long): String {
+    if (positionMs <= 0L) return "--:--"
+    val totalSeconds = positionMs / 1000L
+    return (totalSeconds / 60L).toString() + ":" + (totalSeconds % 60L).toString().padStart(2, '0')
 }
 
 internal class DislauncherNotificationListener : android.service.notification.NotificationListenerService()
