@@ -176,8 +176,8 @@ internal fun HomeScreen(
             Text(
                 timeText,
                 color = primaryText,
-                fontSize = 49.sp * fontScale,
-                lineHeight = 52.sp * fontScale,
+                fontSize = 49.sp,
+                lineHeight = 52.sp,
                 letterSpacing = (-1.6).sp,
                 fontWeight = FontWeight.Light,
                 fontFamily = fontFamily,
@@ -192,7 +192,7 @@ internal fun HomeScreen(
             Text(
                 dateText,
                 color = secondaryText,
-                fontSize = 11.sp * fontScale,
+                fontSize = 11.sp,
                 fontFamily = fontFamily,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -259,7 +259,7 @@ internal fun HomeScreen(
                     Text(
                         weatherText,
                         color = secondaryText,
-                        fontSize = 9.sp * fontScale,
+                        fontSize = 9.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f).padding(end = 8.dp).clickable(onClick = onOpenWeather)
@@ -270,7 +270,7 @@ internal fun HomeScreen(
                     Text(
                         screenText,
                         color = secondaryText,
-                        fontSize = 9.sp * fontScale,
+                        fontSize = 9.sp,
                         maxLines = 1,
                         modifier = Modifier.padding(end = 8.dp).clickable {
                             if (screenTimeMinutes == null) {
@@ -287,7 +287,7 @@ internal fun HomeScreen(
                     Text(
                         batteryPercent?.let { "$it%" } ?: "--%",
                         color = secondaryText,
-                        fontSize = 9.sp * fontScale,
+                        fontSize = 9.sp,
                         maxLines = 1
                     )
                 }
@@ -302,8 +302,8 @@ internal fun HomeScreen(
                 Text(
                     "Tasks",
                     color = primaryText,
-                    fontSize = 20.sp * fontScale,
-                    lineHeight = 25.sp * fontScale,
+                    fontSize = 20.sp,
+                    lineHeight = 25.sp,
                     fontFamily = fontFamily,
                     modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenTasks)
                         .padding(vertical = 3.dp)
@@ -313,8 +313,8 @@ internal fun HomeScreen(
                 Text(
                     "Calls",
                     color = primaryText,
-                    fontSize = 20.sp * fontScale,
-                    lineHeight = 25.sp * fontScale,
+                    fontSize = 20.sp,
+                    lineHeight = 25.sp,
                     fontFamily = fontFamily,
                     modifier = Modifier.fillMaxWidth().clickable {
                         runCatching { context.startActivity(Intent(Intent.ACTION_DIAL)) }
@@ -325,8 +325,8 @@ internal fun HomeScreen(
                 Text(
                     "Music",
                     color = primaryText,
-                    fontSize = 20.sp * fontScale,
-                    lineHeight = 25.sp * fontScale,
+                    fontSize = 20.sp,
+                    lineHeight = 25.sp,
                     fontFamily = fontFamily,
                     modifier = Modifier.fillMaxWidth().clickable { openMusicPlayer(context, apps) }
                         .padding(vertical = 3.dp)
@@ -336,8 +336,8 @@ internal fun HomeScreen(
                 Text(
                     "Calendar",
                     color = primaryText,
-                    fontSize = 20.sp * fontScale,
-                    lineHeight = 25.sp * fontScale,
+                    fontSize = 20.sp,
+                    lineHeight = 25.sp,
                     fontFamily = fontFamily,
                     modifier = Modifier.fillMaxWidth().clickable { openCalendar(context) }
                         .padding(vertical = 3.dp)
@@ -399,8 +399,8 @@ internal fun HomeScreen(
                     Text(
                         text = app.label,
                         color = primaryText,
-                        fontSize = 20.sp * fontScale,
-                        lineHeight = 25.sp * fontScale,
+                        fontSize = 20.sp,
+                        lineHeight = 25.sp,
                         fontFamily = fontFamily,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -417,8 +417,8 @@ internal fun HomeScreen(
             Text(
                 text = "“${inspirationQuotes[quoteIndex]}”",
                 color = secondaryText,
-                fontSize = 12.sp * fontScale,
-                lineHeight = 17.sp * fontScale,
+                fontSize = 12.sp,
+                lineHeight = 17.sp,
                 fontFamily = fontFamily,
                 modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
                     .clickable { quoteIndex = (quoteIndex + 1) % inspirationQuotes.size }
@@ -459,8 +459,8 @@ private fun ProgressLine(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(label, color = secondaryText, fontSize = 7.sp * fontScale, letterSpacing = 0.2.sp)
-            Text("$percent%", color = primaryText, fontSize = 8.sp * fontScale)
+            Text(label, color = secondaryText, fontSize = 7.sp, letterSpacing = 0.2.sp)
+            Text("$percent%", color = primaryText, fontSize = 8.sp)
         }
         Box(Modifier.fillMaxWidth().height(1.5.dp).clip(RoundedCornerShape(99.dp)).background(track)) {
             Box(
