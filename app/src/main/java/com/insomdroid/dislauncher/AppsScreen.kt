@@ -1,9 +1,12 @@
 package com.insomdroid.dislauncher
 
+import android.app.AppOpsManager
+import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import android.os.Process
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -21,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
@@ -28,10 +32,10 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -50,6 +54,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontFamily
@@ -57,9 +62,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import java.util.Locale
+import java.time.LocalDate
+import java.time.ZoneId
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -105,6 +114,13 @@ internal fun AppsScreen(
     var renamingApp by remember { mutableStateOf<LauncherApp?>(null) }
     var renameValue by remember { mutableStateOf("") }
     val context = androidx.compose.ui.platform.LocalContext.current
+    var usageMinutesByPackage by remember { mutableStateOf<Map<String, Long>>(emptyMap()) }
+
+    LaunchedEffect(isActive) {
+        if (isActive) {
+            usageMinutesByPackage = withContext(Dispatchers.IO) { readAppUsageMinutes(context) }
+        }
+    }
 
     LaunchedEffect(isActive, preferences.autoLaunchKeyboard, preferences.showSearchBar) {
         if (isActive && preferences.autoLaunchKeyboard && preferences.showSearchBar) {
@@ -117,20 +133,43 @@ internal fun AppsScreen(
     Column(
         modifier = Modifier.fillMaxSize().background(background)
             .windowInsetsPadding(WindowInsets.systemBars)
-            .padding(start = 20.dp, end = 10.dp, top = 14.dp, bottom = 8.dp)
+            .padding(start = 16.dp, end = 14.dp, top = 14.dp, bottom = 8.dp)
     ) {
         if (preferences.showSearchBar) {
-            Spacer(Modifier.height(3.dp))
-            OutlinedTextField(
-                value = query,
-                onValueChange = onQueryChange,
-                modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
-                singleLine = true,
-                placeholder = { Text("Search apps", fontSize = 13.sp) },
-                shape = RoundedCornerShape(4.dp)
-            )
+            Column(Modifier.fillMaxWidth().padding(top = 3.dp)) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(48.dp).padding(start = 12.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    if (query.isEmpty()) {
+                        Text(
+                            "Search Apps",
+                            color = mainText,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontSize = 16.sp
+                        )
+                    }
+                    BasicTextField(
+                        value = query,
+                        onValueChange = onQueryChange,
+                        modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(
+                            color = mainText,
+                            fontFamily = fontFamily,
+                            fontSize = 16.sp
+                        ),
+                        cursorBrush = SolidColor(mainText)
+                    )
+                }
+                HorizontalDivider(
+                    modifier = Modifier.fillMaxWidth(),
+                    thickness = 1.dp,
+                    color = mainText.copy(alpha = 0.9f)
+                )
+            }
         }
-        Spacer(Modifier.height(5.dp))
+        Spacer(Modifier.height(10.dp))
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             LazyColumn(
                 state = listState,
@@ -153,7 +192,7 @@ internal fun AppsScreen(
                         modifier = Modifier.fillMaxWidth().combinedClickable(
                             onClick = { onLaunch(app) },
                             onLongClick = { selectedApp = app }
-                        ).padding(vertical = 6.dp, horizontal = 1.dp),
+                        ).padding(vertical = 12.dp, horizontal = 28.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (preferences.showAppIcons) {
@@ -163,15 +202,21 @@ internal fun AppsScreen(
                         Text(
                             app.label,
                             color = mainText,
-                            fontSize = 17.sp,
-                            lineHeight = 22.sp,
+                            fontSize = 25.sp,
+                            lineHeight = 33.sp,
                             fontFamily = fontFamily,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier
                         )
-                        if (app.packageName in favorites) {
-                            Text("•", color = secondary, fontSize = 12.sp, modifier = Modifier.padding(start = 4.dp))
+                        usageMinutesByPackage[app.packageName]?.takeIf { it > 0 }?.let { minutes ->
+                            Text(
+                                "${minutes}m",
+                                color = secondary,
+                                fontSize = 11.sp,
+                                lineHeight = 15.sp,
+                                modifier = Modifier.padding(start = 12.dp)
+                            )
                         }
                     }
                 }
@@ -180,69 +225,58 @@ internal fun AppsScreen(
             if (preferences.showCharacterScroll && scrubberLetters.isNotEmpty()) {
                 BoxWithConstraints(
                     modifier = Modifier.align(Alignment.CenterEnd).width(22.dp).fillMaxHeight()
-                        .pointerInput(scrubberLetters, filtered) {
-                            awaitEachGesture {
-                                val down = awaitFirstDown(requireUnconsumed = false)
-                                isScrubbing = true
-                                var previousIndex = -1
-                                fun updateFromY(y: Float) {
-                                    val fraction = (y / size.height.toFloat()).coerceIn(0f, 0.9999f)
-                                    scrubFraction = fraction
-                                    val index = (fraction * scrubberLetters.size).toInt()
-                                        .coerceIn(0, scrubberLetters.lastIndex)
-                                    if (index != previousIndex) {
-                                        previousIndex = index
-                                        activeLetter = scrubberLetters[index]
-                                        val row = firstIndexByLetter[activeLetter] ?: 0
-                                        scope.launch { listState.scrollToItem(row) }
-                                    }
-                                }
-                                try {
-                                    updateFromY(down.position.y)
-                                    var pressed = true
-                                    while (pressed) {
-                                        val event = awaitPointerEvent()
-                                        val change = event.changes.firstOrNull() ?: break
-                                        if (change.pressed) {
-                                            updateFromY(change.position.y)
-                                            change.consume()
-                                        } else {
-                                            pressed = false
+                ) {
+                    Column(
+                        modifier = Modifier.width(22.dp)
+                            .align(Alignment.CenterEnd)
+                            .offset(y = maxHeight * 0.23f)
+                            .pointerInput(scrubberLetters, filtered) {
+                                awaitEachGesture {
+                                    val down = awaitFirstDown(requireUnconsumed = false)
+                                    isScrubbing = true
+                                    var previousIndex = -1
+                                    fun updateFromY(y: Float) {
+                                        val fraction = (y / size.height.toFloat()).coerceIn(0f, 0.9999f)
+                                        scrubFraction = fraction
+                                        val index = (fraction * scrubberLetters.size).toInt()
+                                            .coerceIn(0, scrubberLetters.lastIndex)
+                                        if (index != previousIndex) {
+                                            previousIndex = index
+                                            activeLetter = scrubberLetters[index]
+                                            val row = firstIndexByLetter[activeLetter] ?: 0
+                                            scope.launch { listState.scrollToItem(row) }
                                         }
                                     }
-                                } finally {
-                                    isScrubbing = false
+                                    try {
+                                        updateFromY(down.position.y)
+                                        var pressed = true
+                                        while (pressed) {
+                                            val event = awaitPointerEvent()
+                                            val change = event.changes.firstOrNull() ?: break
+                                            if (change.pressed) {
+                                                updateFromY(change.position.y)
+                                                change.consume()
+                                            } else {
+                                                pressed = false
+                                            }
+                                        }
+                                    } finally {
+                                        isScrubbing = false
+                                    }
                                 }
                             }
-                        }
-                ) {
-                    if (isScrubbing) {
-                        Column(
-                            modifier = Modifier.align(Alignment.CenterEnd)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.96f))
-                                .verticalScroll(rememberScrollState())
-                                .padding(horizontal = 3.dp, vertical = 3.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            scrubberLetters.forEach { letter ->
-                                val active = letter == activeLetter
-                                Text(
-                                    letter,
-                                    color = if (active) MaterialTheme.colorScheme.onPrimaryContainer
-                                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontSize = 8.sp,
-                                    lineHeight = 10.sp,
-                                    fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
-                                    modifier = Modifier.clip(RoundedCornerShape(3.dp))
-                                        .background(
-                                            if (active) MaterialTheme.colorScheme.primaryContainer
-                                            else Color.Transparent
-                                        )
-                                        .padding(vertical = 1.dp, horizontal = 2.dp)
-                                )
-                            }
+                            .padding(horizontal = 1.dp, vertical = 2.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(1.dp)
+                    ) {
+                        scrubberLetters.forEach { letter ->
+                            Text(
+                                letter,
+                                color = if (isScrubbing && letter == activeLetter) mainText else secondary,
+                                fontSize = 10.sp,
+                                lineHeight = 15.sp,
+                                fontWeight = if (isScrubbing && letter == activeLetter) FontWeight.Bold else FontWeight.Normal
+                            )
                         }
                     }
                 }
@@ -336,6 +370,29 @@ internal fun AppsScreen(
 
 }
 
+
+private fun readAppUsageMinutes(context: android.content.Context): Map<String, Long> {
+    val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager
+        ?: return emptyMap()
+    val allowed = runCatching {
+        appOps.checkOpNoThrow(
+            AppOpsManager.OPSTR_GET_USAGE_STATS,
+            Process.myUid(),
+            context.packageName
+        ) == AppOpsManager.MODE_ALLOWED
+    }.getOrDefault(false)
+    if (!allowed) return emptyMap()
+
+    val manager = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
+        ?: return emptyMap()
+    val start = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    val now = System.currentTimeMillis()
+    return runCatching {
+        manager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, start, now)
+            .groupBy { it.packageName }
+            .mapValues { (_, stats) -> stats.sumOf { it.totalTimeInForeground } / 60_000L }
+    }.getOrDefault(emptyMap())
+}
 
 private fun openApplicationInfo(context: Context, app: LauncherApp) {
     val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${app.packageName}"))
