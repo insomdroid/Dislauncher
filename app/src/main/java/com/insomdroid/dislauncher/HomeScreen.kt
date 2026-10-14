@@ -211,7 +211,7 @@ internal fun HomeScreen(
         if (preferences.showYearProgress && preferences.pinYearProgress) {
             Spacer(Modifier.height(6.dp))
             ProgressLine(
-                label = "YEAR",
+                label = "Year in progress",
                 percent = (today.dayOfYear * 100f / today.lengthOfYear()).toInt(),
                 primaryText = primaryText,
                 secondaryText = secondaryText,
@@ -225,7 +225,7 @@ internal fun HomeScreen(
             Spacer(Modifier.height(6.dp))
             if (preferences.showYearProgress && !preferences.pinYearProgress) {
                 ProgressLine(
-                    label = "YEAR",
+                    label = "Year in progress",
                     percent = (today.dayOfYear * 100f / today.lengthOfYear()).toInt(),
                     primaryText = primaryText, secondaryText = secondaryText,
                     fill = primaryText,
@@ -236,7 +236,7 @@ internal fun HomeScreen(
             if (preferences.showDayProgress) {
                 if (preferences.showYearProgress && !preferences.pinYearProgress) Spacer(Modifier.height(4.dp))
                 ProgressLine(
-                    label = "DAY",
+                    label = "Day in progress",
                     percent = (now.toSecondOfDay() * 100f / 86400f).toInt(),
                     primaryText = primaryText, secondaryText = secondaryText,
                     fill = primaryText,
