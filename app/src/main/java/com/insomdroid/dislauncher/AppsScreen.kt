@@ -81,21 +81,15 @@ internal fun AppsScreen(
     val scope = rememberCoroutineScope()
     val keyboard = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
-    val groupedApps = remember(filtered) {
-        filtered.groupBy { app ->
-            app.label.firstOrNull()?.uppercaseChar()?.toString() ?: "#"
-        }.toSortedMap(compareBy<String> { if (it == "#") "" else it })
-    }
-    val firstIndexByLetter = remember(groupedApps) {
+    val firstIndexByLetter = remember(filtered) {
         val result = linkedMapOf<String, Int>()
-        var rowIndex = 0
-        groupedApps.forEach { (letter, sectionApps) ->
-            result[letter] = rowIndex
-            rowIndex += sectionApps.size + 1
+        filtered.forEachIndexed { index, app ->
+            val letter = app.label.firstOrNull()?.uppercaseChar()?.toString() ?: "#"
+            if (letter !in result) result[letter] = index
         }
         result
     }
-    val scrubberLetters = remember(groupedApps) { groupedApps.keys.toList() }
+    val scrubberLetters = remember(firstIndexByLetter) { firstIndexByLetter.keys.toList() }
     var isScrubbing by remember { mutableStateOf(false) }
     var activeLetter by remember { mutableStateOf("") }
     var scrubFraction by remember { mutableFloatStateOf(0.5f) }
@@ -142,17 +136,7 @@ internal fun AppsScreen(
                         )
                     }
                 }
-                groupedApps.forEach { (letter, sectionApps) ->
-                    item(key = "section-$letter") {
-                        Text(
-                            letter,
-                            color = secondary,
-                            fontSize = 10.sp * fontScale,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.fillMaxWidth().padding(top = 11.dp, bottom = 3.dp)
-                        )
-                    }
-                    items(sectionApps, key = { it.packageName }) { app ->
+                items(filtered, key = { it.packageName }) { app ->
                     Row(
                         modifier = Modifier.fillMaxWidth().combinedClickable(
                             onClick = { onLaunch(app) },
@@ -178,7 +162,6 @@ internal fun AppsScreen(
                             Text("•", color = secondary, fontSize = 12.sp, modifier = Modifier.padding(start = 4.dp))
                         }
                     }
-                }
                 }
             }
 
