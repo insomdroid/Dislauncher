@@ -301,7 +301,7 @@ internal fun HomeScreen(
 
         if (preferences.showCalendarShortcut) {
             Spacer(Modifier.height(6.dp))
-            CalendarAgenda()
+            CalendarAgenda(preferences.timeFormat)
         }
 
         val activeMainItemIds = buildList {
