@@ -104,7 +104,7 @@ internal fun SettingsScreen(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                 SettingAction(
                     "Manage favourites",
-                    "${favorites.size} pinned apps · long-press apps in the drawer as well",
+                    "${favorites.size}/5 pinned apps · long-press apps in the drawer as well",
                     "Manage",
                     { openDialog = "favorites" }
                 )
@@ -277,6 +277,17 @@ internal fun SettingsScreen(
             }
 
             SettingsGroup("Android", "System-owned settings open outside dislauncher.") {
+                SettingAction(
+                    "Usage access",
+                    "Grant Dislauncher access to app usage so Screen time can show today's total.",
+                    "Grant",
+                    {
+                        runCatching {
+                            context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                        }
+                    }
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                 SettingAction(
                     "Change default launcher",
                     "Choose which Home app Android should use.",
