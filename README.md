@@ -1,4 +1,4 @@
-# dislauncher
+# Dislauncher
 
 A minimalist, text-first Android launcher focused on a calm, low-distraction experience.
 
@@ -7,7 +7,7 @@ A minimalist, text-first Android launcher focused on a calm, low-distraction exp
 - Compact text-first layout for the clock, date, favourite apps, battery, and optional progress indicators.
 - Tap the clock to open the clock app; tap the date to open the calendar app. The optional Calendar agenda requests calendar permission and displays today's remaining events, with tap-through to the system calendar.
 - Long-press empty space to open Settings with haptic feedback.
-- Optional double-tap-to-lock, year/day progress, quote, weather, screen-time, tasks, call, music, and calendar shortcut.
+- Optional double-tap-to-lock, year/day progress, weather, screen-time, tasks, call, music, and calendar shortcut.
 - Font families: Roboto, Open Sans, Monospace, Menlo-compatible, Raleway Dots, Sans-serif Light, and Serif; Small, Medium, and Large sizes.
 - Optional app icons and compatible icon packs using the ADW/Nova-style `appfilter.xml` format.
 - Theme choices: follow system, automatic sunrise/sunset, Black, and White.
@@ -24,7 +24,7 @@ A minimalist, text-first Android launcher focused on a calm, low-distraction exp
 
 Settings are persisted locally and include:
 
-- Show/hide clock, date, weather, battery, status bar, search bar, character scrubber, day/year progress, quote, screen time, tasks, call, music, and Settings shortcut.
+- Show/hide clock, date, weather, battery, status bar, search bar, character scrubber, day/year progress, screen time, tasks, call, music, and Settings shortcut.
 - Celsius/Fahrenheit and system/12-hour/24-hour time formats.
 - Show app icons, icon pack, font family, font size, and theme.
 - Pin the year progress near the clock.
