@@ -114,7 +114,7 @@ internal fun AppsScreen(
                 onValueChange = onQueryChange,
                 modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
                 singleLine = true,
-                placeholder = { Text("Search apps", fontSize = 13.sp * fontScale) },
+                placeholder = { Text("Search apps", fontSize = 13.sp) },
                 shape = RoundedCornerShape(4.dp)
             )
         }
@@ -131,7 +131,7 @@ internal fun AppsScreen(
                         Text(
                             if (apps.isEmpty()) "Loading apps…" else "No matching apps",
                             color = secondary,
-                            fontSize = 13.sp * fontScale,
+                            fontSize = 13.sp,
                             modifier = Modifier.padding(vertical = 18.dp)
                         )
                     }
@@ -151,8 +151,8 @@ internal fun AppsScreen(
                         Text(
                             app.label,
                             color = mainText,
-                            fontSize = 17.sp * fontScale,
-                            lineHeight = 22.sp * fontScale,
+                            fontSize = 17.sp,
+                            lineHeight = 22.sp,
                             fontFamily = fontFamily,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -220,8 +220,8 @@ internal fun AppsScreen(
                                     letter,
                                     color = if (active) MaterialTheme.colorScheme.onPrimaryContainer
                                         else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontSize = 8.sp * fontScale,
-                                    lineHeight = 10.sp * fontScale,
+                                    fontSize = 8.sp,
+                                    lineHeight = 10.sp,
                                     fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
                                     modifier = Modifier.clip(RoundedCornerShape(3.dp))
                                         .background(
