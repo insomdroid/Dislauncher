@@ -23,11 +23,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -260,9 +262,12 @@ private fun DislauncherRoot() {
     }
     val fontFamily = when (preferences.fontMode) {
         "serif" -> FontFamily.Serif
-        "mono", "menlo", "writer-mono" -> FontFamily.Monospace
-        "quicksand", "nunito" -> FontFamily(android.graphics.Typeface.create("sans-serif-rounded", android.graphics.Typeface.NORMAL))
-        "opensans-light", "nunito-light" -> FontFamily(android.graphics.Typeface.create("sans-serif-light", android.graphics.Typeface.NORMAL))
+        "mono" -> FontFamily.Monospace
+        "condensed" -> FontFamily(android.graphics.Typeface.create("sans-serif-condensed", android.graphics.Typeface.NORMAL))
+        "rounded" -> FontFamily(android.graphics.Typeface.create("sans-serif-rounded", android.graphics.Typeface.NORMAL))
+        "light" -> FontFamily(android.graphics.Typeface.create("sans-serif-light", android.graphics.Typeface.NORMAL))
+        "casual" -> FontFamily(android.graphics.Typeface.create("casual", android.graphics.Typeface.NORMAL))
+        "cursive" -> FontFamily(android.graphics.Typeface.create("cursive", android.graphics.Typeface.NORMAL))
         else -> FontFamily.SansSerif
     }
     val fontScale = when (preferences.fontSize) {
@@ -323,6 +328,9 @@ private fun DislauncherRoot() {
             extraLarge = RoundedCornerShape(36.dp)
         )
     ) {
+        CompositionLocalProvider(
+            LocalTextStyle provides LocalTextStyle.current.copy(fontFamily = fontFamily)
+        ) {
         if (screen == LauncherScreen.SETTINGS) {
             SettingsScreen(
                 preferences = preferences,
@@ -404,6 +412,7 @@ private fun DislauncherRoot() {
                     )
                 }
             }
+        }
         }
     }
 }
