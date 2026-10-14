@@ -26,7 +26,6 @@ internal data class LauncherPreferences(
     val showCall: Boolean = false,
     val showSettingsButton: Boolean = false,
     val showMusic: Boolean = false,
-    val showQuote: Boolean = true,
     val hideSystemApps: Boolean = false,
     val doubleTapToLock: Boolean = false,
     val swipeDownNotifications: Boolean = false,
@@ -57,7 +56,6 @@ internal data class LauncherPreferences(
             .putBoolean("show_call", showCall)
             .putBoolean("show_settings_button", showSettingsButton)
             .putBoolean("show_music", showMusic)
-            .putBoolean("show_quote", showQuote)
             .putBoolean("hide_system_apps", hideSystemApps)
             .putBoolean("double_tap_to_lock", doubleTapToLock)
             .putBoolean("swipe_down_notifications", swipeDownNotifications)
@@ -115,7 +113,6 @@ internal data class LauncherPreferences(
                 showCall = p.getBoolean("show_call", false),
                 showSettingsButton = p.getBoolean("show_settings_button", false),
                 showMusic = p.getBoolean("show_music", false),
-                showQuote = p.getBoolean("show_quote", true),
                 hideSystemApps = p.getBoolean("hide_system_apps", false),
                 doubleTapToLock = p.getBoolean("double_tap_to_lock", false),
                 swipeDownNotifications = p.getBoolean("swipe_down_notifications", false),
