@@ -115,18 +115,10 @@ internal fun SettingsScreen(
                         "Theme",
                         preferences.themeMode,
                         listOf(
-                            "system" to "Auto",
+                            "system" to "System",
+                            "sun" to "Sunrise/Sunset",
                             "dark" to "Black",
-                            "light" to "White",
-                            "dim" to "Dim",
-                            "twitter-dim" to "Twitter Dim",
-                            "midnight-blue" to "Midnight Blue",
-                            "pale-silver" to "Pale Silver",
-                            "middle-blue" to "Middle Blue",
-                            "parchment" to "Parchment",
-                            "blue-radiance" to "Blue Radiance",
-                            "dark-indigo" to "Dark Indigo",
-                            "carbon" to "Carbon"
+                            "light" to "White"
                         )
                     ) { onPreferencesChange(preferences.copy(themeMode = it)) }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
@@ -135,17 +127,16 @@ internal fun SettingsScreen(
                         preferences.fontMode,
                         listOf(
                             "sans" to "Roboto",
-                            "serif" to "Serif",
+                            "opensans" to "Open Sans",
                             "mono" to "Monospace",
-                            "condensed" to "Condensed",
-                            "rounded" to "Rounded",
-                            "light" to "Light",
-                            "casual" to "Casual",
-                            "cursive" to "Cursive"
+                            "menlo" to "Menlo",
+                            "raleway-dots" to "Raleway Dots",
+                            "light" to "Sans-serif Light",
+                            "serif" to "Serif"
                         )
                     ) { onPreferencesChange(preferences.copy(fontMode = it)) }
                     Text(
-                        "The selected Android typeface is applied across Home, Apps, Tasks, Weather, and Settings.",
+                        "Open Sans and Raleway Dots are bundled with the APK. Menlo uses Android's monospace typeface when Menlo itself is unavailable.",
                         fontSize = 10.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -183,7 +174,7 @@ internal fun SettingsScreen(
                     onPreferencesChange(preferences.copy(showDate = it))
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingToggle("Show calendar shortcut", "Show a compact Calendar action on Home.", preferences.showCalendarShortcut) {
+                SettingToggle("Show calendar agenda", "Read today's upcoming events on Home; Android asks for calendar access when needed.", preferences.showCalendarShortcut) {
                     onPreferencesChange(preferences.copy(showCalendarShortcut = it))
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
