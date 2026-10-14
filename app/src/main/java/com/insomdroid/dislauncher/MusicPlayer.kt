@@ -168,10 +168,10 @@ internal fun MusicPlayerWidget(
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Box(
-            modifier = Modifier.size(62.dp)
+            modifier = Modifier.size(40.dp)
                 .clip(RoundedCornerShape(7.dp))
                 .background(fallbackBackground)
                 .clickable(onClick = onOpenMusicApp),
@@ -190,22 +190,22 @@ internal fun MusicPlayerWidget(
         }
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("|◀", color = foreground, fontSize = 16.sp,
+                Text("|◀", color = foreground, fontSize = 14.sp,
                     modifier = Modifier.clickable {
                         if (controller != null) runCatching { controller.transportControls.skipToPrevious() }
                         else onOpenMusicApp()
-                    }.padding(horizontal = 9.dp, vertical = 3.dp))
+                    }.padding(horizontal = 5.dp, vertical = 1.dp))
                 Text(
                     if (playing) "Ⅱ" else "▶",
                     color = foreground,
-                    fontSize = 20.sp,
+                    fontSize = 17.sp,
                     modifier = Modifier.clickable {
                         if (controller != null && metadata != null) {
                             runCatching {
@@ -213,15 +213,15 @@ internal fun MusicPlayerWidget(
                                 else controller.transportControls.play()
                             }
                         } else onOpenMusicApp()
-                    }.padding(horizontal = 10.dp, vertical = 2.dp)
+                    }.padding(horizontal = 5.dp, vertical = 1.dp)
                 )
-                Text("▶|", color = foreground, fontSize = 16.sp,
+                Text("▶|", color = foreground, fontSize = 14.sp,
                     modifier = Modifier.clickable {
                         if (controller != null) runCatching { controller.transportControls.skipToNext() }
                         else onOpenMusicApp()
-                    }.padding(horizontal = 9.dp, vertical = 3.dp))
+                    }.padding(horizontal = 5.dp, vertical = 1.dp))
             }
-            Canvas(modifier = Modifier.fillMaxWidth().height(3.dp).clip(CircleShape)) {
+            Canvas(modifier = Modifier.fillMaxWidth().height(2.dp).clip(CircleShape)) {
                 drawRoundRect(
                     color = track,
                     topLeft = Offset.Zero,

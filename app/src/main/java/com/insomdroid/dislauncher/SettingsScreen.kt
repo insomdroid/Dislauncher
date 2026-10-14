@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -115,11 +116,25 @@ internal fun SettingsScreen(
                         preferences.themeMode,
                         listOf(
                             "system" to "System",
-                            "sun" to "Sunrise/Sunset",
+                            "sun" to "Sunrise / Sunset",
                             "dark" to "Black",
-                            "light" to "White"
+                            "dim" to "Dim",
+                            "twitter-dim" to "Twitter Dim",
+                            "midnight-blue" to "Midnight Blue",
+                            "dark-indigo" to "Dark Indigo",
+                            "carbon" to "Carbon",
+                            "light" to "White",
+                            "pale-silver" to "Pale Silver",
+                            "middle-blue" to "Middle Blue",
+                            "parchment" to "Parchment",
+                            "blue-radiance" to "Blue Radiance"
                         )
                     ) { onPreferencesChange(preferences.copy(themeMode = it)) }
+                    Text(
+                        "System follows Android. Sunrise / Sunset changes with local daylight; the other choices use fixed colors.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                     ChoiceRow(
                         "Font",
@@ -429,7 +444,7 @@ private fun SettingsGroup(
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(18.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
@@ -457,11 +472,14 @@ private fun SettingToggle(
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(
-            modifier = Modifier.weight(1f).padding(end = 14.dp),
+            modifier = Modifier.weight(1f)
+                .clip(RoundedCornerShape(18.dp))
+                .clickable { onCheckedChange(!checked) }
+                .padding(vertical = 9.dp, end = 14.dp),
             verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
             Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)

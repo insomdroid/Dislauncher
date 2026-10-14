@@ -279,6 +279,25 @@ internal fun AppsScreen(
                             )
                         }
                     }
+                    if (isScrubbing && activeLetter.isNotBlank()) {
+                        Box(
+                            modifier = Modifier.align(Alignment.CenterEnd)
+                                .offset(x = (-68).dp)
+                                .width(42.dp)
+                                .height(42.dp)
+                                .clip(androidx.compose.foundation.shape.CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                activeLetter,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                fontSize = 18.sp,
+                                lineHeight = 22.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
             }
         }

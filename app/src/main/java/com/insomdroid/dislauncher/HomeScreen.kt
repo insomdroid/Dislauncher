@@ -259,7 +259,7 @@ internal fun HomeScreen(
 
 
         if (preferences.showQuote) {
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(4.dp))
             Text(
                 text = "“${inspirationQuotes[quoteIndex]}”",
                 color = secondaryText,
@@ -268,12 +268,12 @@ internal fun HomeScreen(
                 fontFamily = fontFamily,
                 modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
                     .clickable { quoteIndex = (quoteIndex + 1) % inspirationQuotes.size }
-                    .padding(vertical = 6.dp)
+                    .padding(vertical = 2.dp)
             )
         }
 
         if (preferences.showWeather || preferences.showBattery || preferences.showScreenTime) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(4.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -334,7 +334,7 @@ internal fun HomeScreen(
         }
 
         if (preferences.showMusic) {
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(6.dp))
             MusicPlayerWidget(
                 modifier = Modifier.fillMaxWidth(),
                 onOpenMusicApp = { openMusicPlayer(context, apps) }

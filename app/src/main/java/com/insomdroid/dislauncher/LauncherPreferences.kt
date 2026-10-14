@@ -67,8 +67,9 @@ internal data class LauncherPreferences(
 
     companion object {
         private fun normalizeThemeMode(value: String): String = when (value) {
-            "system", "sun", "dark", "light" -> value
-            "pale-silver", "middle-blue", "parchment", "blue-radiance" -> "light"
+            "system", "sun", "dark", "dim", "twitter-dim", "midnight-blue",
+            "dark-indigo", "carbon", "light", "pale-silver", "middle-blue",
+            "parchment", "blue-radiance" -> value
             else -> "dark"
         }
 
