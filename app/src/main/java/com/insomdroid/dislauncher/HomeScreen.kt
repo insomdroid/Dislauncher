@@ -183,9 +183,9 @@ internal fun HomeScreen(
             context, Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
         if (!hasLocation) {
-            weatherInfo = null
-            weatherStatus = if (preferences.showWeather) "Tap to allow location" else ""
-            currentSolarInfoChange(null)
+            weatherInfo = cachedWeather
+            weatherStatus = if (cachedWeather == null && preferences.showWeather) "Tap to allow location" else ""
+            currentSolarInfoChange(cachedWeather)
         } else {
             val matchingCache = cachedWeather?.takeIf {
                 it.temperature.endsWith("°${preferences.weatherUnit}")
@@ -258,8 +258,8 @@ internal fun HomeScreen(
                     percent = (today.dayOfYear * 100f / today.lengthOfYear()).toInt(),
                     primaryText = primaryText,
                     secondaryText = secondaryText,
-                    fill = primaryText,
-                    track = secondaryText.copy(alpha = 0.22f),
+                    fill = Color(0xFF4CAF50),
+                    track = if (isDark) Color(0xFF555555) else Color(0xFFD5D5D5),
                     fontScale = fontScale
                 )
             }
@@ -270,8 +270,8 @@ internal fun HomeScreen(
                     percent = (now.toSecondOfDay() * 100f / 86400f).toInt(),
                     primaryText = primaryText,
                     secondaryText = secondaryText,
-                    fill = primaryText,
-                    track = secondaryText.copy(alpha = 0.22f),
+                    fill = Color(0xFF4CAF50),
+                    track = if (isDark) Color(0xFF555555) else Color(0xFFD5D5D5),
                     fontScale = fontScale
                 )
             }
@@ -335,7 +335,7 @@ internal fun HomeScreen(
                             ) == PackageManager.PERMISSION_GRANTED
                             val weatherText = weatherInfo?.let {
                                 "${it.temperature} ${it.condition.lowercase(Locale.getDefault())}"
-                            } ?: if (!hasLocation) "Tap to allow location" else weatherStatus
+                            } ?: if (!hasLocation) "Weather unavailable" else weatherStatus
                             Text(
                                 weatherText,
                                 color = primaryText,

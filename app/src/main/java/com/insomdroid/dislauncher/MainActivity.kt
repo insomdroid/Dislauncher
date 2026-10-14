@@ -392,8 +392,9 @@ private fun DislauncherRoot() {
     }
     val useDynamicColor = preferences.dynamicColor &&
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-        preferences.themeMode != "light"
+        preferences.themeMode == "system"
     val baseColorScheme = when {
+        preferences.themeMode == "dark" -> darkColorScheme()
         useDynamicColor && isDark -> dynamicDarkColorScheme(context)
         useDynamicColor -> dynamicLightColorScheme(context)
         isDark -> darkColorScheme()
@@ -401,12 +402,12 @@ private fun DislauncherRoot() {
     }
     val textSafeDarkScheme = if (isDark) {
         baseColorScheme.copy(
-            primary = Color.White,
+            primary = Color(0xFF8AB4F8),
             secondary = Color.White,
             tertiary = Color.White,
-            onPrimary = Color.White,
-            onSecondary = Color.White,
-            onTertiary = Color.White,
+            onPrimary = Color(0xFF101010),
+            onSecondary = Color(0xFF101010),
+            onTertiary = Color(0xFF101010),
             onBackground = Color.White,
             onSurface = Color.White,
             onSurfaceVariant = Color.White,
@@ -421,9 +422,7 @@ private fun DislauncherRoot() {
     } else {
         baseColorScheme
     }
-    val colorScheme = if (
-        preferences.themeMode == "dark" && preferences.darkAppearance == "amoled"
-    ) {
+    val colorScheme = if (preferences.themeMode == "dark") {
         textSafeDarkScheme.copy(
             background = Color.Black,
             surface = Color.Black,
@@ -433,7 +432,15 @@ private fun DislauncherRoot() {
             surfaceContainer = Color.Black,
             surfaceContainerHigh = Color.Black,
             surfaceContainerHighest = Color.Black,
-            surfaceTint = Color.Transparent
+            surfaceTint = Color.Transparent,
+            primary = Color(0xFF8AB4F8),
+            secondary = Color.White,
+            tertiary = Color.White,
+            onPrimary = Color(0xFF101010),
+            onSecondary = Color(0xFF101010),
+            onTertiary = Color(0xFF101010),
+            outline = Color(0xFFBDBDBD),
+            outlineVariant = Color(0xFF757575)
         )
     } else {
         textSafeDarkScheme
