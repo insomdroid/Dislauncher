@@ -177,7 +177,7 @@ internal fun MusicPlayerWidget(
 
     Box(
         modifier = modifier.fillMaxWidth(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.CenterStart
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().widthIn(max = 320.dp).padding(vertical = 1.dp),
@@ -185,43 +185,53 @@ internal fun MusicPlayerWidget(
             verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
             if (metadata == null) {
-                Column(
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(3.dp)
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text(
-                        title,
-                        color = foreground,
-                        fontSize = 15.sp,
-                        lineHeight = 19.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                        modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenMusicApp),
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
-                    Text(
-                        artist,
-                        color = secondary,
-                        fontSize = 11.sp,
-                        lineHeight = 14.sp,
-                        maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
                     Box(
-                        modifier = Modifier.size(54.dp)
+                        modifier = Modifier.size(44.dp)
                             .clip(RoundedCornerShape(8.dp))
                             .background(fallbackBackground)
                             .clickable(onClick = onOpenMusicApp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("♪", color = foreground, fontSize = 26.sp, fontWeight = FontWeight.Light)
+                        Text("♪", color = foreground, fontSize = 24.sp, fontWeight = FontWeight.Light)
+                    }
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Text(
+                            title,
+                            color = foreground,
+                            fontSize = 15.sp,
+                            lineHeight = 19.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenMusicApp)
+                        )
+                        Text(
+                            artist,
+                            color = secondary,
+                            fontSize = 11.sp,
+                            lineHeight = 14.sp,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
+                        MusicTransportControls(
+                            controller = controller,
+                            hasMetadata = metadata != null,
+                            playing = playing,
+                            foreground = foreground,
+                            onOpenMusicApp = onOpenMusicApp
+                        )
                     }
                 }
                 MusicProgressRow(
-                    modifier = Modifier.widthIn(max = 185.dp).align(Alignment.CenterHorizontally),
+                    modifier = Modifier.widthIn(max = 270.dp),
                     position = position,
                     duration = duration,
                     progress = progress,
@@ -322,6 +332,55 @@ internal fun MusicPlayerWidget(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun MusicTransportControls(
+    controller: MediaController?,
+    hasMetadata: Boolean,
+    playing: Boolean,
+    foreground: Color,
+    onOpenMusicApp: () -> Unit
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(15.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            "‹‹",
+            color = foreground,
+            fontSize = 14.sp,
+            modifier = Modifier.clickable {
+                if (controller != null) runCatching { controller.transportControls.skipToPrevious() }
+                else onOpenMusicApp()
+            }.padding(vertical = 2.dp, horizontal = 2.dp)
+        )
+        Text(
+            if (playing) "Ⅱ" else "▶",
+            color = foreground,
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.clickable {
+                if (controller != null && hasMetadata) {
+                    runCatching {
+                        if (playing) controller.transportControls.pause()
+                        else controller.transportControls.play()
+                    }
+                } else {
+                    onOpenMusicApp()
+                }
+            }.padding(vertical = 1.dp, horizontal = 2.dp)
+        )
+        Text(
+            "››",
+            color = foreground,
+            fontSize = 14.sp,
+            modifier = Modifier.clickable {
+                if (controller != null) runCatching { controller.transportControls.skipToNext() }
+                else onOpenMusicApp()
+            }.padding(vertical = 2.dp, horizontal = 2.dp)
+        )
     }
 }
 
