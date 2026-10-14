@@ -250,37 +250,26 @@ internal fun HomeScreen(
                 modifier = Modifier.clip(RoundedCornerShape(5.dp)).clickable { openCalendar(context) }
             )
         }
-        if (preferences.showYearProgress && preferences.pinYearProgress) {
+        if (preferences.showYearProgress || preferences.showDayProgress) {
             Spacer(Modifier.height(8.dp))
-            ProgressLine(
-                label = "Year in progress",
-                percent = (today.dayOfYear * 100f / today.lengthOfYear()).toInt(),
-                primaryText = primaryText,
-                secondaryText = secondaryText,
-                fill = primaryText,
-                track = secondaryText.copy(alpha = 0.22f),
-                fontScale = fontScale
-            )
-        }
-
-        if (preferences.showYearProgress && !preferences.pinYearProgress || preferences.showDayProgress) {
-            Spacer(Modifier.height(8.dp))
-            if (preferences.showYearProgress && !preferences.pinYearProgress) {
+            if (preferences.showYearProgress) {
                 ProgressLine(
                     label = "Year in progress",
                     percent = (today.dayOfYear * 100f / today.lengthOfYear()).toInt(),
-                    primaryText = primaryText, secondaryText = secondaryText,
+                    primaryText = primaryText,
+                    secondaryText = secondaryText,
                     fill = primaryText,
                     track = secondaryText.copy(alpha = 0.22f),
                     fontScale = fontScale
                 )
             }
             if (preferences.showDayProgress) {
-                if (preferences.showYearProgress && !preferences.pinYearProgress) Spacer(Modifier.height(4.dp))
+                if (preferences.showYearProgress) Spacer(Modifier.height(4.dp))
                 ProgressLine(
                     label = "Day in progress",
                     percent = (now.toSecondOfDay() * 100f / 86400f).toInt(),
-                    primaryText = primaryText, secondaryText = secondaryText,
+                    primaryText = primaryText,
+                    secondaryText = secondaryText,
                     fill = primaryText,
                     track = secondaryText.copy(alpha = 0.22f),
                     fontScale = fontScale

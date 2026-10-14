@@ -17,8 +17,7 @@ internal data class LauncherPreferences(
     val autoLaunchKeyboard: Boolean = false,
     val showBattery: Boolean = true,
     val showDayProgress: Boolean = true,
-    val showYearProgress: Boolean = false,
-    val pinYearProgress: Boolean = true,
+    val showYearProgress: Boolean = true,
     val showClock: Boolean = true,
     val showDate: Boolean = true,
     val showWeather: Boolean = true,
@@ -51,7 +50,6 @@ internal data class LauncherPreferences(
             .putBoolean("show_battery", showBattery)
             .putBoolean("show_day_progress", showDayProgress)
             .putBoolean("show_year_progress", showYearProgress)
-            .putBoolean("pin_year_progress", pinYearProgress)
             .putBoolean("show_clock", showClock)
             .putBoolean("show_date", showDate)
             .putBoolean("show_weather", showWeather)
@@ -82,12 +80,12 @@ internal data class LauncherPreferences(
         }
 
         fun load(p: SharedPreferences): LauncherPreferences {
-            val oldProgress = p.getBoolean("show_progress", true)
-            // The reference Home layout shows Day progress by default, but the option remains available.
-            if (p.getInt("home_layout_version", 0) < 1) {
+            // Default to both day and year progress after merging the old pin option.
+            if (p.getInt("home_layout_version", 0) < 2) {
                 p.edit()
-                    .putBoolean("show_year_progress", false)
-                    .putInt("home_layout_version", 1)
+                    .putBoolean("show_year_progress", true)
+                    .remove("pin_year_progress")
+                    .putInt("home_layout_version", 2)
                     .apply()
             }
             return LauncherPreferences(
@@ -107,9 +105,8 @@ internal data class LauncherPreferences(
                 showCharacterScroll = p.getBoolean("show_character_scroll", true),
                 autoLaunchKeyboard = p.getBoolean("auto_launch_keyboard", false),
                 showBattery = p.getBoolean("show_battery", true),
-                showDayProgress = p.getBoolean("show_day_progress", oldProgress),
-                showYearProgress = p.getBoolean("show_year_progress", false),
-                pinYearProgress = p.getBoolean("pin_year_progress", true),
+                showDayProgress = p.getBoolean("show_day_progress", true),
+                showYearProgress = p.getBoolean("show_year_progress", true),
                 showClock = p.getBoolean("show_clock", true),
                 showDate = p.getBoolean("show_date", true),
                 showWeather = p.getBoolean("show_weather", true),
