@@ -209,7 +209,7 @@ internal fun TasksScreen(
             contentPadding = PaddingValues(top = 3.dp, bottom = 12.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            androidx.compose.foundation.lazy.items(tasks, key = { it.id }) { task ->
+            items(tasks, key = { it.id }) { task ->
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
                     verticalAlignment = Alignment.CenterVertically

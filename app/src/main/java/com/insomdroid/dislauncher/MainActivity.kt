@@ -513,7 +513,7 @@ private fun DislauncherRoot() {
                         )
                     }
                 }
-remove old swipe overlay            }
+            }
         }
         }
     }
@@ -561,7 +561,7 @@ internal fun launchApp(context: Context, app: LauncherApp) {
 internal fun openClock(context: Context) {
     val packageManager = context.packageManager
     val candidates = listOf(
-        Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_CLOCK),
+        Intent(Intent.ACTION_MAIN).addCategory("android.intent.category.APP_CLOCK"),
         Intent(android.provider.AlarmClock.ACTION_SHOW_ALARMS),
         Intent(android.provider.AlarmClock.ACTION_SET_ALARM)
     )
