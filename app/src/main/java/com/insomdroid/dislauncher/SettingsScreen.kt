@@ -58,6 +58,7 @@ internal fun SettingsScreen(
     hiddenApps: Set<String>,
     iconPacks: List<IconPackInfo>,
     onPreferencesChange: (LauncherPreferences) -> Unit,
+    onChooseCustomFont: () -> Unit,
     onDoubleTapLockChange: (Boolean) -> Unit,
     onToggleFavorite: (String) -> Unit,
     onToggleHidden: (String) -> Unit,
@@ -148,17 +149,25 @@ internal fun SettingsScreen(
                         "Font",
                         preferences.fontMode,
                         listOf(
-                            "sans" to "Google Sans Flex",
-                            "opensans" to "Open Sans",
+                            "system" to "System",
                             "mono" to "Monospace",
-                            "menlo" to "Menlo",
-                            "raleway-dots" to "Raleway Dots",
-                            "light" to "Sans-serif Light",
-                            "serif" to "Serif"
+                            "custom" to "Custom file"
                         )
-                    ) { onPreferencesChange(preferences.copy(fontMode = it)) }
+                    ) { selected ->
+                        if (selected == "custom") {
+                            onChooseCustomFont()
+                        } else {
+                            onPreferencesChange(preferences.copy(fontMode = selected))
+                        }
+                    }
+                    SettingAction(
+                        "Custom font file",
+                        preferences.customFontName ?: "No file selected · .ttf/.otf, max 10 MB",
+                        "Choose",
+                        onChooseCustomFont
+                    )
                     Text(
-                        "Google Sans Flex, Open Sans and Raleway Dots are bundled with the APK. Menlo uses Android's monospace typeface when Menlo itself is unavailable.",
+                        "Custom fonts are copied into this app's private storage and checked before use.",
                         fontSize = 10.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
