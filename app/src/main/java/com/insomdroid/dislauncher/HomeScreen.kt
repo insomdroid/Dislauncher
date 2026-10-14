@@ -332,31 +332,39 @@ internal fun HomeScreen(
                         }
                     )
                 }
-                if (preferences.showWeather) {
-                    val hasLocation = ContextCompat.checkSelfPermission(
-                        context, Manifest.permission.ACCESS_COARSE_LOCATION
-                    ) == PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(
-                        context, Manifest.permission.ACCESS_FINE_LOCATION
-                    ) == PackageManager.PERMISSION_GRANTED
-                    val weatherText = weatherInfo?.let {
-                        "${it.temperature} ${it.condition.lowercase(Locale.getDefault())}"
-                    } ?: if (!hasLocation) "Tap to allow location" else weatherStatus
-                    Text(
-                        weatherText,
-                        color = primaryText,
-                        fontSize = 12.sp,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                            .clickable { onOpenWeather(weatherInfo ?: cachedWeather) }
-                    )
-                }
-                if (preferences.showCalendarShortcut) {
-                    CalendarAgenda(
-                        preferences.timeFormat,
-                        modifier = Modifier.widthIn(max = if (preferences.showWeather) 148.dp else 210.dp)
-                    )
+                if (preferences.showWeather || preferences.showCalendarShortcut) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (preferences.showWeather) {
+                            val hasLocation = ContextCompat.checkSelfPermission(
+                                context, Manifest.permission.ACCESS_COARSE_LOCATION
+                            ) == PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(
+                                context, Manifest.permission.ACCESS_FINE_LOCATION
+                            ) == PackageManager.PERMISSION_GRANTED
+                            val weatherText = weatherInfo?.let {
+                                "${it.temperature} ${it.condition.lowercase(Locale.getDefault())}"
+                            } ?: if (!hasLocation) "Tap to allow location" else weatherStatus
+                            Text(
+                                weatherText,
+                                color = primaryText,
+                                fontSize = 12.sp,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.widthIn(max = if (preferences.showCalendarShortcut) 116.dp else 210.dp)
+                                    .clickable { onOpenWeather(weatherInfo ?: cachedWeather) }
+                            )
+                        }
+                        if (preferences.showCalendarShortcut) {
+                            CalendarAgenda(
+                                preferences.timeFormat,
+                                modifier = Modifier.widthIn(max = 148.dp)
+                            )
+                        }
+                    }
                 }
             }
         }

@@ -180,117 +180,182 @@ internal fun MusicPlayerWidget(
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().widthIn(max = 320.dp).padding(vertical = 1.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Box(
-                modifier = Modifier.size(54.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(fallbackBackground)
-                    .clickable(onClick = onOpenMusicApp),
-                contentAlignment = Alignment.Center
-            ) {
-                if (artwork != null) {
-                    Image(
-                        bitmap = artwork.asImageBitmap(),
-                        contentDescription = "Album art",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Text("♪", color = foreground, fontSize = 26.sp, fontWeight = FontWeight.Light)
-                }
-            }
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
-                Text(
-                    title,
-                    color = foreground,
-                    fontSize = 15.sp,
-                    lineHeight = 19.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                    modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenMusicApp)
-                )
-                Text(
-                    artist,
-                    color = secondary,
-                    fontSize = 11.sp,
-                    lineHeight = 14.sp,
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                )
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(13.dp),
-                    verticalAlignment = Alignment.CenterVertically
+            if (metadata == null) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
                     Text(
-                        "<",
+                        title,
                         color = foreground,
-                        fontSize = 14.sp,
-                        modifier = Modifier.clickable {
-                            if (controller != null) runCatching { controller.transportControls.skipToPrevious() }
-                            else onOpenMusicApp()
-                        }.padding(vertical = 2.dp, horizontal = 2.dp)
+                        fontSize = 15.sp,
+                        lineHeight = 19.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenMusicApp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                     Text(
-                        if (playing) "Ⅱ" else "▶",
-                        color = foreground,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.clickable {
-                            if (controller != null && metadata != null) {
-                                runCatching {
-                                    if (playing) controller.transportControls.pause()
-                                    else controller.transportControls.play()
-                                }
-                            } else onOpenMusicApp()
-                        }.padding(vertical = 1.dp, horizontal = 2.dp)
+                        artist,
+                        color = secondary,
+                        fontSize = 11.sp,
+                        lineHeight = 14.sp,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
-                    Text(
-                        ">",
-                        color = foreground,
-                        fontSize = 14.sp,
-                        modifier = Modifier.clickable {
-                            if (controller != null) runCatching { controller.transportControls.skipToNext() }
-                            else onOpenMusicApp()
-                        }.padding(vertical = 2.dp, horizontal = 2.dp)
-                    )
+                    Box(
+                        modifier = Modifier.size(54.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(fallbackBackground)
+                            .clickable(onClick = onOpenMusicApp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("♪", color = foreground, fontSize = 26.sp, fontWeight = FontWeight.Light)
+                    }
                 }
+                MusicProgressRow(
+                    modifier = Modifier.widthIn(max = 185.dp).align(Alignment.CenterHorizontally),
+                    position = position,
+                    duration = duration,
+                    progress = progress,
+                    foreground = foreground,
+                    track = track
+                )
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier.size(54.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(fallbackBackground)
+                            .clickable(onClick = onOpenMusicApp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (artwork != null) {
+                            Image(
+                                bitmap = artwork.asImageBitmap(),
+                                contentDescription = "Album art",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Text("♪", color = foreground, fontSize = 26.sp, fontWeight = FontWeight.Light)
+                        }
+                    }
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        Text(
+                            title,
+                            color = foreground,
+                            fontSize = 15.sp,
+                            lineHeight = 19.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenMusicApp)
+                        )
+                        Text(
+                            artist,
+                            color = secondary,
+                            fontSize = 11.sp,
+                            lineHeight = 14.sp,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(13.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "<",
+                                color = foreground,
+                                fontSize = 14.sp,
+                                modifier = Modifier.clickable {
+                                    if (controller != null) runCatching { controller.transportControls.skipToPrevious() }
+                                    else onOpenMusicApp()
+                                }.padding(vertical = 2.dp, horizontal = 2.dp)
+                            )
+                            Text(
+                                if (playing) "Ⅱ" else "▶",
+                                color = foreground,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.clickable {
+                                    if (controller != null && metadata != null) {
+                                        runCatching {
+                                            if (playing) controller.transportControls.pause()
+                                            else controller.transportControls.play()
+                                        }
+                                    } else onOpenMusicApp()
+                                }.padding(vertical = 1.dp, horizontal = 2.dp)
+                            )
+                            Text(
+                                ">",
+                                color = foreground,
+                                fontSize = 14.sp,
+                                modifier = Modifier.clickable {
+                                    if (controller != null) runCatching { controller.transportControls.skipToNext() }
+                                    else onOpenMusicApp()
+                                }.padding(vertical = 2.dp, horizontal = 2.dp)
+                            )
+                        }
+                    }
+                }
+                MusicProgressRow(
+                    position = position,
+                    duration = duration,
+                    progress = progress,
+                    foreground = foreground,
+                    track = track
+                )
             }
         }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(formatMediaTime(position), color = secondary, fontSize = 9.sp, lineHeight = 11.sp)
-            Canvas(modifier = Modifier.weight(1f).height(2.dp)) {
+    }
+}
+
+@Composable
+private fun MusicProgressRow(
+    modifier: Modifier = Modifier,
+    position: Long,
+    duration: Long,
+    progress: Float,
+    foreground: Color,
+    track: Color
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(formatMediaTime(position), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, lineHeight = 11.sp)
+        Canvas(modifier = Modifier.weight(1f).height(2.dp)) {
+            drawRoundRect(
+                color = track,
+                topLeft = Offset.Zero,
+                size = size,
+                cornerRadius = CornerRadius(size.height / 2f)
+            )
+            if (progress > 0f) {
                 drawRoundRect(
-                    color = track,
+                    color = foreground,
                     topLeft = Offset.Zero,
-                    size = size,
+                    size = Size(size.width * progress, size.height),
                     cornerRadius = CornerRadius(size.height / 2f)
                 )
-                if (progress > 0f) {
-                    drawRoundRect(
-                        color = foreground,
-                        topLeft = Offset.Zero,
-                        size = Size(size.width * progress, size.height),
-                        cornerRadius = CornerRadius(size.height / 2f)
-                    )
-                }
             }
-            Text(formatMediaTime(duration), color = secondary, fontSize = 9.sp, lineHeight = 11.sp)
         }
-        }
+        Text(formatMediaTime(duration), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, lineHeight = 11.sp)
     }
 }
 

@@ -6,9 +6,12 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.Typeface
+import android.net.Uri
 import android.content.pm.ApplicationInfo
 import android.os.Build
 import android.provider.Settings
+import android.provider.OpenableColumns
 import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.BackHandler
@@ -70,6 +73,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import org.json.JSONObject
 
 internal enum class LauncherScreen { ONBOARDING, HOME, APPS, SETTINGS, TASKS, WEATHER }
@@ -167,6 +175,29 @@ private fun DislauncherRoot() {
     fun updatePreferences(next: LauncherPreferences) {
         preferences = next
         next.save(prefsStore)
+    }
+
+    val customFontPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                val selectedFontName = withContext(Dispatchers.IO) {
+                    runCatching { importUserCustomFont(context, uri) }.getOrNull()
+                }
+                if (selectedFontName == null) {
+                    android.widget.Toast.makeText(
+                        context,
+                        "Invalid font. Choose a valid .ttf or .otf file up to 10 MB.",
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
+                } else {
+                    updatePreferences(
+                        preferences.copy(fontMode = "custom", customFontName = selectedFontName)
+                    )
+                }
+            }
+        }
     }
 
     fun toggleFavorite(packageName: String) {
@@ -368,10 +399,32 @@ private fun DislauncherRoot() {
         isDark -> darkColorScheme()
         else -> lightColorScheme()
     }
+    val textSafeDarkScheme = if (isDark) {
+        baseColorScheme.copy(
+            primary = Color.White,
+            secondary = Color.White,
+            tertiary = Color.White,
+            onPrimary = Color.White,
+            onSecondary = Color.White,
+            onTertiary = Color.White,
+            onBackground = Color.White,
+            onSurface = Color.White,
+            onSurfaceVariant = Color.White,
+            onPrimaryContainer = Color.White,
+            onSecondaryContainer = Color.White,
+            onTertiaryContainer = Color.White,
+            inverseOnSurface = Color.White,
+            error = Color.White,
+            onError = Color.White,
+            onErrorContainer = Color.White
+        )
+    } else {
+        baseColorScheme
+    }
     val colorScheme = if (
         preferences.themeMode == "dark" && preferences.darkAppearance == "amoled"
     ) {
-        baseColorScheme.copy(
+        textSafeDarkScheme.copy(
             background = Color.Black,
             surface = Color.Black,
             surfaceVariant = Color.Black,
@@ -383,28 +436,21 @@ private fun DislauncherRoot() {
             surfaceTint = Color.Transparent
         )
     } else {
-        baseColorScheme
+        textSafeDarkScheme
     }
-    val fontFamily = when (preferences.fontMode) {
-        "sans" -> FontFamily(
-            androidx.compose.ui.text.font.Font(
-                R.font.google_sans_flex,
-                variationSettings = FontVariation.Settings(
-                    FontVariation.Setting("ROND", 100f)
-                )
-            )
-        )
-        "serif" -> FontFamily.Serif
-        "opensans" -> FontFamily(androidx.compose.ui.text.font.Font(R.font.open_sans_regular, androidx.compose.ui.text.font.FontWeight.Normal))
-        "raleway-dots" -> FontFamily(androidx.compose.ui.text.font.Font(R.font.raleway_dots_regular, androidx.compose.ui.text.font.FontWeight.Normal))
-        "menlo" -> FontFamily(android.graphics.Typeface.create("monospace", android.graphics.Typeface.NORMAL))
-        "mono" -> FontFamily.Monospace
-        "condensed" -> FontFamily(android.graphics.Typeface.create("sans-serif-condensed", android.graphics.Typeface.NORMAL))
-        "rounded" -> FontFamily(android.graphics.Typeface.create("sans-serif-rounded", android.graphics.Typeface.NORMAL))
-        "light" -> FontFamily(android.graphics.Typeface.create("sans-serif-light", android.graphics.Typeface.NORMAL))
-        "casual" -> FontFamily(android.graphics.Typeface.create("casual", android.graphics.Typeface.NORMAL))
-        "cursive" -> FontFamily(android.graphics.Typeface.create("cursive", android.graphics.Typeface.NORMAL))
-        else -> FontFamily.SansSerif
+    val fontFamily = remember(preferences.fontMode, preferences.customFontName) {
+        when (preferences.fontMode) {
+            "mono" -> FontFamily.Monospace
+            "custom" -> {
+                val fontFile = listOf("ttf", "otf")
+                    .map { File(context.filesDir, "fonts/custom-font.$it") }
+                    .firstOrNull { it.isFile && it.length() in 12L..(10L * 1024L * 1024L) }
+                fontFile?.let { file ->
+                    runCatching { FontFamily(Typeface.createFromFile(file)) }.getOrNull()
+                } ?: FontFamily.Default
+            }
+            else -> FontFamily.Default
+        }
     }
     val fontScale = when (preferences.fontSize) {
         "small" -> 0.88f
@@ -482,6 +528,7 @@ private fun DislauncherRoot() {
                 hiddenApps = hiddenApps,
                 iconPacks = iconPacks,
                 onPreferencesChange = ::updatePreferences,
+                onChooseCustomFont = { customFontPicker.launch(arrayOf("*/*")) },
                 onDoubleTapLockChange = ::changeDoubleTapLock,
                 onToggleFavorite = ::toggleFavorite,
                 onToggleHidden = ::toggleHidden,
@@ -595,6 +642,85 @@ private fun DislauncherRoot() {
             }
         }
         }
+    }
+}
+
+private const val MAX_CUSTOM_FONT_BYTES = 10 * 1024 * 1024
+
+private fun importUserCustomFont(context: Context, uri: Uri): String {
+    val resolver = context.contentResolver
+    val displayName = resolver.query(
+        uri,
+        arrayOf(OpenableColumns.DISPLAY_NAME),
+        null,
+        null,
+        null
+    )?.use { cursor ->
+        val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+        if (index >= 0 && cursor.moveToFirst()) cursor.getString(index) else null
+    } ?: uri.lastPathSegment.orEmpty()
+
+    val extension = displayName.substringAfterLast('.', "").lowercase(Locale.ROOT)
+    require(extension == "ttf" || extension == "otf") {
+        "Only .ttf and .otf font files are supported."
+    }
+    val fontDirectory = File(context.filesDir, "fonts")
+    if (!fontDirectory.isDirectory && !fontDirectory.mkdirs()) {
+        throw IOException("Unable to create private font storage.")
+    }
+    val temporaryFile = File(fontDirectory, ".custom-font.$extension.tmp")
+    try {
+        val input = resolver.openInputStream(uri) ?: throw IOException("Unable to read selected font.")
+        var totalBytes = 0L
+        val header = ByteArray(4)
+        var headerCount = 0
+        input.use { source ->
+            FileOutputStream(temporaryFile).use { destination ->
+                val buffer = ByteArray(8192)
+                while (true) {
+                    val count = source.read(buffer)
+                    if (count < 0) break
+                    if (count == 0) continue
+                    if (totalBytes + count > MAX_CUSTOM_FONT_BYTES.toLong()) {
+                        throw IllegalArgumentException("Font files must be 10 MB or smaller.")
+                    }
+                    val headerPart = minOf(count, header.size - headerCount)
+                    if (headerPart > 0) {
+                        System.arraycopy(buffer, 0, header, headerCount, headerPart)
+                        headerCount += headerPart
+                    }
+                    destination.write(buffer, 0, count)
+                    totalBytes += count
+                }
+                destination.fd.sync()
+            }
+        }
+        require(totalBytes >= 12L) { "The selected font file is too small." }
+        val signature = String(header, Charsets.ISO_8859_1)
+        val validHeader = when (extension) {
+            "ttf" -> header.contentEquals(byteArrayOf(0, 1, 0, 0)) ||
+                signature == "true" || signature == "typ1"
+            "otf" -> signature == "OTTO"
+            else -> false
+        }
+        require(validHeader) { "The file extension does not match a supported font format." }
+        runCatching { Typeface.createFromFile(temporaryFile) }.getOrElse {
+            throw IllegalArgumentException("Android could not load this font file.", it)
+        }
+        val targetFile = File(fontDirectory, "custom-font.$extension")
+        Files.move(temporaryFile.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        val otherExtension = if (extension == "ttf") "otf" else "ttf"
+        File(fontDirectory, "custom-font.$otherExtension").delete()
+        val safeName = displayName
+            .substringAfterLast('/')
+            .substringAfterLast('\\')
+            .filterNot { Character.isISOControl(it) }
+            .trim()
+            .take(80)
+        return safeName.ifBlank { "Custom font.$extension" }
+    } catch (error: Exception) {
+        temporaryFile.delete()
+        throw error
     }
 }
 

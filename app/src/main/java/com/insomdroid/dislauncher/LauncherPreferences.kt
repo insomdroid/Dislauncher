@@ -6,10 +6,11 @@ internal data class LauncherPreferences(
     val themeMode: String = "system",
     val dynamicColor: Boolean = true,
     val darkAppearance: String = "system",
-    val fontMode: String = "sans",
+    val fontMode: String = "system",
+    val customFontName: String? = null,
     val fontSize: String = "medium",
     val iconPack: String = "system",
-    val showAppIcons: Boolean = true,
+    val showAppIcons: Boolean = false,
     val hideStatusBar: Boolean = false,
     val showSearchBar: Boolean = true,
     val showCharacterScroll: Boolean = true,
@@ -24,14 +25,14 @@ internal data class LauncherPreferences(
     val weatherUnit: String = "C",
     val timeFormat: String = "system",
     val showScreenTime: Boolean = false,
-    val showTasks: Boolean = false,
-    val showCall: Boolean = false,
-    val showSettingsButton: Boolean = false,
+    val showTasks: Boolean = true,
+    val showCall: Boolean = true,
+    val showSettingsButton: Boolean = true,
     val showMusic: Boolean = false,
     val hideSystemApps: Boolean = false,
     val doubleTapToLock: Boolean = false,
     val swipeDownNotifications: Boolean = true,
-    val showCalendarShortcut: Boolean = false
+    val showCalendarShortcut: Boolean = true
 ) {
     fun save(p: SharedPreferences) {
         p.edit()
@@ -39,6 +40,7 @@ internal data class LauncherPreferences(
             .putBoolean("dynamic_color", dynamicColor)
             .putString("dark_appearance", darkAppearance)
             .putString("font_mode", fontMode)
+            .putString("custom_font_name", customFontName)
             .putString("font_size", fontSize)
             .putString("icon_pack", iconPack)
             .putBoolean("show_app_icons", showAppIcons)
@@ -75,12 +77,8 @@ internal data class LauncherPreferences(
         }
 
         private fun normalizeFontMode(value: String): String = when (value) {
-            "writer", "ubuntu" -> "condensed"
-            "quicksand", "nunito" -> "rounded"
-            "opensans-light", "nunito-light" -> "light"
-            "writer-mono" -> "mono"
-            "opensans", "menlo", "raleway-dots", "sans", "serif", "mono", "condensed", "rounded", "light", "casual", "cursive" -> value
-            else -> "sans"
+            "system", "mono", "custom" -> value
+            else -> "system"
         }
 
         fun load(p: SharedPreferences): LauncherPreferences {
@@ -99,10 +97,11 @@ internal data class LauncherPreferences(
                     "dark_appearance",
                     if (p.getBoolean("pitch_black", false)) "amoled" else "system"
                 )?.let { if (it == "amoled") "amoled" else "system" } ?: "system",
-                fontMode = normalizeFontMode(p.getString("font_mode", "sans") ?: "sans"),
+                fontMode = normalizeFontMode(p.getString("font_mode", "system") ?: "system"),
+                customFontName = p.getString("custom_font_name", null)?.take(80),
                 fontSize = p.getString("font_size", "medium") ?: "medium",
                 iconPack = p.getString("icon_pack", "system") ?: "system",
-                showAppIcons = p.getBoolean("show_app_icons", true),
+                showAppIcons = p.getBoolean("show_app_icons", false),
                 hideStatusBar = p.getBoolean("hide_status_bar", false),
                 showSearchBar = p.getBoolean("show_search_bar", true),
                 showCharacterScroll = p.getBoolean("show_character_scroll", true),
@@ -117,14 +116,14 @@ internal data class LauncherPreferences(
                 weatherUnit = p.getString("weather_unit", "C") ?: "C",
                 timeFormat = p.getString("time_format", "system") ?: "system",
                 showScreenTime = p.getBoolean("show_screen_time", false),
-                showTasks = p.getBoolean("show_tasks", false),
-                showCall = p.getBoolean("show_call", false),
-                showSettingsButton = p.getBoolean("show_settings_button", false),
+                showTasks = p.getBoolean("show_tasks", true),
+                showCall = p.getBoolean("show_call", true),
+                showSettingsButton = p.getBoolean("show_settings_button", true),
                 showMusic = p.getBoolean("show_music", false),
                 hideSystemApps = p.getBoolean("hide_system_apps", false),
                 doubleTapToLock = p.getBoolean("double_tap_to_lock", false),
                 swipeDownNotifications = p.getBoolean("swipe_down_notifications", true),
-                showCalendarShortcut = p.getBoolean("show_calendar_shortcut", false)
+                showCalendarShortcut = p.getBoolean("show_calendar_shortcut", true)
             )
         }
     }
