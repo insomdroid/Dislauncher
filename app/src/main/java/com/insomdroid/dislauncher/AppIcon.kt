@@ -6,10 +6,20 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -47,8 +57,28 @@ internal fun AppIcon(app: LauncherApp, iconPack: String, size: Dp = 20.dp) {
     val image = remember(context, app.packageName, app.activityName, iconPack) {
         drawableToBitmap(resolveAppDrawable(context, app, iconPack))?.asImageBitmap()
     }
-    if (image != null) {
-        Image(bitmap = image, contentDescription = app.label, modifier = Modifier.size(size))
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(RoundedCornerShape(size * 0.30f))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(size * 0.10f),
+        contentAlignment = Alignment.Center
+    ) {
+        if (image != null) {
+            Image(
+                bitmap = image,
+                contentDescription = app.label,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Text(
+                app.label.firstOrNull()?.uppercaseChar()?.toString() ?: "•",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
 

@@ -141,41 +141,6 @@ internal fun AppsScreen(
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .padding(start = 16.dp, end = 14.dp, top = 14.dp, bottom = 8.dp)
     ) {
-        if (preferences.showSearchBar) {
-            Column(Modifier.fillMaxWidth().padding(top = 3.dp)) {
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(48.dp).padding(start = 12.dp),
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    if (query.isEmpty()) {
-                        Text(
-                            "Search Apps",
-                            color = mainText,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontSize = 16.sp
-                        )
-                    }
-                    BasicTextField(
-                        value = query,
-                        onValueChange = onQueryChange,
-                        modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
-                        singleLine = true,
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(
-                            color = mainText,
-                            fontFamily = fontFamily,
-                            fontSize = 16.sp
-                        ),
-                        cursorBrush = SolidColor(mainText)
-                    )
-                }
-                HorizontalDivider(
-                    modifier = Modifier.fillMaxWidth(),
-                    thickness = 1.dp,
-                    color = mainText.copy(alpha = 0.9f)
-                )
-            }
-        }
-        Spacer(Modifier.height(10.dp))
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             LazyColumn(
                 state = listState,
@@ -202,7 +167,7 @@ internal fun AppsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (preferences.showAppIcons) {
-                            AppIcon(app, preferences.iconPack, size = 19.dp)
+                            AppIcon(app, preferences.iconPack, size = 24.dp)
                             Spacer(Modifier.width(9.dp))
                         }
                         Text(
@@ -245,7 +210,6 @@ internal fun AppsScreen(
                     Column(
                         modifier = Modifier.width(22.dp)
                             .align(Alignment.CenterEnd)
-                            .offset(y = maxHeight * 0.23f)
                             .pointerInput(scrubberLetters, filtered) {
                                 awaitEachGesture {
                                     val down = awaitFirstDown(requireUnconsumed = false)
@@ -343,6 +307,41 @@ internal fun AppsScreen(
                         }
                     }
                 }
+            }
+        }
+        if (preferences.showSearchBar) {
+            Spacer(Modifier.height(10.dp))
+            Column(Modifier.fillMaxWidth().padding(top = 3.dp)) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(48.dp).padding(start = 12.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    if (query.isEmpty()) {
+                        Text(
+                            "Search Apps",
+                            color = mainText,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontSize = 16.sp
+                        )
+                    }
+                    BasicTextField(
+                        value = query,
+                        onValueChange = onQueryChange,
+                        modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(
+                            color = mainText,
+                            fontFamily = fontFamily,
+                            fontSize = 16.sp
+                        ),
+                        cursorBrush = SolidColor(mainText)
+                    )
+                }
+                HorizontalDivider(
+                    modifier = Modifier.fillMaxWidth(),
+                    thickness = 1.dp,
+                    color = mainText.copy(alpha = 0.9f)
+                )
             }
         }
     }

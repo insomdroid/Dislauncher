@@ -35,7 +35,14 @@ jobs:
         run: |
           set -euo pipefail
           FONT_REVISION="66928797f271fed5ee428544e7229685e2d90127"
+          GOOGLE_SANS_REVISION="bd8f81ddb5c74d5c8897b36ad88b440266245103"
           mkdir -p app/src/main/res/font app/src/main/assets/fonts
+          curl --fail --location --retry 3 --silent --show-error \
+            "https://raw.githubusercontent.com/google/fonts/$GOOGLE_SANS_REVISION/ofl/googlesansflex/GoogleSansFlex%5BROND%2Copsz%2Cslnt%2Cwdth%2Cwght%5D.ttf" \
+            --output app/src/main/res/font/google_sans_flex.ttf
+          curl --fail --location --retry 3 --silent --show-error \
+            "https://raw.githubusercontent.com/google/fonts/$GOOGLE_SANS_REVISION/ofl/googlesansflex/OFL.txt" \
+            --output app/src/main/assets/fonts/OFL-GoogleSansFlex.txt
           curl --fail --location --retry 3 --silent --show-error \
             "https://raw.githubusercontent.com/google/fonts/$FONT_REVISION/ofl/opensans/OpenSans%5Bwdth,wght%5D.ttf" \
             --output app/src/main/res/font/open_sans_regular.ttf
@@ -50,6 +57,7 @@ jobs:
             --output app/src/main/assets/fonts/OFL-RalewayDots.txt
           test -s app/src/main/res/font/open_sans_regular.ttf
           test -s app/src/main/res/font/raleway_dots_regular.ttf
+          test -s app/src/main/res/font/google_sans_flex.ttf
 
       - name: Build release APK (debug-signed for CI)
         run: gradle assembleRelease
