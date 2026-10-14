@@ -225,45 +225,46 @@ internal fun AppsScreen(
             if (preferences.showCharacterScroll && scrubberLetters.isNotEmpty()) {
                 BoxWithConstraints(
                     modifier = Modifier.align(Alignment.CenterEnd).width(22.dp).fillMaxHeight()
-                        .pointerInput(scrubberLetters, filtered) {
-                            awaitEachGesture {
-                                val down = awaitFirstDown(requireUnconsumed = false)
-                                isScrubbing = true
-                                var previousIndex = -1
-                                fun updateFromY(y: Float) {
-                                    val fraction = (y / size.height.toFloat()).coerceIn(0f, 0.9999f)
-                                    scrubFraction = fraction
-                                    val index = (fraction * scrubberLetters.size).toInt()
-                                        .coerceIn(0, scrubberLetters.lastIndex)
-                                    if (index != previousIndex) {
-                                        previousIndex = index
-                                        activeLetter = scrubberLetters[index]
-                                        val row = firstIndexByLetter[activeLetter] ?: 0
-                                        scope.launch { listState.scrollToItem(row) }
-                                    }
-                                }
-                                try {
-                                    updateFromY(down.position.y)
-                                    var pressed = true
-                                    while (pressed) {
-                                        val event = awaitPointerEvent()
-                                        val change = event.changes.firstOrNull() ?: break
-                                        if (change.pressed) {
-                                            updateFromY(change.position.y)
-                                            change.consume()
-                                        } else {
-                                            pressed = false
-                                        }
-                                    }
-                                } finally {
-                                    isScrubbing = false
-                                }
-                            }
-                        }
                 ) {
                     Column(
-                        modifier = Modifier.align(Alignment.CenterEnd)
+                        modifier = Modifier.width(22.dp)
+                            .align(Alignment.CenterEnd)
                             .offset(y = maxHeight * 0.23f)
+                            .pointerInput(scrubberLetters, filtered) {
+                                awaitEachGesture {
+                                    val down = awaitFirstDown(requireUnconsumed = false)
+                                    isScrubbing = true
+                                    var previousIndex = -1
+                                    fun updateFromY(y: Float) {
+                                        val fraction = (y / size.height.toFloat()).coerceIn(0f, 0.9999f)
+                                        scrubFraction = fraction
+                                        val index = (fraction * scrubberLetters.size).toInt()
+                                            .coerceIn(0, scrubberLetters.lastIndex)
+                                        if (index != previousIndex) {
+                                            previousIndex = index
+                                            activeLetter = scrubberLetters[index]
+                                            val row = firstIndexByLetter[activeLetter] ?: 0
+                                            scope.launch { listState.scrollToItem(row) }
+                                        }
+                                    }
+                                    try {
+                                        updateFromY(down.position.y)
+                                        var pressed = true
+                                        while (pressed) {
+                                            val event = awaitPointerEvent()
+                                            val change = event.changes.firstOrNull() ?: break
+                                            if (change.pressed) {
+                                                updateFromY(change.position.y)
+                                                change.consume()
+                                            } else {
+                                                pressed = false
+                                            }
+                                        }
+                                    } finally {
+                                        isScrubbing = false
+                                    }
+                                }
+                            }
                             .padding(horizontal = 1.dp, vertical = 2.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(1.dp)
