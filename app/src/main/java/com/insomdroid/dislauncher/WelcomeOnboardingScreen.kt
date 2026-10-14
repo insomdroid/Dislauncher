@@ -38,6 +38,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -51,6 +52,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -454,6 +456,14 @@ internal fun WelcomeOnboardingScreen(
                         }
                     },
                     shape = MaterialTheme.shapes.extraLarge,
+                    colors = if (MaterialTheme.colorScheme.onBackground == Color.White) {
+                        ButtonDefaults.buttonColors(
+                            containerColor = Color.DarkGray,
+                            contentColor = Color.White
+                        )
+                    } else {
+                        ButtonDefaults.buttonColors()
+                    },
                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp)
                 ) {
                     Text(if (page == pageCount - 1) "Finish setup" else "Continue")
