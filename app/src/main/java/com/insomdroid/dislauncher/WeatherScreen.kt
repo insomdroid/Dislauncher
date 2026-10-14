@@ -17,8 +17,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -31,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -88,16 +89,15 @@ internal fun WeatherScreen(
         }
     }
 
+    val currentWeather = weather
     Column(
         modifier = Modifier.fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .windowInsetsPadding(WindowInsets.systemBars)
-            .padding(vertical = 8.dp),
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .padding(horizontal = 20.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).height(50.dp)
-        ) {
+        Box(modifier = Modifier.fillMaxWidth().height(52.dp)) {
             Text(
                 "←",
                 color = primary,
@@ -108,59 +108,60 @@ internal fun WeatherScreen(
                     .padding(end = 12.dp)
             )
             Text(
-                weather?.locationName ?: cachedWeather?.locationName ?: "Weather",
+                currentWeather?.locationName ?: cachedWeather?.locationName ?: "Weather",
                 color = primary,
-                fontSize = 22.sp,
-                lineHeight = 28.sp,
-                fontWeight = FontWeight.Normal,
+                fontSize = 20.sp,
+                lineHeight = 26.sp,
+                fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = 42.dp)
+                modifier = Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = 46.dp)
             )
         }
 
-        if (weather != null) {
-            Spacer(Modifier.weight(0.8f))
-            WeatherIcon(
-                weather!!.condition,
-                primary,
-                Modifier.size(260.dp)
-            )
-            Spacer(Modifier.weight(1.2f))
+        if (currentWeather != null) {
+            Spacer(Modifier.weight(1f))
+            WeatherIcon(currentWeather.condition, primary, Modifier.size(190.dp))
+            Spacer(Modifier.height(12.dp))
             Text(
-                "${weather!!.temperature} ${weather!!.condition.lowercase(Locale.getDefault())}",
+                currentWeather.temperature,
                 color = primary,
-                fontSize = 35.sp,
-                lineHeight = 43.sp,
-                letterSpacing = (-0.9).sp,
+                fontSize = 56.sp,
+                lineHeight = 64.sp,
+                letterSpacing = (-1.4).sp,
                 fontWeight = FontWeight.Normal,
                 maxLines = 1,
                 softWrap = false,
-                overflow = TextOverflow.Clip,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
-            weather!!.feelsLike?.let {
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    "feels like $it",
-                    color = primary,
-                    fontSize = 18.sp,
-                    lineHeight = 24.sp,
-                    textAlign = TextAlign.Center
-                )
-            }
-            if (weather!!.high != null || weather!!.low != null) {
-                Spacer(Modifier.height(17.dp))
-                Text(
-                    listOfNotNull(weather!!.high?.let { "H: $it" }, weather!!.low?.let { "L: $it" })
-                        .joinToString("  "),
-                    color = primary,
-                    fontSize = 18.sp,
-                    lineHeight = 23.sp,
-                    textAlign = TextAlign.Center
-                )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                currentWeather.condition.lowercase(Locale.getDefault()).replaceFirstChar { it.uppercase() },
+                color = secondary,
+                fontSize = 18.sp,
+                lineHeight = 25.sp,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            if (currentWeather.feelsLike != null || currentWeather.high != null || currentWeather.low != null) {
+                Spacer(Modifier.height(28.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    currentWeather.feelsLike?.let {
+                        WeatherMetric("FEELS LIKE", it, primary, secondary)
+                    }
+                    if (currentWeather.high != null || currentWeather.low != null) {
+                        val highLow = "H: " + (currentWeather.high ?: "—") + "   L: " + (currentWeather.low ?: "—")
+                        WeatherMetric("HIGH / LOW", highLow, primary, secondary)
+                    }
+                }
             }
             Spacer(Modifier.weight(1f))
         } else {
@@ -170,7 +171,7 @@ internal fun WeatherScreen(
                 color = secondary,
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 28.dp)
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
             )
             if (!locationGranted && !loading) {
                 Spacer(Modifier.height(12.dp))
@@ -187,6 +188,26 @@ internal fun WeatherScreen(
             }
             Spacer(Modifier.weight(1f))
         }
+    }
+}
+
+@Composable
+private fun WeatherMetric(
+    label: String,
+    value: String,
+    primary: Color,
+    secondary: Color
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            label,
+            color = secondary,
+            fontSize = 10.sp,
+            lineHeight = 14.sp,
+            fontWeight = FontWeight.Medium
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(value, color = primary, fontSize = 15.sp, lineHeight = 20.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
