@@ -147,15 +147,15 @@ internal fun AppsScreen(
             Text(
                 "Apps",
                 color = mainText,
-                fontSize = 22.sp,
-                lineHeight = 28.sp,
+                fontSize = 18.sp,
+                lineHeight = 24.sp,
                 fontWeight = FontWeight.Medium
             )
             Text(
-                "Setting",
-                color = secondary,
-                fontSize = 14.sp,
-                lineHeight = 18.sp,
+                "Settings",
+                color = mainText,
+                fontSize = 18.sp,
+                lineHeight = 24.sp,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.clickable(onClick = onOpenSettings)
                     .padding(horizontal = 8.dp, vertical = 8.dp)
@@ -194,8 +194,8 @@ internal fun AppsScreen(
                         Text(
                             app.label,
                             color = mainText,
-                            fontSize = 18.sp * fontScale,
-                            lineHeight = 24.sp * fontScale,
+                            fontSize = 25.sp * fontScale,
+                            lineHeight = 32.sp * fontScale,
                             fontFamily = fontFamily,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,

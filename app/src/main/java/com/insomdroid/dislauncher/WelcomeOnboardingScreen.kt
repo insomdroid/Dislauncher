@@ -143,6 +143,7 @@ internal fun WelcomeOnboardingScreen(
             Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
                 Text(
                     "DISLAUNCHER",
+                    color = MaterialTheme.colorScheme.onBackground,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.4.sp
@@ -181,6 +182,7 @@ internal fun WelcomeOnboardingScreen(
                                 "Set up your permissions",
                                 modifier = Modifier.fillMaxWidth(),
                                 style = MaterialTheme.typography.headlineMedium,
+                                color = MaterialTheme.colorScheme.onBackground,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center
                             )
@@ -237,6 +239,7 @@ internal fun WelcomeOnboardingScreen(
                                 "Choose your five favourites",
                                 modifier = Modifier.fillMaxWidth(),
                                 style = MaterialTheme.typography.headlineMedium,
+                                color = MaterialTheme.colorScheme.onBackground,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center
                             )
@@ -260,7 +263,11 @@ internal fun WelcomeOnboardingScreen(
                                     onCheckedChange = { useSelectedAsHomeApps = it }
                                 )
                                 Column(Modifier.weight(1f)) {
-                                    Text("Use selected apps as default Home apps", style = MaterialTheme.typography.titleSmall)
+                                    Text(
+                                        "Use selected apps as default Home apps",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        color = MaterialTheme.colorScheme.onBackground
+                                    )
                                     Text(
                                         "Turn off to use Dislauncher's default app choices.",
                                         style = MaterialTheme.typography.bodySmall,
@@ -274,7 +281,11 @@ internal fun WelcomeOnboardingScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("Selected", style = MaterialTheme.typography.titleSmall)
+                                Text(
+                                    "Selected",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                )
                                 Text(
                                     "${selectedFavorites.size.coerceAtMost(5)}/5",
                                     color = MaterialTheme.colorScheme.primary,
@@ -306,6 +317,7 @@ internal fun WelcomeOnboardingScreen(
                                         Text(
                                             app.label,
                                             modifier = Modifier.weight(1f),
+                                            color = MaterialTheme.colorScheme.onBackground,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
                                             style = MaterialTheme.typography.bodyLarge
@@ -368,6 +380,7 @@ internal fun WelcomeOnboardingScreen(
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 style = MaterialTheme.typography.headlineLarge,
+                                color = MaterialTheme.colorScheme.onBackground,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center,
                                 lineHeight = 40.sp
@@ -510,7 +523,12 @@ private fun PermissionActionRow(
             modifier = Modifier.weight(1f).padding(end = 8.dp),
             verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
-            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+            Text(
+                title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onBackground
+            )
             Text(
                 description,
                 style = MaterialTheme.typography.bodySmall,
