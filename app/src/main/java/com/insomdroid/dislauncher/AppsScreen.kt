@@ -112,10 +112,6 @@ internal fun AppsScreen(
         }
         result
     }
-    val scrubberLetters = remember(firstIndexByLetter) { firstIndexByLetter.keys.toList() }
-    var isScrubbing by remember { mutableStateOf(false) }
-    var activeLetter by remember { mutableStateOf("") }
-    var scrubFraction by remember { mutableFloatStateOf(0.5f) }
     var selectedApp by remember { mutableStateOf<LauncherApp?>(null) }
     var renamingApp by remember { mutableStateOf<LauncherApp?>(null) }
     var renameValue by remember { mutableStateOf("") }
@@ -144,7 +140,7 @@ internal fun AppsScreen(
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             LazyColumn(
                 state = listState,
-                modifier = Modifier.fillMaxSize().padding(end = if (preferences.showCharacterScroll) 20.dp else 0.dp),
+                modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 16.dp, top = 2.dp),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
@@ -203,112 +199,6 @@ internal fun AppsScreen(
                 }
             }
 
-            if (preferences.showCharacterScroll && scrubberLetters.isNotEmpty()) {
-                BoxWithConstraints(
-                    modifier = Modifier.align(Alignment.CenterEnd).width(30.dp).fillMaxHeight()
-                ) {
-                    Column(
-                        modifier = Modifier.width(30.dp)
-                            .align(Alignment.CenterEnd)
-                            .pointerInput(scrubberLetters, filtered) {
-                                awaitEachGesture {
-                                    val down = awaitFirstDown(requireUnconsumed = false)
-                                    isScrubbing = true
-                                    var previousIndex = -1
-                                    fun updateFromY(y: Float) {
-                                        val fraction = (y / size.height.toFloat()).coerceIn(0f, 0.9999f)
-                                        scrubFraction = fraction
-                                        val index = (fraction * scrubberLetters.size).toInt()
-                                            .coerceIn(0, scrubberLetters.lastIndex)
-                                        if (index != previousIndex) {
-                                            previousIndex = index
-                                            activeLetter = scrubberLetters[index]
-                                            val row = firstIndexByLetter[activeLetter] ?: 0
-                                            scope.launch { listState.scrollToItem(row) }
-                                        }
-                                    }
-                                    try {
-                                        updateFromY(down.position.y)
-                                        var pressed = true
-                                        while (pressed) {
-                                            val event = awaitPointerEvent()
-                                            val change = event.changes.firstOrNull() ?: break
-                                            if (change.pressed) {
-                                                updateFromY(change.position.y)
-                                                change.consume()
-                                            } else {
-                                                pressed = false
-                                            }
-                                        }
-                                    } finally {
-                                        isScrubbing = false
-                                    }
-                                }
-                            }
-                            .padding(horizontal = 1.dp, vertical = 2.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(1.dp)
-                    ) {
-                        scrubberLetters.forEachIndexed { index, letter ->
-                            val selectedWaveIndex = (scrubFraction * scrubberLetters.size)
-                                .toInt()
-                                .coerceIn(0, scrubberLetters.lastIndex)
-                            val waveDistance = kotlin.math.abs(index - selectedWaveIndex)
-                            val waveTarget = if (isScrubbing) {
-                                (1f - waveDistance / 4.5f).coerceIn(0f, 1f)
-                            } else {
-                                0f
-                            }
-                            val wave by animateFloatAsState(
-                                targetValue = waveTarget,
-                                animationSpec = tween(
-                                    durationMillis = 90,
-                                    easing = FastOutSlowInEasing
-                                ),
-                                label = "scrubber-wave-$index"
-                            )
-                            Text(
-                                letter,
-                                color = if (isScrubbing && letter == activeLetter) mainText else secondary,
-                                fontSize = 13.sp,
-                                lineHeight = 19.sp,
-                                fontWeight = if (isScrubbing && letter == activeLetter) FontWeight.Bold else FontWeight.Normal,
-                                modifier = Modifier
-                                    .offset(x = (wave * 11f).dp)
-                                    .graphicsLayer {
-                                        scaleX = 1f + wave * 0.45f
-                                        scaleY = 1f + wave * 0.32f
-                                    }
-                            )
-                        }
-                    }
-                    Crossfade(
-                        targetState = isScrubbing && activeLetter.isNotBlank(),
-                        modifier = Modifier.align(Alignment.CenterEnd).offset(x = (-30).dp),
-                        animationSpec = tween(110),
-                        label = "scrubber-letter-visibility"
-                    ) { visible ->
-                        if (visible) {
-                            Crossfade(
-                                targetState = activeLetter,
-                                animationSpec = tween(85),
-                                label = "scrubber-active-letter"
-                            ) { letter ->
-                                Text(
-                                    letter,
-                                    color = mainText,
-                                    fontSize = 34.sp,
-                                    lineHeight = 38.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.width(40.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
         if (preferences.showSearchBar) {
             Spacer(Modifier.height(10.dp))
             Column(Modifier.fillMaxWidth().padding(top = 3.dp)) {

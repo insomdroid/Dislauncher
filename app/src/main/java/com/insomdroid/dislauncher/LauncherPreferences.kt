@@ -13,7 +13,6 @@ internal data class LauncherPreferences(
     val showAppIcons: Boolean = false,
     val hideStatusBar: Boolean = false,
     val showSearchBar: Boolean = true,
-    val showCharacterScroll: Boolean = true,
     val autoLaunchKeyboard: Boolean = false,
     val showBattery: Boolean = true,
     val showDayProgress: Boolean = true,
@@ -45,7 +44,6 @@ internal data class LauncherPreferences(
             .putBoolean("show_app_icons", showAppIcons)
             .putBoolean("hide_status_bar", hideStatusBar)
             .putBoolean("show_search_bar", showSearchBar)
-            .putBoolean("show_character_scroll", showCharacterScroll)
             .putBoolean("auto_launch_keyboard", autoLaunchKeyboard)
             .putBoolean("show_battery", showBattery)
             .putBoolean("show_day_progress", showDayProgress)
@@ -102,7 +100,6 @@ internal data class LauncherPreferences(
                 showAppIcons = p.getBoolean("show_app_icons", false),
                 hideStatusBar = p.getBoolean("hide_status_bar", false),
                 showSearchBar = p.getBoolean("show_search_bar", true),
-                showCharacterScroll = p.getBoolean("show_character_scroll", true),
                 autoLaunchKeyboard = p.getBoolean("auto_launch_keyboard", false),
                 showBattery = p.getBoolean("show_battery", true),
                 showDayProgress = p.getBoolean("show_day_progress", true),
