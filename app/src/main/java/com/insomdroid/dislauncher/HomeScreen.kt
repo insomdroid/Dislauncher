@@ -88,7 +88,7 @@ internal fun HomeScreen(
     onLaunch: (LauncherApp) -> Unit,
     onMoveFavorite: (String, String) -> Unit,
     onOpenTasks: () -> Unit,
-    onOpenWeather: () -> Unit,
+    onOpenWeather: (WeatherInfo?) -> Unit,
     onOpenSettings: () -> Unit,
     onDoubleTapToLock: () -> Unit,
     homeItemOrder: List<String>,
@@ -193,11 +193,11 @@ internal fun HomeScreen(
             )
         }
         if (preferences.showDate) {
-            Spacer(Modifier.height(1.dp))
+            Spacer(Modifier.height(5.dp))
             Text(
                 dateText,
                 color = secondaryText,
-                fontSize = 11.sp,
+                fontSize = 13.sp,
                 fontFamily = fontFamily,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -243,6 +243,20 @@ internal fun HomeScreen(
         }
 
 
+        if (preferences.showQuote) {
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = "“${inspirationQuotes[quoteIndex]}”",
+                color = secondaryText,
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+                fontFamily = fontFamily,
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+                    .clickable { quoteIndex = (quoteIndex + 1) % inspirationQuotes.size }
+                    .padding(vertical = 6.dp)
+            )
+        }
+
         if (preferences.showWeather || preferences.showBattery || preferences.showScreenTime) {
             Spacer(Modifier.height(7.dp))
             Row(
@@ -267,7 +281,7 @@ internal fun HomeScreen(
                         fontSize = 9.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f).padding(end = 8.dp).clickable(onClick = onOpenWeather)
+                        modifier = Modifier.weight(1f).padding(end = 8.dp).clickable { onOpenWeather(weatherInfo) }
                     )
                 }
                 if (preferences.showScreenTime) {
@@ -363,50 +377,43 @@ internal fun HomeScreen(
                                 }
                             )
                         }
-                        .clickable {
-                            when {
-                                app != null -> onLaunch(app)
-                                itemId == HOME_ITEM_TASKS -> onOpenTasks()
-                                itemId == HOME_ITEM_CALLS -> runCatching {
-                                    context.startActivity(Intent(Intent.ACTION_DIAL))
+                        .then(
+                            if (itemId == HOME_ITEM_MUSIC) Modifier else Modifier.clickable {
+                                when {
+                                    app != null -> onLaunch(app)
+                                    itemId == HOME_ITEM_TASKS -> onOpenTasks()
+                                    itemId == HOME_ITEM_CALLS -> runCatching {
+                                        context.startActivity(Intent(Intent.ACTION_DIAL))
+                                    }
                                 }
-                                itemId == HOME_ITEM_MUSIC -> openMusicPlayer(context, apps)
                             }
-                        }
-                        .padding(vertical = 3.dp),
+                        )
+                        .padding(vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (app != null && preferences.showAppIcons) {
-                        AppIcon(app, preferences.iconPack, size = 17.dp)
+                    if (itemId == HOME_ITEM_MUSIC) {
+                        MusicPlayerWidget(
+                            modifier = Modifier.fillMaxWidth(),
+                            onOpenMusicApp = { openMusicPlayer(context, apps) }
+                        )
+                    } else {
+                        if (app != null && preferences.showAppIcons) {
+                            AppIcon(app, preferences.iconPack, size = 19.dp)
+                        }
+                        Text(
+                            text = label,
+                            color = primaryText,
+                            fontSize = 22.sp,
+                            lineHeight = 29.sp,
+                            fontFamily = fontFamily,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                                .padding(start = if (app != null && preferences.showAppIcons) 8.dp else 0.dp)
+                        )
                     }
-                    Text(
-                        text = label,
-                        color = primaryText,
-                        fontSize = 20.sp,
-                        lineHeight = 25.sp,
-                        fontFamily = fontFamily,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                            .padding(start = if (app != null && preferences.showAppIcons) 8.dp else 0.dp)
-                    )
                 }
             }
-        }
-
-        Spacer(Modifier.height(8.dp))
-        if (preferences.showQuote) {
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = "“${inspirationQuotes[quoteIndex]}”",
-                color = secondaryText,
-                fontSize = 12.sp,
-                lineHeight = 17.sp,
-                fontFamily = fontFamily,
-                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
-                    .clickable { quoteIndex = (quoteIndex + 1) % inspirationQuotes.size }
-                    .padding(vertical = 3.dp)
-            )
         }
 
         if (preferences.showSettingsButton) {
@@ -436,7 +443,10 @@ private fun ProgressLine(
     track: Color,
     fontScale: Float
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(
+        modifier = Modifier.fillMaxWidth(0.84f),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
