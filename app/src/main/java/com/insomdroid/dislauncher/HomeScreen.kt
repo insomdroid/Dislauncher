@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -144,8 +145,8 @@ internal fun HomeScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    LaunchedEffect(preferences.showWeather, preferences.themeMode, preferences.weatherUnit, cachedWeather) {
-        if (!preferences.showWeather && preferences.themeMode != "sun") {
+    LaunchedEffect(preferences.showWeather, preferences.weatherUnit, cachedWeather) {
+        if (!preferences.showWeather) {
             weatherInfo = null
             currentSolarInfoChange(null)
             return@LaunchedEffect
@@ -262,7 +263,7 @@ internal fun HomeScreen(
         }
 
 
-        if (preferences.showWeather || preferences.showBattery || preferences.showScreenTime) {
+        if (preferences.showWeather || preferences.showBattery || preferences.showScreenTime || preferences.showCalendarShortcut) {
             Spacer(Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -316,16 +317,17 @@ internal fun HomeScreen(
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false)
+                        modifier = Modifier.weight(1f)
                             .clickable { onOpenWeather(weatherInfo ?: cachedWeather) }
                     )
                 }
+                if (preferences.showCalendarShortcut) {
+                    CalendarAgenda(
+                        preferences.timeFormat,
+                        modifier = Modifier.widthIn(max = if (preferences.showWeather) 148.dp else 210.dp)
+                    )
+                }
             }
-        }
-
-        if (preferences.showCalendarShortcut) {
-            Spacer(Modifier.height(8.dp))
-            CalendarAgenda(preferences.timeFormat)
         }
 
         if (preferences.showMusic) {

@@ -3,9 +3,9 @@ package com.insomdroid.dislauncher
 import android.content.SharedPreferences
 
 internal data class LauncherPreferences(
-    val themeMode: String = "dark",
+    val themeMode: String = "system",
     val dynamicColor: Boolean = true,
-    val pitchBlack: Boolean = false,
+    val darkAppearance: String = "system",
     val fontMode: String = "sans",
     val fontSize: String = "medium",
     val iconPack: String = "system",
@@ -30,14 +30,14 @@ internal data class LauncherPreferences(
     val showMusic: Boolean = false,
     val hideSystemApps: Boolean = false,
     val doubleTapToLock: Boolean = false,
-    val swipeDownNotifications: Boolean = false,
+    val swipeDownNotifications: Boolean = true,
     val showCalendarShortcut: Boolean = false
 ) {
     fun save(p: SharedPreferences) {
         p.edit()
             .putString("theme_mode", themeMode)
             .putBoolean("dynamic_color", dynamicColor)
-            .putBoolean("pitch_black", pitchBlack)
+            .putString("dark_appearance", darkAppearance)
             .putString("font_mode", fontMode)
             .putString("font_size", fontSize)
             .putString("icon_pack", iconPack)
@@ -69,9 +69,8 @@ internal data class LauncherPreferences(
 
     companion object {
         private fun normalizeThemeMode(value: String): String = when (value) {
-            "system", "sun", "dark", "dim", "twitter-dim", "midnight-blue",
-            "dark-indigo", "carbon", "light", "pale-silver", "middle-blue",
-            "parchment", "blue-radiance" -> value
+            "light", "pale-silver", "middle-blue", "parchment", "blue-radiance" -> "light"
+            "system", "sun" -> "system"
             else -> "dark"
         }
 
@@ -94,9 +93,12 @@ internal data class LauncherPreferences(
                     .apply()
             }
             return LauncherPreferences(
-                themeMode = normalizeThemeMode(p.getString("theme_mode", "dark") ?: "dark"),
+                themeMode = normalizeThemeMode(p.getString("theme_mode", "system") ?: "system"),
                 dynamicColor = p.getBoolean("dynamic_color", true),
-                pitchBlack = p.getBoolean("pitch_black", false),
+                darkAppearance = p.getString(
+                    "dark_appearance",
+                    if (p.getBoolean("pitch_black", false)) "amoled" else "system"
+                )?.let { if (it == "amoled") "amoled" else "system" } ?: "system",
                 fontMode = normalizeFontMode(p.getString("font_mode", "sans") ?: "sans"),
                 fontSize = p.getString("font_size", "medium") ?: "medium",
                 iconPack = p.getString("icon_pack", "system") ?: "system",
@@ -121,7 +123,7 @@ internal data class LauncherPreferences(
                 showMusic = p.getBoolean("show_music", false),
                 hideSystemApps = p.getBoolean("hide_system_apps", false),
                 doubleTapToLock = p.getBoolean("double_tap_to_lock", false),
-                swipeDownNotifications = p.getBoolean("swipe_down_notifications", false),
+                swipeDownNotifications = p.getBoolean("swipe_down_notifications", true),
                 showCalendarShortcut = p.getBoolean("show_calendar_shortcut", false)
             )
         }
