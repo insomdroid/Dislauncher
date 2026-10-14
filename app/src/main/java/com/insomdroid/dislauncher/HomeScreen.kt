@@ -300,7 +300,7 @@ internal fun HomeScreen(
             Spacer(Modifier.height(7.dp))
             if (preferences.showTasks) {
                 Text(
-                    "TASKS",
+                    "Tasks",
                     color = primaryText,
                     fontSize = 20.sp * fontScale,
                     lineHeight = 25.sp * fontScale,
@@ -311,7 +311,7 @@ internal fun HomeScreen(
             }
             if (preferences.showCall) {
                 Text(
-                    "CALLS",
+                    "Calls",
                     color = primaryText,
                     fontSize = 20.sp * fontScale,
                     lineHeight = 25.sp * fontScale,
@@ -323,7 +323,7 @@ internal fun HomeScreen(
             }
             if (preferences.showMusic) {
                 Text(
-                    "MUSIC",
+                    "Music",
                     color = primaryText,
                     fontSize = 20.sp * fontScale,
                     lineHeight = 25.sp * fontScale,
@@ -334,7 +334,7 @@ internal fun HomeScreen(
             }
             if (preferences.showCalendarShortcut) {
                 Text(
-                    "CALENDAR",
+                    "Calendar",
                     color = primaryText,
                     fontSize = 20.sp * fontScale,
                     lineHeight = 25.sp * fontScale,
