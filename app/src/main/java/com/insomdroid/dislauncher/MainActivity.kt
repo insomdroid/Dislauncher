@@ -437,34 +437,31 @@ private fun DislauncherRoot() {
                     .background(colorScheme.background)
                     .pointerInput(notificationsGestureEnabled) {
                         if (!notificationsGestureEnabled) return@pointerInput
-                        val startZone = 128.dp.toPx()
-                        val triggerDistance = 48.dp.toPx()
+                        val triggerDistance = 100.dp.toPx()
                         awaitEachGesture {
                             val down = awaitFirstDown(
                                 pass = PointerEventPass.Initial,
                                 requireUnconsumed = false
                             )
-                            if (down.position.y > startZone) {
-                                var pressed = true
-                                while (pressed) {
-                                    val event = awaitPointerEvent(PointerEventPass.Initial)
-                                    pressed = event.changes.any { it.pressed }
+                            var downwardDistance = 0f
+                            var triggered = false
+                            var pointerStillDown = true
+                            while (pointerStillDown) {
+                                val event = awaitPointerEvent(PointerEventPass.Initial)
+                                val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                                if (!change.pressed) {
+                                    pointerStillDown = false
+                                    continue
                                 }
-                            } else {
-                                var downwardDistance = 0f
-                                var triggered = false
-                                while (true) {
-                                    val event = awaitPointerEvent(PointerEventPass.Initial)
-                                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                                    if (!change.pressed) break
-                                    val delta = change.positionChangeIgnoreConsumed()
-                                    if (!triggered && delta.y > 0f) downwardDistance += delta.y
-                                    if (!triggered && downwardDistance >= triggerDistance) {
-                                        triggered = true
-                                        expandNotificationPanel(context)
-                                    }
-                                    if (triggered) change.consume()
+                                val delta = change.positionChangeIgnoreConsumed()
+                                if (delta.y > 0f && kotlin.math.abs(delta.y) >= kotlin.math.abs(delta.x)) {
+                                    downwardDistance += delta.y
                                 }
+                                if (!triggered && downwardDistance >= triggerDistance) {
+                                    triggered = true
+                                    expandNotificationPanel(context)
+                                }
+                                if (triggered) change.consume()
                             }
                         }
                     }
@@ -635,11 +632,20 @@ private fun lockDevice(
     }
 }
 
+@android.annotation.SuppressLint("WrongConstant", "PrivateApi")
 private fun expandNotificationPanel(context: Context) {
-    if (DislauncherAccessibilityService.expandNotifications()) return
-    runCatching {
-        val manager = context.getSystemService("statusbar") ?: return
-        manager.javaClass.getMethod("expandNotificationsPanel").invoke(manager)
+    try {
+        val statusBarService = context.getSystemService("statusbar")
+            ?: throw IllegalStateException("Android status bar service is unavailable")
+        Class.forName("android.app.StatusBarManager")
+            .getMethod("expandNotificationsPanel")
+            .invoke(statusBarService)
+    } catch (error: Exception) {
+        android.util.Log.w(
+            "Dislauncher",
+            "Cannot expand notification shade on this device",
+            error
+        )
     }
 }
 
