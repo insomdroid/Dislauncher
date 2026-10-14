@@ -480,7 +480,7 @@ private fun SettingToggle(
             modifier = Modifier.weight(1f)
                 .clip(RoundedCornerShape(18.dp))
                 .clickable { onCheckedChange(!checked) }
-                .padding(vertical = 9.dp, end = 14.dp),
+                .padding(start = 0.dp, top = 9.dp, end = 14.dp, bottom = 9.dp),
             verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
             Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
