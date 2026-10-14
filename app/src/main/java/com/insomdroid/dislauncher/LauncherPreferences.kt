@@ -69,9 +69,9 @@ internal data class LauncherPreferences(
         private fun normalizeFontMode(value: String): String = when (value) {
             "writer", "ubuntu" -> "condensed"
             "quicksand", "nunito" -> "rounded"
-            "opensans", "opensans-light", "nunito-light" -> "light"
-            "menlo", "writer-mono" -> "mono"
-            "sans", "serif", "mono", "condensed", "rounded", "light", "casual", "cursive" -> value
+            "opensans-light", "nunito-light" -> "light"
+            "writer-mono" -> "mono"
+            "opensans", "menlo", "raleway-dots", "sans", "serif", "mono", "condensed", "rounded", "light", "casual", "cursive" -> value
             else -> "sans"
         }
 
