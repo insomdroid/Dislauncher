@@ -66,6 +66,12 @@ internal data class LauncherPreferences(
     }
 
     companion object {
+        private fun normalizeThemeMode(value: String): String = when (value) {
+            "system", "sun", "dark", "light" -> value
+            "pale-silver", "middle-blue", "parchment", "blue-radiance" -> "light"
+            else -> "dark"
+        }
+
         private fun normalizeFontMode(value: String): String = when (value) {
             "writer", "ubuntu" -> "condensed"
             "quicksand", "nunito" -> "rounded"
@@ -78,7 +84,7 @@ internal data class LauncherPreferences(
         fun load(p: SharedPreferences): LauncherPreferences {
             val oldProgress = p.getBoolean("show_progress", true)
             return LauncherPreferences(
-                themeMode = p.getString("theme_mode", "dark") ?: "dark",
+                themeMode = normalizeThemeMode(p.getString("theme_mode", "dark") ?: "dark"),
                 fontMode = normalizeFontMode(p.getString("font_mode", "sans") ?: "sans"),
                 fontSize = p.getString("font_size", "small") ?: "small",
                 iconPack = p.getString("icon_pack", "system") ?: "system",
