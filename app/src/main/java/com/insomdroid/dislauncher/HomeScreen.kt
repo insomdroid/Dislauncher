@@ -2,6 +2,7 @@ package com.insomdroid.dislauncher
 
 import android.Manifest
 import android.content.Intent
+import android.content.IntentFilter
 import android.app.AppOpsManager
 import android.app.usage.UsageStatsManager
 import android.content.Context
