@@ -10,6 +10,7 @@ import android.content.pm.ApplicationInfo
 import android.os.Build
 import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -33,6 +34,8 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -53,6 +56,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -71,7 +75,7 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import org.json.JSONObject
 
-internal enum class LauncherScreen { HOME, APPS, SETTINGS, TASKS, WEATHER }
+internal enum class LauncherScreen { ONBOARDING, HOME, APPS, SETTINGS, TASKS, WEATHER }
 
 internal data class LauncherApp(
     val packageName: String,
@@ -84,10 +88,11 @@ private const val MAX_PINNED_APPS = 5
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        window.statusBarColor = android.graphics.Color.TRANSPARENT
-        window.navigationBarColor = android.graphics.Color.TRANSPARENT
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
         setContent { DislauncherRoot() }
     }
 
@@ -102,7 +107,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun applyStatusBarPreference() {
-        window.statusBarColor = android.graphics.Color.TRANSPARENT
         val hidden = getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
             .getBoolean("hide_status_bar", false)
         val controller = WindowCompat.getInsetsController(window, window.decorView)
@@ -156,7 +160,15 @@ private fun DislauncherRoot() {
     var favoriteOrder by remember { mutableStateOf(readFavoriteOrder(prefsStore, favorites)) }
     var apps by remember { mutableStateOf<List<LauncherApp>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
-    var screen by remember { mutableStateOf(LauncherScreen.HOME) }
+    var screen by remember {
+        mutableStateOf(
+            if (prefsStore.getBoolean("onboarding_completed", false)) {
+                LauncherScreen.HOME
+            } else {
+                LauncherScreen.ONBOARDING
+            }
+        )
+    }
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 2 })
     val scope = rememberCoroutineScope()
     val iconPacks = remember { findIconPacks(context) }
@@ -315,6 +327,7 @@ private fun DislauncherRoot() {
             else -> Unit
         }
     }
+    BackHandler(enabled = screen == LauncherScreen.ONBOARDING) { }
 
     val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
     val solarDark = remember(solarWeather, solarTick) {
@@ -327,13 +340,13 @@ private fun DislauncherRoot() {
             solarTime.isBefore(sunrise) || !solarTime.isBefore(sunset)
         }
     }
-    val isDark = when (preferences.themeMode) {
+    val isDark = preferences.pitchBlack || when (preferences.themeMode) {
         "system" -> systemDark
         "sun" -> solarDark ?: systemDark
         "light", "pale-silver", "middle-blue", "parchment", "blue-radiance" -> false
         else -> true
     }
-    val backgroundColor = when (preferences.themeMode) {
+    val backgroundColor = if (preferences.pitchBlack) Color.Black else when (preferences.themeMode) {
         "system", "sun" -> if (isDark) Color.Black else Color.White
         "light" -> Color.White
         "dim" -> Color(0xFF151E29)
@@ -347,18 +360,18 @@ private fun DislauncherRoot() {
         "carbon" -> Color(0xFF333333)
         else -> Color.Black
     }
-    val foregroundColor = when (preferences.themeMode) {
+    val foregroundColor = if (preferences.pitchBlack) Color.White else when (preferences.themeMode) {
         "system", "sun" -> if (isDark) Color.White else Color.Black
         "light", "pale-silver", "middle-blue", "parchment", "blue-radiance" -> Color.Black
         else -> Color.White
     }
-    val secondaryColor = when (preferences.themeMode) {
+    val secondaryColor = if (preferences.pitchBlack) Color(0xFFBDBDBD) else when (preferences.themeMode) {
         "dark" -> Color(0xFFBDBDBD)
         "light" -> Color(0xFF666666)
         "pale-silver", "middle-blue", "parchment", "blue-radiance" -> Color.Black.copy(alpha = 0.72f)
         else -> foregroundColor.copy(alpha = 0.78f)
     }
-    val surfaceVariantColor = when (preferences.themeMode) {
+    val surfaceVariantColor = if (preferences.pitchBlack) Color.Black else when (preferences.themeMode) {
         "system", "sun" -> if (isDark) Color(0xFF1D1D1F) else Color(0xFFF2F2F7)
         "dark" -> Color(0xFF121212)
         "light" -> Color(0xFFF2F2F7)
@@ -373,16 +386,19 @@ private fun DislauncherRoot() {
         "blue-radiance" -> Color(0xFF43BAC5)
         else -> backgroundColor
     }
-    val colorScheme = if (isDark) {
-        darkColorScheme(
+    val useDynamicColor = preferences.dynamicColor &&
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+        (preferences.themeMode == "system" || preferences.themeMode == "sun")
+    val baseColorScheme = when {
+        useDynamicColor -> if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        isDark -> darkColorScheme(
             primary = foregroundColor, onPrimary = backgroundColor,
             secondary = secondaryColor, tertiary = foregroundColor,
             background = backgroundColor, onBackground = foregroundColor,
             surface = backgroundColor, onSurface = foregroundColor,
             surfaceVariant = surfaceVariantColor, onSurfaceVariant = secondaryColor
         )
-    } else {
-        lightColorScheme(
+        else -> lightColorScheme(
             primary = foregroundColor, onPrimary = backgroundColor,
             secondary = secondaryColor, tertiary = foregroundColor,
             background = backgroundColor, onBackground = foregroundColor,
@@ -390,7 +406,30 @@ private fun DislauncherRoot() {
             surfaceVariant = surfaceVariantColor, onSurfaceVariant = secondaryColor
         )
     }
+    val colorScheme = if (preferences.pitchBlack && isDark) {
+        baseColorScheme.copy(
+            background = Color.Black,
+            surface = Color.Black,
+            surfaceVariant = Color.Black,
+            surfaceContainerLowest = Color.Black,
+            surfaceContainerLow = Color.Black,
+            surfaceContainer = Color.Black,
+            surfaceContainerHigh = Color.Black,
+            surfaceContainerHighest = Color.Black,
+            surfaceTint = Color.Transparent
+        )
+    } else {
+        baseColorScheme
+    }
     val fontFamily = when (preferences.fontMode) {
+        "sans" -> FontFamily(
+            androidx.compose.ui.text.font.Font(
+                R.font.google_sans_flex,
+                variationSettings = FontVariation.Settings(
+                    FontVariation.Setting("ROND", 100f)
+                )
+            )
+        )
         "serif" -> FontFamily.Serif
         "opensans" -> FontFamily(androidx.compose.ui.text.font.Font(R.font.open_sans_regular, androidx.compose.ui.text.font.FontWeight.Normal))
         "raleway-dots" -> FontFamily(androidx.compose.ui.text.font.Font(R.font.raleway_dots_regular, androidx.compose.ui.text.font.FontWeight.Normal))
@@ -434,8 +473,6 @@ private fun DislauncherRoot() {
     SideEffect {
         val activity = context as? Activity
         if (activity != null) {
-            activity.window.statusBarColor = android.graphics.Color.TRANSPARENT
-            activity.window.navigationBarColor = android.graphics.Color.TRANSPARENT
             val controller: WindowInsetsControllerCompat =
                 WindowCompat.getInsetsController(activity.window, view)
             controller.isAppearanceLightStatusBars = !isDark
@@ -451,11 +488,11 @@ private fun DislauncherRoot() {
         colorScheme = colorScheme,
         typography = typography,
         shapes = androidx.compose.material3.Shapes(
-            extraSmall = RoundedCornerShape(8.dp),
-            small = RoundedCornerShape(14.dp),
-            medium = RoundedCornerShape(20.dp),
-            large = RoundedCornerShape(28.dp),
-            extraLarge = RoundedCornerShape(36.dp)
+            extraSmall = RoundedCornerShape(4.dp),
+            small = RoundedCornerShape(8.dp),
+            medium = RoundedCornerShape(12.dp),
+            large = RoundedCornerShape(16.dp),
+            extraLarge = RoundedCornerShape(28.dp)
         )
     ) {
         CompositionLocalProvider(
@@ -465,7 +502,16 @@ private fun DislauncherRoot() {
             ),
             LocalTextStyle provides LocalTextStyle.current.copy(fontFamily = fontFamily)
         ) {
-        if (screen == LauncherScreen.SETTINGS) {
+        if (screen == LauncherScreen.ONBOARDING) {
+            WelcomeOnboardingScreen(
+                preferences = preferences,
+                onPreferencesChange = ::updatePreferences,
+                onFinish = {
+                    prefsStore.edit().putBoolean("onboarding_completed", true).apply()
+                    screen = LauncherScreen.HOME
+                }
+            )
+        } else if (screen == LauncherScreen.SETTINGS) {
             SettingsScreen(
                 preferences = preferences,
                 apps = apps,

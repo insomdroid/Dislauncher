@@ -4,10 +4,12 @@ import android.content.SharedPreferences
 
 internal data class LauncherPreferences(
     val themeMode: String = "dark",
+    val dynamicColor: Boolean = true,
+    val pitchBlack: Boolean = false,
     val fontMode: String = "sans",
     val fontSize: String = "medium",
     val iconPack: String = "system",
-    val showAppIcons: Boolean = false,
+    val showAppIcons: Boolean = true,
     val hideStatusBar: Boolean = false,
     val showSearchBar: Boolean = true,
     val showCharacterScroll: Boolean = true,
@@ -34,6 +36,8 @@ internal data class LauncherPreferences(
     fun save(p: SharedPreferences) {
         p.edit()
             .putString("theme_mode", themeMode)
+            .putBoolean("dynamic_color", dynamicColor)
+            .putBoolean("pitch_black", pitchBlack)
             .putString("font_mode", fontMode)
             .putString("font_size", fontSize)
             .putString("icon_pack", iconPack)
@@ -91,10 +95,12 @@ internal data class LauncherPreferences(
             }
             return LauncherPreferences(
                 themeMode = normalizeThemeMode(p.getString("theme_mode", "dark") ?: "dark"),
+                dynamicColor = p.getBoolean("dynamic_color", true),
+                pitchBlack = p.getBoolean("pitch_black", false),
                 fontMode = normalizeFontMode(p.getString("font_mode", "sans") ?: "sans"),
                 fontSize = p.getString("font_size", "medium") ?: "medium",
                 iconPack = p.getString("icon_pack", "system") ?: "system",
-                showAppIcons = p.getBoolean("show_app_icons", false),
+                showAppIcons = p.getBoolean("show_app_icons", true),
                 hideStatusBar = p.getBoolean("hide_status_bar", false),
                 showSearchBar = p.getBoolean("show_search_bar", true),
                 showCharacterScroll = p.getBoolean("show_character_scroll", true),

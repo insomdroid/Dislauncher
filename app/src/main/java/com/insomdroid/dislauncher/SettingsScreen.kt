@@ -136,12 +136,23 @@ internal fun SettingsScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    SettingToggle(
+                        "Dynamic color",
+                        "Use Android wallpaper colors when Theme is System or Sunrise / Sunset (Android 12+).",
+                        preferences.dynamicColor
+                    ) { onPreferencesChange(preferences.copy(dynamicColor = it)) }
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                    SettingToggle(
+                        "Pitch-black surfaces",
+                        "Force true-black backgrounds and Material surfaces while preserving readable text and accent colors.",
+                        preferences.pitchBlack
+                    ) { onPreferencesChange(preferences.copy(pitchBlack = it)) }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                     ChoiceRow(
                         "Font",
                         preferences.fontMode,
                         listOf(
-                            "sans" to "Roboto",
+                            "sans" to "Google Sans Flex",
                             "opensans" to "Open Sans",
                             "mono" to "Monospace",
                             "menlo" to "Menlo",
@@ -151,7 +162,7 @@ internal fun SettingsScreen(
                         )
                     ) { onPreferencesChange(preferences.copy(fontMode = it)) }
                     Text(
-                        "Open Sans and Raleway Dots are bundled with the APK. Menlo uses Android's monospace typeface when Menlo itself is unavailable.",
+                        "Google Sans Flex, Open Sans and Raleway Dots are bundled with the APK. Menlo uses Android's monospace typeface when Menlo itself is unavailable.",
                         fontSize = 10.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
