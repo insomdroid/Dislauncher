@@ -1,7 +1,14 @@
 package com.insomdroid.dislauncher
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -11,6 +18,9 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.draw.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -24,8 +34,23 @@ internal fun WeatherIcon(
     color: Color,
     modifier: Modifier = Modifier
 ) {
-    Canvas(modifier = modifier.semantics { contentDescription = condition }) {
-        val scale = size.minDimension / 100f
+    val transition = rememberInfiniteTransition(label = "weather-icon-float")
+    val density = LocalDensity.current.density
+    val drift by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = -5f * density,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1900, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "weather-icon-drift"
+    )
+    Canvas(
+        modifier = modifier.graphicsLayer { translationY = drift }
+            .semantics { contentDescription = condition }
+    ) {
+        val scale = size.minDimension / 112f
+        val inset = (size.minDimension - 100f * scale) / 2f
         fun point(x: Float, y: Float) = Offset(x * scale, y * scale)
         fun line(
             x1: Float, y1: Float, x2: Float, y2: Float,
@@ -83,6 +108,7 @@ internal fun WeatherIcon(
             line(70f, 79f, 65f, 88f, 3f)
         }
 
+        withTransform({ translate(left = inset, top = inset) }) {
         val lower = condition.lowercase()
         when {
             lower.contains("clear") && !lower.contains("cloud") -> sun(50f, 48f, 18f)
@@ -119,6 +145,7 @@ internal fun WeatherIcon(
                 cloud()
             }
             else -> cloud()
+        }
         }
     }
 }

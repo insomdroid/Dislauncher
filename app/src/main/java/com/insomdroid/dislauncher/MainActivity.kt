@@ -15,7 +15,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,6 +42,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.awaitPointerEvent
+import androidx.compose.ui.input.pointer.positionChangeIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -419,11 +423,53 @@ private fun DislauncherRoot() {
         } else if (screen == LauncherScreen.WEATHER) {
             WeatherScreen(
                 weatherUnit = preferences.weatherUnit,
-                cachedWeather = weatherForScreen,
+                cachedWeather = weatherForScreen ?: solarWeather,
+                onWeatherChange = { updated ->
+                    solarWeather = updated
+                    weatherForScreen = updated
+                },
                 onBack = { screen = LauncherScreen.HOME }
             )
         } else {
-            Box(Modifier.fillMaxSize().background(colorScheme.background)) {
+            val notificationsGestureEnabled =
+                screen == LauncherScreen.HOME && pagerState.currentPage == 0 && preferences.swipeDownNotifications
+            Box(
+                modifier = Modifier.fillMaxSize()
+                    .background(colorScheme.background)
+                    .pointerInput(notificationsGestureEnabled) {
+                        if (!notificationsGestureEnabled) return@pointerInput
+                        val startZone = 128.dp.toPx()
+                        val triggerDistance = 48.dp.toPx()
+                        awaitEachGesture {
+                            val down = awaitFirstDown(
+                                pass = PointerEventPass.Initial,
+                                requireUnconsumed = false
+                            )
+                            if (down.position.y > startZone) {
+                                var pressed = true
+                                while (pressed) {
+                                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                                    pressed = event.changes.any { it.pressed }
+                                }
+                            } else {
+                                var downwardDistance = 0f
+                                var triggered = false
+                                while (true) {
+                                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                                    if (!change.pressed) break
+                                    val delta = change.positionChangeIgnoreConsumed()
+                                    if (!triggered && delta.y > 0f) downwardDistance += delta.y
+                                    if (!triggered && downwardDistance >= triggerDistance) {
+                                        triggered = true
+                                        expandNotificationPanel(context)
+                                    }
+                                    if (triggered) change.consume()
+                                }
+                            }
+                        }
+                    }
+            ) {
                 HorizontalPager(
                     state = pagerState,
                     modifier = Modifier.fillMaxSize(),
@@ -436,13 +482,14 @@ private fun DislauncherRoot() {
                             favorites = favorites,
                             favoriteOrder = favoriteOrder,
                             preferences = preferences,
+                            cachedWeather = solarWeather,
                             isDark = isDark,
                             fontFamily = fontFamily,
                             fontScale = fontScale,
                             onLaunch = { launchApp(context, it) },
                             onMoveFavorite = ::moveFavorite,
                             onOpenTasks = { screen = LauncherScreen.TASKS },
-                            onOpenWeather = { cached -> weatherForScreen = cached; screen = LauncherScreen.WEATHER },
+                            onOpenWeather = { cached -> weatherForScreen = cached ?: solarWeather; screen = LauncherScreen.WEATHER },
                             onOpenSettings = { screen = LauncherScreen.SETTINGS },
                             onDoubleTapToLock = { lockDevice(context, adminComponent, devicePolicyManager) },
                             homeItemOrder = homeItemOrder,
@@ -467,27 +514,7 @@ private fun DislauncherRoot() {
                         )
                     }
                 }
-                if (screen == LauncherScreen.HOME && pagerState.currentPage == 0 && preferences.swipeDownNotifications) {
-                    Box(
-                        modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth()
-                            .windowInsetsPadding(WindowInsets.statusBars)
-                            .height(48.dp)
-                            .pointerInput(preferences.swipeDownNotifications) {
-                                var totalDrag = 0f
-                                detectVerticalDragGestures(
-                                    onVerticalDrag = { _, dragAmount ->
-                                        totalDrag += dragAmount
-                                    },
-                                    onDragEnd = {
-                                        if (totalDrag > 32.dp.toPx()) expandNotificationPanel(context)
-                                        totalDrag = 0f
-                                    },
-                                    onDragCancel = { totalDrag = 0f }
-                                )
-                            }
-                    )
-                }
-            }
+remove old swipe overlay            }
         }
         }
     }
@@ -533,12 +560,38 @@ internal fun launchApp(context: Context, app: LauncherApp) {
 }
 
 internal fun openClock(context: Context) {
+    val packageManager = context.packageManager
     val candidates = listOf(
+        Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_CLOCK),
         Intent(android.provider.AlarmClock.ACTION_SHOW_ALARMS),
         Intent(android.provider.AlarmClock.ACTION_SET_ALARM)
     )
-    candidates.firstOrNull { it.resolveActivity(context.packageManager) != null }?.let {
-        runCatching { context.startActivity(it) }
+    for (candidate in candidates) {
+        val canResolve = runCatching { candidate.resolveActivity(packageManager) != null }.getOrDefault(false)
+        if (!canResolve) continue
+        val launched = runCatching {
+            context.startActivity(candidate.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            true
+        }.getOrDefault(false)
+        if (launched) return
+    }
+    val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+    val clockApp = runCatching {
+        packageManager.queryIntentActivities(launcherIntent, 0).firstOrNull { resolved ->
+            val label = resolved.loadLabel(packageManager).toString().lowercase(Locale.getDefault())
+            val packageName = resolved.activityInfo?.packageName.orEmpty().lowercase(Locale.getDefault())
+            label.contains("clock") || label.contains("alarm") ||
+                packageName.contains("deskclock") || packageName.contains("clock")
+        }
+    }.getOrNull()
+    val activityInfo = clockApp?.activityInfo ?: return
+    runCatching {
+        context.startActivity(
+            Intent(Intent.ACTION_MAIN)
+                .addCategory(Intent.CATEGORY_LAUNCHER)
+                .setClassName(activityInfo.packageName, activityInfo.name)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
     }
 }
 
@@ -584,6 +637,7 @@ private fun lockDevice(
 }
 
 private fun expandNotificationPanel(context: Context) {
+    if (DislauncherAccessibilityService.expandNotifications()) return
     runCatching {
         val manager = context.getSystemService("statusbar") ?: return
         manager.javaClass.getMethod("expandNotificationsPanel").invoke(manager)

@@ -2,43 +2,54 @@ package com.insomdroid.dislauncher
 
 import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
 import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import android.os.Handler
 import android.os.Looper
-import android.provider.Settings
+import android.os.SystemClock
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import kotlinx.coroutines.delay
 
 @Composable
 internal fun MusicPlayerWidget(
@@ -47,7 +58,9 @@ internal fun MusicPlayerWidget(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val component = remember(context) { ComponentName(context, DislauncherNotificationListener::class.java) }
+    val component = remember(context) {
+        ComponentName(context, DislauncherNotificationListener::class.java)
+    }
     val manager = remember(context) {
         context.getSystemService(Context.MEDIA_SESSION_SERVICE) as MediaSessionManager
     }
@@ -55,7 +68,6 @@ internal fun MusicPlayerWidget(
     val controllerState = remember { mutableStateOf<MediaController?>(null) }
     val metadataState = remember { mutableStateOf<MediaMetadata?>(null) }
     val playbackState = remember { mutableStateOf<PlaybackState?>(null) }
-    val accessState = remember { mutableStateOf(false) }
     val callback = remember {
         object : MediaController.Callback() {
             override fun onMetadataChanged(metadata: MediaMetadata?) {
@@ -69,6 +81,7 @@ internal fun MusicPlayerWidget(
             override fun onSessionDestroyed() {
                 metadataState.value = null
                 playbackState.value = null
+                controllerState.value = null
             }
         }
     }
@@ -89,35 +102,28 @@ internal fun MusicPlayerWidget(
             metadataState.value = next?.metadata
             playbackState.value = next?.playbackState
         }
-
         val listener = MediaSessionManager.OnActiveSessionsChangedListener { sessions ->
             useSessions(sessions)
         }
-
         fun refreshSessions() {
             try {
                 val sessions = manager.getActiveSessions(component)
-                accessState.value = true
                 if (!listening) {
                     manager.addOnActiveSessionsChangedListener(listener, component, handler)
                     listening = true
                 }
                 useSessions(sessions)
             } catch (_: SecurityException) {
-                accessState.value = false
                 useSessions(emptyList())
             } catch (_: RuntimeException) {
-                accessState.value = false
                 useSessions(emptyList())
             }
         }
-
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) refreshSessions()
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         refreshSessions()
-
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
             if (listening) runCatching { manager.removeOnActiveSessionsChangedListener(listener) }
@@ -128,89 +134,107 @@ internal fun MusicPlayerWidget(
 
     val controller = controllerState.value
     val metadata = metadataState.value
-    val playing = playbackState.value?.state == PlaybackState.STATE_PLAYING
-    val title = metadata?.getString(MediaMetadata.METADATA_KEY_TITLE)?.takeIf { it.isNotBlank() }
-    val artist = metadata?.getString(MediaMetadata.METADATA_KEY_ARTIST)
-        ?.takeIf { it.isNotBlank() }
-        ?: metadata?.getString(MediaMetadata.METADATA_KEY_ALBUM)
-            ?.takeIf { it.isNotBlank() }
+    val playback = playbackState.value
+    val playing = playback?.state == PlaybackState.STATE_PLAYING
+    var positionTick by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
 
-    Surface(
-        modifier = modifier,
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        tonalElevation = 2.dp
+    LaunchedEffect(playing, controller, metadata) {
+        while (playing && controller != null) {
+            positionTick = SystemClock.elapsedRealtime()
+            delay(1000L)
+        }
+        if (!playing) positionTick = SystemClock.elapsedRealtime()
+    }
+
+    val duration = metadata?.getLong(MediaMetadata.METADATA_KEY_DURATION)?.coerceAtLeast(0L) ?: 0L
+    val basePosition = playback?.position?.coerceAtLeast(0L) ?: 0L
+    val lastPositionUpdate = playback?.lastPositionUpdateTime ?: positionTick
+    val position = (
+        basePosition + if (playing) {
+            ((positionTick - lastPositionUpdate).coerceAtLeast(0L) *
+                (playback?.playbackSpeed ?: 1f)).toLong()
+        } else 0L
+    ).coerceIn(0L, duration)
+    val progress = if (duration > 0L) (position.toFloat() / duration.toFloat()).coerceIn(0f, 1f) else 0f
+    val artwork = remember(metadata) {
+        metadata?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
+            ?: metadata?.getBitmap(MediaMetadata.METADATA_KEY_ART)
+            ?: metadata?.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON)
+    }
+    val fallbackBackground = MaterialTheme.colorScheme.surfaceVariant
+    val foreground = MaterialTheme.colorScheme.onBackground
+    val track = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.22f)
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        Box(
+            modifier = Modifier.size(62.dp)
+                .clip(RoundedCornerShape(7.dp))
+                .background(fallbackBackground)
+                .clickable(onClick = onOpenMusicApp),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier.size(58.dp).clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .clickable(onClick = onOpenMusicApp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    "♫",
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    fontSize = 31.sp,
-                    fontWeight = FontWeight.Medium
+            if (artwork != null) {
+                Image(
+                    bitmap = artwork.asImageBitmap(),
+                    contentDescription = "Album art",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
                 )
+            } else {
+                Text("♪", color = foreground, fontSize = 28.sp, fontWeight = FontWeight.Light)
             }
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+        }
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                Text("|◀", color = foreground, fontSize = 16.sp,
+                    modifier = Modifier.clickable {
+                        if (controller != null) runCatching { controller.transportControls.skipToPrevious() }
+                        else onOpenMusicApp()
+                    }.padding(horizontal = 9.dp, vertical = 3.dp))
                 Text(
-                    title ?: "Music player",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.clickable(onClick = onOpenMusicApp)
-                )
-                Text(
-                    artist ?: when {
-                        !accessState.value -> "Allow media access to show playback"
-                        controller == null -> "Nothing playing · tap the note to open music"
-                        else -> "Ready to play"
-                    },
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f),
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
-                    if (controller != null && metadata != null) {
-                        TextButton(onClick = {
-                            runCatching { controller.transportControls.skipToPrevious() }
-                        }) { Text("|◀") }
-                        TextButton(onClick = {
+                    if (playing) "Ⅱ" else "▶",
+                    color = foreground,
+                    fontSize = 20.sp,
+                    modifier = Modifier.clickable {
+                        if (controller != null && metadata != null) {
                             runCatching {
                                 if (playing) controller.transportControls.pause()
                                 else controller.transportControls.play()
                             }
-                        }) { Text(if (playing) "Ⅱ" else "▶", fontWeight = FontWeight.SemiBold) }
-                        TextButton(onClick = {
-                            runCatching { controller.transportControls.skipToNext() }
-                        }) { Text("▶|") }
-                    } else if (!accessState.value) {
-                        TextButton(onClick = {
-                            runCatching {
-                                context.startActivity(
-                                    Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                )
-                            }
-                        }) { Text("Enable access") }
-                    } else {
-                        TextButton(onClick = onOpenMusicApp) { Text("Open player") }
-                    }
+                        } else onOpenMusicApp()
+                    }.padding(horizontal = 10.dp, vertical = 2.dp)
+                )
+                Text("▶|", color = foreground, fontSize = 16.sp,
+                    modifier = Modifier.clickable {
+                        if (controller != null) runCatching { controller.transportControls.skipToNext() }
+                        else onOpenMusicApp()
+                    }.padding(horizontal = 9.dp, vertical = 3.dp))
+            }
+            Canvas(modifier = Modifier.fillMaxWidth().height(3.dp).clip(CircleShape)) {
+                drawRoundRect(
+                    color = track,
+                    topLeft = Offset.Zero,
+                    size = size,
+                    cornerRadius = CornerRadius(size.height / 2f)
+                )
+                if (progress > 0f) {
+                    drawRoundRect(
+                        color = foreground,
+                        topLeft = Offset.Zero,
+                        size = Size(size.width * progress, size.height),
+                        cornerRadius = CornerRadius(size.height / 2f)
+                    )
                 }
             }
         }
