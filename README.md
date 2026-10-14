@@ -17,7 +17,7 @@ A minimalist, text-first Android launcher focused on a calm, low-distraction exp
 - Home and drawer use a horizontal pager for native Compose swipe animation.
 - Alphabetically ordered applications with no letter-category headings.
 - Optional search field, keyboard auto-launch, app icons, and touch-activated letter scrubber.
-- Long-press an app to add or remove it from favourites.
+- Long-press an app to open actions for launching, favourites, renaming, hiding, app info, and uninstalling non-system apps.
 - Manage hidden apps and favourites in Settings.
 
 ## Launcher preferences
