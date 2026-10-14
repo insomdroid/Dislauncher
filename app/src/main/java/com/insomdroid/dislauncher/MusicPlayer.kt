@@ -143,8 +143,8 @@ internal fun MusicPlayerWidget(
             Text(
                 title,
                 color = foreground,
-                fontSize = 18.sp,
-                lineHeight = 23.sp,
+                fontSize = 14.sp,
+                lineHeight = 18.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -152,8 +152,8 @@ internal fun MusicPlayerWidget(
             Text(
                 artist,
                 color = secondary,
-                fontSize = 14.sp,
-                lineHeight = 19.sp,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -161,10 +161,10 @@ internal fun MusicPlayerWidget(
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(5.dp)
+            horizontalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             Box(
-                modifier = Modifier.size(36.dp).clickable {
+                modifier = Modifier.size(32.dp).clickable {
                     if (controller != null) {
                         runCatching { controller.transportControls.skipToPrevious() }
                     } else {
@@ -173,10 +173,10 @@ internal fun MusicPlayerWidget(
                 },
                 contentAlignment = Alignment.Center
             ) {
-                Text("‹", color = foreground, fontSize = 34.sp, lineHeight = 36.sp, fontWeight = FontWeight.Light)
+                Text("‹", color = foreground, fontSize = 24.sp, lineHeight = 28.sp, fontWeight = FontWeight.Light)
             }
             Box(
-                modifier = Modifier.size(36.dp).clickable {
+                modifier = Modifier.size(32.dp).clickable {
                     if (controller != null) {
                         runCatching {
                             if (playing) controller.transportControls.pause()
@@ -191,13 +191,13 @@ internal fun MusicPlayerWidget(
                 Text(
                     if (playing) "Ⅱ" else "▶",
                     color = foreground,
-                    fontSize = 21.sp,
-                    lineHeight = 24.sp,
+                    fontSize = 18.sp,
+                    lineHeight = 22.sp,
                     fontWeight = FontWeight.Medium
                 )
             }
             Box(
-                modifier = Modifier.size(36.dp).clickable {
+                modifier = Modifier.size(32.dp).clickable {
                     if (controller != null) {
                         runCatching { controller.transportControls.skipToNext() }
                     } else {
@@ -206,7 +206,7 @@ internal fun MusicPlayerWidget(
                 },
                 contentAlignment = Alignment.Center
             ) {
-                Text("›", color = foreground, fontSize = 34.sp, lineHeight = 36.sp, fontWeight = FontWeight.Light)
+                Text("›", color = foreground, fontSize = 24.sp, lineHeight = 28.sp, fontWeight = FontWeight.Light)
             }
         }
     }

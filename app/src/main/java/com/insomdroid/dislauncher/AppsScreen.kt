@@ -13,6 +13,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -59,7 +60,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -106,6 +109,8 @@ internal fun AppsScreen(
     val scope = rememberCoroutineScope()
     val keyboard = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
+    var searchFocused by remember { mutableStateOf(false) }
+    val searchColor = if (searchFocused || query.isNotEmpty()) mainText else secondary.copy(alpha = 0.65f)
     val firstIndexByLetter = remember(filtered) {
         val result = linkedMapOf<String, Int>()
         filtered.forEachIndexed { index, app ->
@@ -139,29 +144,6 @@ internal fun AppsScreen(
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .padding(start = 16.dp, end = 14.dp, top = 4.dp, bottom = 8.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().height(48.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                "Apps",
-                color = mainText,
-                fontSize = 18.sp,
-                lineHeight = 24.sp,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                "Settings",
-                color = mainText,
-                fontSize = 18.sp,
-                lineHeight = 24.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.clickable(onClick = onOpenSettings)
-                    .padding(horizontal = 8.dp, vertical = 8.dp)
-            )
-        }
-        Spacer(Modifier.height(6.dp))
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             LazyColumn(
                 state = listState,
@@ -210,16 +192,46 @@ internal fun AppsScreen(
                                 modifier = Modifier.padding(start = 8.dp)
                             )
                         }
-                        if (app.packageName in favorites) {
-                            Text(
-                                "★",
-                                color = MaterialTheme.colorScheme.primary,
-                                fontSize = 16.sp,
-                                lineHeight = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(start = 8.dp)
-                            )
+                    }
+                }
+                item(key = "dislauncher-settings") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth()
+                            .clickable(onClick = onOpenSettings)
+                            .padding(vertical = 10.dp, horizontal = 20.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Canvas(modifier = Modifier.size(20.dp)) {
+                            val lineStart = 1.5.dp.toPx()
+                            val lineEnd = size.width - 1.5.dp.toPx()
+                            val stroke = 1.4.dp.toPx()
+                            val knobRadius = 1.8.dp.toPx()
+                            val yPositions = listOf(size.height * 0.24f, size.height * 0.5f, size.height * 0.76f)
+                            val knobPositions = listOf(size.width * 0.36f, size.width * 0.68f, size.width * 0.43f)
+                            yPositions.forEachIndexed { index, y ->
+                                drawLine(
+                                    color = mainText,
+                                    start = Offset(lineStart, y),
+                                    end = Offset(lineEnd, y),
+                                    strokeWidth = stroke
+                                )
+                                drawCircle(
+                                    color = mainText,
+                                    radius = knobRadius,
+                                    center = Offset(knobPositions[index], y)
+                                )
+                            }
                         }
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            "Dislauncher Settings",
+                            color = mainText,
+                            fontSize = 20.sp * fontScale,
+                            lineHeight = 26.sp * fontScale,
+                            fontFamily = fontFamily,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
             }
@@ -234,7 +246,7 @@ internal fun AppsScreen(
                     if (query.isEmpty()) {
                         Text(
                             "Search Apps",
-                            color = mainText,
+                            color = searchColor,
                             style = MaterialTheme.typography.bodyLarge,
                             fontSize = 15.sp * fontScale
                         )
@@ -242,7 +254,7 @@ internal fun AppsScreen(
                     BasicTextField(
                         value = query,
                         onValueChange = onQueryChange,
-                        modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                        modifier = Modifier.fillMaxWidth().focusRequester(focusRequester).onFocusChanged { searchFocused = it.isFocused },
                         singleLine = true,
                         textStyle = MaterialTheme.typography.bodyLarge.copy(
                             color = mainText,
@@ -255,7 +267,7 @@ internal fun AppsScreen(
                 HorizontalDivider(
                     modifier = Modifier.fillMaxWidth(),
                     thickness = 1.dp,
-                    color = mainText.copy(alpha = 0.9f)
+                    color = if (searchFocused || query.isNotEmpty()) mainText.copy(alpha = 0.9f) else searchColor.copy(alpha = 0.75f)
                 )
             }
         }
