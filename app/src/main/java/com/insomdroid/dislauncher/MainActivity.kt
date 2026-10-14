@@ -642,7 +642,8 @@ private fun DislauncherRoot() {
                             onLaunch = { launchApp(context, it) },
                             onToggleFavorite = ::toggleFavorite,
                             onToggleHidden = ::toggleHidden,
-                            onRenameApp = ::renameApp
+                            onRenameApp = ::renameApp,
+                            onOpenSettings = { screen = LauncherScreen.SETTINGS }
                         )
                     }
                 }
