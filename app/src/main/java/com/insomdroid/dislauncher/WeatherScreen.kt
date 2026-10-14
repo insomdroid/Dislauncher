@@ -5,6 +5,11 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +20,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -47,6 +53,16 @@ internal fun WeatherScreen(weatherUnit: String, onBack: () -> Unit) {
     var weather by remember { mutableStateOf<WeatherInfo?>(null) }
     var status by remember { mutableStateOf("Location permission is required.") }
     var loading by remember { mutableStateOf(false) }
+    val weatherAnimation = rememberInfiniteTransition(label = "weather-symbol")
+    val symbolOffset by weatherAnimation.animateFloat(
+        initialValue = -3f,
+        targetValue = 3f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1800),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "weather-symbol-offset"
+    )
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { results ->
@@ -81,7 +97,13 @@ internal fun WeatherScreen(weatherUnit: String, onBack: () -> Unit) {
         Text("CURRENT CONDITIONS", color = secondary, fontSize = 10.sp, letterSpacing = 1.2.sp)
         Spacer(Modifier.height(12.dp))
         if (weather != null) {
-            Text(weatherSymbol(weather!!.condition), color = primary, fontSize = 52.sp, lineHeight = 58.sp)
+            Text(
+                weatherSymbol(weather!!.condition),
+                color = primary,
+                fontSize = 52.sp,
+                lineHeight = 58.sp,
+                modifier = Modifier.offset(y = symbolOffset.dp)
+            )
             Spacer(Modifier.height(4.dp))
             Text(weather!!.temperature, color = primary, fontSize = 60.sp, lineHeight = 64.sp,
                 fontWeight = FontWeight.Light, letterSpacing = (-1.5).sp)
