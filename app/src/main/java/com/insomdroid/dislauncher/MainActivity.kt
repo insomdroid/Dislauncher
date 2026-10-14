@@ -293,8 +293,9 @@ private fun DislauncherRoot() {
         else -> foregroundColor.copy(alpha = 0.78f)
     }
     val surfaceVariantColor = when (preferences.themeMode) {
-        "sun" -> if (isDark) Color(0xFF121212) else Color(0xFFF5F5F5)
+        "system", "sun" -> if (isDark) Color(0xFF1D1D1F) else Color(0xFFF2F2F7)
         "dark" -> Color(0xFF121212)
+        "light" -> Color(0xFFF2F2F7)
         "dim" -> Color(0xFF1D2A39)
         "twitter-dim" -> Color(0xFF1B2935)
         "midnight-blue" -> Color(0xFF22227D)
