@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -173,17 +174,21 @@ internal fun MusicPlayerWidget(
         ?: if (metadata == null) "Tap to open your music app" else "Unknown artist"
     val secondary = MaterialTheme.colorScheme.onSurfaceVariant
 
-    Column(
-        modifier = modifier.fillMaxWidth().padding(vertical = 2.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+    Box(
+        modifier = modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
     ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().widthIn(max = 320.dp).padding(vertical = 1.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Box(
-                modifier = Modifier.size(64.dp)
+                modifier = Modifier.size(54.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(fallbackBackground)
                     .clickable(onClick = onOpenMusicApp),
@@ -197,7 +202,7 @@ internal fun MusicPlayerWidget(
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    Text("♪", color = foreground, fontSize = 30.sp, fontWeight = FontWeight.Light)
+                    Text("♪", color = foreground, fontSize = 26.sp, fontWeight = FontWeight.Light)
                 }
             }
             Column(
@@ -207,8 +212,8 @@ internal fun MusicPlayerWidget(
                 Text(
                     title,
                     color = foreground,
-                    fontSize = 16.sp,
-                    lineHeight = 20.sp,
+                    fontSize = 15.sp,
+                    lineHeight = 19.sp,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
@@ -217,17 +222,17 @@ internal fun MusicPlayerWidget(
                 Text(
                     artist,
                     color = secondary,
-                    fontSize = 12.sp,
-                    lineHeight = 16.sp,
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(13.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "|◀",
+                        "<",
                         color = foreground,
                         fontSize = 14.sp,
                         modifier = Modifier.clickable {
@@ -250,7 +255,7 @@ internal fun MusicPlayerWidget(
                         }.padding(vertical = 1.dp, horizontal = 2.dp)
                     )
                     Text(
-                        "▶|",
+                        ">",
                         color = foreground,
                         fontSize = 14.sp,
                         modifier = Modifier.clickable {
@@ -263,11 +268,11 @@ internal fun MusicPlayerWidget(
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(formatMediaTime(position), color = secondary, fontSize = 10.sp, lineHeight = 12.sp)
-            Canvas(modifier = Modifier.weight(1f).height(3.dp)) {
+            Text(formatMediaTime(position), color = secondary, fontSize = 9.sp, lineHeight = 11.sp)
+            Canvas(modifier = Modifier.weight(1f).height(2.dp)) {
                 drawRoundRect(
                     color = track,
                     topLeft = Offset.Zero,
@@ -283,7 +288,8 @@ internal fun MusicPlayerWidget(
                     )
                 }
             }
-            Text(formatMediaTime(duration), color = secondary, fontSize = 10.sp, lineHeight = 12.sp)
+            Text(formatMediaTime(duration), color = secondary, fontSize = 9.sp, lineHeight = 11.sp)
+        }
         }
     }
 }
