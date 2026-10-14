@@ -137,19 +137,15 @@ internal fun SettingsScreen(
                             "sans" to "Roboto",
                             "serif" to "Serif",
                             "mono" to "Monospace",
-                            "writer" to "iAWriter",
-                            "quicksand" to "Quicksand",
-                            "opensans" to "Open Sans",
-                            "menlo" to "Menlo",
-                            "nunito" to "Nunito",
-                            "writer-mono" to "iAWriter Mono",
-                            "ubuntu" to "Ubuntu",
-                            "opensans-light" to "Open Sans Light",
-                            "nunito-light" to "Nunito Light"
+                            "condensed" to "Condensed",
+                            "rounded" to "Rounded",
+                            "light" to "Light",
+                            "casual" to "Casual",
+                            "cursive" to "Cursive"
                         )
                     ) { onPreferencesChange(preferences.copy(fontMode = it)) }
                     Text(
-                        "Uses the closest installed Android typeface for fonts not bundled with this app.",
+                        "The selected Android typeface is applied across Home, Apps, Tasks, Weather, and Settings.",
                         fontSize = 10.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
