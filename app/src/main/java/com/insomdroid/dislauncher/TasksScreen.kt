@@ -88,6 +88,27 @@ internal fun saveFavoriteOrder(prefs: SharedPreferences, order: List<String>) {
     prefs.edit().putString("favorite_order_json", array.toString()).apply()
 }
 
+internal const val HOME_ITEM_TASKS = "builtin:tasks"
+internal const val HOME_ITEM_CALLS = "builtin:calls"
+internal const val HOME_ITEM_MUSIC = "builtin:music"
+
+internal fun readHomeItemOrder(prefs: SharedPreferences, favorites: Set<String>): List<String> {
+    val available = listOf(HOME_ITEM_TASKS, HOME_ITEM_CALLS, HOME_ITEM_MUSIC) + readFavoriteOrder(prefs, favorites)
+    val saved = prefs.getString("home_item_order_json", null)?.let { encoded ->
+        runCatching {
+            val array = JSONArray(encoded)
+            (0 until array.length()).mapNotNull { array.optString(it).takeIf(String::isNotBlank) }
+        }.getOrDefault(emptyList())
+    }.orEmpty()
+    return (saved.filter { it in available } + available.filter { it !in saved }).distinct()
+}
+
+internal fun saveHomeItemOrder(prefs: SharedPreferences, order: List<String>) {
+    val array = JSONArray()
+    order.forEach(array::put)
+    prefs.edit().putString("home_item_order_json", array.toString()).apply()
+}
+
 @Composable
 internal fun TasksScreen(tasks: List<LauncherTask>, onTasksChange: (List<LauncherTask>) -> Unit, onBack: () -> Unit) {
     var draft by remember { mutableStateOf("") }

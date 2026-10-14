@@ -52,9 +52,14 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import org.json.JSONObject
 
 internal enum class LauncherScreen { HOME, APPS, SETTINGS, TASKS, WEATHER }
 
@@ -87,6 +92,16 @@ private fun DislauncherRoot() {
     var favorites by remember {
         mutableStateOf(prefsStore.getStringSet("favorite_packages", emptySet())?.toSet().orEmpty())
     }
+    var appNameOverrides by remember { mutableStateOf(readAppNameOverrides(prefsStore)) }
+    var solarWeather by remember { mutableStateOf<WeatherInfo?>(null) }
+    var solarTick by remember { mutableStateOf(0L) }
+    var homeItemOrder by remember { mutableStateOf(readHomeItemOrder(prefsStore, favorites)) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(60_000L)
+            solarTick++
+        }
+    }
     var hiddenApps by remember {
         mutableStateOf(prefsStore.getStringSet("hidden_packages", emptySet())?.toSet().orEmpty())
     }
@@ -113,8 +128,35 @@ private fun DislauncherRoot() {
             favoriteOrder.filter { it in next }
         }
         favoriteOrder = nextOrder
+        homeItemOrder = if (packageName in next) {
+            (homeItemOrder + packageName).distinct()
+        } else {
+            homeItemOrder.filterNot { it == packageName }
+        }
         prefsStore.edit().putStringSet("favorite_packages", next.toMutableSet()).apply()
         saveFavoriteOrder(prefsStore, nextOrder)
+        saveHomeItemOrder(prefsStore, homeItemOrder)
+    }
+
+    fun moveHomeItem(sourceId: String, targetId: String) {
+        if (sourceId == targetId) return
+        val order = (homeItemOrder + listOf(HOME_ITEM_TASKS, HOME_ITEM_CALLS, HOME_ITEM_MUSIC) + favorites).distinct().toMutableList()
+        val sourceIndex = order.indexOf(sourceId)
+        val targetIndex = order.indexOf(targetId)
+        if (sourceIndex < 0 || targetIndex < 0) return
+        val moving = order[sourceIndex]
+        order[sourceIndex] = order[targetIndex]
+        order[targetIndex] = moving
+        homeItemOrder = order
+        saveHomeItemOrder(prefsStore, order)
+    }
+
+    fun renameApp(packageName: String, requestedName: String) {
+        val newName = requestedName.trim().take(60)
+        if (newName.isBlank()) return
+        appNameOverrides = appNameOverrides + (packageName to newName)
+        prefsStore.edit().putString("renamed_app_labels_json", JSONObject(appNameOverrides).toString()).apply()
+        apps = apps.map { if (it.packageName == packageName) it.copy(label = newName) else it }
     }
 
     fun moveFavorite(sourcePackage: String, targetPackage: String) {
@@ -175,7 +217,9 @@ private fun DislauncherRoot() {
     }
 
     LaunchedEffect(Unit) {
-        apps = withContext(Dispatchers.IO) { loadLauncherApps(context) }
+        apps = withContext(Dispatchers.IO) { loadLauncherApps(context) }.map { app ->
+            appNameOverrides[app.packageName]?.let { app.copy(label = it) } ?: app
+        }
     }
 
     LaunchedEffect(pagerState.settledPage) {
@@ -203,13 +247,24 @@ private fun DislauncherRoot() {
     }
 
     val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val solarDark = remember(solarWeather, solarTick) {
+        val sunrise = solarWeather?.sunrise
+        val sunset = solarWeather?.sunset
+        if (sunrise == null || sunset == null) null else {
+            val solarTime = runCatching {
+                solarWeather?.timezone?.let { ZonedDateTime.now(ZoneId.of(it)).toLocalTime() } ?: LocalTime.now()
+            }.getOrElse { LocalTime.now() }
+            solarTime.isBefore(sunrise) || !solarTime.isBefore(sunset)
+        }
+    }
     val isDark = when (preferences.themeMode) {
         "system" -> systemDark
+        "sun" -> solarDark ?: systemDark
         "light", "pale-silver", "middle-blue", "parchment", "blue-radiance" -> false
         else -> true
     }
     val backgroundColor = when (preferences.themeMode) {
-        "system" -> if (systemDark) Color.Black else Color.White
+        "system", "sun" -> if (isDark) Color.Black else Color.White
         "light" -> Color.White
         "dim" -> Color(0xFF151E29)
         "twitter-dim" -> Color(0xFF16202A)
@@ -223,7 +278,7 @@ private fun DislauncherRoot() {
         else -> Color.Black
     }
     val foregroundColor = when (preferences.themeMode) {
-        "system" -> if (systemDark) Color.White else Color.Black
+        "system", "sun" -> if (isDark) Color.White else Color.Black
         "light", "pale-silver", "middle-blue", "parchment" -> Color.Black
         else -> Color.White
     }
@@ -234,6 +289,7 @@ private fun DislauncherRoot() {
         else -> foregroundColor.copy(alpha = 0.78f)
     }
     val surfaceVariantColor = when (preferences.themeMode) {
+        "sun" -> if (isDark) Color(0xFF121212) else Color(0xFFF5F5F5)
         "dark" -> Color(0xFF121212)
         "dim" -> Color(0xFF1D2A39)
         "twitter-dim" -> Color(0xFF1B2935)
@@ -264,6 +320,9 @@ private fun DislauncherRoot() {
     }
     val fontFamily = when (preferences.fontMode) {
         "serif" -> FontFamily.Serif
+        "opensans" -> FontFamily(androidx.compose.ui.text.font.Font(R.font.open_sans_regular, androidx.compose.ui.text.font.FontWeight.Normal))
+        "raleway-dots" -> FontFamily(androidx.compose.ui.text.font.Font(R.font.raleway_dots_regular, androidx.compose.ui.text.font.FontWeight.Normal))
+        "menlo" -> FontFamily(android.graphics.Typeface.create("monospace", android.graphics.Typeface.NORMAL))
         "mono" -> FontFamily.Monospace
         "condensed" -> FontFamily(android.graphics.Typeface.create("sans-serif-condensed", android.graphics.Typeface.NORMAL))
         "rounded" -> FontFamily(android.graphics.Typeface.create("sans-serif-rounded", android.graphics.Typeface.NORMAL))
@@ -379,7 +438,10 @@ private fun DislauncherRoot() {
                             onOpenTasks = { screen = LauncherScreen.TASKS },
                             onOpenWeather = { screen = LauncherScreen.WEATHER },
                             onOpenSettings = { screen = LauncherScreen.SETTINGS },
-                            onDoubleTapToLock = { lockDevice(context, adminComponent, devicePolicyManager) }
+                            onDoubleTapToLock = { lockDevice(context, adminComponent, devicePolicyManager) },
+                            homeItemOrder = homeItemOrder,
+                            onMoveHomeItem = ::moveHomeItem,
+                            onSolarInfoChange = { solarWeather = it }
                         )
                     } else {
                         AppsScreen(
@@ -393,7 +455,9 @@ private fun DislauncherRoot() {
                             fontFamily = fontFamily,
                             fontScale = fontScale,
                             onLaunch = { launchApp(context, it) },
-                            onToggleFavorite = ::toggleFavorite
+                            onToggleFavorite = ::toggleFavorite,
+                            onToggleHidden = ::toggleHidden,
+                            onRenameApp = ::renameApp
                         )
                     }
                 }
@@ -417,6 +481,18 @@ private fun DislauncherRoot() {
         }
         }
     }
+}
+
+private fun readAppNameOverrides(prefs: android.content.SharedPreferences): Map<String, String> {
+    val encoded = prefs.getString("renamed_app_labels_json", null).orEmpty()
+    if (encoded.isBlank()) return emptyMap()
+    return runCatching {
+        val json = JSONObject(encoded)
+        json.keys().asSequence().mapNotNull { key ->
+            val value = json.optString(key).trim()
+            if (key.isBlank() || value.isBlank()) null else key to value
+        }.toMap()
+    }.getOrDefault(emptyMap())
 }
 
 private fun loadLauncherApps(context: Context): List<LauncherApp> {

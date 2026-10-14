@@ -1,5 +1,9 @@
 package com.insomdroid.dislauncher
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -27,9 +31,11 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -68,7 +74,9 @@ internal fun AppsScreen(
     fontFamily: FontFamily,
     fontScale: Float,
     onLaunch: (LauncherApp) -> Unit,
-    onToggleFavorite: (String) -> Unit
+    onToggleFavorite: (String) -> Unit,
+    onToggleHidden: (String) -> Unit,
+    onRenameApp: (String, String) -> Unit
 ) {
     val background = MaterialTheme.colorScheme.background
     val mainText = MaterialTheme.colorScheme.onBackground
@@ -93,6 +101,10 @@ internal fun AppsScreen(
     var isScrubbing by remember { mutableStateOf(false) }
     var activeLetter by remember { mutableStateOf("") }
     var scrubFraction by remember { mutableFloatStateOf(0.5f) }
+    var selectedApp by remember { mutableStateOf<LauncherApp?>(null) }
+    var renamingApp by remember { mutableStateOf<LauncherApp?>(null) }
+    var renameValue by remember { mutableStateOf("") }
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     LaunchedEffect(isActive, preferences.autoLaunchKeyboard, preferences.showSearchBar) {
         if (isActive && preferences.autoLaunchKeyboard && preferences.showSearchBar) {
@@ -140,7 +152,7 @@ internal fun AppsScreen(
                     Row(
                         modifier = Modifier.fillMaxWidth().combinedClickable(
                             onClick = { onLaunch(app) },
-                            onLongClick = { onToggleFavorite(app.packageName) }
+                            onLongClick = { selectedApp = app }
                         ).padding(vertical = 6.dp, horizontal = 1.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -237,4 +249,100 @@ internal fun AppsScreen(
             }
         }
     }
+    selectedApp?.let { app ->
+        AlertDialog(
+            onDismissRequest = { selectedApp = null },
+            title = { Text(app.label) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    TextButton(
+                        onClick = { selectedApp = null; onLaunch(app) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Open", modifier = Modifier.fillMaxWidth()) }
+                    TextButton(
+                        onClick = { selectedApp = null; onToggleFavorite(app.packageName) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            if (app.packageName in favorites) "Remove from favourites" else "Add to favourites",
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    TextButton(
+                        onClick = {
+                            renameValue = app.label
+                            renamingApp = app
+                            selectedApp = null
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Rename", modifier = Modifier.fillMaxWidth()) }
+                    TextButton(
+                        onClick = { selectedApp = null; onToggleHidden(app.packageName) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            "Hide from launcher",
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    TextButton(
+                        onClick = {
+                            selectedApp = null
+                            openApplicationInfo(context, app)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("App info", modifier = Modifier.fillMaxWidth()) }
+                    if (!app.isSystem) {
+                        TextButton(
+                            onClick = {
+                                selectedApp = null
+                                requestUninstall(context, app)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Uninstall", modifier = Modifier.fillMaxWidth()) }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { selectedApp = null }) { Text("Done") }
+            }
+        )
+    }
+    renamingApp?.let { app ->
+        AlertDialog(
+            onDismissRequest = { renamingApp = null },
+            title = { Text("Rename app") },
+            text = {
+                OutlinedTextField(
+                    value = renameValue,
+                    onValueChange = { renameValue = it.take(60) },
+                    singleLine = true,
+                    label = { Text("App name") }
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = renameValue.isNotBlank(),
+                    onClick = {
+                        onRenameApp(app.packageName, renameValue)
+                        renamingApp = null
+                    }
+                ) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { renamingApp = null }) { Text("Cancel") }
+            }
+        )
+    }
+
+}
+
+
+private fun openApplicationInfo(context: Context, app: LauncherApp) {
+    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${app.packageName}"))
+    runCatching { context.startActivity(intent) }
+}
+
+private fun requestUninstall(context: Context, app: LauncherApp) {
+    val intent = Intent(Intent.ACTION_DELETE, Uri.parse("package:${app.packageName}"))
+    runCatching { context.startActivity(intent) }
 }
