@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.location.Geocoder
 import android.os.Looper
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -13,6 +14,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.util.Locale
 import kotlin.coroutines.resume
 
 internal data class WeatherInfo(
@@ -22,12 +26,17 @@ internal data class WeatherInfo(
     val wind: String?,
     val feelsLike: String? = null,
     val high: String? = null,
-    val low: String? = null
+    val low: String? = null,
+    val locationName: String? = null,
+    val sunrise: LocalTime? = null,
+    val sunset: LocalTime? = null,
+    val timezone: String? = null
 ) {
     fun summary(): String {
         val extras = listOfNotNull(humidity?.let { "$it% humidity" }, wind)
-        return listOf("$temperature · $condition", extras.takeIf { it.isNotEmpty() }?.joinToString(" · "))
+        val conditions = listOf("$temperature · $condition", extras.takeIf { it.isNotEmpty() }?.joinToString(" · "))
             .filterNotNull().joinToString("   ")
+        return listOfNotNull(locationName, conditions).joinToString(" · ")
     }
 }
 
@@ -55,7 +64,7 @@ internal suspend fun fetchWeather(context: Context, unit: String): WeatherInfo? 
             "https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}" +
                 "&longitude=${location.longitude}" +
                 "&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code" +
-                "&daily=temperature_2m_max,temperature_2m_min&forecast_days=1" +
+                "&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&forecast_days=1" +
                 "&temperature_unit=$temperatureUnit&wind_speed_unit=kmh&timezone=auto"
         )
         val connection = (url.openConnection() as HttpURLConnection).apply {
@@ -74,6 +83,17 @@ internal suspend fun fetchWeather(context: Context, unit: String): WeatherInfo? 
             val daily = response.optJSONObject("daily")
             val highValue = daily?.optJSONArray("temperature_2m_max")?.optDouble(0)?.takeIf { !it.isNaN() }
             val lowValue = daily?.optJSONArray("temperature_2m_min")?.optDouble(0)?.takeIf { !it.isNaN() }
+            val sunriseValue = daily?.optJSONArray("sunrise")?.optString(0)?.takeIf(String::isNotBlank)
+            val sunsetValue = daily?.optJSONArray("sunset")?.optString(0)?.takeIf(String::isNotBlank)
+            val sunriseTime = runCatching { LocalDateTime.parse(sunriseValue).toLocalTime() }.getOrNull()
+            val sunsetTime = runCatching { LocalDateTime.parse(sunsetValue).toLocalTime() }.getOrNull()
+            val locality = runCatching {
+                @Suppress("DEPRECATION")
+                Geocoder(context, Locale.getDefault())
+                    .getFromLocation(location.latitude, location.longitude, 1)
+                    ?.firstOrNull()
+                    ?.let { it.locality ?: it.subAdminArea ?: it.adminArea ?: it.countryName }
+            }.getOrNull()
             WeatherInfo(
                 temperature = "${temp.toInt()}°$unit",
                 condition = weatherCondition(current.getInt("weather_code")),
@@ -81,7 +101,11 @@ internal suspend fun fetchWeather(context: Context, unit: String): WeatherInfo? 
                 wind = windValue?.let { "${it} km/h" },
                 feelsLike = feels?.let { "${it.toInt()}°$unit" },
                 high = highValue?.let { "${it.toInt()}°$unit" },
-                low = lowValue?.let { "${it.toInt()}°$unit" }
+                low = lowValue?.let { "${it.toInt()}°$unit" },
+                locationName = locality,
+                sunrise = sunriseTime,
+                sunset = sunsetTime,
+                timezone = response.optString("timezone").takeIf(String::isNotBlank)
             )
         } finally {
             connection.disconnect()
