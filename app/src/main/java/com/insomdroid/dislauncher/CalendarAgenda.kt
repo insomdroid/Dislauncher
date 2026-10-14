@@ -36,6 +36,7 @@ import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.DateFormat
+import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
@@ -50,7 +51,7 @@ private data class CalendarAgendaEvent(
 )
 
 @Composable
-internal fun CalendarAgenda() {
+internal fun CalendarAgenda(timeFormat: String) {
     val context = LocalContext.current
     val primary = MaterialTheme.colorScheme.onBackground
     val secondary = MaterialTheme.colorScheme.onSurfaceVariant
@@ -111,7 +112,7 @@ internal fun CalendarAgenda() {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            eventTime(event),
+                            eventTime(context, event, timeFormat),
                             color = secondary,
                             fontSize = 10.sp,
                             maxLines = 1,
@@ -223,9 +224,15 @@ private fun readEventDescription(context: Context, eventId: Long): String? = run
     )?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
 }.getOrNull()
 
-private fun eventTime(event: CalendarAgendaEvent): String {
+private fun eventTime(context: Context, event: CalendarAgendaEvent, timeFormat: String): String {
     if (event.allDay) return "ALL DAY"
-    return DateFormat.getTimeInstance(DateFormat.SHORT, Locale.getDefault()).format(Date(event.begin))
+    val formatter = when (timeFormat) {
+        "12" -> SimpleDateFormat("h:mm a", Locale.getDefault())
+        "24" -> SimpleDateFormat("HH:mm", Locale.getDefault())
+        else -> return DateFormat.getTimeInstance(DateFormat.SHORT, Locale.getDefault()).format(Date(event.begin))
+    }
+    formatter.timeZone = TimeZone.getDefault()
+    return formatter.format(Date(event.begin))
 }
 
 private fun openCalendarEvent(context: Context, event: CalendarAgendaEvent) {
