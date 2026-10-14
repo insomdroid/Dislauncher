@@ -1,6 +1,5 @@
 package com.insomdroid.dislauncher
 
-import android.content.ComponentName
 import android.content.Intent
 import android.provider.Settings
 import androidx.compose.foundation.clickable
@@ -258,25 +257,10 @@ internal fun SettingsScreen(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                 SettingToggle(
                     "Swipe down for notifications",
-                    "Enable this, then turn on dislauncher in Android Accessibility settings so the gesture can open the notification shade.",
+                    "Swipe down across the Home screen to open the notification shade. Some Android builds may restrict this system action.",
                     preferences.swipeDownNotifications
                 ) { enabled ->
                     onPreferencesChange(preferences.copy(swipeDownNotifications = enabled))
-                    if (enabled) {
-                        val enabledServices = Settings.Secure.getString(
-                            context.contentResolver,
-                            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-                        ).orEmpty()
-                        val serviceName = ComponentName(
-                            context,
-                            DislauncherAccessibilityService::class.java
-                        ).flattenToString()
-                        if (enabledServices.split(':').none { it.equals(serviceName, ignoreCase = true) }) {
-                            runCatching {
-                                context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                            }
-                        }
-                    }
                 }
             }
 
