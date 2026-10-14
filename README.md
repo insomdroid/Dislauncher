@@ -8,7 +8,7 @@ A minimalist, text-first Android launcher focused on a calm, low-distraction exp
 - Tap the clock to open the clock app; tap the date to open the calendar app.
 - Long-press empty space to open Settings with haptic feedback.
 - Optional double-tap-to-lock, year/day progress, quote, weather, screen-time, tasks, call, music, and calendar shortcut.
-- Small, default, and large font sizes; Sans, Serif, and Monospace font families.
+- Small, default, and large font sizes; Roboto, Serif, Monospace, Condensed, Rounded, Light, Casual, and Cursive Android typefaces.
 - Optional app icons and compatible icon packs using the ADW/Nova-style `appfilter.xml` format.
 - Theme choices: Auto, Light, Dark.
 
@@ -37,7 +37,7 @@ Settings are persisted locally and include:
 - **Double-tap to lock:** Android asks the user to explicitly enable dislauncher as a device administrator.
 - **Swipe down for notifications:** this is best-effort; Android versions and device manufacturers can block third-party apps from expanding the system notification shade.
 - **Icon packs:** only installed icon packs that expose compatible ADW/Nova-style `appfilter.xml` entries are used; otherwise, the system app icon is shown.
-- **Fonts:** the built-in Sans, Serif, and Monospace families are supported. Importing external font files is not implemented yet.
+- **Fonts:** selected typefaces apply across Home, Apps, Tasks, Weather, and Settings. The launcher uses Android's built-in typefaces; importing external font files is not implemented yet.
 - Successful CI compilation does not replace real-device interaction, visual, or permission testing.
 
 ## Build
