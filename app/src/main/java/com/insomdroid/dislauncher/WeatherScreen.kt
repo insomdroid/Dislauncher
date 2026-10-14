@@ -5,11 +5,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,7 +15,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -53,16 +47,6 @@ internal fun WeatherScreen(weatherUnit: String, onBack: () -> Unit) {
     var weather by remember { mutableStateOf<WeatherInfo?>(null) }
     var status by remember { mutableStateOf("Location permission is required.") }
     var loading by remember { mutableStateOf(false) }
-    val weatherAnimation = rememberInfiniteTransition(label = "weather-symbol")
-    val symbolOffset by weatherAnimation.animateFloat(
-        initialValue = -3f,
-        targetValue = 3f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1800),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "weather-symbol-offset"
-    )
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { results ->
@@ -93,17 +77,15 @@ internal fun WeatherScreen(weatherUnit: String, onBack: () -> Unit) {
                 modifier = Modifier.clickable(onClick = onBack).padding(end = 18.dp))
             Text("Weather", color = primary, fontSize = 18.sp)
         }
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(24.dp))
         Text("CURRENT CONDITIONS", color = secondary, fontSize = 10.sp, letterSpacing = 1.2.sp)
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(8.dp))
         if (weather != null) {
-            Text(
-                weatherSymbol(weather!!.condition),
-                color = primary,
-                fontSize = 52.sp,
-                lineHeight = 58.sp,
-                modifier = Modifier.offset(y = symbolOffset.dp)
-            )
+            weather!!.locationName?.let {
+                Text(it, color = secondary, fontSize = 13.sp, maxLines = 1)
+                Spacer(Modifier.height(8.dp))
+            }
+            WeatherIcon(weather!!.condition, primary, Modifier.padding(vertical = 2.dp))
             Spacer(Modifier.height(4.dp))
             Text(weather!!.temperature, color = primary, fontSize = 60.sp, lineHeight = 64.sp,
                 fontWeight = FontWeight.Light, letterSpacing = (-1.5).sp)
@@ -144,13 +126,3 @@ private fun hasWeatherLocationPermission(context: Context): Boolean =
         ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
         PackageManager.PERMISSION_GRANTED
 
-private fun weatherSymbol(condition: String): String = when {
-    condition.contains("thunder", ignoreCase = true) -> "ϟ"
-    condition.contains("rain", ignoreCase = true) || condition.contains("shower", ignoreCase = true) ||
-        condition.contains("drizzle", ignoreCase = true) -> "☂"
-    condition.contains("snow", ignoreCase = true) -> "❄"
-    condition.contains("fog", ignoreCase = true) -> "≋"
-    condition.contains("cloud", ignoreCase = true) -> "☁"
-    condition.contains("clear", ignoreCase = true) -> "☼"
-    else -> "◌"
-}
