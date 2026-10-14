@@ -36,6 +36,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -54,6 +55,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -89,6 +93,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun DislauncherRoot() {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val view = LocalView.current
     val baseDensity = LocalDensity.current
     val prefsStore = remember {
@@ -227,6 +232,21 @@ private fun DislauncherRoot() {
         apps = withContext(Dispatchers.IO) { loadLauncherApps(context) }.map { app ->
             appNameOverrides[app.packageName]?.let { app.copy(label = it) } ?: app
         }
+    }
+
+    DisposableEffect(lifecycleOwner, context, appNameOverrides) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                scope.launch {
+                    val refreshed = withContext(Dispatchers.IO) { loadLauncherApps(context) }.map { app ->
+                        appNameOverrides[app.packageName]?.let { app.copy(label = it) } ?: app
+                    }
+                    apps = refreshed
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     LaunchedEffect(pagerState.settledPage) {
@@ -377,6 +397,7 @@ private fun DislauncherRoot() {
                 WindowCompat.getInsetsController(activity.window, view)
             controller.isAppearanceLightStatusBars = !isDark
             controller.isAppearanceLightNavigationBars = !isDark
+            controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             if (preferences.hideStatusBar) controller.hide(WindowInsetsCompat.Type.statusBars())
             else controller.show(WindowInsetsCompat.Type.statusBars())
             controller.show(WindowInsetsCompat.Type.navigationBars())
