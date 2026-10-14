@@ -258,7 +258,7 @@ internal fun HomeScreen(
                     percent = (today.dayOfYear * 100f / today.lengthOfYear()).toInt(),
                     primaryText = primaryText,
                     secondaryText = secondaryText,
-                    fill = Color(0xFF4CAF50),
+                    fill = primaryText,
                     track = if (isDark) Color(0xFF555555) else Color(0xFFD5D5D5),
                     fontScale = fontScale
                 )
@@ -270,7 +270,7 @@ internal fun HomeScreen(
                     percent = (now.toSecondOfDay() * 100f / 86400f).toInt(),
                     primaryText = primaryText,
                     secondaryText = secondaryText,
-                    fill = Color(0xFF4CAF50),
+                    fill = primaryText,
                     track = if (isDark) Color(0xFF555555) else Color(0xFFD5D5D5),
                     fontScale = fontScale
                 )

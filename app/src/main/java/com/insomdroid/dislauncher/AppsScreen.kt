@@ -14,6 +14,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
@@ -91,7 +92,8 @@ internal fun AppsScreen(
     onLaunch: (LauncherApp) -> Unit,
     onToggleFavorite: (String) -> Unit,
     onToggleHidden: (String) -> Unit,
-    onRenameApp: (String, String) -> Unit
+    onRenameApp: (String, String) -> Unit,
+    onOpenSettings: () -> Unit
 ) {
     val background = MaterialTheme.colorScheme.background
     val mainText = MaterialTheme.colorScheme.onBackground
@@ -135,8 +137,31 @@ internal fun AppsScreen(
     Column(
         modifier = Modifier.fillMaxSize().background(background)
             .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(start = 16.dp, end = 14.dp, top = 14.dp, bottom = 8.dp)
+            .padding(start = 16.dp, end = 14.dp, top = 4.dp, bottom = 8.dp)
     ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "Apps",
+                color = mainText,
+                fontSize = 22.sp,
+                lineHeight = 28.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                "Setting",
+                color = secondary,
+                fontSize = 14.sp,
+                lineHeight = 18.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.clickable(onClick = onOpenSettings)
+                    .padding(horizontal = 8.dp, vertical = 8.dp)
+            )
+        }
+        Spacer(Modifier.height(6.dp))
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             LazyColumn(
                 state = listState,
@@ -159,7 +184,7 @@ internal fun AppsScreen(
                         modifier = Modifier.fillMaxWidth().combinedClickable(
                             onClick = { onLaunch(app) },
                             onLongClick = { selectedApp = app }
-                        ).padding(vertical = 12.dp, horizontal = 28.dp),
+                        ).padding(vertical = 8.dp, horizontal = 20.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (preferences.showAppIcons) {
@@ -169,8 +194,8 @@ internal fun AppsScreen(
                         Text(
                             app.label,
                             color = mainText,
-                            fontSize = 25.sp,
-                            lineHeight = 33.sp,
+                            fontSize = 18.sp * fontScale,
+                            lineHeight = 24.sp * fontScale,
                             fontFamily = fontFamily,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -201,7 +226,7 @@ internal fun AppsScreen(
         }
         if (preferences.showSearchBar) {
             Spacer(Modifier.height(10.dp))
-            Column(Modifier.fillMaxWidth().padding(top = 3.dp)) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(top = 3.dp)) {
                 Box(
                     modifier = Modifier.fillMaxWidth().height(48.dp).padding(start = 12.dp),
                     contentAlignment = Alignment.CenterStart
@@ -211,7 +236,7 @@ internal fun AppsScreen(
                             "Search Apps",
                             color = mainText,
                             style = MaterialTheme.typography.bodyLarge,
-                            fontSize = 16.sp
+                            fontSize = 15.sp * fontScale
                         )
                     }
                     BasicTextField(
@@ -222,7 +247,7 @@ internal fun AppsScreen(
                         textStyle = MaterialTheme.typography.bodyLarge.copy(
                             color = mainText,
                             fontFamily = fontFamily,
-                            fontSize = 16.sp
+                            fontSize = 15.sp * fontScale
                         ),
                         cursorBrush = SolidColor(mainText)
                     )

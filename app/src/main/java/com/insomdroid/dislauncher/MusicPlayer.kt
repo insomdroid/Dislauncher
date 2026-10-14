@@ -8,50 +8,30 @@ import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import android.os.Handler
 import android.os.Looper
-import android.os.SystemClock
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import kotlinx.coroutines.delay
 
 @Composable
 internal fun MusicPlayerWidget(
@@ -90,6 +70,7 @@ internal fun MusicPlayerWidget(
 
     DisposableEffect(lifecycleOwner, manager, component) {
         var listening = false
+
         fun useSessions(sessions: List<MediaController>?) {
             val candidates = sessions.orEmpty()
             val next = candidates.firstOrNull {
@@ -104,9 +85,11 @@ internal fun MusicPlayerWidget(
             metadataState.value = next?.metadata
             playbackState.value = next?.playbackState
         }
+
         val listener = MediaSessionManager.OnActiveSessionsChangedListener { sessions ->
             useSessions(sessions)
         }
+
         fun refreshSessions() {
             try {
                 val sessions = manager.getActiveSessions(component)
@@ -121,6 +104,7 @@ internal fun MusicPlayerWidget(
                 useSessions(emptyList())
             }
         }
+
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) refreshSessions()
         }
@@ -138,291 +122,94 @@ internal fun MusicPlayerWidget(
     val metadata = metadataState.value
     val playback = playbackState.value
     val playing = playback?.state == PlaybackState.STATE_PLAYING
-    var positionTick by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
-
-    LaunchedEffect(playing, controller, metadata) {
-        while (playing && controller != null) {
-            positionTick = SystemClock.elapsedRealtime()
-            delay(1000L)
-        }
-        if (!playing) positionTick = SystemClock.elapsedRealtime()
-    }
-
-    val duration = metadata?.getLong(MediaMetadata.METADATA_KEY_DURATION)?.coerceAtLeast(0L) ?: 0L
-    val basePosition = playback?.position?.coerceAtLeast(0L) ?: 0L
-    val lastPositionUpdate = playback?.lastPositionUpdateTime ?: positionTick
-    val position = (
-        basePosition + if (playing) {
-            ((positionTick - lastPositionUpdate).coerceAtLeast(0L) *
-                (playback?.playbackSpeed ?: 1f)).toLong()
-        } else 0L
-    ).coerceIn(0L, duration)
-    val progress = if (duration > 0L) (position.toFloat() / duration.toFloat()).coerceIn(0f, 1f) else 0f
-    val artwork = remember(metadata) {
-        metadata?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
-            ?: metadata?.getBitmap(MediaMetadata.METADATA_KEY_ART)
-            ?: metadata?.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON)
-    }
-    val fallbackBackground = MaterialTheme.colorScheme.surfaceVariant
     val foreground = MaterialTheme.colorScheme.onBackground
-    val track = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.22f)
-
+    val secondary = MaterialTheme.colorScheme.onSurfaceVariant
     val title = metadata?.getString(MediaMetadata.METADATA_KEY_DISPLAY_TITLE)
         ?: metadata?.getString(MediaMetadata.METADATA_KEY_TITLE)
         ?: "Nothing playing"
     val artist = metadata?.getString(MediaMetadata.METADATA_KEY_ARTIST)
         ?: metadata?.getString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST)
         ?: if (metadata == null) "Tap to open your music app" else "Unknown artist"
-    val secondary = MaterialTheme.colorScheme.onSurfaceVariant
 
-    Box(
-        modifier = modifier.fillMaxWidth(),
-        contentAlignment = Alignment.CenterStart
+    Row(
+        modifier = modifier.fillMaxWidth().padding(vertical = 1.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Column(
-            modifier = Modifier.widthIn(max = 320.dp).fillMaxWidth().padding(vertical = 1.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(5.dp)
+            modifier = Modifier.weight(1f).clickable(onClick = onOpenMusicApp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            if (metadata == null) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Box(
-                        modifier = Modifier.size(44.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(fallbackBackground)
-                            .clickable(onClick = onOpenMusicApp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("♪", color = foreground, fontSize = 24.sp, fontWeight = FontWeight.Light)
-                    }
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
-                    ) {
-                        Text(
-                            title,
-                            color = foreground,
-                            fontSize = 15.sp,
-                            lineHeight = 19.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                            modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenMusicApp)
-                        )
-                        Text(
-                            artist,
-                            color = secondary,
-                            fontSize = 11.sp,
-                            lineHeight = 14.sp,
-                            maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                        )
-                        MusicTransportControls(
-                            controller = controller,
-                            hasMetadata = metadata != null,
-                            playing = playing,
-                            foreground = foreground,
-                            onOpenMusicApp = onOpenMusicApp
-                        )
-                    }
-                }
-                MusicProgressRow(
-                    modifier = Modifier.widthIn(max = 270.dp),
-                    position = position,
-                    duration = duration,
-                    progress = progress,
-                    foreground = foreground,
-                    track = track
-                )
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Box(
-                        modifier = Modifier.size(54.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(fallbackBackground)
-                            .clickable(onClick = onOpenMusicApp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (artwork != null) {
-                            Image(
-                                bitmap = artwork.asImageBitmap(),
-                                contentDescription = "Album art",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Text("♪", color = foreground, fontSize = 26.sp, fontWeight = FontWeight.Light)
-                        }
-                    }
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(3.dp)
-                    ) {
-                        Text(
-                            title,
-                            color = foreground,
-                            fontSize = 15.sp,
-                            lineHeight = 19.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                            modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenMusicApp)
-                        )
-                        Text(
-                            artist,
-                            color = secondary,
-                            fontSize = 11.sp,
-                            lineHeight = 14.sp,
-                            maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                        )
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(13.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                "⏮",
-                                color = foreground,
-                                fontSize = 18.sp,
-                                modifier = Modifier.clickable {
-                                    if (controller != null) runCatching { controller.transportControls.skipToPrevious() }
-                                    else onOpenMusicApp()
-                                }.padding(vertical = 4.dp, horizontal = 3.dp)
-                            )
-                            Text(
-                                if (playing) "Ⅱ" else "▶",
-                                color = foreground,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier.clickable {
-                                    if (controller != null) {
-                                        runCatching {
-                                            if (playing) controller.transportControls.pause()
-                                            else controller.transportControls.play()
-                                        }
-                                    } else onOpenMusicApp()
-                                }.padding(vertical = 4.dp, horizontal = 3.dp)
-                            )
-                            Text(
-                                "⏭",
-                                color = foreground,
-                                fontSize = 18.sp,
-                                modifier = Modifier.clickable {
-                                    if (controller != null) runCatching { controller.transportControls.skipToNext() }
-                                    else onOpenMusicApp()
-                                }.padding(vertical = 4.dp, horizontal = 3.dp)
-                            )
-                        }
-                    }
-                }
-                MusicProgressRow(
-                    position = position,
-                    duration = duration,
-                    progress = progress,
-                    foreground = foreground,
-                    track = track
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun MusicTransportControls(
-    controller: MediaController?,
-    hasMetadata: Boolean,
-    playing: Boolean,
-    foreground: Color,
-    onOpenMusicApp: () -> Unit
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(15.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            "‹‹",
-            color = foreground,
-            fontSize = 14.sp,
-            modifier = Modifier.clickable {
-                if (controller != null) runCatching { controller.transportControls.skipToPrevious() }
-                else onOpenMusicApp()
-            }.padding(vertical = 2.dp, horizontal = 2.dp)
-        )
-        Text(
-            if (playing) "Ⅱ" else "▶",
-            color = foreground,
-            fontSize = 17.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.clickable {
-                if (controller != null && hasMetadata) {
-                    runCatching {
-                        if (playing) controller.transportControls.pause()
-                        else controller.transportControls.play()
-                    }
-                } else {
-                    onOpenMusicApp()
-                }
-            }.padding(vertical = 1.dp, horizontal = 2.dp)
-        )
-        Text(
-            "››",
-            color = foreground,
-            fontSize = 14.sp,
-            modifier = Modifier.clickable {
-                if (controller != null) runCatching { controller.transportControls.skipToNext() }
-                else onOpenMusicApp()
-            }.padding(vertical = 2.dp, horizontal = 2.dp)
-        )
-    }
-}
-
-@Composable
-private fun MusicProgressRow(
-    modifier: Modifier = Modifier,
-    position: Long,
-    duration: Long,
-    progress: Float,
-    foreground: Color,
-    track: Color
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(formatMediaTime(position), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, lineHeight = 11.sp)
-        Canvas(modifier = Modifier.weight(1f).height(2.dp)) {
-            drawRoundRect(
-                color = track,
-                topLeft = Offset.Zero,
-                size = size,
-                cornerRadius = CornerRadius(size.height / 2f)
+            Text(
+                title,
+                color = foreground,
+                fontSize = 18.sp,
+                lineHeight = 23.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
-            if (progress > 0f) {
-                drawRoundRect(
+            Text(
+                artist,
+                color = secondary,
+                fontSize = 14.sp,
+                lineHeight = 19.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            Box(
+                modifier = Modifier.size(36.dp).clickable {
+                    if (controller != null) {
+                        runCatching { controller.transportControls.skipToPrevious() }
+                    } else {
+                        onOpenMusicApp()
+                    }
+                },
+                contentAlignment = Alignment.Center
+            ) {
+                Text("‹", color = foreground, fontSize = 34.sp, lineHeight = 36.sp, fontWeight = FontWeight.Light)
+            }
+            Box(
+                modifier = Modifier.size(36.dp).clickable {
+                    if (controller != null) {
+                        runCatching {
+                            if (playing) controller.transportControls.pause()
+                            else controller.transportControls.play()
+                        }
+                    } else {
+                        onOpenMusicApp()
+                    }
+                },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    if (playing) "Ⅱ" else "▶",
                     color = foreground,
-                    topLeft = Offset.Zero,
-                    size = Size(size.width * progress, size.height),
-                    cornerRadius = CornerRadius(size.height / 2f)
+                    fontSize = 21.sp,
+                    lineHeight = 24.sp,
+                    fontWeight = FontWeight.Medium
                 )
             }
+            Box(
+                modifier = Modifier.size(36.dp).clickable {
+                    if (controller != null) {
+                        runCatching { controller.transportControls.skipToNext() }
+                    } else {
+                        onOpenMusicApp()
+                    }
+                },
+                contentAlignment = Alignment.Center
+            ) {
+                Text("›", color = foreground, fontSize = 34.sp, lineHeight = 36.sp, fontWeight = FontWeight.Light)
+            }
         }
-        Text(formatMediaTime(duration), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, lineHeight = 11.sp)
     }
-}
-
-private fun formatMediaTime(positionMs: Long): String {
-    if (positionMs <= 0L) return "--:--"
-    val totalSeconds = positionMs / 1000L
-    return (totalSeconds / 60L).toString() + ":" + (totalSeconds % 60L).toString().padStart(2, '0')
 }
 
 internal class DislauncherNotificationListener : android.service.notification.NotificationListenerService()
