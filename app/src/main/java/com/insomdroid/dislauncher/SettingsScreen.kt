@@ -87,11 +87,11 @@ internal fun SettingsScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            LargeTopAppBar(
+            TopAppBar(
                 title = {
                     Text(
                         "Settings",
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold
                     )
                 },
@@ -100,7 +100,7 @@ internal fun SettingsScreen(
                         Text("←", fontSize = 24.sp)
                     }
                 },
-                colors = TopAppBarDefaults.largeTopAppBarColors(
+                colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )
             )
@@ -140,25 +140,13 @@ internal fun SettingsScreen(
                         )
                     ) { onPreferencesChange(preferences.copy(themeMode = it)) }
                     Text(
-                        "System follows your Android appearance. Light stays light. Dark uses the selected dark surface style.",
+                        "System follows Android appearance. Light uses a light palette. Dark always uses a pure-black background.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    if (preferences.themeMode == "dark") {
-                        ChoiceRow(
-                            "Dark style",
-                            preferences.darkAppearance,
-                            listOf("system" to "System", "amoled" to "AMOLED")
-                        ) { onPreferencesChange(preferences.copy(darkAppearance = it)) }
-                        Text(
-                            "System uses regular dark surfaces. AMOLED makes the background and Material surfaces pure black.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
                     SettingToggle(
                         "Dynamic color",
-                        "Use Android wallpaper colors for System or Dark themes (Android 12+).",
+                        "Use Android wallpaper colors when Theme is set to System (Android 12+).",
                         preferences.dynamicColor
                     ) { onPreferencesChange(preferences.copy(dynamicColor = it)) }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
@@ -260,10 +248,6 @@ internal fun SettingsScreen(
             SettingsGroup("App drawer", "Keep the list compact and make navigation easier.") {
                 SettingToggle("Show search bar", "Show the app search field.", preferences.showSearchBar) {
                     onPreferencesChange(preferences.copy(showSearchBar = it))
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingToggle("Show character scroll", "Keep the letter scrubber visible on the right edge of the drawer.", preferences.showCharacterScroll) {
-                    onPreferencesChange(preferences.copy(showCharacterScroll = it))
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                 SettingToggle("Auto-launch keyboard", "Focus the search field and open the keyboard when the drawer opens.", preferences.autoLaunchKeyboard) {
