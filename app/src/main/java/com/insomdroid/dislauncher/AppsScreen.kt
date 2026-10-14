@@ -8,6 +8,13 @@ import android.net.Uri
 import android.provider.Settings
 import android.os.Process
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -26,7 +33,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -60,6 +67,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
@@ -132,7 +140,7 @@ internal fun AppsScreen(
 
     Column(
         modifier = Modifier.fillMaxSize().background(background)
-            .windowInsetsPadding(WindowInsets.systemBars)
+            .windowInsetsPadding(WindowInsets.safeDrawing)
             .padding(start = 16.dp, end = 14.dp, top = 14.dp, bottom = 8.dp)
     ) {
         if (preferences.showSearchBar) {
@@ -207,7 +215,7 @@ internal fun AppsScreen(
                             fontFamily = fontFamily,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier
+                            modifier = Modifier.weight(1f)
                         )
                         usageMinutesByPackage[app.packageName]?.takeIf { it > 0 }?.let { minutes ->
                             Text(
@@ -215,7 +223,17 @@ internal fun AppsScreen(
                                 color = secondary,
                                 fontSize = 11.sp,
                                 lineHeight = 15.sp,
-                                modifier = Modifier.padding(start = 12.dp)
+                                modifier = Modifier.padding(start = 8.dp)
+                            )
+                        }
+                        if (app.packageName in favorites) {
+                            Text(
+                                "★",
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 16.sp,
+                                lineHeight = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(start = 8.dp)
                             )
                         }
                     }
@@ -279,22 +297,27 @@ internal fun AppsScreen(
                             )
                         }
                     }
-                    if (isScrubbing && activeLetter.isNotBlank()) {
-                        Box(
-                            modifier = Modifier.align(Alignment.CenterEnd)
-                                .offset(x = (-68).dp)
-                                .width(42.dp)
-                                .height(42.dp)
-                                .clip(androidx.compose.foundation.shape.CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer),
-                            contentAlignment = Alignment.Center
-                        ) {
+                    AnimatedVisibility(
+                        visible = isScrubbing && activeLetter.isNotBlank(),
+                        modifier = Modifier.align(Alignment.CenterEnd).offset(x = (-30).dp),
+                        enter = fadeIn(animationSpec = tween(110)) +
+                            scaleIn(initialScale = 0.72f, animationSpec = tween(110)),
+                        exit = fadeOut(animationSpec = tween(90)) +
+                            scaleOut(targetScale = 0.86f, animationSpec = tween(90))
+                    ) {
+                        Crossfade(
+                            targetState = activeLetter,
+                            animationSpec = tween(85),
+                            label = "scrubber-active-letter"
+                        ) { letter ->
                             Text(
-                                activeLetter,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                fontSize = 18.sp,
-                                lineHeight = 22.sp,
-                                fontWeight = FontWeight.Bold
+                                letter,
+                                color = mainText,
+                                fontSize = 34.sp,
+                                lineHeight = 38.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.width(40.dp)
                             )
                         }
                     }
@@ -419,6 +442,16 @@ private fun openApplicationInfo(context: Context, app: LauncherApp) {
 }
 
 private fun requestUninstall(context: Context, app: LauncherApp) {
-    val intent = Intent(Intent.ACTION_DELETE, Uri.parse("package:${app.packageName}"))
-    runCatching { context.startActivity(intent) }
+    val intent = Intent(Intent.ACTION_UNINSTALL_PACKAGE).apply {
+        data = Uri.parse("package:${app.packageName}")
+        putExtra(Intent.EXTRA_RETURN_RESULT, true)
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    runCatching { context.startActivity(intent) }.onFailure {
+        android.widget.Toast.makeText(
+            context,
+            "Unable to open the system uninstaller.",
+            android.widget.Toast.LENGTH_LONG
+        ).show()
+    }
 }
