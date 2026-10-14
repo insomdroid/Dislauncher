@@ -17,9 +17,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -94,6 +97,7 @@ private fun DislauncherRoot() {
     }
     var appNameOverrides by remember { mutableStateOf(readAppNameOverrides(prefsStore)) }
     var solarWeather by remember { mutableStateOf<WeatherInfo?>(null) }
+    var weatherForScreen by remember { mutableStateOf<WeatherInfo?>(null) }
     var solarTick by remember { mutableStateOf(0L) }
     var homeItemOrder by remember { mutableStateOf(readHomeItemOrder(prefsStore, favorites)) }
     LaunchedEffect(Unit) {
@@ -332,9 +336,9 @@ private fun DislauncherRoot() {
         else -> FontFamily.SansSerif
     }
     val fontScale = when (preferences.fontSize) {
-        "medium" -> 1.0f
-        "large" -> 1.25f
-        else -> 0.75f
+        "small" -> 0.88f
+        "large" -> 1.22f
+        else -> 1.0f
     }
     val baseTypography = Typography()
     fun scaled(style: TextStyle): TextStyle = style.copy(fontFamily = fontFamily)
@@ -414,6 +418,7 @@ private fun DislauncherRoot() {
         } else if (screen == LauncherScreen.WEATHER) {
             WeatherScreen(
                 weatherUnit = preferences.weatherUnit,
+                cachedWeather = weatherForScreen,
                 onBack = { screen = LauncherScreen.HOME }
             )
         } else {
@@ -436,7 +441,7 @@ private fun DislauncherRoot() {
                             onLaunch = { launchApp(context, it) },
                             onMoveFavorite = ::moveFavorite,
                             onOpenTasks = { screen = LauncherScreen.TASKS },
-                            onOpenWeather = { screen = LauncherScreen.WEATHER },
+                            onOpenWeather = { cached -> weatherForScreen = cached; screen = LauncherScreen.WEATHER },
                             onOpenSettings = { screen = LauncherScreen.SETTINGS },
                             onDoubleTapToLock = { lockDevice(context, adminComponent, devicePolicyManager) },
                             homeItemOrder = homeItemOrder,
@@ -463,13 +468,17 @@ private fun DislauncherRoot() {
                 }
                 if (screen == LauncherScreen.HOME && pagerState.currentPage == 0 && preferences.swipeDownNotifications) {
                     Box(
-                        modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().height(22.dp)
-                            .pointerInput(Unit) {
+                        modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth()
+                            .windowInsetsPadding(WindowInsets.statusBars)
+                            .height(48.dp)
+                            .pointerInput(preferences.swipeDownNotifications) {
                                 var totalDrag = 0f
                                 detectVerticalDragGestures(
-                                    onVerticalDrag = { _, dragAmount -> totalDrag += dragAmount },
+                                    onVerticalDrag = { _, dragAmount ->
+                                        totalDrag += dragAmount
+                                    },
                                     onDragEnd = {
-                                        if (totalDrag > 24.dp.toPx()) expandNotificationPanel(context)
+                                        if (totalDrag > 32.dp.toPx()) expandNotificationPanel(context)
                                         totalDrag = 0f
                                     },
                                     onDragCancel = { totalDrag = 0f }
