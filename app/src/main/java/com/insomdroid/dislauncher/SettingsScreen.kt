@@ -223,10 +223,6 @@ internal fun SettingsScreen(
                     onPreferencesChange(preferences.copy(pinYearProgress = it))
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingToggle("Show inspiring quote", "Tap the quote on Home to cycle through the built-in list.", preferences.showQuote) {
-                    onPreferencesChange(preferences.copy(showQuote = it))
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                 SettingToggle("Show screen time", "Requires Android Usage Access. Tap its Home row to open access settings.", preferences.showScreenTime) {
                     onPreferencesChange(preferences.copy(showScreenTime = it))
                 }
