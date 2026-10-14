@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,13 +46,16 @@ import java.util.Locale
 internal fun WeatherScreen(
     weatherUnit: String,
     cachedWeather: WeatherInfo?,
+    onWeatherChange: (WeatherInfo?) -> Unit,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
     val primary = MaterialTheme.colorScheme.onBackground
     val secondary = MaterialTheme.colorScheme.onSurfaceVariant
     var locationGranted by remember { mutableStateOf(hasWeatherLocationPermission(context)) }
-    var weather by remember { mutableStateOf(cachedWeather) }
+    var weather by remember {
+        mutableStateOf(cachedWeather?.takeIf { it.temperature.endsWith("°$weatherUnit") })
+    }
     var status by remember { mutableStateOf("Location permission is required.") }
     var loading by remember { mutableStateOf(false) }
 
@@ -63,27 +67,30 @@ internal fun WeatherScreen(
     }
 
     LaunchedEffect(weatherUnit, locationGranted, cachedWeather) {
-        if (cachedWeather != null) {
-            weather = cachedWeather
+        val matchingCache = cachedWeather?.takeIf { it.temperature.endsWith("°$weatherUnit") }
+        if (matchingCache != null) {
+            weather = matchingCache
             loading = false
             status = ""
         } else if (!locationGranted) {
             weather = null
             loading = false
             status = "Allow location access to get local weather."
+            onWeatherChange(null)
         } else {
-            // Fetch only when Home has no cached result. There is no manual refresh action.
             loading = true
             status = "Getting weather…"
             val fetched = withContext(Dispatchers.IO) { fetchWeather(context, weatherUnit) }
             weather = fetched
             status = if (fetched == null) "Weather is unavailable. Check location and internet." else ""
             loading = false
+            onWeatherChange(fetched)
         }
     }
 
     Column(
         modifier = Modifier.fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .windowInsetsPadding(WindowInsets.systemBars)
             .padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally

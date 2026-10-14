@@ -85,6 +85,7 @@ internal fun HomeScreen(
     favorites: Set<String>,
     favoriteOrder: List<String>,
     preferences: LauncherPreferences,
+    cachedWeather: WeatherInfo?,
     isDark: Boolean,
     fontFamily: FontFamily,
     fontScale: Float,
@@ -108,7 +109,7 @@ internal fun HomeScreen(
     var batteryPercent by remember { mutableStateOf(readBatteryPercent(context)) }
     var batteryCharging by remember { mutableStateOf(readBatteryCharging(context)) }
     var screenTimeMinutes by remember { mutableStateOf(readScreenTimeMinutes(context)) }
-    var weatherInfo by remember { mutableStateOf<WeatherInfo?>(null) }
+    var weatherInfo by remember { mutableStateOf(cachedWeather) }
     var weatherStatus by remember { mutableStateOf("Tap to allow location") }
     val today = LocalDate.now()
     val systemTimeFormat = android.text.format.DateFormat.is24HourFormat(context)
@@ -139,7 +140,7 @@ internal fun HomeScreen(
         }
     }
 
-    LaunchedEffect(preferences.showWeather, preferences.themeMode, preferences.weatherUnit) {
+    LaunchedEffect(preferences.showWeather, preferences.themeMode, preferences.weatherUnit, cachedWeather) {
         if (!preferences.showWeather && preferences.themeMode != "sun") {
             weatherInfo = null
             currentSolarInfoChange(null)
@@ -155,6 +156,16 @@ internal fun HomeScreen(
             weatherStatus = if (preferences.showWeather) "Tap to allow location" else ""
             currentSolarInfoChange(null)
         } else {
+            val matchingCache = cachedWeather?.takeIf {
+                it.temperature.endsWith("°${preferences.weatherUnit}")
+            }
+            if (matchingCache != null) {
+                weatherInfo = matchingCache
+                weatherStatus = ""
+                currentSolarInfoChange(matchingCache)
+                return@LaunchedEffect
+            }
+            weatherInfo = null
             weatherStatus = if (preferences.showWeather) "Loading weather…" else ""
             val fetched = withContext(Dispatchers.IO) { fetchWeather(context, preferences.weatherUnit) }
             weatherInfo = fetched
@@ -168,17 +179,16 @@ internal fun HomeScreen(
             .background(background)
             .windowInsetsPadding(WindowInsets.systemBars)
             .verticalScroll(rememberScrollState())
-            .pointerInput(preferences.doubleTapToLock) {
-                detectTapGestures(
-                    onLongPress = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        currentOpenSettings()
-                    },
-                    onDoubleTap = {
-                        if (preferences.doubleTapToLock) currentLockScreen()
-                    }
-                )
-            }
+            .combinedClickable(
+                onClick = {},
+                onLongClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    currentOpenSettings()
+                },
+                onDoubleClick = {
+                    if (preferences.doubleTapToLock) currentLockScreen()
+                }
+            )
             .padding(horizontal = 26.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.Top
     ) {
@@ -273,7 +283,7 @@ internal fun HomeScreen(
                     Text(
                         (if (batteryCharging) "+" else "") + (batteryPercent?.let { "$it%" } ?: "--%"),
                         color = primaryText,
-                        fontSize = 14.sp,
+                        fontSize = 12.sp,
                         maxLines = 1
                     )
                 }
@@ -282,7 +292,7 @@ internal fun HomeScreen(
                     Text(
                         screenText,
                         color = primaryText,
-                        fontSize = 14.sp,
+                        fontSize = 12.sp,
                         maxLines = 1,
                         modifier = Modifier.clickable {
                             if (screenTimeMinutes == null) {
@@ -307,12 +317,12 @@ internal fun HomeScreen(
                     Text(
                         weatherText,
                         color = primaryText,
-                        fontSize = 14.sp,
+                        fontSize = 12.sp,
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
-                            .clickable { onOpenWeather(weatherInfo) }
+                            .clickable { onOpenWeather(weatherInfo ?: cachedWeather) }
                     )
                 }
             }
@@ -323,10 +333,17 @@ internal fun HomeScreen(
             CalendarAgenda(preferences.timeFormat)
         }
 
+        if (preferences.showMusic) {
+            Spacer(Modifier.height(14.dp))
+            MusicPlayerWidget(
+                modifier = Modifier.fillMaxWidth(),
+                onOpenMusicApp = { openMusicPlayer(context, apps) }
+            )
+        }
+
         val activeMainItemIds = buildList {
             if (preferences.showTasks) add(HOME_ITEM_TASKS)
             if (preferences.showCall) add(HOME_ITEM_CALLS)
-            if (preferences.showMusic) add(HOME_ITEM_MUSIC)
             addAll(visibleFavorites.map { it.packageName })
         }
         val orderedMainItemIds = remember(activeMainItemIds, homeItemOrder) {
@@ -341,7 +358,6 @@ internal fun HomeScreen(
             val label = when (itemId) {
                 HOME_ITEM_TASKS -> "Tasks"
                 HOME_ITEM_CALLS -> "Calls"
-                HOME_ITEM_MUSIC -> "Music"
                 else -> app?.label.orEmpty()
             }
             key(itemId) {
@@ -396,27 +412,20 @@ internal fun HomeScreen(
                         .padding(vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (itemId == HOME_ITEM_MUSIC) {
-                        MusicPlayerWidget(
-                            modifier = Modifier.fillMaxWidth(),
-                            onOpenMusicApp = { openMusicPlayer(context, apps) }
-                        )
-                    } else {
-                        if (app != null && preferences.showAppIcons) {
-                            AppIcon(app, preferences.iconPack, size = 19.dp)
-                        }
-                        Text(
-                            text = label,
-                            color = primaryText,
-                            fontSize = 26.sp,
-                            lineHeight = 34.sp,
-                            fontFamily = fontFamily,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
-                                .padding(start = if (app != null && preferences.showAppIcons) 8.dp else 0.dp)
-                        )
+                    if (app != null && preferences.showAppIcons) {
+                        AppIcon(app, preferences.iconPack, size = 19.dp)
                     }
+                    Text(
+                        text = label,
+                        color = primaryText,
+                        fontSize = 26.sp,
+                        lineHeight = 34.sp,
+                        fontFamily = fontFamily,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                            .padding(start = if (app != null && preferences.showAppIcons) 8.dp else 0.dp)
+                    )
                 }
             }
         }

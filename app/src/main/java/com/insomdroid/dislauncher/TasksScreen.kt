@@ -2,7 +2,10 @@ package com.insomdroid.dislauncher
 
 import android.content.SharedPreferences
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,12 +18,14 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +33,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -110,46 +118,102 @@ internal fun saveHomeItemOrder(prefs: SharedPreferences, order: List<String>) {
 }
 
 @Composable
-internal fun TasksScreen(tasks: List<LauncherTask>, onTasksChange: (List<LauncherTask>) -> Unit, onBack: () -> Unit) {
+internal fun TasksScreen(
+    tasks: List<LauncherTask>,
+    onTasksChange: (List<LauncherTask>) -> Unit,
+    onBack: () -> Unit
+) {
     var draft by remember { mutableStateOf("") }
     var confirmClear by remember { mutableStateOf(false) }
     val primary = MaterialTheme.colorScheme.onBackground
     val secondary = MaterialTheme.colorScheme.onSurfaceVariant
+    val focusManager = LocalFocusManager.current
+
+    fun addDraftTask() {
+        val name = draft.trim()
+        if (name.isNotEmpty()) {
+            onTasksChange(tasks + LauncherTask(UUID.randomUUID().toString(), name))
+            draft = ""
+        }
+    }
+
     Column(
-        modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars)
-            .padding(horizontal = 22.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = Modifier.fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .windowInsetsPadding(WindowInsets.systemBars)
+            .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
-        Row(modifier = Modifier.fillMaxWidth().height(42.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("‹", color = primary, fontSize = 28.sp,
-                modifier = Modifier.clickable(onClick = onBack).padding(end = 18.dp))
-            Text("Tasks", color = primary, fontSize = 18.sp)
-        }
-        Text("${tasks.size} TASKS", color = secondary, fontSize = 10.sp, letterSpacing = 1.sp)
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(
-                value = draft, onValueChange = { draft = it }, modifier = Modifier.weight(1f),
-                singleLine = true, placeholder = { Text("Add a task", fontSize = 13.sp) },
-                shape = RoundedCornerShape(3.dp)
+        Box(modifier = Modifier.fillMaxWidth().height(52.dp)) {
+            Text(
+                "←",
+                color = primary,
+                fontSize = 32.sp,
+                lineHeight = 38.sp,
+                modifier = Modifier.align(Alignment.CenterStart)
+                    .clickable(onClick = onBack)
+                    .padding(start = 2.dp, end = 10.dp)
             )
-            Text("ADD", color = primary, fontSize = 12.sp, modifier = Modifier.clickable {
-                val name = draft.trim()
-                if (name.isNotEmpty()) {
-                    onTasksChange(tasks + LauncherTask(UUID.randomUUID().toString(), name))
-                    draft = ""
-                }
-            }.padding(7.dp))
+            Text(
+                "Tasks",
+                color = primary,
+                fontSize = 32.sp,
+                lineHeight = 38.sp,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Normal,
+                modifier = Modifier.align(Alignment.Center)
+            )
         }
-        LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(1.dp)) {
-            if (tasks.isEmpty()) item(key = "tasks-empty") {
-                Text("No tasks yet.", color = secondary, fontSize = 13.sp,
-                    modifier = Modifier.padding(vertical = 14.dp))
+
+        Spacer(Modifier.height(58.dp))
+
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp)) {
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 7.dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                if (draft.isEmpty()) {
+                    Text(
+                        "What is your main focus for today?",
+                        color = primary,
+                        fontSize = 16.sp,
+                        lineHeight = 24.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                BasicTextField(
+                    value = draft,
+                    onValueChange = { draft = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    textStyle = TextStyle(color = primary, fontSize = 16.sp, lineHeight = 24.sp),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            addDraftTask()
+                            focusManager.clearFocus()
+                        }
+                    )
+                )
             }
-            items(tasks, key = { it.id }) { task ->
-                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
-                    verticalAlignment = Alignment.CenterVertically) {
+            HorizontalDivider(
+                modifier = Modifier.fillMaxWidth(),
+                thickness = 1.dp,
+                color = primary.copy(alpha = 0.9f)
+            )
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        androidx.compose.foundation.lazy.LazyColumn(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            contentPadding = PaddingValues(top = 3.dp, bottom = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            androidx.compose.foundation.lazy.items(tasks, key = { it.id }) { task ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Checkbox(
                         checked = task.checked,
                         onCheckedChange = { checked ->
@@ -159,37 +223,61 @@ internal fun TasksScreen(tasks: List<LauncherTask>, onTasksChange: (List<Launche
                     Text(
                         task.name,
                         color = if (task.checked) secondary else primary,
-                        fontSize = 15.sp,
+                        fontSize = 22.sp,
+                        lineHeight = 29.sp,
                         textDecoration = if (task.checked) TextDecoration.LineThrough else TextDecoration.None,
-                        maxLines = 3, overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f).clickable {
-                            onTasksChange(tasks.map { if (it.id == task.id) it.copy(checked = !it.checked) else it })
-                        }.padding(vertical = 5.dp)
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                            .clickable {
+                                onTasksChange(tasks.map { if (it.id == task.id) it.copy(checked = !it.checked) else it })
+                            }
+                            .padding(start = 13.dp, end = 6.dp, top = 5.dp, bottom = 5.dp)
                     )
-                    Text("×", color = secondary, fontSize = 20.sp,
-                        modifier = Modifier.clickable { onTasksChange(tasks.filterNot { it.id == task.id }) }
-                            .padding(start = 12.dp, end = 3.dp, top = 4.dp, bottom = 4.dp))
+                    Text(
+                        "×",
+                        color = secondary,
+                        fontSize = 18.sp,
+                        lineHeight = 24.sp,
+                        modifier = Modifier.clickable {
+                            onTasksChange(tasks.filterNot { it.id == task.id })
+                        }.padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp)
+                    )
                 }
             }
         }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically) {
-            Text("${tasks.count { it.checked }} COMPLETED", color = secondary, fontSize = 9.sp)
-            Text("CLEAR ALL", color = secondary, fontSize = 10.sp,
-                modifier = Modifier.clickable { if (tasks.isNotEmpty()) confirmClear = true }.padding(6.dp))
-        }
+
+        Text(
+            "Clear All",
+            color = primary,
+            fontSize = 16.sp,
+            lineHeight = 22.sp,
+            modifier = Modifier.align(Alignment.Start)
+                .clickable { if (tasks.isNotEmpty()) confirmClear = true }
+                .padding(vertical = 7.dp, horizontal = 2.dp)
+        )
     }
+
     if (confirmClear) AlertDialog(
         onDismissRequest = { confirmClear = false },
         title = { Text("Clear all tasks?") },
         text = { Text("This removes every task from the list.") },
         confirmButton = {
-            Text("CLEAR", color = primary,
-                modifier = Modifier.clickable { onTasksChange(emptyList()); confirmClear = false }.padding(12.dp))
+            Text(
+                "CLEAR",
+                color = primary,
+                modifier = Modifier.clickable {
+                    onTasksChange(emptyList())
+                    confirmClear = false
+                }.padding(12.dp)
+            )
         },
         dismissButton = {
-            Text("CANCEL", color = secondary,
-                modifier = Modifier.clickable { confirmClear = false }.padding(12.dp))
+            Text(
+                "CANCEL",
+                color = secondary,
+                modifier = Modifier.clickable { confirmClear = false }.padding(12.dp)
+            )
         }
     )
 }
