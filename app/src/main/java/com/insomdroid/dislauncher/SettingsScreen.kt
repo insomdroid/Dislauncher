@@ -275,6 +275,17 @@ internal fun SettingsScreen(
 
             SettingsGroup("Android", "System-owned settings open outside dislauncher.") {
                 SettingAction(
+                    "Music controls access",
+                    "Allow Dislauncher to read active media sessions so Previous, Play and Next can control your music app.",
+                    "Open",
+                    {
+                        runCatching {
+                            context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                        }
+                    }
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                SettingAction(
                     "Usage access",
                     if (usageAccessAllowed) {
                         "Screen time access is enabled for Dislauncher."
