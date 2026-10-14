@@ -67,31 +67,30 @@ internal fun SettingsScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            Box(
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    "Settings",
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium
+            LargeTopAppBar(
+                title = {
+                    Text(
+                        "Settings",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                },
+                navigationIcon = {
+                    TextButton(onClick = onBack) {
+                        Text("←", fontSize = 24.sp)
+                    }
+                },
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
                 )
-                Text(
-                    "‹",
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontSize = 27.sp,
-                    modifier = Modifier.align(Alignment.CenterStart).clickable(onClick = onBack)
-                        .padding(start = 20.dp, end = 16.dp, top = 2.dp, bottom = 2.dp)
-                )
-            }
+            )
         }
     ) { innerPadding ->
         Column(
             modifier = Modifier.fillMaxSize().padding(innerPadding)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             SettingsGroup("Manage apps", "Choose what appears on the Home screen and in the drawer.") {
                 SettingAction(
@@ -109,7 +108,7 @@ internal fun SettingsScreen(
                 )
             }
 
-            SettingsGroup("Appearance", "Adjust the launcher without oversized widgets.") {
+            SettingsGroup("Appearance", "Make the launcher feel personal with clear choices and expressive Material surfaces.") {
                 Column(Modifier.fillMaxWidth().padding(15.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
                     ChoiceRow(
                         "Theme",
@@ -192,7 +191,7 @@ internal fun SettingsScreen(
                     listOf("system" to "System", "12" to "12-hour", "24" to "24-hour")
                 ) { onPreferencesChange(preferences.copy(timeFormat = it)) }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingToggle("Show battery level", "Display the current battery percentage.", preferences.showBattery) {
+                SettingToggle("Battery % widget", "Show the current battery percentage on Home.", preferences.showBattery) {
                     onPreferencesChange(preferences.copy(showBattery = it))
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
@@ -224,7 +223,7 @@ internal fun SettingsScreen(
                     onPreferencesChange(preferences.copy(showCall = it))
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingToggle("Show music widget", "Opens the system music app or a detected music player.", preferences.showMusic) {
+                SettingToggle("Show music player", "Show the active track and playback controls on Home. Media access may be requested.", preferences.showMusic) {
                     onPreferencesChange(preferences.copy(showMusic = it))
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
@@ -256,7 +255,7 @@ internal fun SettingsScreen(
                     onDoubleTapLockChange(it)
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingToggle("Swipe down for notifications", "Swipe down from the very top edge. Some Android versions block this for third-party apps.", preferences.swipeDownNotifications) {
+                SettingToggle("Swipe down for notifications", "Swipe down just below the status bar. Android may restrict third-party apps from expanding the notification shade.", preferences.swipeDownNotifications) {
                     onPreferencesChange(preferences.copy(swipeDownNotifications = it))
                 }
             }
@@ -393,26 +392,18 @@ private fun ChoiceRow(
     options: List<Pair<String, String>>,
     onSelected: (String) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            title,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
             maxItemsInEachRow = 3
         ) {
             options.forEach { (value, label) ->
-                Text(
-                    label,
-                    fontSize = 12.sp,
-                    fontWeight = if (selected == value) FontWeight.SemiBold else FontWeight.Normal,
-                    color = if (selected == value) MaterialTheme.colorScheme.onBackground
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.clickable { onSelected(value) }.padding(vertical = 4.dp)
+                FilterChip(
+                    selected = selected == value,
+                    onClick = { onSelected(value) },
+                    label = { Text(label, style = MaterialTheme.typography.labelLarge) }
                 )
             }
         }
@@ -425,29 +416,32 @@ private fun SettingsGroup(
     subtitle: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(top = 5.dp),
-        verticalArrangement = Arrangement.spacedBy(5.dp)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-            modifier = Modifier.padding(horizontal = 2.dp, vertical = 1.dp)
+            modifier = Modifier.fillMaxWidth().padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                title.uppercase(),
-                fontSize = 10.sp,
-                letterSpacing = 1.sp,
+                title,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 subtitle,
-                fontSize = 10.sp,
-                lineHeight = 13.sp,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            Spacer(Modifier.height(2.dp))
+            Column(content = content)
         }
-        Column(content = content)
     }
 }
 
@@ -459,31 +453,24 @@ private fun SettingToggle(
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().clickable { onCheckedChange(!checked) }
-            .padding(horizontal = 2.dp, vertical = 7.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(
-            modifier = Modifier.weight(1f).padding(end = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(1.dp)
+            modifier = Modifier.weight(1f).padding(end = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
-            Text(title, fontSize = 13.sp, fontWeight = FontWeight.Normal)
+            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
             Text(
                 description,
-                fontSize = 10.sp,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = 12.sp,
-                maxLines = 1,
+                lineHeight = 16.sp,
+                maxLines = 2,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         }
-        Text(
-            if (checked) "✓" else "·",
-            fontSize = 15.sp,
-            color = if (checked) MaterialTheme.colorScheme.onBackground
-                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
-            modifier = Modifier.padding(start = 8.dp)
-        )
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 
@@ -496,28 +483,23 @@ private fun SettingAction(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
-            .padding(horizontal = 2.dp, vertical = 8.dp),
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(
             modifier = Modifier.weight(1f).padding(end = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(1.dp)
+            verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
-            Text(title, fontSize = 13.sp)
+            Text(title, style = MaterialTheme.typography.titleSmall)
             Text(
                 description,
-                fontSize = 10.sp,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = 12.sp,
-                maxLines = 1,
+                lineHeight = 16.sp,
+                maxLines = 2,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         }
-        Text(
-            actionLabel,
-            fontSize = 11.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 8.dp)
-        )
+        TextButton(onClick = onClick) { Text(actionLabel) }
     }
 }
