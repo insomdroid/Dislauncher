@@ -1,5 +1,14 @@
 package com.insomdroid.dislauncher
 
+import android.Manifest
+import android.app.AppOpsManager
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Process
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -7,6 +16,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,18 +28,24 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,19 +53,62 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 
 @Composable
 internal fun WelcomeOnboardingScreen(
     preferences: LauncherPreferences,
     onPreferencesChange: (LauncherPreferences) -> Unit,
-    onFinish: () -> Unit
+    apps: List<LauncherApp>,
+    favorites: Set<String>,
+    onFinish: (selectedPackages: Set<String>?, useDefaultFavorites: Boolean) -> Unit
 ) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     var page by remember { mutableStateOf(0) }
-    val pageCount = 4
+    var selectedFavorites by remember { mutableStateOf(favorites.toSet()) }
+    var permissionRefresh by remember { mutableStateOf(0) }
+    val pageCount = 6
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) permissionRefresh++
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    val locationGranted = permissionRefresh >= 0 && (
+        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED ||
+        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
+    )
+    val calendarGranted = permissionRefresh >= 0 &&
+        ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) ==
+            PackageManager.PERMISSION_GRANTED
+    val usageGranted = permissionRefresh >= 0 && hasUsageAccessForOnboarding(context)
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissionRefresh++ }
+    val calendarPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { permissionRefresh++ }
+
+    fun skipOnboarding() = onFinish(null, true)
+    fun openSystemSettings(action: String) {
+        runCatching { context.startActivity(Intent(action)) }
+    }
 
     Column(
         modifier = Modifier
@@ -92,9 +151,7 @@ internal fun WelcomeOnboardingScreen(
                 )
             }
             Spacer(Modifier.weight(1f))
-            if (page > 0) {
-                TextButton(onClick = onFinish) { Text("Skip") }
-            }
+            if (page > 0) TextButton(onClick = ::skipOnboarding) { Text("Skip") }
         }
 
         Box(
@@ -115,103 +172,240 @@ internal fun WelcomeOnboardingScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    val illustration = when (currentPage) {
-                        0 -> "D."
-                        1 -> "09:41"
-                        2 -> "A  B  C"
-                        else -> "Aa"
-                    }
-                    Box(
-                        modifier = Modifier
-                            .width(208.dp)
-                            .height(122.dp)
-                            .clip(MaterialTheme.shapes.extraLarge)
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            illustration,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = when (currentPage) {
-                                1 -> 37.sp
-                                2 -> 24.sp
-                                else -> 62.sp
-                            },
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = if (currentPage == 2) (-1).sp else 0.sp
-                        )
-                    }
-                    Spacer(Modifier.height(26.dp))
-                    Text(
-                        when (currentPage) {
-                            0 -> "Less noise. More intention."
-                            1 -> "A useful Home screen."
-                            2 -> "Find apps without the clutter."
-                            else -> "Make it feel like yours."
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        lineHeight = 40.sp
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        when (currentPage) {
-                            0 -> "A text-first launcher for the things you check every day—not another feed to scroll."
-                            1 -> "Keep your clock, date, weather, battery, calendar, screen time and music close. Choose which items show up in Settings."
-                            2 -> "Search at the bottom of the app drawer, or slide along the letter rail on the right. Long-press apps to pin, rename or hide them."
-                            else -> "Use Android's wallpaper colors or opt for true-black surfaces on AMOLED displays."
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        lineHeight = 24.sp
-                    )
-                    if (currentPage == 3) {
-                        Spacer(Modifier.height(20.dp))
-                        Text(
-                            "STARTING THEME",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.2.sp
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            listOf("system" to "System", "dark" to "Black", "light" to "White").forEach { (value, label) ->
+                    when (currentPage) {
+                        1 -> {
+                            Text(
+                                "Set up your permissions",
+                                modifier = Modifier.fillMaxWidth(),
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "These are optional and are controlled by Android. Choose only the features you want; you can change access later in system settings.",
+                                modifier = Modifier.fillMaxWidth(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(Modifier.height(14.dp))
+                            PermissionActionRow(
+                                title = "Location · Weather",
+                                description = "Approximate location lets the Home screen retrieve local weather. Dislauncher does not need precise location for this feature.",
+                                granted = locationGranted,
+                                actionLabel = "Allow",
+                                onClick = {
+                                    locationPermissionLauncher.launch(
+                                        arrayOf(
+                                            Manifest.permission.ACCESS_COARSE_LOCATION,
+                                            Manifest.permission.ACCESS_FINE_LOCATION
+                                        )
+                                    )
+                                }
+                            )
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+                            PermissionActionRow(
+                                title = "Calendar · Agenda",
+                                description = "Read calendar events to show today's upcoming appointments on Home.",
+                                granted = calendarGranted,
+                                actionLabel = "Allow",
+                                onClick = { calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR) }
+                            )
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+                            PermissionActionRow(
+                                title = "Usage access · Screen time",
+                                description = "Android opens a special-access page. Enable Dislauncher there to read daily app usage.",
+                                granted = usageGranted,
+                                actionLabel = "Open",
+                                onClick = { openSystemSettings(Settings.ACTION_USAGE_ACCESS_SETTINGS) }
+                            )
+                            Spacer(Modifier.height(10.dp))
+                            Text(
+                                "Optional: Double tap to lock needs Device Admin approval. You can enable that gesture later in Settings.",
+                                modifier = Modifier.fillMaxWidth(),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        5 -> {
+                            Text(
+                                "Choose your five favourites",
+                                modifier = Modifier.fillMaxWidth(),
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "They appear on Home for quick access. Select up to five apps; skip this step and Dislauncher will choose five installed apps for you.",
+                                modifier = Modifier.fillMaxWidth(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(Modifier.height(10.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Selected", style = MaterialTheme.typography.titleSmall)
+                                Text(
+                                    "${selectedFavorites.size.coerceAtMost(5)}/5",
+                                    color = MaterialTheme.colorScheme.primary,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            LazyColumn(
+                                modifier = Modifier.fillMaxWidth().heightIn(max = 310.dp),
+                                contentPadding = PaddingValues(vertical = 4.dp)
+                            ) {
+                                items(apps.sortedBy { it.label.lowercase() }, key = { it.packageName }) { app ->
+                                    val checked = app.packageName in selectedFavorites
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth()
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .clickable {
+                                                selectedFavorites = when {
+                                                    checked -> selectedFavorites - app.packageName
+                                                    selectedFavorites.size < 5 -> selectedFavorites + app.packageName
+                                                    else -> selectedFavorites
+                                                }
+                                            }
+                                            .padding(horizontal = 4.dp, vertical = 5.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        AppIcon(app, "system", size = 32.dp)
+                                        Spacer(Modifier.width(10.dp))
+                                        Text(
+                                            app.label,
+                                            modifier = Modifier.weight(1f),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                        Checkbox(
+                                            checked = checked,
+                                            onCheckedChange = { enabled ->
+                                                selectedFavorites = when {
+                                                    !enabled -> selectedFavorites - app.packageName
+                                                    selectedFavorites.size < 5 -> selectedFavorites + app.packageName
+                                                    else -> selectedFavorites
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+                                if (apps.isEmpty()) {
+                                    item {
+                                        Text(
+                                            "Loading apps…",
+                                            modifier = Modifier.padding(vertical = 12.dp),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        else -> {
+                            val illustration = when (currentPage) {
+                                0 -> "D."
+                                2 -> "09:41"
+                                else -> "A  B  C"
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .width(208.dp)
+                                    .height(112.dp)
+                                    .clip(MaterialTheme.shapes.extraLarge)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    illustration,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = when (currentPage) {
+                                        2 -> 37.sp
+                                        3 -> 24.sp
+                                        else -> 62.sp
+                                    },
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Spacer(Modifier.height(22.dp))
+                            Text(
+                                when (currentPage) {
+                                    0 -> "Less noise. More intention."
+                                    2 -> "A useful Home screen."
+                                    3 -> "Find apps without the clutter."
+                                    else -> "Make it feel like yours."
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                style = MaterialTheme.typography.headlineLarge,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 40.sp
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            Text(
+                                when (currentPage) {
+                                    0 -> "A text-first launcher for the things you check every day—not another feed to scroll."
+                                    2 -> "Keep your clock, date, weather, battery, calendar, screen time and music close. Choose which items show up in Settings."
+                                    3 -> "Search at the bottom of the app drawer, or slide along the letter rail on the right. Long-press apps to pin, rename or hide them."
+                                    else -> "Use Android's wallpaper colors, or choose a light or dark look. Dark mode can use regular surfaces or true-black AMOLED surfaces."
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 24.sp
+                            )
+                            if (currentPage == 4) {
+                                Spacer(Modifier.height(18.dp))
+                                Text(
+                                    "THEME",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 1.2.sp
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    listOf("system" to "System", "light" to "Light", "dark" to "Dark").forEach { (value, label) ->
+                                        FilterChip(
+                                            selected = preferences.themeMode == value,
+                                            onClick = { onPreferencesChange(preferences.copy(themeMode = value)) },
+                                            label = { Text(label) }
+                                        )
+                                    }
+                                }
+                                if (preferences.themeMode == "dark") {
+                                    FlowRow(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        listOf("system" to "Dark · System", "amoled" to "Dark · AMOLED").forEach { (value, label) ->
+                                            FilterChip(
+                                                selected = preferences.darkAppearance == value,
+                                                onClick = { onPreferencesChange(preferences.copy(darkAppearance = value)) },
+                                                label = { Text(label) }
+                                            )
+                                        }
+                                    }
+                                }
                                 FilterChip(
-                                    selected = preferences.themeMode == value,
-                                    onClick = { onPreferencesChange(preferences.copy(themeMode = value)) },
-                                    label = { Text(label) }
+                                    selected = preferences.dynamicColor,
+                                    onClick = { onPreferencesChange(preferences.copy(dynamicColor = !preferences.dynamicColor)) },
+                                    label = { Text("Dynamic color · Android 12+") }
                                 )
                             }
                         }
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            FilterChip(
-                                selected = preferences.dynamicColor,
-                                onClick = { onPreferencesChange(preferences.copy(dynamicColor = !preferences.dynamicColor)) },
-                                label = { Text("Dynamic color") }
-                            )
-                            FilterChip(
-                                selected = preferences.pitchBlack,
-                                onClick = { onPreferencesChange(preferences.copy(pitchBlack = !preferences.pitchBlack)) },
-                                label = { Text("Pitch black") }
-                            )
-                        }
-                        Text(
-                            "Dynamic color applies with System or Sunrise / Sunset on Android 12+.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
                     }
                 }
             }
@@ -252,13 +446,61 @@ internal fun WelcomeOnboardingScreen(
                 }
                 Spacer(Modifier.weight(1f))
                 Button(
-                    onClick = { if (page < pageCount - 1) page++ else onFinish() },
+                    onClick = {
+                        if (page < pageCount - 1) {
+                            page++
+                        } else {
+                            onFinish(selectedFavorites, false)
+                        }
+                    },
                     shape = MaterialTheme.shapes.extraLarge,
                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp)
                 ) {
-                    Text(if (page == pageCount - 1) "Let's go" else "Continue")
+                    Text(if (page == pageCount - 1) "Finish setup" else "Continue")
                 }
             }
         }
     }
+}
+
+@Composable
+private fun PermissionActionRow(
+    title: String,
+    description: String,
+    granted: Boolean,
+    actionLabel: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(
+            modifier = Modifier.weight(1f).padding(end = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+            Text(
+                description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 16.sp
+            )
+        }
+        TextButton(onClick = onClick, enabled = !granted) {
+            Text(if (granted) "Granted" else actionLabel)
+        }
+    }
+}
+
+private fun hasUsageAccessForOnboarding(context: Context): Boolean {
+    val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager ?: return false
+    val mode = runCatching {
+        appOps.checkOpNoThrow(
+            AppOpsManager.OPSTR_GET_USAGE_STATS,
+            Process.myUid(),
+            context.packageName
+        )
+    }.getOrDefault(AppOpsManager.MODE_DEFAULT)
+    return mode == AppOpsManager.MODE_ALLOWED
 }

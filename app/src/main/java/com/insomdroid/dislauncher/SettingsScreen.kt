@@ -117,36 +117,32 @@ internal fun SettingsScreen(
                         preferences.themeMode,
                         listOf(
                             "system" to "System",
-                            "sun" to "Sunrise / Sunset",
-                            "dark" to "Black",
-                            "dim" to "Dim",
-                            "twitter-dim" to "Twitter Dim",
-                            "midnight-blue" to "Midnight Blue",
-                            "dark-indigo" to "Dark Indigo",
-                            "carbon" to "Carbon",
-                            "light" to "White",
-                            "pale-silver" to "Pale Silver",
-                            "middle-blue" to "Middle Blue",
-                            "parchment" to "Parchment",
-                            "blue-radiance" to "Blue Radiance"
+                            "light" to "Light",
+                            "dark" to "Dark"
                         )
                     ) { onPreferencesChange(preferences.copy(themeMode = it)) }
                     Text(
-                        "System follows Android. Sunrise / Sunset changes with local daylight; the other choices use fixed colors.",
+                        "System follows your Android appearance. Light stays light. Dark uses the selected dark surface style.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    if (preferences.themeMode == "dark") {
+                        ChoiceRow(
+                            "Dark style",
+                            preferences.darkAppearance,
+                            listOf("system" to "System", "amoled" to "AMOLED")
+                        ) { onPreferencesChange(preferences.copy(darkAppearance = it)) }
+                        Text(
+                            "System uses regular dark surfaces. AMOLED makes the background and Material surfaces pure black.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     SettingToggle(
                         "Dynamic color",
-                        "Use Android wallpaper colors when Theme is System or Sunrise / Sunset (Android 12+).",
+                        "Use Android wallpaper colors for System or Dark themes (Android 12+).",
                         preferences.dynamicColor
                     ) { onPreferencesChange(preferences.copy(dynamicColor = it)) }
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                    SettingToggle(
-                        "Pitch-black surfaces",
-                        "Force true-black backgrounds and Material surfaces while preserving readable text and accent colors.",
-                        preferences.pitchBlack
-                    ) { onPreferencesChange(preferences.copy(pitchBlack = it)) }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                     ChoiceRow(
                         "Font",

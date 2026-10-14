@@ -207,6 +207,39 @@ private fun DislauncherRoot() {
         saveHomeItemOrder(prefsStore, homeItemOrder)
     }
 
+    fun finishOnboarding(selectedPackages: Set<String>?, useDefaultFavorites: Boolean) {
+        scope.launch {
+            val allApps = if (apps.isNotEmpty()) {
+                apps
+            } else {
+                withContext(Dispatchers.IO) { loadLauncherApps(context) }.map { app ->
+                    appNameOverrides[app.packageName]?.let { app.copy(label = it) } ?: app
+                }.also { apps = it }
+            }
+            val orderedAvailable = (allApps.filterNot { it.isSystem } + allApps.filter { it.isSystem })
+                .distinctBy { it.packageName }
+            val selected = if (useDefaultFavorites) {
+                orderedAvailable.take(MAX_PINNED_APPS).map { it.packageName }
+            } else {
+                orderedAvailable.filter { it.packageName in selectedPackages.orEmpty() }
+                    .take(MAX_PINNED_APPS)
+                    .map { it.packageName }
+            }
+            val selectedSet = selected.toSet()
+            favorites = selectedSet
+            favoriteOrder = selected
+            val allAppPackages = allApps.map { it.packageName }.toSet()
+            homeItemOrder = (homeItemOrder.filterNot { it in allAppPackages } + selected).distinct()
+            saveFavoriteOrder(prefsStore, selected)
+            saveHomeItemOrder(prefsStore, homeItemOrder)
+            prefsStore.edit()
+                .putStringSet("favorite_packages", selectedSet.toMutableSet())
+                .putBoolean("onboarding_completed", true)
+                .apply()
+            screen = LauncherScreen.HOME
+        }
+    }
+
     fun moveHomeItem(sourceId: String, targetId: String) {
         if (sourceId == targetId) return
         val order = (homeItemOrder + listOf(HOME_ITEM_TASKS, HOME_ITEM_CALLS, HOME_ITEM_MUSIC) + favorites).distinct().toMutableList()
@@ -332,83 +365,23 @@ private fun DislauncherRoot() {
     BackHandler(enabled = screen == LauncherScreen.ONBOARDING) { }
 
     val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
-    val solarDark = remember(solarWeather, solarTick) {
-        val sunrise = solarWeather?.sunrise
-        val sunset = solarWeather?.sunset
-        if (sunrise == null || sunset == null) null else {
-            val solarTime = runCatching {
-                solarWeather?.timezone?.let { ZonedDateTime.now(ZoneId.of(it)).toLocalTime() } ?: LocalTime.now()
-            }.getOrElse { LocalTime.now() }
-            solarTime.isBefore(sunrise) || !solarTime.isBefore(sunset)
-        }
-    }
-    val isDark = preferences.pitchBlack || when (preferences.themeMode) {
-        "system" -> systemDark
-        "sun" -> solarDark ?: systemDark
-        "light", "pale-silver", "middle-blue", "parchment", "blue-radiance" -> false
-        else -> true
-    }
-    val backgroundColor = if (preferences.pitchBlack) Color.Black else when (preferences.themeMode) {
-        "system", "sun" -> if (isDark) Color.Black else Color.White
-        "light" -> Color.White
-        "dim" -> Color(0xFF151E29)
-        "twitter-dim" -> Color(0xFF16202A)
-        "midnight-blue" -> Color(0xFF191970)
-        "pale-silver" -> Color(0xFFD7CEC9)
-        "middle-blue" -> Color(0xFF90E0EF)
-        "parchment" -> Color(0xFFF3ECD8)
-        "blue-radiance" -> Color(0xFF57CAD5)
-        "dark-indigo" -> Color(0xFF171D4B)
-        "carbon" -> Color(0xFF333333)
-        else -> Color.Black
-    }
-    val foregroundColor = if (preferences.pitchBlack) Color.White else when (preferences.themeMode) {
-        "system", "sun" -> if (isDark) Color.White else Color.Black
-        "light", "pale-silver", "middle-blue", "parchment", "blue-radiance" -> Color.Black
-        else -> Color.White
-    }
-    val secondaryColor = if (preferences.pitchBlack) Color(0xFFBDBDBD) else when (preferences.themeMode) {
-        "dark" -> Color(0xFFBDBDBD)
-        "light" -> Color(0xFF666666)
-        "pale-silver", "middle-blue", "parchment", "blue-radiance" -> Color.Black.copy(alpha = 0.72f)
-        else -> foregroundColor.copy(alpha = 0.78f)
-    }
-    val surfaceVariantColor = if (preferences.pitchBlack) Color.Black else when (preferences.themeMode) {
-        "system", "sun" -> if (isDark) Color(0xFF1D1D1F) else Color(0xFFF2F2F7)
-        "dark" -> Color(0xFF121212)
-        "light" -> Color(0xFFF2F2F7)
-        "dim" -> Color(0xFF1D2A39)
-        "twitter-dim" -> Color(0xFF1B2935)
-        "midnight-blue" -> Color(0xFF22227D)
-        "dark-indigo" -> Color(0xFF202858)
-        "carbon" -> Color(0xFF424242)
-        "pale-silver" -> Color(0xFFC8BEB9)
-        "middle-blue" -> Color(0xFF7ACBD9)
-        "parchment" -> Color(0xFFE8DFC9)
-        "blue-radiance" -> Color(0xFF43BAC5)
-        else -> backgroundColor
+    val isDark = when (preferences.themeMode) {
+        "light" -> false
+        "dark" -> true
+        else -> systemDark
     }
     val useDynamicColor = preferences.dynamicColor &&
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-        (preferences.themeMode == "system" || preferences.themeMode == "sun")
+        preferences.themeMode != "light"
     val baseColorScheme = when {
-        useDynamicColor -> if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        isDark -> darkColorScheme(
-            primary = foregroundColor, onPrimary = backgroundColor,
-            secondary = secondaryColor, tertiary = foregroundColor,
-            background = backgroundColor, onBackground = foregroundColor,
-            surface = backgroundColor, onSurface = foregroundColor,
-            surfaceVariant = surfaceVariantColor, onSurfaceVariant = secondaryColor
-        )
-        else -> lightColorScheme(
-            primary = foregroundColor, onPrimary = backgroundColor,
-            secondary = secondaryColor, tertiary = foregroundColor,
-            background = backgroundColor, onBackground = foregroundColor,
-            surface = backgroundColor, onSurface = foregroundColor,
-            surfaceVariant = surfaceVariantColor, onSurfaceVariant = secondaryColor
-        )
+        useDynamicColor && isDark -> dynamicDarkColorScheme(context)
+        useDynamicColor -> dynamicLightColorScheme(context)
+        isDark -> darkColorScheme()
+        else -> lightColorScheme()
     }
-    val colorScheme = if (preferences.pitchBlack && isDark) {
+    val colorScheme = if (
+        preferences.themeMode == "dark" && preferences.darkAppearance == "amoled"
+    ) {
         baseColorScheme.copy(
             background = Color.Black,
             surface = Color.Black,

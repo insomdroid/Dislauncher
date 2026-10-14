@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,7 +52,7 @@ private data class CalendarAgendaEvent(
 )
 
 @Composable
-internal fun CalendarAgenda(timeFormat: String) {
+internal fun CalendarAgenda(timeFormat: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val primary = MaterialTheme.colorScheme.onBackground
     val secondary = MaterialTheme.colorScheme.onSurfaceVariant
@@ -77,7 +78,7 @@ internal fun CalendarAgenda(timeFormat: String) {
         }
     }
     Column(
-        modifier = Modifier.fillMaxWidth().padding(top = 3.dp, bottom = 3.dp),
+        modifier = modifier.widthIn(max = 150.dp).padding(top = 3.dp, bottom = 3.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         when {
