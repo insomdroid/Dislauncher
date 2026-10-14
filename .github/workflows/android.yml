@@ -31,33 +31,47 @@ jobs:
         with:
           gradle-version: "8.13"
 
-      - name: Download bundled open-source fonts
+      - name: Download, subset and license bundled fonts
         run: |
           set -euo pipefail
           FONT_REVISION="66928797f271fed5ee428544e7229685e2d90127"
           GOOGLE_SANS_REVISION="bd8f81ddb5c74d5c8897b36ad88b440266245103"
           mkdir -p app/src/main/res/font app/src/main/assets/fonts
+          python -m pip install --disable-pip-version-check --no-cache-dir fonttools
           curl --fail --location --retry 3 --silent --show-error \
             "https://raw.githubusercontent.com/google/fonts/$GOOGLE_SANS_REVISION/ofl/googlesansflex/GoogleSansFlex%5BROND%2Copsz%2Cslnt%2Cwdth%2Cwght%5D.ttf" \
-            --output app/src/main/res/font/google_sans_flex.ttf
+            --output app/src/main/res/font/google_sans_flex.full.ttf
           curl --fail --location --retry 3 --silent --show-error \
             "https://raw.githubusercontent.com/google/fonts/$GOOGLE_SANS_REVISION/ofl/googlesansflex/OFL.txt" \
             --output app/src/main/assets/fonts/OFL-GoogleSansFlex.txt
           curl --fail --location --retry 3 --silent --show-error \
             "https://raw.githubusercontent.com/google/fonts/$FONT_REVISION/ofl/opensans/OpenSans%5Bwdth,wght%5D.ttf" \
-            --output app/src/main/res/font/open_sans_regular.ttf
+            --output app/src/main/res/font/open_sans_regular.full.ttf
           curl --fail --location --retry 3 --silent --show-error \
             "https://raw.githubusercontent.com/google/fonts/$FONT_REVISION/ofl/ralewaydots/RalewayDots-Regular.ttf" \
-            --output app/src/main/res/font/raleway_dots_regular.ttf
+            --output app/src/main/res/font/raleway_dots_regular.full.ttf
           curl --fail --location --retry 3 --silent --show-error \
             "https://raw.githubusercontent.com/google/fonts/$FONT_REVISION/ofl/opensans/OFL.txt" \
             --output app/src/main/assets/fonts/OFL-OpenSans.txt
           curl --fail --location --retry 3 --silent --show-error \
             "https://raw.githubusercontent.com/google/fonts/$FONT_REVISION/ofl/ralewaydots/OFL.txt" \
             --output app/src/main/assets/fonts/OFL-RalewayDots.txt
+          UNICODES="U+0020-007E,U+00A0-00FF,U+0100-024F,U+1E00-1EFF,U+2000-206F,U+20A0-20CF,U+2100-218F,U+2190-21FF,U+25A0-25FF"
+          for font in google_sans_flex open_sans_regular raleway_dots_regular; do
+            pyftsubset "app/src/main/res/font/$font.full.ttf" \
+              --output-file="app/src/main/res/font/$font.ttf" \
+              --unicodes="$UNICODES" \
+              --layout-features='*' \
+              --name-IDs='*' \
+              --name-languages='*' \
+              --notdef-glyph --notdef-outline --recommended-glyphs
+          done
+          rm app/src/main/res/font/*.full.ttf
           test -s app/src/main/res/font/open_sans_regular.ttf
           test -s app/src/main/res/font/raleway_dots_regular.ttf
           test -s app/src/main/res/font/google_sans_flex.ttf
+          echo "Subset font sizes:"
+          ls -lh app/src/main/res/font/*.ttf
 
       - name: Build release APK (debug-signed for CI)
         run: gradle assembleRelease
