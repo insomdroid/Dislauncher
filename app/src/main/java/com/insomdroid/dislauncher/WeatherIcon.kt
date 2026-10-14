@@ -1,14 +1,15 @@
 package com.insomdroid.dislauncher
 
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -20,7 +21,6 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -34,19 +34,20 @@ internal fun WeatherIcon(
     color: Color,
     modifier: Modifier = Modifier
 ) {
-    val transition = rememberInfiniteTransition(label = "weather-icon-float")
-    val density = LocalDensity.current.density
-    val drift by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = -5f * density,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1900, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "weather-icon-drift"
+    var hasAppeared by remember(condition) { mutableStateOf(false) }
+    LaunchedEffect(condition) { hasAppeared = true }
+    val reveal by animateFloatAsState(
+        targetValue = if (hasAppeared) 1f else 0f,
+        animationSpec = tween(durationMillis = 620, easing = FastOutSlowInEasing),
+        label = "weather-icon-reveal"
     )
     Canvas(
-        modifier = modifier.graphicsLayer { translationY = drift }
+        modifier = modifier.graphicsLayer {
+            translationY = 16f * (1f - reveal)
+            scaleX = 0.88f + 0.12f * reveal
+            scaleY = 0.88f + 0.12f * reveal
+            alpha = reveal
+        }
             .semantics { contentDescription = condition }
     ) {
         val scale = size.minDimension / 112f
