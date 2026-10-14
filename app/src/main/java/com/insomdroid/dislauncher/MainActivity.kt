@@ -15,6 +15,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.positionChangeIgnoreConsumed
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -42,10 +46,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.positionChangeIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -286,13 +286,13 @@ private fun DislauncherRoot() {
     }
     val foregroundColor = when (preferences.themeMode) {
         "system", "sun" -> if (isDark) Color.White else Color.Black
-        "light", "pale-silver", "middle-blue", "parchment" -> Color.Black
+        "light", "pale-silver", "middle-blue", "parchment", "blue-radiance" -> Color.Black
         else -> Color.White
     }
     val secondaryColor = when (preferences.themeMode) {
         "dark" -> Color(0xFFBDBDBD)
         "light" -> Color(0xFF666666)
-        "pale-silver", "middle-blue", "parchment" -> Color.Black.copy(alpha = 0.72f)
+        "pale-silver", "middle-blue", "parchment", "blue-radiance" -> Color.Black.copy(alpha = 0.72f)
         else -> foregroundColor.copy(alpha = 0.78f)
     }
     val surfaceVariantColor = when (preferences.themeMode) {
@@ -307,6 +307,7 @@ private fun DislauncherRoot() {
         "pale-silver" -> Color(0xFFC8BEB9)
         "middle-blue" -> Color(0xFF7ACBD9)
         "parchment" -> Color(0xFFE8DFC9)
+        "blue-radiance" -> Color(0xFF43BAC5)
         else -> backgroundColor
     }
     val colorScheme = if (isDark) {
@@ -438,26 +439,33 @@ private fun DislauncherRoot() {
                     .pointerInput(notificationsGestureEnabled) {
                         if (!notificationsGestureEnabled) return@pointerInput
                         val triggerDistance = 100.dp.toPx()
+                        val horizontalSlop = 24.dp.toPx()
                         awaitEachGesture {
                             val down = awaitFirstDown(
                                 pass = PointerEventPass.Initial,
                                 requireUnconsumed = false
                             )
-                            var downwardDistance = 0f
+                            var totalX = 0f
+                            var totalY = 0f
+                            var horizontalGesture = false
                             var triggered = false
-                            var pointerStillDown = true
-                            while (pointerStillDown) {
+                            while (true) {
                                 val event = awaitPointerEvent(PointerEventPass.Initial)
                                 val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                                if (!change.pressed) {
-                                    pointerStillDown = false
-                                    continue
-                                }
+                                if (!change.pressed) break
+
                                 val delta = change.positionChangeIgnoreConsumed()
-                                if (delta.y > 0f && kotlin.math.abs(delta.y) >= kotlin.math.abs(delta.x)) {
-                                    downwardDistance += delta.y
+                                totalX += delta.x
+                                totalY += delta.y
+
+                                if (
+                                    kotlin.math.abs(totalX) > horizontalSlop &&
+                                    kotlin.math.abs(totalX) > kotlin.math.abs(totalY) * 1.15f
+                                ) {
+                                    horizontalGesture = true
                                 }
-                                if (!triggered && downwardDistance >= triggerDistance) {
+
+                                if (!horizontalGesture && !triggered && totalY >= triggerDistance) {
                                     triggered = true
                                     expandNotificationPanel(context)
                                 }
