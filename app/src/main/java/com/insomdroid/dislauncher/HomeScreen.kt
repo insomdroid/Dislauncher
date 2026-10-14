@@ -26,7 +26,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,7 +38,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -67,17 +66,6 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private val inspirationQuotes = listOf(
-    "Focus on what matters.",
-    "Do less, with more intention.",
-    "Make room for what matters.",
-    "Attention is your most precious resource.",
-    "Small steps still move you forward.",
-    "Be where your feet are.",
-    "Choose presence over noise.",
-    "Progress, not pressure."
-)
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun HomeScreen(
@@ -105,7 +93,6 @@ internal fun HomeScreen(
     val currentLockScreen by rememberUpdatedState(onDoubleTapToLock)
     val currentSolarInfoChange by rememberUpdatedState(onSolarInfoChange)
     var now by remember { mutableStateOf(LocalTime.now()) }
-    var quoteIndex by remember { mutableIntStateOf(LocalDate.now().dayOfYear % inspirationQuotes.size) }
     var batteryPercent by remember { mutableStateOf(readBatteryPercent(context)) }
     var batteryCharging by remember { mutableStateOf(readBatteryCharging(context)) }
     var screenTimeMinutes by remember { mutableStateOf(readScreenTimeMinutes(context)) }
@@ -177,7 +164,7 @@ internal fun HomeScreen(
     Column(
         modifier = Modifier.fillMaxSize()
             .background(background)
-            .windowInsetsPadding(WindowInsets.systemBars)
+            .windowInsetsPadding(WindowInsets.safeDrawing)
             .verticalScroll(rememberScrollState())
             .combinedClickable(
                 onClick = {},
@@ -257,20 +244,6 @@ internal fun HomeScreen(
             }
         }
 
-
-        if (preferences.showQuote) {
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = "“${inspirationQuotes[quoteIndex]}”",
-                color = secondaryText,
-                fontSize = 14.sp,
-                lineHeight = 20.sp,
-                fontFamily = fontFamily,
-                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-                    .clickable { quoteIndex = (quoteIndex + 1) % inspirationQuotes.size }
-                    .padding(vertical = 2.dp)
-            )
-        }
 
         if (preferences.showWeather || preferences.showBattery || preferences.showScreenTime) {
             Spacer(Modifier.height(4.dp))
