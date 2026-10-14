@@ -226,11 +226,12 @@ private fun readEventDescription(context: Context, eventId: Long): String? = run
 
 private fun eventTime(context: Context, event: CalendarAgendaEvent, timeFormat: String): String {
     if (event.allDay) return "ALL DAY"
-    val formatter = when (timeFormat) {
-        "12" -> SimpleDateFormat("h:mm a", Locale.getDefault())
-        "24" -> SimpleDateFormat("HH:mm", Locale.getDefault())
-        else -> return DateFormat.getTimeInstance(DateFormat.SHORT, Locale.getDefault()).format(Date(event.begin))
+    val pattern = when (timeFormat) {
+        "12" -> "h:mm a"
+        "24" -> "HH:mm"
+        else -> if (android.text.format.DateFormat.is24HourFormat(context)) "HH:mm" else "h:mm a"
     }
+    val formatter = SimpleDateFormat(pattern, Locale.getDefault())
     formatter.timeZone = TimeZone.getDefault()
     return formatter.format(Date(event.begin))
 }
