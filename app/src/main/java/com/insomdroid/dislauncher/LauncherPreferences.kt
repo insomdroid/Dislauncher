@@ -95,7 +95,7 @@ internal data class LauncherPreferences(
                 autoLaunchKeyboard = p.getBoolean("auto_launch_keyboard", false),
                 showBattery = p.getBoolean("show_battery", true),
                 showDayProgress = p.getBoolean("show_day_progress", oldProgress),
-                showYearProgress = p.getBoolean("show_year_progress", oldProgress),
+                showYearProgress = p.getBoolean("show_year_progress", false),
                 pinYearProgress = p.getBoolean("pin_year_progress", true),
                 showClock = p.getBoolean("show_clock", true),
                 showDate = p.getBoolean("show_date", true),
