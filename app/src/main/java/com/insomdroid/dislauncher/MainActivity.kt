@@ -127,9 +127,16 @@ private fun DislauncherRoot() {
         mutableStateOf(
             prefsStore.getStringSet("favorite_packages", emptySet())
                 .orEmpty()
+                .sorted()
                 .take(MAX_PINNED_APPS)
                 .toSet()
         )
+    }
+    LaunchedEffect(Unit) {
+        val savedFavorites = prefsStore.getStringSet("favorite_packages", emptySet()).orEmpty()
+        if (savedFavorites.size > MAX_PINNED_APPS) {
+            prefsStore.edit().putStringSet("favorite_packages", favorites.toMutableSet()).apply()
+        }
     }
     var appNameOverrides by remember { mutableStateOf(readAppNameOverrides(prefsStore)) }
     var solarWeather by remember { mutableStateOf<WeatherInfo?>(null) }
