@@ -1,6 +1,8 @@
 package com.insomdroid.dislauncher
 
+import android.app.AppOpsManager
 import android.content.Intent
+import android.os.Process
 import android.provider.Settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +34,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -42,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -66,6 +70,7 @@ internal fun SettingsScreen(
 ) {
     val context = LocalContext.current
     var openDialog by remember { mutableStateOf("") }
+    var showFontsDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -145,31 +150,15 @@ internal fun SettingsScreen(
                         preferences.dynamicColor
                     ) { onPreferencesChange(preferences.copy(dynamicColor = it)) }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                    ChoiceRow(
-                        "Font",
-                        preferences.fontMode,
-                        listOf(
-                            "system" to "System",
-                            "mono" to "Monospace",
-                            "custom" to "Custom file"
-                        )
-                    ) { selected ->
-                        if (selected == "custom") {
-                            onChooseCustomFont()
-                        } else {
-                            onPreferencesChange(preferences.copy(fontMode = selected))
-                        }
-                    }
                     SettingAction(
-                        "Custom font file",
-                        preferences.customFontName ?: "No file selected · .ttf/.otf, max 10 MB",
+                        "Custom Fonts",
+                        when (preferences.fontMode) {
+                            "mono" -> "Monospace"
+                            "custom" -> preferences.customFontName ?: "Custom font"
+                            else -> "System font"
+                        },
                         "Choose",
-                        onChooseCustomFont
-                    )
-                    Text(
-                        "Custom fonts are copied into this app's private storage and checked before use.",
-                        fontSize = 10.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        { showFontsDialog = true }
                     )
                     ChoiceRow(
                         "Font size",
@@ -235,10 +224,6 @@ internal fun SettingsScreen(
                     onPreferencesChange(preferences.copy(showYearProgress = it))
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingToggle("Pin year in % widget", "Place the year progress directly beneath the clock and date.", preferences.pinYearProgress) {
-                    onPreferencesChange(preferences.copy(pinYearProgress = it))
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                 SettingToggle("Show screen time", "Requires Android Usage Access. Tap its Home row to open access settings.", preferences.showScreenTime) {
                     onPreferencesChange(preferences.copy(showScreenTime = it))
                 }
@@ -295,8 +280,12 @@ internal fun SettingsScreen(
             SettingsGroup("Android", "System-owned settings open outside dislauncher.") {
                 SettingAction(
                     "Usage access",
-                    "Grant Dislauncher access to app usage so Screen time can show today's total.",
-                    "Grant",
+                    if (hasUsageStatsPermission(context)) {
+                        "Screen time access is enabled for Dislauncher."
+                    } else {
+                        "Grant Dislauncher access to app usage so Screen time can show today's total."
+                    },
+                    if (hasUsageStatsPermission(context)) "Allowed" else "Grant",
                     {
                         runCatching {
                             context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
@@ -322,6 +311,53 @@ internal fun SettingsScreen(
             }
             Spacer(Modifier.height(16.dp))
         }
+    }
+
+    if (showFontsDialog) {
+        AlertDialog(
+            onDismissRequest = { showFontsDialog = false },
+            title = { Text("Custom Fonts") },
+            text = {
+                Column(Modifier.fillMaxWidth()) {
+                    IconPackChoice("System", "system", preferences.fontMode) {
+                        onPreferencesChange(preferences.copy(fontMode = "system"))
+                        showFontsDialog = false
+                    }
+                    IconPackChoice("Monospace", "mono", preferences.fontMode) {
+                        onPreferencesChange(preferences.copy(fontMode = "mono"))
+                        showFontsDialog = false
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth()
+                            .clickable {
+                                showFontsDialog = false
+                                onChooseCustomFont()
+                            }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = preferences.fontMode == "custom",
+                            onClick = {
+                                showFontsDialog = false
+                                onChooseCustomFont()
+                            }
+                        )
+                        Column(Modifier.weight(1f)) {
+                            Text("Choose .ttf / .otf file")
+                            Text(
+                                preferences.customFontName ?: "Maximum 10 MB",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showFontsDialog = false }) { Text("Done") }
+            }
+        )
     }
 
     if (openDialog == "hidden") {
@@ -488,6 +524,18 @@ private fun SettingsGroup(
     }
 }
 
+private fun hasUsageStatsPermission(context: android.content.Context): Boolean {
+    val appOps = context.getSystemService(android.content.Context.APP_OPS_SERVICE) as? AppOpsManager
+        ?: return false
+    return runCatching {
+        appOps.checkOpNoThrow(
+            AppOpsManager.OPSTR_GET_USAGE_STATS,
+            Process.myUid(),
+            context.packageName
+        ) == AppOpsManager.MODE_ALLOWED
+    }.getOrDefault(false)
+}
+
 @Composable
 private fun SettingToggle(
     title: String,
@@ -516,7 +564,18 @@ private fun SettingToggle(
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color(0xFF111111),
+                checkedTrackColor = Color(0xFF8AB4F8),
+                checkedBorderColor = Color(0xFF8AB4F8),
+                uncheckedThumbColor = Color(0xFFBDBDBD),
+                uncheckedTrackColor = Color(0xFF424242),
+                uncheckedBorderColor = Color(0xFF808080)
+            )
+        )
     }
 }
 
