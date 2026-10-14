@@ -14,7 +14,7 @@ internal data class LauncherPreferences(
     val autoLaunchKeyboard: Boolean = false,
     val showBattery: Boolean = true,
     val showDayProgress: Boolean = true,
-    val showYearProgress: Boolean = true,
+    val showYearProgress: Boolean = false,
     val pinYearProgress: Boolean = true,
     val showClock: Boolean = true,
     val showDate: Boolean = true,
@@ -83,6 +83,13 @@ internal data class LauncherPreferences(
 
         fun load(p: SharedPreferences): LauncherPreferences {
             val oldProgress = p.getBoolean("show_progress", true)
+            // The reference Home layout shows Day progress by default, but the option remains available.
+            if (p.getInt("home_layout_version", 0) < 1) {
+                p.edit()
+                    .putBoolean("show_year_progress", false)
+                    .putInt("home_layout_version", 1)
+                    .apply()
+            }
             return LauncherPreferences(
                 themeMode = normalizeThemeMode(p.getString("theme_mode", "dark") ?: "dark"),
                 fontMode = normalizeFontMode(p.getString("font_mode", "sans") ?: "sans"),
@@ -95,7 +102,7 @@ internal data class LauncherPreferences(
                 autoLaunchKeyboard = p.getBoolean("auto_launch_keyboard", false),
                 showBattery = p.getBoolean("show_battery", true),
                 showDayProgress = p.getBoolean("show_day_progress", oldProgress),
-                showYearProgress = p.getBoolean("show_year_progress", oldProgress),
+                showYearProgress = p.getBoolean("show_year_progress", false),
                 pinYearProgress = p.getBoolean("pin_year_progress", true),
                 showClock = p.getBoolean("show_clock", true),
                 showDate = p.getBoolean("show_date", true),

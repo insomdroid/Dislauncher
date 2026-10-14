@@ -2,6 +2,7 @@ package com.insomdroid.dislauncher
 
 import android.Manifest
 import android.content.Intent
+import android.content.IntentFilter
 import android.app.AppOpsManager
 import android.app.usage.UsageStatsManager
 import android.content.Context
@@ -9,6 +10,7 @@ import android.content.pm.PackageManager
 import android.os.Process
 import android.provider.Settings
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -45,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -103,6 +106,7 @@ internal fun HomeScreen(
     var now by remember { mutableStateOf(LocalTime.now()) }
     var quoteIndex by remember { mutableIntStateOf(LocalDate.now().dayOfYear % inspirationQuotes.size) }
     var batteryPercent by remember { mutableStateOf(readBatteryPercent(context)) }
+    var batteryCharging by remember { mutableStateOf(readBatteryCharging(context)) }
     var screenTimeMinutes by remember { mutableStateOf(readScreenTimeMinutes(context)) }
     var weatherInfo by remember { mutableStateOf<WeatherInfo?>(null) }
     var weatherStatus by remember { mutableStateOf("Tap to allow location") }
@@ -114,7 +118,7 @@ internal fun HomeScreen(
         else -> if (systemTimeFormat) "HH:mm" else "h:mm"
     }
     val timeText = now.format(DateTimeFormatter.ofPattern(timePattern, Locale.getDefault()))
-    val dateText = today.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.getDefault()))
+    val dateText = formatHomeDate(today)
     val background = MaterialTheme.colorScheme.background
     val primaryText = MaterialTheme.colorScheme.onBackground
     val secondaryText = MaterialTheme.colorScheme.onSurfaceVariant
@@ -130,6 +134,7 @@ internal fun HomeScreen(
             delay(60_000L)
             now = LocalTime.now()
             batteryPercent = readBatteryPercent(context)
+            batteryCharging = readBatteryCharging(context)
             screenTimeMinutes = readScreenTimeMinutes(context)
         }
     }
@@ -174,16 +179,16 @@ internal fun HomeScreen(
                     }
                 )
             }
-            .padding(horizontal = 22.dp, vertical = 12.dp),
+            .padding(horizontal = 26.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.Top
     ) {
         if (preferences.showClock) {
             Text(
                 timeText,
                 color = primaryText,
-                fontSize = 49.sp,
-                lineHeight = 52.sp,
-                letterSpacing = (-1.6).sp,
+                fontSize = 30.sp,
+                lineHeight = 36.sp,
+                letterSpacing = (-0.6).sp,
                 fontWeight = FontWeight.Light,
                 fontFamily = fontFamily,
                 maxLines = 1,
@@ -193,11 +198,11 @@ internal fun HomeScreen(
             )
         }
         if (preferences.showDate) {
-            Spacer(Modifier.height(5.dp))
+            Spacer(Modifier.height(8.dp))
             Text(
                 dateText,
                 color = secondaryText,
-                fontSize = 13.sp,
+                fontSize = 14.sp,
                 fontFamily = fontFamily,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -207,7 +212,7 @@ internal fun HomeScreen(
         if (preferences.showYearProgress && preferences.pinYearProgress) {
             Spacer(Modifier.height(6.dp))
             ProgressLine(
-                label = "YEAR",
+                label = "Year in progress",
                 percent = (today.dayOfYear * 100f / today.lengthOfYear()).toInt(),
                 primaryText = primaryText,
                 secondaryText = secondaryText,
@@ -221,7 +226,7 @@ internal fun HomeScreen(
             Spacer(Modifier.height(6.dp))
             if (preferences.showYearProgress && !preferences.pinYearProgress) {
                 ProgressLine(
-                    label = "YEAR",
+                    label = "Year in progress",
                     percent = (today.dayOfYear * 100f / today.lengthOfYear()).toInt(),
                     primaryText = primaryText, secondaryText = secondaryText,
                     fill = primaryText,
@@ -232,7 +237,7 @@ internal fun HomeScreen(
             if (preferences.showDayProgress) {
                 if (preferences.showYearProgress && !preferences.pinYearProgress) Spacer(Modifier.height(4.dp))
                 ProgressLine(
-                    label = "DAY",
+                    label = "Day in progress",
                     percent = (now.toSecondOfDay() * 100f / 86400f).toInt(),
                     primaryText = primaryText, secondaryText = secondaryText,
                     fill = primaryText,
@@ -258,40 +263,28 @@ internal fun HomeScreen(
         }
 
         if (preferences.showWeather || preferences.showBattery || preferences.showScreenTime) {
-            Spacer(Modifier.height(7.dp))
+            Spacer(Modifier.height(12.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (preferences.showWeather) {
-                    val hasLocation = ContextCompat.checkSelfPermission(
-                        context, Manifest.permission.ACCESS_COARSE_LOCATION
-                    ) == PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(
-                        context, Manifest.permission.ACCESS_FINE_LOCATION
-                    ) == PackageManager.PERMISSION_GRANTED
-                    val weatherText = when {
-                        weatherInfo != null -> weatherInfo!!.summary()
-                        !hasLocation -> "WEATHER · $weatherStatus"
-                        else -> "WEATHER · $weatherStatus"
-                    }
+                if (preferences.showBattery) {
                     Text(
-                        weatherText,
-                        color = secondaryText,
-                        fontSize = 9.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f).padding(end = 8.dp).clickable { onOpenWeather(weatherInfo) }
+                        (if (batteryCharging) "+" else "") + (batteryPercent?.let { "$it%" } ?: "--%"),
+                        color = primaryText,
+                        fontSize = 14.sp,
+                        maxLines = 1
                     )
                 }
                 if (preferences.showScreenTime) {
                     val screenText = screenTimeMinutes?.let { formatMinutes(it) } ?: "SCREEN TIME"
                     Text(
                         screenText,
-                        color = secondaryText,
-                        fontSize = 9.sp,
+                        color = primaryText,
+                        fontSize = 14.sp,
                         maxLines = 1,
-                        modifier = Modifier.padding(end = 8.dp).clickable {
+                        modifier = Modifier.clickable {
                             if (screenTimeMinutes == null) {
                                 runCatching {
                                     context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
@@ -302,12 +295,24 @@ internal fun HomeScreen(
                         }
                     )
                 }
-                if (preferences.showBattery) {
+                if (preferences.showWeather) {
+                    val hasLocation = ContextCompat.checkSelfPermission(
+                        context, Manifest.permission.ACCESS_COARSE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(
+                        context, Manifest.permission.ACCESS_FINE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED
+                    val weatherText = weatherInfo?.let {
+                        "${it.temperature} ${it.condition.lowercase(Locale.getDefault())}"
+                    } ?: if (!hasLocation) "Tap to allow location" else weatherStatus
                     Text(
-                        batteryPercent?.let { "$it%" } ?: "--%",
-                        color = secondaryText,
-                        fontSize = 9.sp,
-                        maxLines = 1
+                        weatherText,
+                        color = primaryText,
+                        fontSize = 14.sp,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                            .clickable { onOpenWeather(weatherInfo) }
                     )
                 }
             }
@@ -330,7 +335,7 @@ internal fun HomeScreen(
         }
         val latestOrderedMainItemIds = rememberUpdatedState(orderedMainItemIds)
         val latestMoveHomeItem = rememberUpdatedState(onMoveHomeItem)
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(140.dp))
         orderedMainItemIds.forEach { itemId ->
             val app = favoriteAppsByPackage[itemId]
             val label = when (itemId) {
@@ -388,7 +393,7 @@ internal fun HomeScreen(
                                 }
                             }
                         )
-                        .padding(vertical = 6.dp),
+                        .padding(vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (itemId == HOME_ITEM_MUSIC) {
@@ -403,8 +408,8 @@ internal fun HomeScreen(
                         Text(
                             text = label,
                             color = primaryText,
-                            fontSize = 22.sp,
-                            lineHeight = 29.sp,
+                            fontSize = 26.sp,
+                            lineHeight = 34.sp,
                             fontFamily = fontFamily,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -444,24 +449,62 @@ private fun ProgressLine(
     fontScale: Float
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth(0.84f),
-        verticalArrangement = Arrangement.spacedBy(2.dp)
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Text(
+            "$label $percent%",
+            color = primaryText,
+            fontSize = 14.sp,
+            lineHeight = 18.sp,
+            fontWeight = FontWeight.Normal
+        )
+        Canvas(
+            modifier = Modifier.fillMaxWidth(0.36f).height(13.dp)
         ) {
-            Text(label, color = secondaryText, fontSize = 7.sp, letterSpacing = 0.2.sp)
-            Text("$percent%", color = primaryText, fontSize = 8.sp)
-        }
-        Box(Modifier.fillMaxWidth().height(1.5.dp).clip(RoundedCornerShape(99.dp)).background(track)) {
-            Box(
-                Modifier.fillMaxWidth(percent.coerceIn(0, 100) / 100f).height(1.5.dp)
-                    .clip(RoundedCornerShape(99.dp)).background(fill)
-            )
+            val stepX = 4.dp.toPx()
+            val stepY = 4.dp.toPx()
+            val radius = 1.1.dp.toPx()
+            val columns = (size.width / stepX).toInt().coerceAtLeast(1)
+            val rows = (size.height / stepY).toInt().coerceAtLeast(1)
+            for (row in 0..rows) {
+                for (column in 0..columns) {
+                    val x = column * stepX + radius
+                    val y = row * stepY + radius
+                    if (x <= size.width && y <= size.height) {
+                        val color = if (x / size.width * 100f <= percent.coerceIn(0, 100)) {
+                            fill
+                        } else {
+                            track.copy(alpha = 0.85f)
+                        }
+                        drawCircle(color = color, radius = radius, center = Offset(x, y))
+                    }
+                }
+            }
         }
     }
+}
+
+private fun readBatteryCharging(context: Context): Boolean {
+    val intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)) ?: return false
+    return intent.getIntExtra("plugged", 0) != 0
+}
+
+private fun formatHomeDate(date: LocalDate): String {
+    val locale = Locale.getDefault()
+    if (locale.language != "en") {
+        return date.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", locale))
+    }
+    val day = date.dayOfMonth
+    val suffix = when {
+        day % 100 in 11..13 -> "th"
+        day % 10 == 1 -> "st"
+        day % 10 == 2 -> "nd"
+        day % 10 == 3 -> "rd"
+        else -> "th"
+    }
+    return date.format(DateTimeFormatter.ofPattern("EEEE, ", locale)) +
+        day + suffix + date.format(DateTimeFormatter.ofPattern(" MMMM", locale))
 }
 
 private fun readScreenTimeMinutes(context: Context): Long? {
