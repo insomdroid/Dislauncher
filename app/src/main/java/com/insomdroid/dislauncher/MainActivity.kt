@@ -55,6 +55,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.unit.Density
@@ -117,6 +118,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalTextApi::class)
 @Composable
 private fun DislauncherRoot() {
     val context = LocalContext.current
