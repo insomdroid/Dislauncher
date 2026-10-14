@@ -74,10 +74,9 @@ internal fun WeatherScreen(
             loading = false
             status = ""
         } else if (!locationGranted) {
-            weather = null
+            weather = cachedWeather
             loading = false
-            status = "Allow location access to get local weather."
-            onWeatherChange(null)
+            status = if (cachedWeather == null) "Allow location access to get local weather." else ""
         } else {
             loading = true
             status = "Getting weather…"

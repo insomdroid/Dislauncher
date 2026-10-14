@@ -289,36 +289,36 @@ internal fun MusicPlayerWidget(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                "<",
+                                "⏮",
                                 color = foreground,
-                                fontSize = 14.sp,
+                                fontSize = 18.sp,
                                 modifier = Modifier.clickable {
                                     if (controller != null) runCatching { controller.transportControls.skipToPrevious() }
                                     else onOpenMusicApp()
-                                }.padding(vertical = 2.dp, horizontal = 2.dp)
+                                }.padding(vertical = 4.dp, horizontal = 3.dp)
                             )
                             Text(
                                 if (playing) "Ⅱ" else "▶",
                                 color = foreground,
-                                fontSize = 18.sp,
+                                fontSize = 20.sp,
                                 fontWeight = FontWeight.Medium,
                                 modifier = Modifier.clickable {
-                                    if (controller != null && metadata != null) {
+                                    if (controller != null) {
                                         runCatching {
                                             if (playing) controller.transportControls.pause()
                                             else controller.transportControls.play()
                                         }
                                     } else onOpenMusicApp()
-                                }.padding(vertical = 1.dp, horizontal = 2.dp)
+                                }.padding(vertical = 4.dp, horizontal = 3.dp)
                             )
                             Text(
-                                ">",
+                                "⏭",
                                 color = foreground,
-                                fontSize = 14.sp,
+                                fontSize = 18.sp,
                                 modifier = Modifier.clickable {
                                     if (controller != null) runCatching { controller.transportControls.skipToNext() }
                                     else onOpenMusicApp()
-                                }.padding(vertical = 2.dp, horizontal = 2.dp)
+                                }.padding(vertical = 4.dp, horizontal = 3.dp)
                             )
                         }
                     }
