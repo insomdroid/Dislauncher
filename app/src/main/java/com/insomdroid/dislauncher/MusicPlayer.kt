@@ -180,7 +180,7 @@ internal fun MusicPlayerWidget(
         contentAlignment = Alignment.CenterStart
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().widthIn(max = 320.dp).padding(vertical = 1.dp),
+            modifier = Modifier.widthIn(max = 320.dp).fillMaxWidth().padding(vertical = 1.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
