@@ -9,6 +9,8 @@ import android.provider.Settings
 import android.os.Process
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -53,6 +55,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -282,13 +285,36 @@ internal fun AppsScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(1.dp)
                     ) {
-                        scrubberLetters.forEach { letter ->
+                        scrubberLetters.forEachIndexed { index, letter ->
+                            val selectedWaveIndex = (scrubFraction * scrubberLetters.size)
+                                .toInt()
+                                .coerceIn(0, scrubberLetters.lastIndex)
+                            val waveDistance = kotlin.math.abs(index - selectedWaveIndex)
+                            val waveTarget = if (isScrubbing) {
+                                (1f - waveDistance / 4f).coerceIn(0f, 1f)
+                            } else {
+                                0f
+                            }
+                            val wave by animateFloatAsState(
+                                targetValue = waveTarget,
+                                animationSpec = tween(
+                                    durationMillis = 90,
+                                    easing = FastOutSlowInEasing
+                                ),
+                                label = "scrubber-wave-$index"
+                            )
                             Text(
                                 letter,
                                 color = if (isScrubbing && letter == activeLetter) mainText else secondary,
                                 fontSize = 10.sp,
                                 lineHeight = 15.sp,
-                                fontWeight = if (isScrubbing && letter == activeLetter) FontWeight.Bold else FontWeight.Normal
+                                fontWeight = if (isScrubbing && letter == activeLetter) FontWeight.Bold else FontWeight.Normal,
+                                modifier = Modifier
+                                    .offset(x = (wave * 6f).dp)
+                                    .graphicsLayer {
+                                        scaleX = 1f + wave * 0.18f
+                                        scaleY = 1f + wave * 0.08f
+                                    }
                             )
                         }
                     }
