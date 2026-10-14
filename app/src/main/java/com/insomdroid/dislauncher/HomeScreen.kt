@@ -34,6 +34,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -57,6 +58,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -88,6 +92,7 @@ internal fun HomeScreen(
     onSolarInfoChange: (WeatherInfo?) -> Unit
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val haptic = LocalHapticFeedback.current
     val currentOpenSettings by rememberUpdatedState(onOpenSettings)
     val currentLockScreen by rememberUpdatedState(onDoubleTapToLock)
@@ -125,6 +130,18 @@ internal fun HomeScreen(
             batteryCharging = readBatteryCharging(context)
             screenTimeMinutes = readScreenTimeMinutes(context)
         }
+    }
+
+    DisposableEffect(lifecycleOwner, context) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                batteryPercent = readBatteryPercent(context)
+                batteryCharging = readBatteryCharging(context)
+                screenTimeMinutes = readScreenTimeMinutes(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     LaunchedEffect(preferences.showWeather, preferences.themeMode, preferences.weatherUnit, cachedWeather) {
@@ -195,7 +212,7 @@ internal fun HomeScreen(
             )
         }
         if (preferences.showDate) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
             Text(
                 dateText,
                 color = secondaryText,
@@ -207,7 +224,7 @@ internal fun HomeScreen(
             )
         }
         if (preferences.showYearProgress && preferences.pinYearProgress) {
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(8.dp))
             ProgressLine(
                 label = "Year in progress",
                 percent = (today.dayOfYear * 100f / today.lengthOfYear()).toInt(),
@@ -220,7 +237,7 @@ internal fun HomeScreen(
         }
 
         if (preferences.showYearProgress && !preferences.pinYearProgress || preferences.showDayProgress) {
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(8.dp))
             if (preferences.showYearProgress && !preferences.pinYearProgress) {
                 ProgressLine(
                     label = "Year in progress",
@@ -246,7 +263,7 @@ internal fun HomeScreen(
 
 
         if (preferences.showWeather || preferences.showBattery || preferences.showScreenTime) {
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -268,12 +285,17 @@ internal fun HomeScreen(
                         fontSize = 12.sp,
                         maxLines = 1,
                         modifier = Modifier.clickable {
-                            if (screenTimeMinutes == null) {
+                            if (!hasUsageStatsAccess(context)) {
                                 runCatching {
                                     context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
                                 }
                             } else {
                                 screenTimeMinutes = readScreenTimeMinutes(context)
+                                if (screenTimeMinutes == null) {
+                                    runCatching {
+                                        context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                                    }
+                                }
                             }
                         }
                     )
@@ -302,12 +324,12 @@ internal fun HomeScreen(
         }
 
         if (preferences.showCalendarShortcut) {
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(8.dp))
             CalendarAgenda(preferences.timeFormat)
         }
 
         if (preferences.showMusic) {
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(8.dp))
             MusicPlayerWidget(
                 modifier = Modifier.fillMaxWidth(),
                 onOpenMusicApp = { openMusicPlayer(context, apps) }
@@ -489,12 +511,20 @@ private fun formatHomeDate(date: LocalDate): String {
         day + suffix + date.format(DateTimeFormatter.ofPattern(" MMMM", locale))
 }
 
-private fun readScreenTimeMinutes(context: Context): Long? {
-    val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager ?: return null
+private fun hasUsageStatsAccess(context: Context): Boolean {
+    val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager ?: return false
     val mode = runCatching {
-        appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName)
+        appOps.checkOpNoThrow(
+            AppOpsManager.OPSTR_GET_USAGE_STATS,
+            Process.myUid(),
+            context.packageName
+        )
     }.getOrDefault(AppOpsManager.MODE_DEFAULT)
-    if (mode != AppOpsManager.MODE_ALLOWED) return null
+    return mode == AppOpsManager.MODE_ALLOWED
+}
+
+private fun readScreenTimeMinutes(context: Context): Long? {
+    if (!hasUsageStatsAccess(context)) return null
     val manager = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager ?: return null
     val start = LocalDate.now().atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
     val end = System.currentTimeMillis()
