@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,14 +15,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -38,91 +39,156 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 @Composable
-internal fun WeatherScreen(weatherUnit: String, onBack: () -> Unit) {
+internal fun WeatherScreen(
+    weatherUnit: String,
+    cachedWeather: WeatherInfo?,
+    onBack: () -> Unit
+) {
     val context = LocalContext.current
     val primary = MaterialTheme.colorScheme.onBackground
     val secondary = MaterialTheme.colorScheme.onSurfaceVariant
     var locationGranted by remember { mutableStateOf(hasWeatherLocationPermission(context)) }
-    var refreshKey by remember { mutableIntStateOf(0) }
-    var weather by remember { mutableStateOf<WeatherInfo?>(null) }
+    var weather by remember { mutableStateOf(cachedWeather) }
     var status by remember { mutableStateOf("Location permission is required.") }
     var loading by remember { mutableStateOf(false) }
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { results ->
         locationGranted = results.values.any { it } || hasWeatherLocationPermission(context)
-        if (locationGranted) refreshKey++ else status = "Location permission was denied."
+        if (!locationGranted) status = "Location permission was denied."
     }
-    LaunchedEffect(weatherUnit, refreshKey, locationGranted) {
-        if (!locationGranted) {
+
+    LaunchedEffect(weatherUnit, locationGranted, cachedWeather) {
+        if (cachedWeather != null) {
+            weather = cachedWeather
+            loading = false
+            status = ""
+        } else if (!locationGranted) {
             weather = null
             loading = false
-            status = "Allow location access to get current weather."
+            status = "Allow location access to see local weather."
         } else {
             loading = true
-            status = "Getting current weather…"
+            status = "Getting weather…"
             val fetched = withContext(Dispatchers.IO) { fetchWeather(context, weatherUnit) }
             weather = fetched
-            status = if (fetched == null) "Weather is unavailable. Check location and internet, then retry." else ""
+            status = if (fetched == null) {
+                "Weather is unavailable. Check location and internet."
+            } else ""
             loading = false
         }
     }
+
     Column(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
-            .windowInsetsPadding(WindowInsets.systemBars).padding(horizontal = 22.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.Top
+        modifier = Modifier.fillMaxSize()
+            .windowInsetsPadding(WindowInsets.systemBars)
+            .padding(horizontal = 22.dp, vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Row(modifier = Modifier.fillMaxWidth().height(42.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("‹", color = primary, fontSize = 28.sp,
-                modifier = Modifier.clickable(onClick = onBack).padding(end = 18.dp))
-            Text("Weather", color = primary, fontSize = 18.sp)
+        Row(
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "‹",
+                color = primary,
+                fontSize = 30.sp,
+                modifier = Modifier.clickable(onClick = onBack).padding(end = 18.dp)
+            )
+            Text("Weather", color = primary, style = MaterialTheme.typography.titleLarge)
         }
-        Spacer(Modifier.height(24.dp))
-        Text("CURRENT CONDITIONS", color = secondary, fontSize = 10.sp, letterSpacing = 1.2.sp)
-        Spacer(Modifier.height(8.dp))
+
         if (weather != null) {
-            weather!!.locationName?.let {
-                Text(it, color = secondary, fontSize = 13.sp, maxLines = 1)
-                Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(26.dp))
+            Text(
+                weather!!.locationName ?: "Local weather",
+                color = secondary,
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
+                maxLines = 2
+            )
+            Spacer(Modifier.height(20.dp))
+            WeatherIcon(weather!!.condition, primary, Modifier.size(124.dp))
+            Spacer(Modifier.height(8.dp))
+            Text(
+                weather!!.temperature,
+                color = primary,
+                style = MaterialTheme.typography.displayLarge,
+                fontWeight = FontWeight.Light,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                weather!!.condition,
+                color = primary,
+                style = MaterialTheme.typography.titleLarge,
+                textAlign = TextAlign.Center
+            )
+            weather!!.feelsLike?.let {
+                Spacer(Modifier.height(6.dp))
+                Text("Feels like $it", color = secondary, style = MaterialTheme.typography.bodyMedium)
             }
-            WeatherIcon(weather!!.condition, primary, Modifier.padding(vertical = 2.dp))
-            Spacer(Modifier.height(4.dp))
-            Text(weather!!.temperature, color = primary, fontSize = 60.sp, lineHeight = 64.sp,
-                fontWeight = FontWeight.Light, letterSpacing = (-1.5).sp)
-            Text(weather!!.condition, color = primary, fontSize = 18.sp)
-            weather!!.feelsLike?.let { Spacer(Modifier.height(5.dp)); Text("Feels like $it", color = secondary, fontSize = 12.sp) }
-            Spacer(Modifier.height(24.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(26.dp)) {
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("HUMIDITY", color = secondary, fontSize = 10.sp, letterSpacing = 0.8.sp)
-                    Text(weather!!.humidity?.let { "$it%" } ?: "—", color = primary, fontSize = 17.sp)
+            Spacer(Modifier.height(28.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(22.dp)
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text("HUMIDITY", color = secondary, style = MaterialTheme.typography.labelMedium)
+                    Text(weather!!.humidity?.let { "$it%" } ?: "—",
+                        color = primary, style = MaterialTheme.typography.titleLarge)
                 }
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("WIND", color = secondary, fontSize = 10.sp, letterSpacing = 0.8.sp)
-                    Text(weather!!.wind ?: "—", color = primary, fontSize = 17.sp)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text("WIND", color = secondary, style = MaterialTheme.typography.labelMedium)
+                    Text(weather!!.wind ?: "—", color = primary, style = MaterialTheme.typography.titleLarge)
                 }
             }
             if (weather!!.high != null || weather!!.low != null) {
-                Spacer(Modifier.height(18.dp))
-                Text(listOfNotNull(weather!!.high?.let { "H: $it" }, weather!!.low?.let { "L: $it" }).joinToString("     "),
-                    color = secondary, fontSize = 12.sp)
+                Spacer(Modifier.height(20.dp))
+                Text(
+                    listOfNotNull(weather!!.high?.let { "High $it" }, weather!!.low?.let { "Low $it" })
+                        .joinToString("     "),
+                    color = secondary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
             }
-        } else Text(status, color = secondary, fontSize = 13.sp, lineHeight = 19.sp)
-        Spacer(Modifier.height(30.dp))
-        Text(
-            when { loading -> "UPDATING…"; !locationGranted -> "ALLOW LOCATION"; else -> "REFRESH" },
-            color = primary, fontSize = 12.sp, fontWeight = FontWeight.Medium,
-            modifier = Modifier.clickable {
-                if (!locationGranted) permissionLauncher.launch(
-                    arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION)
-                ) else refreshKey++
-            }.padding(vertical = 8.dp)
-        )
+        } else {
+            Spacer(Modifier.weight(1f))
+            Text(
+                if (loading) "Getting weather…" else status,
+                color = secondary,
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            if (!locationGranted && !loading) {
+                Spacer(Modifier.height(12.dp))
+                TextButton(
+                    onClick = {
+                        permissionLauncher.launch(
+                            arrayOf(
+                                Manifest.permission.ACCESS_COARSE_LOCATION,
+                                Manifest.permission.ACCESS_FINE_LOCATION
+                            )
+                        )
+                    }
+                ) { Text("Allow location") }
+            }
+            Spacer(Modifier.weight(1f))
+        }
     }
 }
+
 private fun hasWeatherLocationPermission(context: Context): Boolean =
     ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
         PackageManager.PERMISSION_GRANTED ||
         ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
         PackageManager.PERMISSION_GRANTED
-

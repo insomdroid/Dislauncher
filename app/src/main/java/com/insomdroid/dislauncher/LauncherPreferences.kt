@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 internal data class LauncherPreferences(
     val themeMode: String = "dark",
     val fontMode: String = "sans",
-    val fontSize: String = "small",
+    val fontSize: String = "medium",
     val iconPack: String = "system",
     val showAppIcons: Boolean = false,
     val hideStatusBar: Boolean = false,
@@ -86,7 +86,7 @@ internal data class LauncherPreferences(
             return LauncherPreferences(
                 themeMode = normalizeThemeMode(p.getString("theme_mode", "dark") ?: "dark"),
                 fontMode = normalizeFontMode(p.getString("font_mode", "sans") ?: "sans"),
-                fontSize = p.getString("font_size", "small") ?: "small",
+                fontSize = p.getString("font_size", "medium") ?: "medium",
                 iconPack = p.getString("icon_pack", "system") ?: "system",
                 showAppIcons = p.getBoolean("show_app_icons", false),
                 hideStatusBar = p.getBoolean("hide_status_bar", false),
