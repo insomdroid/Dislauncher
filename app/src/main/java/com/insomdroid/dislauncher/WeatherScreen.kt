@@ -54,17 +54,15 @@ internal fun WeatherScreen(
     var weather by remember { mutableStateOf(cachedWeather) }
     var status by remember { mutableStateOf("Location permission is required.") }
     var loading by remember { mutableStateOf(false) }
-    var permissionWasRequested by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { results ->
         locationGranted = results.values.any { it } || hasWeatherLocationPermission(context)
-        permissionWasRequested = locationGranted
         if (!locationGranted) status = "Location permission was denied."
     }
 
-    LaunchedEffect(weatherUnit, locationGranted, cachedWeather, permissionWasRequested) {
+    LaunchedEffect(weatherUnit, locationGranted, cachedWeather) {
         if (cachedWeather != null) {
             weather = cachedWeather
             loading = false
@@ -73,18 +71,14 @@ internal fun WeatherScreen(
             weather = null
             loading = false
             status = "Allow location access to get local weather."
-        } else if (permissionWasRequested) {
+        } else {
+            // Fetch only when Home has no cached result. There is no manual refresh action.
             loading = true
             status = "Getting weather…"
             val fetched = withContext(Dispatchers.IO) { fetchWeather(context, weatherUnit) }
             weather = fetched
             status = if (fetched == null) "Weather is unavailable. Check location and internet." else ""
             loading = false
-        } else {
-            // Opening the Weather screen uses Home's cached result; it does not trigger a refresh.
-            weather = null
-            loading = false
-            status = "Weather is unavailable on Home. Go back and try again later."
         }
     }
 
