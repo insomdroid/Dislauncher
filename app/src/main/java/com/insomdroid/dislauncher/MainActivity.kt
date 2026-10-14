@@ -560,6 +560,7 @@ private fun DislauncherRoot() {
                             favoriteOrder = favoriteOrder,
                             preferences = preferences,
                             cachedWeather = solarWeather,
+                            isActive = page == pagerState.currentPage,
                             isDark = isDark,
                             fontFamily = fontFamily,
                             fontScale = fontScale,

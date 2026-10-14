@@ -42,6 +42,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -65,6 +66,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.LocalTime
@@ -79,6 +81,7 @@ internal fun HomeScreen(
     favoriteOrder: List<String>,
     preferences: LauncherPreferences,
     cachedWeather: WeatherInfo?,
+    isActive: Boolean,
     isDark: Boolean,
     fontFamily: FontFamily,
     fontScale: Float,
@@ -98,10 +101,14 @@ internal fun HomeScreen(
     val currentOpenSettings by rememberUpdatedState(onOpenSettings)
     val currentLockScreen by rememberUpdatedState(onDoubleTapToLock)
     val currentSolarInfoChange by rememberUpdatedState(onSolarInfoChange)
+    val coroutineScope = rememberCoroutineScope()
+    var hostResumed by remember(lifecycleOwner) {
+        mutableStateOf(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
+    }
     var now by remember { mutableStateOf(LocalTime.now()) }
     var batteryPercent by remember { mutableStateOf(readBatteryPercent(context)) }
     var batteryCharging by remember { mutableStateOf(readBatteryCharging(context)) }
-    var screenTimeMinutes by remember { mutableStateOf(readScreenTimeMinutes(context)) }
+    var screenTimeMinutes by remember { mutableStateOf<Long?>(null) }
     var weatherInfo by remember { mutableStateOf(cachedWeather) }
     var weatherStatus by remember { mutableStateOf("Tap to allow location") }
     val today = LocalDate.now()
@@ -123,29 +130,48 @@ internal fun HomeScreen(
     var draggingMainItem by remember { mutableStateOf<String?>(null) }
     var dragDistance by remember { mutableFloatStateOf(0f) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(isActive, hostResumed, preferences.showScreenTime) {
+        if (!isActive || !hostResumed) {
+            if (!preferences.showScreenTime) screenTimeMinutes = null
+            return@LaunchedEffect
+        }
+
+        now = LocalTime.now()
+        batteryPercent = readBatteryPercent(context)
+        batteryCharging = readBatteryCharging(context)
+        screenTimeMinutes = if (preferences.showScreenTime) {
+            withContext(Dispatchers.IO) { readScreenTimeMinutes(context) }
+        } else {
+            null
+        }
+
         while (true) {
             delay(60_000L)
             now = LocalTime.now()
             batteryPercent = readBatteryPercent(context)
             batteryCharging = readBatteryCharging(context)
-            screenTimeMinutes = readScreenTimeMinutes(context)
+            screenTimeMinutes = if (preferences.showScreenTime) {
+                withContext(Dispatchers.IO) { readScreenTimeMinutes(context) }
+            } else {
+                null
+            }
         }
     }
 
-    DisposableEffect(lifecycleOwner, context) {
+    DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                batteryPercent = readBatteryPercent(context)
-                batteryCharging = readBatteryCharging(context)
-                screenTimeMinutes = readScreenTimeMinutes(context)
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> hostResumed = true
+                Lifecycle.Event.ON_PAUSE -> hostResumed = false
+                else -> Unit
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    LaunchedEffect(preferences.showWeather, preferences.weatherUnit, cachedWeather) {
+    LaunchedEffect(preferences.showWeather, preferences.weatherUnit, cachedWeather, isActive) {
+        if (!isActive) return@LaunchedEffect
         if (!preferences.showWeather) {
             weatherInfo = null
             currentSolarInfoChange(null)
@@ -291,10 +317,15 @@ internal fun HomeScreen(
                                     context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
                                 }
                             } else {
-                                screenTimeMinutes = readScreenTimeMinutes(context)
-                                if (screenTimeMinutes == null) {
-                                    runCatching {
-                                        context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                                coroutineScope.launch {
+                                    val refreshed = withContext(Dispatchers.IO) {
+                                        readScreenTimeMinutes(context)
+                                    }
+                                    screenTimeMinutes = refreshed
+                                    if (refreshed == null) {
+                                        runCatching {
+                                            context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                                        }
                                     }
                                 }
                             }

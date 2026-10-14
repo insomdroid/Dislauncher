@@ -177,7 +177,8 @@ private fun readTodayCalendarEvents(context: Context): List<CalendarAgendaEvent>
         CalendarContract.Instances.TITLE,
         CalendarContract.Instances.BEGIN,
         CalendarContract.Instances.END,
-        CalendarContract.Instances.ALL_DAY
+        CalendarContract.Instances.ALL_DAY,
+        CalendarContract.Events.DESCRIPTION
     )
     try {
         context.contentResolver.query(
@@ -189,12 +190,13 @@ private fun readTodayCalendarEvents(context: Context): List<CalendarAgendaEvent>
             val beginIndex = cursor.getColumnIndexOrThrow(CalendarContract.Instances.BEGIN)
             val endIndex = cursor.getColumnIndexOrThrow(CalendarContract.Instances.END)
             val allDayIndex = cursor.getColumnIndexOrThrow(CalendarContract.Instances.ALL_DAY)
+            val descriptionIndex = cursor.getColumnIndex(CalendarContract.Events.DESCRIPTION)
             val now = System.currentTimeMillis()
             while (cursor.moveToNext()) {
                 val id = cursor.getLong(eventIdIndex)
                 val end = cursor.getLong(endIndex)
                 if (end < now) continue
-                val description = readEventDescription(context, id)
+                val description = if (descriptionIndex >= 0) cursor.getString(descriptionIndex) else null
                 val url = Regex("https?://[^\\s<>\\\"']+", RegexOption.IGNORE_CASE)
                     .find(description.orEmpty())?.value?.trimEnd('.', ',', ')', ']', ';')
                 events += CalendarAgendaEvent(
@@ -214,16 +216,6 @@ private fun readTodayCalendarEvents(context: Context): List<CalendarAgendaEvent>
     }
     return events.distinctBy { "${it.id}:${it.begin}" }.sortedBy { it.begin }.take(30)
 }
-
-private fun readEventDescription(context: Context, eventId: Long): String? = runCatching {
-    context.contentResolver.query(
-        CalendarContract.Events.CONTENT_URI,
-        arrayOf(CalendarContract.Events.DESCRIPTION),
-        "${CalendarContract.Events._ID} = ?",
-        arrayOf(eventId.toString()),
-        null
-    )?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
-}.getOrNull()
 
 private fun eventTime(context: Context, event: CalendarAgendaEvent, timeFormat: String): String {
     if (event.allDay) return "ALL DAY"
