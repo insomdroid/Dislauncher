@@ -39,6 +39,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -69,7 +70,18 @@ internal fun SettingsScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    var usageAccessAllowed by remember { mutableStateOf(hasUsageStatsPermission(context)) }
     var openDialog by remember { mutableStateOf("") }
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                usageAccessAllowed = hasUsageStatsPermission(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
     var showFontsDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -280,12 +292,12 @@ internal fun SettingsScreen(
             SettingsGroup("Android", "System-owned settings open outside dislauncher.") {
                 SettingAction(
                     "Usage access",
-                    if (hasUsageStatsPermission(context)) {
+                    if (usageAccessAllowed) {
                         "Screen time access is enabled for Dislauncher."
                     } else {
                         "Grant Dislauncher access to app usage so Screen time can show today's total."
                     },
-                    if (hasUsageStatsPermission(context)) "Allowed" else "Grant",
+                    if (usageAccessAllowed) "Allowed" else "Grant",
                     {
                         runCatching {
                             context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
