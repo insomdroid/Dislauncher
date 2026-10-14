@@ -5,19 +5,19 @@ A minimalist, text-first Android launcher focused on a calm, low-distraction exp
 ## Home screen
 
 - Compact text-first layout for the clock, date, favourite apps, battery, and optional progress indicators.
-- Tap the clock to open the clock app; tap the date to open the calendar app.
+- Tap the clock to open the clock app; tap the date to open the calendar app. The optional Calendar agenda requests calendar permission and displays today's remaining events, with tap-through to the system calendar.
 - Long-press empty space to open Settings with haptic feedback.
 - Optional double-tap-to-lock, year/day progress, quote, weather, screen-time, tasks, call, music, and calendar shortcut.
-- Small, default, and large font sizes; Roboto, Serif, Monospace, Condensed, Rounded, Light, Casual, and Cursive Android typefaces.
+- Font families: Roboto, Open Sans, Monospace, Menlo-compatible, Raleway Dots, Sans-serif Light, and Serif; Small, Medium, and Large sizes.
 - Optional app icons and compatible icon packs using the ADW/Nova-style `appfilter.xml` format.
-- Theme choices: Auto, Light, Dark.
+- Theme choices: follow system, automatic sunrise/sunset, Black, and White.
 
 ## App drawer
 
 - Home and drawer use a horizontal pager for native Compose swipe animation.
 - Alphabetically ordered applications with no letter-category headings.
 - Optional search field, keyboard auto-launch, app icons, and touch-activated letter scrubber.
-- Long-press an app to add or remove it from favourites.
+- Long-press an app to open actions for launching, favourites, renaming, hiding, app info, and uninstalling non-system apps.
 - Manage hidden apps and favourites in Settings.
 
 ## Launcher preferences
@@ -32,12 +32,12 @@ Settings are persisted locally and include:
 
 ## Permissions and limitations
 
-- **Weather:** requires location permission and an internet connection. Weather data comes from Open-Meteo. Location is used to request the weather for the device's current position.
+- **Weather:** requires location permission and an internet connection. Weather data comes from Open-Meteo; Android Geocoder is used on a best-effort basis to label the approximate current location. Sunrise/sunset times from the same weather response drive the automatic solar theme.
 - **Screen time:** Android's Usage Access permission must be granted in system settings.
 - **Double-tap to lock:** Android asks the user to explicitly enable dislauncher as a device administrator.
 - **Swipe down for notifications:** this is best-effort; Android versions and device manufacturers can block third-party apps from expanding the system notification shade.
 - **Icon packs:** only installed icon packs that expose compatible ADW/Nova-style `appfilter.xml` entries are used; otherwise, the system app icon is shown.
-- **Fonts:** selected typefaces apply across Home, Apps, Tasks, Weather, and Settings. The launcher uses Android's built-in typefaces; importing external font files is not implemented yet.
+- **Fonts:** Open Sans and Raleway Dots are bundled from the Google Fonts repository at a pinned revision; their OFL license files are included in the APK assets. Menlo falls back to Android's monospace family on devices without Menlo.
 - Successful CI compilation does not replace real-device interaction, visual, or permission testing.
 
 ## Build

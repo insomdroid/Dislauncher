@@ -90,12 +90,16 @@ internal fun HomeScreen(
     onOpenTasks: () -> Unit,
     onOpenWeather: () -> Unit,
     onOpenSettings: () -> Unit,
-    onDoubleTapToLock: () -> Unit
+    onDoubleTapToLock: () -> Unit,
+    homeItemOrder: List<String>,
+    onMoveHomeItem: (String, String) -> Unit,
+    onSolarInfoChange: (WeatherInfo?) -> Unit
 ) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val currentOpenSettings by rememberUpdatedState(onOpenSettings)
     val currentLockScreen by rememberUpdatedState(onDoubleTapToLock)
+    val currentSolarInfoChange by rememberUpdatedState(onSolarInfoChange)
     var now by remember { mutableStateOf(LocalTime.now()) }
     var quoteIndex by remember { mutableIntStateOf(LocalDate.now().dayOfYear % inspirationQuotes.size) }
     var batteryPercent by remember { mutableStateOf(readBatteryPercent(context)) }
@@ -114,17 +118,12 @@ internal fun HomeScreen(
     val background = MaterialTheme.colorScheme.background
     val primaryText = MaterialTheme.colorScheme.onBackground
     val secondaryText = MaterialTheme.colorScheme.onSurfaceVariant
-    val visibleFavorites = remember(apps, favorites, favoriteOrder) {
+    val visibleFavorites = remember(apps, favorites) {
         apps.filter { it.packageName in favorites }
-            .sortedBy { app ->
-                val position = favoriteOrder.indexOf(app.packageName)
-                if (position < 0) Int.MAX_VALUE else position
-            }
     }
-    var draggingFavorite by remember { mutableStateOf<String?>(null) }
+    val favoriteAppsByPackage = remember(visibleFavorites) { visibleFavorites.associateBy { it.packageName } }
+    var draggingMainItem by remember { mutableStateOf<String?>(null) }
     var dragDistance by remember { mutableFloatStateOf(0f) }
-    val latestVisibleFavorites = rememberUpdatedState(visibleFavorites)
-    val latestMoveFavorite = rememberUpdatedState(onMoveFavorite)
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -135,8 +134,12 @@ internal fun HomeScreen(
         }
     }
 
-    LaunchedEffect(preferences.showWeather, preferences.weatherUnit) {
-        if (!preferences.showWeather) return@LaunchedEffect
+    LaunchedEffect(preferences.showWeather, preferences.themeMode, preferences.weatherUnit) {
+        if (!preferences.showWeather && preferences.themeMode != "sun") {
+            weatherInfo = null
+            currentSolarInfoChange(null)
+            return@LaunchedEffect
+        }
         val hasLocation = ContextCompat.checkSelfPermission(
             context, Manifest.permission.ACCESS_COARSE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(
@@ -144,12 +147,14 @@ internal fun HomeScreen(
         ) == PackageManager.PERMISSION_GRANTED
         if (!hasLocation) {
             weatherInfo = null
-            weatherStatus = "Tap to allow location"
+            weatherStatus = if (preferences.showWeather) "Tap to allow location" else ""
+            currentSolarInfoChange(null)
         } else {
-            weatherStatus = "Loading weather…"
+            weatherStatus = if (preferences.showWeather) "Loading weather…" else ""
             val fetched = withContext(Dispatchers.IO) { fetchWeather(context, preferences.weatherUnit) }
             weatherInfo = fetched
-            weatherStatus = if (fetched == null) "Weather unavailable · tap to retry" else ""
+            currentSolarInfoChange(fetched)
+            weatherStatus = if (fetched == null && preferences.showWeather) "Weather unavailable · tap to retry" else ""
         }
     }
 
@@ -294,80 +299,49 @@ internal fun HomeScreen(
             }
         }
 
-        val activeMiniWidgets = preferences.showTasks ||
-            preferences.showCall || preferences.showMusic || preferences.showCalendarShortcut
-        if (activeMiniWidgets) {
-            Spacer(Modifier.height(7.dp))
-            if (preferences.showTasks) {
-                Text(
-                    "Tasks",
-                    color = primaryText,
-                    fontSize = 20.sp,
-                    lineHeight = 25.sp,
-                    fontFamily = fontFamily,
-                    modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenTasks)
-                        .padding(vertical = 3.dp)
-                )
-            }
-            if (preferences.showCall) {
-                Text(
-                    "Calls",
-                    color = primaryText,
-                    fontSize = 20.sp,
-                    lineHeight = 25.sp,
-                    fontFamily = fontFamily,
-                    modifier = Modifier.fillMaxWidth().clickable {
-                        runCatching { context.startActivity(Intent(Intent.ACTION_DIAL)) }
-                    }.padding(vertical = 3.dp)
-                )
-            }
-            if (preferences.showMusic) {
-                Text(
-                    "Music",
-                    color = primaryText,
-                    fontSize = 20.sp,
-                    lineHeight = 25.sp,
-                    fontFamily = fontFamily,
-                    modifier = Modifier.fillMaxWidth().clickable { openMusicPlayer(context, apps) }
-                        .padding(vertical = 3.dp)
-                )
-            }
-            if (preferences.showCalendarShortcut) {
-                Text(
-                    "Calendar",
-                    color = primaryText,
-                    fontSize = 20.sp,
-                    lineHeight = 25.sp,
-                    fontFamily = fontFamily,
-                    modifier = Modifier.fillMaxWidth().clickable { openCalendar(context) }
-                        .padding(vertical = 3.dp)
-                )
-            }
+        if (preferences.showCalendarShortcut) {
+            Spacer(Modifier.height(6.dp))
+            CalendarAgenda(preferences.timeFormat)
         }
 
+        val activeMainItemIds = buildList {
+            if (preferences.showTasks) add(HOME_ITEM_TASKS)
+            if (preferences.showCall) add(HOME_ITEM_CALLS)
+            if (preferences.showMusic) add(HOME_ITEM_MUSIC)
+            addAll(visibleFavorites.map { it.packageName })
+        }
+        val orderedMainItemIds = remember(activeMainItemIds, homeItemOrder) {
+            val existing = homeItemOrder.filter { it in activeMainItemIds }
+            (existing + activeMainItemIds.filterNot { it in existing }).distinct()
+        }
+        val latestOrderedMainItemIds = rememberUpdatedState(orderedMainItemIds)
+        val latestMoveHomeItem = rememberUpdatedState(onMoveHomeItem)
         Spacer(Modifier.height(8.dp))
-        Spacer(Modifier.height(4.dp))
-        if (visibleFavorites.isEmpty()) {
-            Spacer(Modifier.height(1.dp))
-        } else {
-            visibleFavorites.forEach { app ->
-                key(app.packageName) {
+        orderedMainItemIds.forEach { itemId ->
+            val app = favoriteAppsByPackage[itemId]
+            val label = when (itemId) {
+                HOME_ITEM_TASKS -> "Tasks"
+                HOME_ITEM_CALLS -> "Calls"
+                HOME_ITEM_MUSIC -> "Music"
+                else -> app?.label.orEmpty()
+            }
+            key(itemId) {
                 Row(
                     modifier = Modifier.fillMaxWidth()
-                        .alpha(if (draggingFavorite == app.packageName) 0.62f else 1f)
-                        .pointerInput(app.packageName) {
+                        .alpha(if (draggingMainItem == itemId) 0.62f else 1f)
+                        .pointerInput(itemId) {
                             detectDragGesturesAfterLongPress(
                                 onDragStart = {
-                                    draggingFavorite = app.packageName
+                                    draggingMainItem = itemId
                                     dragDistance = 0f
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 },
                                 onDragEnd = {
-                                    draggingFavorite = null
+                                    draggingMainItem = null
                                     dragDistance = 0f
                                 },
                                 onDragCancel = {
-                                    draggingFavorite = null
+                                    draggingMainItem = null
                                     dragDistance = 0f
                                 },
                                 onDrag = { change, dragAmount ->
@@ -375,12 +349,12 @@ internal fun HomeScreen(
                                     dragDistance += dragAmount.y
                                     val threshold = 28.dp.toPx()
                                     if (kotlin.math.abs(dragDistance) >= threshold) {
-                                        val order = latestVisibleFavorites.value.map { it.packageName }
-                                        val current = order.indexOf(app.packageName)
+                                        val order = latestOrderedMainItemIds.value
+                                        val current = order.indexOf(itemId)
                                         val direction = if (dragDistance > 0f) 1 else -1
                                         val target = order.getOrNull(current + direction)
                                         if (target != null) {
-                                            latestMoveFavorite.value(app.packageName, target)
+                                            latestMoveHomeItem.value(itemId, target)
                                             dragDistance -= direction * threshold
                                         } else {
                                             dragDistance = 0f
@@ -389,24 +363,33 @@ internal fun HomeScreen(
                                 }
                             )
                         }
-                        .clickable { onLaunch(app) }
+                        .clickable {
+                            when {
+                                app != null -> onLaunch(app)
+                                itemId == HOME_ITEM_TASKS -> onOpenTasks()
+                                itemId == HOME_ITEM_CALLS -> runCatching {
+                                    context.startActivity(Intent(Intent.ACTION_DIAL))
+                                }
+                                itemId == HOME_ITEM_MUSIC -> openMusicPlayer(context, apps)
+                            }
+                        }
                         .padding(vertical = 3.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (preferences.showAppIcons) {
+                    if (app != null && preferences.showAppIcons) {
                         AppIcon(app, preferences.iconPack, size = 17.dp)
                     }
                     Text(
-                        text = app.label,
+                        text = label,
                         color = primaryText,
                         fontSize = 20.sp,
                         lineHeight = 25.sp,
                         fontFamily = fontFamily,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f).padding(start = if (preferences.showAppIcons) 8.dp else 0.dp)
+                        modifier = Modifier.weight(1f)
+                            .padding(start = if (app != null && preferences.showAppIcons) 8.dp else 0.dp)
                     )
-                }
                 }
             }
         }

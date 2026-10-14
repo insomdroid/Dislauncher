@@ -31,6 +31,26 @@ jobs:
         with:
           gradle-version: "8.13"
 
+      - name: Download bundled open-source fonts
+        run: |
+          set -euo pipefail
+          FONT_REVISION="66928797f271fed5ee428544e7229685e2d90127"
+          mkdir -p app/src/main/res/font app/src/main/assets/fonts
+          curl --fail --location --retry 3 --silent --show-error \
+            "https://raw.githubusercontent.com/google/fonts/$FONT_REVISION/ofl/opensans/OpenSans%5Bwdth,wght%5D.ttf" \
+            --output app/src/main/res/font/open_sans_regular.ttf
+          curl --fail --location --retry 3 --silent --show-error \
+            "https://raw.githubusercontent.com/google/fonts/$FONT_REVISION/ofl/ralewaydots/RalewayDots-Regular.ttf" \
+            --output app/src/main/res/font/raleway_dots_regular.ttf
+          curl --fail --location --retry 3 --silent --show-error \
+            "https://raw.githubusercontent.com/google/fonts/$FONT_REVISION/ofl/opensans/OFL.txt" \
+            --output app/src/main/assets/fonts/OFL-OpenSans.txt
+          curl --fail --location --retry 3 --silent --show-error \
+            "https://raw.githubusercontent.com/google/fonts/$FONT_REVISION/ofl/ralewaydots/OFL.txt" \
+            --output app/src/main/assets/fonts/OFL-RalewayDots.txt
+          test -s app/src/main/res/font/open_sans_regular.ttf
+          test -s app/src/main/res/font/raleway_dots_regular.ttf
+
       - name: Build release APK (debug-signed for CI)
         run: gradle assembleRelease
 
