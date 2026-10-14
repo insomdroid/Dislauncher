@@ -198,7 +198,7 @@ internal fun AppsScreen(
                     }
                 }
             }
-
+        }
         if (preferences.showSearchBar) {
             Spacer(Modifier.height(10.dp))
             Column(Modifier.fillMaxWidth().padding(top = 3.dp)) {
