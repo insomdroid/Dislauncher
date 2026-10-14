@@ -205,10 +205,10 @@ internal fun AppsScreen(
 
             if (preferences.showCharacterScroll && scrubberLetters.isNotEmpty()) {
                 BoxWithConstraints(
-                    modifier = Modifier.align(Alignment.CenterEnd).width(22.dp).fillMaxHeight()
+                    modifier = Modifier.align(Alignment.CenterEnd).width(30.dp).fillMaxHeight()
                 ) {
                     Column(
-                        modifier = Modifier.width(22.dp)
+                        modifier = Modifier.width(30.dp)
                             .align(Alignment.CenterEnd)
                             .pointerInput(scrubberLetters, filtered) {
                                 awaitEachGesture {
@@ -255,7 +255,7 @@ internal fun AppsScreen(
                                 .coerceIn(0, scrubberLetters.lastIndex)
                             val waveDistance = kotlin.math.abs(index - selectedWaveIndex)
                             val waveTarget = if (isScrubbing) {
-                                (1f - waveDistance / 4f).coerceIn(0f, 1f)
+                                (1f - waveDistance / 4.5f).coerceIn(0f, 1f)
                             } else {
                                 0f
                             }
@@ -270,14 +270,14 @@ internal fun AppsScreen(
                             Text(
                                 letter,
                                 color = if (isScrubbing && letter == activeLetter) mainText else secondary,
-                                fontSize = 10.sp,
-                                lineHeight = 15.sp,
+                                fontSize = 13.sp,
+                                lineHeight = 19.sp,
                                 fontWeight = if (isScrubbing && letter == activeLetter) FontWeight.Bold else FontWeight.Normal,
                                 modifier = Modifier
-                                    .offset(x = (wave * 6f).dp)
+                                    .offset(x = (wave * 11f).dp)
                                     .graphicsLayer {
-                                        scaleX = 1f + wave * 0.18f
-                                        scaleY = 1f + wave * 0.08f
+                                        scaleX = 1f + wave * 0.45f
+                                        scaleY = 1f + wave * 0.32f
                                     }
                             )
                         }

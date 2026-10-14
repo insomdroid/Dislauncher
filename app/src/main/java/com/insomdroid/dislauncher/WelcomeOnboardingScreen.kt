@@ -78,6 +78,7 @@ internal fun WelcomeOnboardingScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     var page by remember { mutableStateOf(0) }
     var selectedFavorites by remember { mutableStateOf(favorites.toSet()) }
+    var useSelectedAsHomeApps by remember { mutableStateOf(true) }
     var permissionRefresh by remember { mutableStateOf(0) }
     val pageCount = 6
 
@@ -241,13 +242,33 @@ internal fun WelcomeOnboardingScreen(
                             )
                             Spacer(Modifier.height(8.dp))
                             Text(
-                                "They appear on Home for quick access. Select up to five apps; skip this step and Dislauncher will choose five installed apps for you.",
+                                "Choose which apps appear on Home by default, or let Dislauncher pick its default apps.",
                                 modifier = Modifier.fillMaxWidth(),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center
                             )
-                            Spacer(Modifier.height(10.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable { useSelectedAsHomeApps = !useSelectedAsHomeApps }
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = useSelectedAsHomeApps,
+                                    onCheckedChange = { useSelectedAsHomeApps = it }
+                                )
+                                Column(Modifier.weight(1f)) {
+                                    Text("Use selected apps as default Home apps", style = MaterialTheme.typography.titleSmall)
+                                    Text(
+                                        "Turn off to use Dislauncher's default app choices.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(4.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -452,7 +473,7 @@ internal fun WelcomeOnboardingScreen(
                         if (page < pageCount - 1) {
                             page++
                         } else {
-                            onFinish(selectedFavorites, false)
+                            onFinish(if (useSelectedAsHomeApps) selectedFavorites else null, !useSelectedAsHomeApps)
                         }
                     },
                     shape = MaterialTheme.shapes.extraLarge,
