@@ -281,7 +281,7 @@ internal fun AppsScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            if (app.packageName in favorites) "Hide from launcher" else "Hide from launcher",
+                            "Hide from launcher",
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
