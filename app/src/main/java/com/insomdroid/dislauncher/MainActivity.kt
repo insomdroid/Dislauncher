@@ -376,7 +376,9 @@ private fun DislauncherRoot() {
     }
 
     LaunchedEffect(pagerState.settledPage, screen) {
-        if (!BuildConfig.DEBUG || (screen != LauncherScreen.HOME && screen != LauncherScreen.APPS)) {
+        if ((context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) == 0 ||
+            (screen != LauncherScreen.HOME && screen != LauncherScreen.APPS)
+        ) {
             return@LaunchedEffect
         }
         repeat(3) { sample ->
