@@ -359,7 +359,6 @@ private fun openApplicationInfo(context: Context, app: LauncherApp) {
 private fun requestUninstall(context: Context, app: LauncherApp) {
     val intent = Intent(Intent.ACTION_UNINSTALL_PACKAGE).apply {
         data = Uri.parse("package:${app.packageName}")
-        putExtra(Intent.EXTRA_RETURN_RESULT, true)
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
     runCatching { context.startActivity(intent) }.onFailure {

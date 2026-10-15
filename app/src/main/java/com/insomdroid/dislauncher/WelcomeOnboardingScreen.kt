@@ -2,6 +2,7 @@ package com.insomdroid.dislauncher
 
 import android.Manifest
 import android.app.AppOpsManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -98,6 +99,7 @@ internal fun WelcomeOnboardingScreen(
         ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) ==
             PackageManager.PERMISSION_GRANTED
     val usageGranted = permissionRefresh >= 0 && hasUsageAccessForOnboarding(context)
+    val musicControlsGranted = permissionRefresh >= 0 && hasMusicNotificationAccess(context)
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -212,6 +214,15 @@ internal fun WelcomeOnboardingScreen(
                                 actionLabel = "Allow",
                                 onClick = { calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR) }
                             )
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+                            PermissionActionRow(
+                                title = "Music controls · Playback",
+                                description = "Allow notification access so the Home widget can show the current track and control playback.",
+                                granted = musicControlsGranted,
+                                actionLabel = "Open",
+                                onClick = { openSystemSettings(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS) }
+                            )
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
                             PermissionActionRow(
                                 title = "Usage access · Screen time",
@@ -547,4 +558,14 @@ private fun hasUsageAccessForOnboarding(context: Context): Boolean {
         )
     }.getOrDefault(AppOpsManager.MODE_DEFAULT)
     return mode == AppOpsManager.MODE_ALLOWED
+}
+
+
+private fun hasMusicNotificationAccess(context: Context): Boolean {
+    val component = ComponentName(context, DislauncherNotificationListener::class.java)
+    val enabledListeners = Settings.Secure.getString(
+        context.contentResolver,
+        "enabled_notification_listeners"
+    ).orEmpty()
+    return enabledListeners.split(':').any { ComponentName.unflattenFromString(it) == component }
 }
