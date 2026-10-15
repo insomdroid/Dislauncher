@@ -61,14 +61,15 @@ internal fun WeatherScreen(
     var loading by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { results ->
-        locationGranted = results.values.any { it } || hasWeatherLocationPermission(context)
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        locationGranted = granted || hasWeatherLocationPermission(context)
         if (!locationGranted) status = "Location permission was denied."
     }
 
     LaunchedEffect(weatherUnit, locationGranted, cachedWeather) {
         val matchingCache = cachedWeather?.let { convertWeatherUnit(it, weatherUnit) }
+            ?.takeIf { isWeatherCacheFresh(context) }
         if (matchingCache != null) {
             weather = matchingCache
             loading = false
@@ -81,8 +82,8 @@ internal fun WeatherScreen(
             loading = true
             status = "Getting weather…"
             val fetched = withContext(Dispatchers.IO) { fetchWeather(context, weatherUnit) }
-            weather = fetched
-            status = if (fetched == null) "Weather is unavailable. Check location and internet." else ""
+            weather = fetched ?: cachedWeather?.let { convertWeatherUnit(it, weatherUnit) }
+            status = if (fetched == null) "Weather is unavailable. Showing saved weather if available." else ""
             loading = false
             onWeatherChange(fetched)
         }
@@ -118,6 +119,14 @@ internal fun WeatherScreen(
                 modifier = Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = 46.dp)
             )
         }
+
+        Text(
+            "Dislauncher uses approximate location for local weather and sends the coordinates to Open-Meteo over HTTPS. Dislauncher does not save your coordinates; weather results are cached on this device.",
+            color = secondary,
+            style = MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp)
+        )
 
         if (currentWeather != null) {
             Spacer(Modifier.weight(1f))
@@ -176,12 +185,7 @@ internal fun WeatherScreen(
                 Spacer(Modifier.height(12.dp))
                 TextButton(
                     onClick = {
-                        permissionLauncher.launch(
-                            arrayOf(
-                                Manifest.permission.ACCESS_COARSE_LOCATION,
-                                Manifest.permission.ACCESS_FINE_LOCATION
-                            )
-                        )
+                        permissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
                     }
                 ) { Text("Allow location") }
             }

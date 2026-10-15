@@ -129,31 +129,31 @@ internal fun HomeScreen(
     var draggingMainItem by remember { mutableStateOf<String?>(null) }
     var dragDistance by remember { mutableFloatStateOf(0f) }
 
-    LaunchedEffect(isActive, hostResumed, preferences.showScreenTime) {
-        if (!isActive || !hostResumed) {
-            if (!preferences.showScreenTime) screenTimeMinutes = null
-            return@LaunchedEffect
-        }
+    LaunchedEffect(isActive, hostResumed) {
+        if (!isActive || !hostResumed) return@LaunchedEffect
 
         now = LocalTime.now()
         batteryPercent = readBatteryPercent(context)
         batteryCharging = readBatteryCharging(context)
-        screenTimeMinutes = if (preferences.showScreenTime) {
-            withContext(Dispatchers.IO) { readScreenTimeMinutes(context) }
-        } else {
-            null
-        }
 
         while (true) {
             delay(60_000L)
             now = LocalTime.now()
             batteryPercent = readBatteryPercent(context)
             batteryCharging = readBatteryCharging(context)
-            screenTimeMinutes = if (preferences.showScreenTime) {
-                withContext(Dispatchers.IO) { readScreenTimeMinutes(context) }
-            } else {
-                null
-            }
+        }
+    }
+
+    LaunchedEffect(isActive, hostResumed, preferences.showScreenTime) {
+        if (!isActive || !hostResumed || !preferences.showScreenTime) {
+            if (!preferences.showScreenTime) screenTimeMinutes = null
+            return@LaunchedEffect
+        }
+
+        screenTimeMinutes = withContext(Dispatchers.IO) { readScreenTimeMinutes(context) }
+        while (true) {
+            delay(5 * 60_000L)
+            screenTimeMinutes = withContext(Dispatchers.IO) { readScreenTimeMinutes(context) }
         }
     }
 
@@ -188,7 +188,7 @@ internal fun HomeScreen(
             currentSolarInfoChange(usableCache)
         } else {
             val matchingCache = usableCache?.takeIf {
-                it.temperature.endsWith("°${preferences.weatherUnit}")
+                it.temperature.endsWith("°${preferences.weatherUnit}") && isWeatherCacheFresh(context)
             }
             if (matchingCache != null) {
                 weatherInfo = matchingCache
@@ -196,10 +196,10 @@ internal fun HomeScreen(
                 currentSolarInfoChange(matchingCache)
                 return@LaunchedEffect
             }
-            weatherInfo = null
+            weatherInfo = usableCache
             weatherStatus = if (preferences.showWeather) "Loading weather…" else ""
             val fetched = withContext(Dispatchers.IO) { fetchWeather(context, preferences.weatherUnit) }
-            weatherInfo = fetched
+            weatherInfo = fetched ?: usableCache
             currentSolarInfoChange(fetched)
             weatherStatus = if (fetched == null && preferences.showWeather) "Weather unavailable · tap to retry" else ""
         }
@@ -277,8 +277,7 @@ internal fun HomeScreen(
 
 
         if (preferences.showWeather || preferences.showBattery || preferences.showScreenTime || preferences.showCalendarShortcut) {
-            Spacer(Modifier.height(0.dp))
-            Row(
+                        Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -359,8 +358,7 @@ internal fun HomeScreen(
         }
 
         if (preferences.showMusic) {
-            Spacer(Modifier.height(0.dp))
-            MusicPlayerWidget(
+                        MusicPlayerWidget(
                 modifier = Modifier.fillMaxWidth(),
                 onOpenMusicApp = { openMusicPlayer(context, apps) }
             )
