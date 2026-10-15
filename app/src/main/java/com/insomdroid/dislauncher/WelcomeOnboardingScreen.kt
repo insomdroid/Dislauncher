@@ -92,8 +92,6 @@ internal fun WelcomeOnboardingScreen(
 
     val locationGranted = permissionRefresh >= 0 && (
         ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
-            PackageManager.PERMISSION_GRANTED ||
-        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
             PackageManager.PERMISSION_GRANTED
     )
     val calendarGranted = permissionRefresh >= 0 &&
@@ -102,7 +100,7 @@ internal fun WelcomeOnboardingScreen(
     val usageGranted = permissionRefresh >= 0 && hasUsageAccessForOnboarding(context)
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
+        ActivityResultContracts.RequestPermission()
     ) { permissionRefresh++ }
     val calendarPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -202,10 +200,7 @@ internal fun WelcomeOnboardingScreen(
                                 actionLabel = "Allow",
                                 onClick = {
                                     locationPermissionLauncher.launch(
-                                        arrayOf(
-                                            Manifest.permission.ACCESS_COARSE_LOCATION,
-                                            Manifest.permission.ACCESS_FINE_LOCATION
-                                        )
+                                        Manifest.permission.ACCESS_COARSE_LOCATION
                                     )
                                 }
                             )

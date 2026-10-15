@@ -43,6 +43,15 @@ internal data class WeatherInfo(
 
 
 private const val WEATHER_CACHE_KEY = "cached_weather_info"
+private const val WEATHER_CACHE_TIMESTAMP_KEY = "cached_weather_timestamp"
+private const val WEATHER_CACHE_MAX_AGE_MS = 30 * 60 * 1000L
+
+internal fun isWeatherCacheFresh(context: Context): Boolean {
+    val savedAt = context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
+        .getLong(WEATHER_CACHE_TIMESTAMP_KEY, 0L)
+    val age = System.currentTimeMillis() - savedAt
+    return savedAt > 0L && age in 0..WEATHER_CACHE_MAX_AGE_MS
+}
 
 internal fun saveWeatherCache(context: Context, weather: WeatherInfo) {
     val json = JSONObject()
@@ -58,7 +67,10 @@ internal fun saveWeatherCache(context: Context, weather: WeatherInfo) {
         .put("sunset", weather.sunset?.toString() ?: JSONObject.NULL)
         .put("timezone", weather.timezone ?: JSONObject.NULL)
     context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
-        .edit().putString(WEATHER_CACHE_KEY, json.toString()).apply()
+        .edit()
+        .putString(WEATHER_CACHE_KEY, json.toString())
+        .putLong(WEATHER_CACHE_TIMESTAMP_KEY, System.currentTimeMillis())
+        .apply()
 }
 
 internal fun loadWeatherCache(context: Context, unit: String): WeatherInfo? = runCatching {
@@ -109,19 +121,20 @@ internal suspend fun fetchWeather(context: Context, unit: String): WeatherInfo? 
     val hasCoarse = ContextCompat.checkSelfPermission(
         context, Manifest.permission.ACCESS_COARSE_LOCATION
     ) == PackageManager.PERMISSION_GRANTED
-    val hasFine = ContextCompat.checkSelfPermission(
-        context, Manifest.permission.ACCESS_FINE_LOCATION
-    ) == PackageManager.PERMISSION_GRANTED
-    if (!hasCoarse && !hasFine) return null
+    if (!hasCoarse) return null
 
     val manager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return null
     val lastLocation = runCatching {
-        listOf(LocationManager.NETWORK_PROVIDER, LocationManager.GPS_PROVIDER)
-            .firstNotNullOfOrNull { provider ->
-                if (manager.isProviderEnabled(provider)) manager.getLastKnownLocation(provider) else null
-            }
-    }.getOrNull()?.takeIf { System.currentTimeMillis() - it.time < 30 * 60 * 1000L }
-    val location = lastLocation ?: requestLocation(manager, hasFine) ?: return null
+        if (manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+            manager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+        } else {
+            null
+        }
+    }.getOrNull()?.takeIf {
+        val age = System.currentTimeMillis() - it.time
+        age in 0..30 * 60 * 1000L
+    }
+    val location = lastLocation ?: requestApproximateLocation(manager) ?: return null
 
     return runCatching {
         val temperatureUnit = if (unit == "F") "fahrenheit" else "celsius"
@@ -178,16 +191,9 @@ internal suspend fun fetchWeather(context: Context, unit: String): WeatherInfo? 
     }.getOrNull()
 }
 
-private suspend fun requestLocation(manager: LocationManager, hasFine: Boolean): Location? {
-    val providers = buildList {
-        if (runCatching { manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER) }.getOrDefault(false)) {
-            add(LocationManager.NETWORK_PROVIDER)
-        }
-        if (hasFine && runCatching { manager.isProviderEnabled(LocationManager.GPS_PROVIDER) }.getOrDefault(false)) {
-            add(LocationManager.GPS_PROVIDER)
-        }
-    }
-    val provider = providers.firstOrNull() ?: return null
+private suspend fun requestApproximateLocation(manager: LocationManager): Location? {
+    val provider = LocationManager.NETWORK_PROVIDER
+    if (!runCatching { manager.isProviderEnabled(provider) }.getOrDefault(false)) return null
     return withTimeoutOrNull(12_000L) {
         suspendCancellableCoroutine<Location?> { continuation ->
             val listener = object : LocationListener {

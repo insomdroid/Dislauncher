@@ -10,6 +10,8 @@ import android.graphics.Typeface
 import android.net.Uri
 import android.content.pm.ApplicationInfo
 import android.os.Build
+import android.os.Debug
+import android.util.Log
 import android.provider.Settings
 import android.provider.OpenableColumns
 import androidx.activity.ComponentActivity
@@ -70,6 +72,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
@@ -369,6 +372,25 @@ private fun DislauncherRoot() {
         if (screen == LauncherScreen.HOME || screen == LauncherScreen.APPS) {
             val wantedPage = if (screen == LauncherScreen.HOME) 0 else 1
             if (pagerState.currentPage != wantedPage) pagerState.animateScrollToPage(wantedPage)
+        }
+    }
+
+    LaunchedEffect(pagerState.settledPage, screen) {
+        if (!BuildConfig.DEBUG || (screen != LauncherScreen.HOME && screen != LauncherScreen.APPS)) {
+            return@LaunchedEffect
+        }
+        repeat(3) { sample ->
+            delay(if (sample == 0) 250L else 500L)
+            val runtime = Runtime.getRuntime()
+            val javaUsedBytes = runtime.totalMemory() - runtime.freeMemory()
+            Log.d(
+                "DislauncherMemory",
+                "page=${if (pagerState.settledPage == 0) "HOME" else "APP_DRAWER"} " +
+                    "sample=${sample + 1}/3 javaUsedBytes=$javaUsedBytes " +
+                    "javaHeapMaxBytes=${runtime.maxMemory()} " +
+                    "nativeHeapAllocatedBytes=${Debug.getNativeHeapAllocatedSize()} " +
+                    "processPssKb=${Debug.getPss()}"
+            )
         }
     }
 
