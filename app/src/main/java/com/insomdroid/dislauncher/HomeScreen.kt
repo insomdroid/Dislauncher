@@ -179,8 +179,6 @@ internal fun HomeScreen(
         val usableCache = cachedWeather?.let { convertWeatherUnit(it, preferences.weatherUnit) }
         val hasLocation = ContextCompat.checkSelfPermission(
             context, Manifest.permission.ACCESS_COARSE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(
-            context, Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
         if (!hasLocation) {
             weatherInfo = usableCache
@@ -327,8 +325,6 @@ internal fun HomeScreen(
                         if (preferences.showWeather) {
                             val hasLocation = ContextCompat.checkSelfPermission(
                                 context, Manifest.permission.ACCESS_COARSE_LOCATION
-                            ) == PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(
-                                context, Manifest.permission.ACCESS_FINE_LOCATION
                             ) == PackageManager.PERMISSION_GRANTED
                             val weatherText = weatherInfo?.let {
                                 "${it.temperature} ${it.condition.lowercase(Locale.getDefault())}"
