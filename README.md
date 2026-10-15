@@ -1,69 +1,53 @@
 # Dislauncher
 
-A minimalist, text-first Android launcher designed to keep your home screen calm, clean, and focused.
+A minimalist, text-first Android launcher that keeps everyday essentials close and unnecessary clutter out of sight.
 
-## Home screen
+## Features
 
-- A simple clock and date with optional day and year progress indicators.
-- Keep favourite apps close at hand.
-- Add only the information and shortcuts you want: weather, battery, tasks, calls, music, calendar, and Settings.
-- Tap the clock to open your clock app or the date to open your calendar.
-- Choose a clean layout with adjustable widget visibility and spacing.
-- Weather readings are saved locally after a successful update, so the last reading can remain visible when location permission is disabled.
+### Home screen
+- A clean clock and date, with optional day and year progress indicators.
+- Up to five favourite apps, with controls to arrange Home items to fit your routine.
+- Optional weather, battery percentage, calendar agenda, music controls, task list, call shortcut, and Settings shortcut.
+- Weather details at a glance, including current conditions, feels-like temperature, daily high and low, humidity, and wind when available.
+- A saved weather reading can remain visible when a new update is unavailable or location access is turned off.
+- Tap the clock or date to open your clock or calendar app.
+- Choose Celsius or Fahrenheit and system, 12-hour, or 24-hour time.
 
-## App drawer
+### App drawer
+- Browse installed apps alphabetically, with a letter rail for quick navigation.
+- Search for apps by name.
+- Pin up to five favourites.
+- Long-press an app to rename it, hide it, open its app info, or request uninstall.
+- Hide individual apps or system apps.
+- Use compatible icon packs, or keep the system icons.
 
-- Browse apps in alphabetical order.
-- Quickly find apps with search.
-- Hide apps you don't want in your drawer, or hide system apps.
-- Pin favourites, rename apps, and access app information from app actions.
-- Personalize app icons with supported icon packs.
+### Personalization
+- Choose a system, light, or dark theme, with Android wallpaper-based accent colors where supported.
+- Dark mode uses a pure-black background.
+- Use the system font, a monospace font, or import your own TTF/OTF font.
+- Adjust font size and choose whether app icons appear.
+- Show or hide individual Home items, the status bar, and the app drawer search bar.
+- Double-tap an empty area of Home to lock the screen, or long-press empty space to open Settings.
+- Swipe between Home and the app drawer, or swipe down on Home to try to open notifications.
 
-## Make it yours
+## Why Dislauncher
 
-- Choose a font and adjust its size.
-- Switch between light, dark, system, and automatic sunrise/sunset themes.
-- Choose Celsius or Fahrenheit and your preferred time format.
-- Customize which Home screen elements and shortcuts are shown.
-- Reorder Home screen items to suit your routine.
+- **Keep Home uncluttered:** display only the widgets and shortcuts you actually use.
+- **See essentials quickly:** time, date, battery, weather, calendar events, tasks, and music controls can live on one screen.
+- **Make it personal:** tune the layout, text, icons, theme, and gestures to your preferences.
+- **Stay in control:** favourites, hidden apps, and optional widgets keep the launcher focused on your routine.
+- **Keep simple tasks nearby:** your task list is stored locally on your device.
 
-## Handy gestures
+## Permissions and special access
 
-- Swipe between Home and the app drawer.
-- Swipe down to open notifications.
-- Double-tap an empty area of Home to lock your screen.
-- Long-press an empty area of Home to open Settings.
+Dislauncher uses access only for the features described below. You can skip optional features that need their own access.
 
-## Launcher preferences
+- **Internet** (`INTERNET`) — retrieves weather data.
+- **Approximate location** (`ACCESS_COARSE_LOCATION`) — finds local weather. Dislauncher does not request precise location.
+- **Calendar** (`READ_CALENDAR`) — reads today's calendar events when the Home agenda is enabled.
+- **Notification access** — when enabled in Android Settings, lets the music widget show the active track and control playback.
+- **Device administrator** — optional; required only for the double-tap-to-lock gesture.
+- **Notification shade** (`EXPAND_STATUS_BAR`) — used for the swipe-down notification gesture. Android or the device manufacturer may restrict this action.
+- **Uninstall requests** (`REQUEST_DELETE_PACKAGES`) — lets you choose Uninstall from an app's long-press menu and continue through Android's confirmation screen.
 
-Settings are saved locally and let you configure:
-
-- Visibility of the clock, date, weather, battery, status bar, search bar, day/year progress, tasks, calls, music, calendar shortcut, and Settings shortcut.
-- Celsius or Fahrenheit, plus system, 12-hour, or 24-hour time formats.
-- App icons, compatible icon packs, font family, font size, and theme.
-- Placement of the year progress indicator near the clock.
-- Double-tap-to-lock, swipe-down notification gesture, automatic keyboard opening in search, and whether system apps are hidden.
-- Hidden apps and favourites, Android Settings, and the default Home app.
-
-## Permissions and limitations
-
-- **Weather:** Location permission and an internet connection are required to refresh weather. The most recent successful reading is saved locally and can remain visible if location permission is later disabled. Weather data comes from Open-Meteo. Android Geocoder is used on a best-effort basis to label the approximate location. Sunrise and sunset times from the weather response are used for the automatic solar theme.
-- **Calendar agenda:** If enabled, calendar access is required to show today's remaining events. Events can be opened in the system calendar.
-- **Music controls:** Media-session controls may require enabling Dislauncher in Android's notification-listener settings.
-- **Double-tap to lock:** Android requires you to explicitly enable Dislauncher as a device administrator.
-- **Swipe down for notifications:** This is best-effort. Android versions and device manufacturers may prevent third-party apps from expanding the system notification shade.
-- **Icon packs:** Only installed icon packs with compatible ADW/Nova-style `appfilter.xml` entries are supported. Otherwise, the system app icon is shown.
-- **Fonts:** Open Sans and Raleway Dots are bundled from the Google Fonts repository at a pinned revision, with their OFL license files included in the APK assets. Menlo falls back to Android's monospace family on devices without Menlo.
-
-## Build configuration
-
-GitHub Actions builds `app-release.apk`, verifies that the APK exists, and uploads the `dislauncher-release` artifact. The CI APK is signed with Android's debug key for installation and testing; it is not a production-signed release.
-
-- JDK 17
-- Gradle 8.13
-- Android Gradle Plugin 8.13.2
-- Kotlin 2.2.21
-- Compose BOM 2025.10.00
-- `compileSdk` 36 and `targetSdk` 36
-
-Dislauncher keeps the essentials within reach while letting you leave out the clutter.
+Dislauncher remains usable without location, calendar, notification, or device-admin access; only the related features are unavailable or limited.
