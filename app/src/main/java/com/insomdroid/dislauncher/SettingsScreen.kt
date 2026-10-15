@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,6 +53,10 @@ internal fun SettingsScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
+    var detectedIconPacks by remember { mutableStateOf(iconPacks) }
+    LaunchedEffect(context) {
+        detectedIconPacks = findIconPacks(context)
+    }
     var openDialog by remember { mutableStateOf("") }
     var showFontsDialog by remember { mutableStateOf(false) }
 
@@ -140,10 +145,13 @@ internal fun SettingsScreen(
                     ) { onPreferencesChange(preferences.copy(showAppIcons = it)) }
                     SettingAction(
                         "Icon pack",
-                        iconPacks.firstOrNull { it.packageName == preferences.iconPack }?.label
+                        detectedIconPacks.firstOrNull { it.packageName == preferences.iconPack }?.label
                             ?: if (preferences.iconPack == "system") "System default" else "Selected pack not installed",
                         "Choose",
-                        { openDialog = "iconpack" }
+                        {
+                            detectedIconPacks = findIconPacks(context)
+                            openDialog = "iconpack"
+                        }
                     )
                 }
             }
@@ -360,7 +368,7 @@ internal fun SettingsScreen(
                         onPreferencesChange(preferences.copy(iconPack = "system"))
                         openDialog = ""
                     }
-                    if (iconPacks.isEmpty()) {
+                    if (detectedIconPacks.isEmpty()) {
                         Text(
                             "No compatible installed icon pack was detected. Packs supporting ADW/Nova-style appfilter.xml are used.",
                             style = MaterialTheme.typography.bodySmall,
@@ -368,7 +376,7 @@ internal fun SettingsScreen(
                             modifier = Modifier.padding(vertical = 8.dp)
                         )
                     }
-                    iconPacks.forEach { pack ->
+                    detectedIconPacks.forEach { pack ->
                         IconPackChoice(pack.label, pack.packageName, preferences.iconPack) {
                             onPreferencesChange(preferences.copy(iconPack = pack.packageName))
                             openDialog = ""
