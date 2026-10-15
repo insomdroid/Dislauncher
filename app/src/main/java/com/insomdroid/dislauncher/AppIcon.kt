@@ -17,7 +17,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,6 +27,9 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.xmlpull.v1.XmlPullParser
+import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 internal data class IconPackInfo(val packageName: String, val label: String)
 
@@ -94,8 +98,16 @@ internal fun findIconPacks(context: Context): List<IconPackInfo> {
 @Composable
 internal fun AppIcon(app: LauncherApp, iconPack: String, size: Dp = 20.dp) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val image = remember(context, app.packageName, app.activityName, iconPack) {
-        drawableToBitmap(resolveAppDrawable(context, app, iconPack))?.asImageBitmap()
+    val image by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+        initialValue = null,
+        context,
+        app.packageName,
+        app.activityName,
+        iconPack
+    ) {
+        value = withContext(Dispatchers.IO) {
+            drawableToBitmap(resolveAppDrawable(context, app, iconPack))?.asImageBitmap()
+        }
     }
     Box(
         modifier = Modifier
@@ -121,46 +133,63 @@ internal fun AppIcon(app: LauncherApp, iconPack: String, size: Dp = 20.dp) {
         }
     }
 }
+// appfilter.xml can contain thousands of entries. Parse it once per pack.
+private val iconPackMappings = ConcurrentHashMap<String, Map<String, String>>()
+
+private fun loadIconPackMappings(context: Context, packageName: String): Map<String, String> {
+    return iconPackMappings.getOrPut(packageName) {
+        runCatching {
+            val resources = context.packageManager.getResourcesForApplication(packageName)
+            val xmlId = resources.getIdentifier("appfilter", "xml", packageName)
+            if (xmlId == 0) return@runCatching emptyMap()
+            val mappings = HashMap<String, String>()
+            val parser = resources.getXml(xmlId)
+            try {
+                var event = parser.eventType
+                while (event != XmlPullParser.END_DOCUMENT) {
+                    if (event == XmlPullParser.START_TAG && parser.name == "item") {
+                        val key = componentKey(parser.getAttributeValue(null, "component"))
+                        val drawable = parser.getAttributeValue(null, "drawable")
+                        if (key != null && !drawable.isNullOrBlank()) mappings.putIfAbsent(key, drawable)
+                    }
+                    event = parser.next()
+                }
+            } finally {
+                parser.close()
+            }
+            mappings
+        }.getOrDefault(emptyMap())
+    }
+}
+
 private fun resolveAppDrawable(context: Context, app: LauncherApp, iconPack: String): Drawable? {
     val pm = context.packageManager
     if (iconPack != "system") {
         val packed = runCatching {
+            val drawableName = loadIconPackMappings(context, iconPack)[appKey(app)]
             val resources = pm.getResourcesForApplication(iconPack)
-            val xmlId = resources.getIdentifier("appfilter", "xml", iconPack)
-            if (xmlId == 0) null else {
-                val parser = resources.getXml(xmlId)
-                var drawableName: String? = null
-                var event = parser.eventType
-                while (event != XmlPullParser.END_DOCUMENT && drawableName == null) {
-                    if (event == XmlPullParser.START_TAG && parser.name == "item") {
-                        val component = parser.getAttributeValue(null, "component")
-                        val drawable = parser.getAttributeValue(null, "drawable")
-                        if (componentMatches(component, app) && !drawable.isNullOrBlank()) drawableName = drawable
-                    }
-                    event = parser.next()
-                }
-                parser.close()
-                val drawableId = drawableName?.let { resources.getIdentifier(it, "drawable", iconPack) } ?: 0
-                if (drawableId != 0) resources.getDrawable(drawableId, context.theme) else null
-            }
+            val drawableId = drawableName?.let { resources.getIdentifier(it, "drawable", iconPack) } ?: 0
+            if (drawableId != 0) resources.getDrawable(drawableId, context.theme) else null
         }.getOrNull()
         if (packed != null) return packed
     }
     return runCatching { pm.getApplicationIcon(app.packageName) }.getOrNull()
 }
 
-private fun componentMatches(component: String?, app: LauncherApp): Boolean {
-    if (component.isNullOrBlank()) return false
+private fun componentKey(component: String?): String? {
+    if (component.isNullOrBlank()) return null
     val body = component.removePrefix("ComponentInfo{").removeSuffix("}")
     val parts = body.split("/", limit = 2)
-    if (parts.size != 2 || parts[0] != app.packageName) return false
+    if (parts.size != 2) return null
     val className = when {
         parts[1].startsWith(".") -> parts[0] + parts[1]
         !parts[1].contains(".") -> parts[0] + "." + parts[1]
         else -> parts[1]
     }
-    return className == app.activityName
+    return parts[0] + "/" + className
 }
+
+private fun appKey(app: LauncherApp): String = app.packageName + "/" + app.activityName
 
 private fun drawableToBitmap(drawable: Drawable?): Bitmap? {
     drawable ?: return null
