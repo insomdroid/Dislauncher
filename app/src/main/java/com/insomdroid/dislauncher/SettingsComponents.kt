@@ -114,6 +114,7 @@ internal fun ChoiceRow(
     }
 }
 
+@Suppress("UNUSED_PARAMETER")
 @Composable
 internal fun SettingsGroup(
     title: String,
@@ -138,17 +139,12 @@ internal fun SettingsGroup(
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Text(
-                subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(Modifier.height(2.dp))
             Column(content = content)
         }
     }
 }
 
+@Suppress("UNUSED_PARAMETER")
 @Composable
 internal fun SettingToggle(
     title: String,
@@ -168,14 +164,6 @@ internal fun SettingToggle(
             verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
             Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
-            Text(
-                description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = 16.sp,
-                maxLines = 2,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-            )
         }
         Switch(
             checked = checked,
@@ -192,6 +180,7 @@ internal fun SettingToggle(
     }
 }
 
+@Suppress("UNUSED_PARAMETER")
 @Composable
 internal fun SettingAction(
     title: String,
@@ -209,14 +198,6 @@ internal fun SettingAction(
             verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
             Text(title, style = MaterialTheme.typography.titleSmall)
-            Text(
-                description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = 16.sp,
-                maxLines = 2,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-            )
         }
         TextButton(onClick = onClick) { Text(actionLabel) }
     }

@@ -313,7 +313,7 @@ internal fun DislauncherRoot() {
     val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
     val isDark = when (preferences.themeMode) {
         "light" -> false
-        "dark" -> true
+        "dark", "black" -> true
         else -> systemDark
     }
     val visibleApps = remember(apps, preferences.hideSystemApps, hiddenApps) {

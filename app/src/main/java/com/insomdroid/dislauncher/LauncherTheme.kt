@@ -66,7 +66,7 @@ internal fun DislauncherTheme(
     } else {
         baseColorScheme
     }
-    val colorScheme = if (preferences.themeMode == "dark") {
+    val colorScheme = if (preferences.themeMode == "black") {
         textSafeDarkScheme.copy(
             background = Color.Black,
             surface = Color.Black,

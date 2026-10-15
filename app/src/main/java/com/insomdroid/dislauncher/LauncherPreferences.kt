@@ -67,7 +67,9 @@ internal data class LauncherPreferences(
         private fun normalizeThemeMode(value: String): String = when (value) {
             "light", "pale-silver", "middle-blue", "parchment", "blue-radiance" -> "light"
             "system", "sun" -> "system"
-            else -> "dark"
+            "dark" -> "dark"
+            "black" -> "black"
+            else -> "system"
         }
 
         private fun normalizeFontMode(value: String): String = when (value) {
@@ -76,6 +78,14 @@ internal data class LauncherPreferences(
         }
 
         fun load(p: SharedPreferences): LauncherPreferences {
+            if (p.getInt("theme_mode_version", 0) < 1) {
+                val previousTheme = p.getString("theme_mode", "system") ?: "system"
+                p.edit()
+                    .putString("theme_mode", if (previousTheme == "dark") "black" else previousTheme)
+                    .putInt("theme_mode_version", 1)
+                    .apply()
+            }
+
             if (p.getInt("music_default_migration_version", 0) < 1) {
                 p.edit()
                     .putBoolean("show_music", true)
