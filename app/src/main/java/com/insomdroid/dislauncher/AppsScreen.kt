@@ -206,7 +206,7 @@ internal fun AppsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = SettingsIcon,
+                            imageVector = Icons.Filled.SettingsIcon,
                             contentDescription = "Settings",
                             tint = mainText,
                             modifier = Modifier.size(20.dp)
