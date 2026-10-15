@@ -149,6 +149,7 @@ internal fun SettingsGroup(
     }
 }
 
+@Composable
 internal fun SettingToggle(
     title: String,
     description: String,
