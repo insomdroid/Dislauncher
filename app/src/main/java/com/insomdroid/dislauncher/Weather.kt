@@ -17,6 +17,7 @@ import java.net.URL
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.util.Locale
+import kotlin.math.roundToInt
 import kotlin.coroutines.resume
 
 internal data class WeatherInfo(
@@ -38,6 +39,70 @@ internal data class WeatherInfo(
             .filterNotNull().joinToString("   ")
         return listOfNotNull(locationName, conditions).joinToString(" · ")
     }
+}
+
+
+private const val WEATHER_CACHE_KEY = "cached_weather_info"
+
+internal fun saveWeatherCache(context: Context, weather: WeatherInfo) {
+    val json = JSONObject()
+        .put("temperature", weather.temperature)
+        .put("condition", weather.condition)
+        .put("humidity", weather.humidity ?: JSONObject.NULL)
+        .put("wind", weather.wind ?: JSONObject.NULL)
+        .put("feelsLike", weather.feelsLike ?: JSONObject.NULL)
+        .put("high", weather.high ?: JSONObject.NULL)
+        .put("low", weather.low ?: JSONObject.NULL)
+        .put("locationName", weather.locationName ?: JSONObject.NULL)
+        .put("sunrise", weather.sunrise?.toString() ?: JSONObject.NULL)
+        .put("sunset", weather.sunset?.toString() ?: JSONObject.NULL)
+        .put("timezone", weather.timezone ?: JSONObject.NULL)
+    context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
+        .edit().putString(WEATHER_CACHE_KEY, json.toString()).apply()
+}
+
+internal fun loadWeatherCache(context: Context, unit: String): WeatherInfo? = runCatching {
+    val raw = context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
+        .getString(WEATHER_CACHE_KEY, null) ?: return null
+    val json = JSONObject(raw)
+    fun optionalString(key: String) = json.optString(key).takeIf { it.isNotBlank() && it != "null" }
+    WeatherInfo(
+        temperature = json.getString("temperature"),
+        condition = json.optString("condition", "Weather"),
+        humidity = json.optInt("humidity", -1).takeIf { it >= 0 },
+        wind = optionalString("wind"),
+        feelsLike = optionalString("feelsLike"),
+        high = optionalString("high"),
+        low = optionalString("low"),
+        locationName = optionalString("locationName"),
+        sunrise = optionalString("sunrise")?.let { runCatching { LocalTime.parse(it) }.getOrNull() },
+        sunset = optionalString("sunset")?.let { runCatching { LocalTime.parse(it) }.getOrNull() },
+        timezone = optionalString("timezone")
+    ).let { convertWeatherUnit(it, unit) }
+}.getOrNull()
+
+internal fun convertWeatherUnit(weather: WeatherInfo, unit: String): WeatherInfo {
+    fun convert(value: String?): String? {
+        if (value == null) return null
+        val match = Regex("^(-?\\d+)°([CF])$").matchEntire(value) ?: return value
+        val number = match.groupValues[1].toIntOrNull() ?: return value
+        val sourceUnit = match.groupValues[2]
+        if (sourceUnit == unit) return value
+        val converted = if (sourceUnit == "C" && unit == "F") {
+            (number * 9.0 / 5.0 + 32.0).roundToInt()
+        } else if (sourceUnit == "F" && unit == "C") {
+            ((number - 32.0) * 5.0 / 9.0).roundToInt()
+        } else {
+            number
+        }
+        return "${converted}°$unit"
+    }
+    return weather.copy(
+        temperature = convert(weather.temperature) ?: weather.temperature,
+        feelsLike = convert(weather.feelsLike),
+        high = convert(weather.high),
+        low = convert(weather.low)
+    )
 }
 
 internal suspend fun fetchWeather(context: Context, unit: String): WeatherInfo? {

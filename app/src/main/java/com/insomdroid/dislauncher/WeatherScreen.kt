@@ -55,7 +55,7 @@ internal fun WeatherScreen(
     val secondary = MaterialTheme.colorScheme.onSurfaceVariant
     var locationGranted by remember { mutableStateOf(hasWeatherLocationPermission(context)) }
     var weather by remember {
-        mutableStateOf(cachedWeather?.takeIf { it.temperature.endsWith("°$weatherUnit") })
+        mutableStateOf(cachedWeather?.let { convertWeatherUnit(it, weatherUnit) })
     }
     var status by remember { mutableStateOf("Location permission is required.") }
     var loading by remember { mutableStateOf(false) }
@@ -68,7 +68,7 @@ internal fun WeatherScreen(
     }
 
     LaunchedEffect(weatherUnit, locationGranted, cachedWeather) {
-        val matchingCache = cachedWeather?.takeIf { it.temperature.endsWith("°$weatherUnit") }
+        val matchingCache = cachedWeather?.let { convertWeatherUnit(it, weatherUnit) }
         if (matchingCache != null) {
             weather = matchingCache
             loading = false

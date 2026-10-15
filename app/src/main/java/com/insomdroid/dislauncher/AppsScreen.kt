@@ -42,7 +42,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings as SettingsIcon
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -202,27 +205,12 @@ internal fun AppsScreen(
                             .padding(vertical = 10.dp, horizontal = 20.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Canvas(modifier = Modifier.size(20.dp)) {
-                            val lineStart = 1.5.dp.toPx()
-                            val lineEnd = size.width - 1.5.dp.toPx()
-                            val stroke = 1.4.dp.toPx()
-                            val knobRadius = 1.8.dp.toPx()
-                            val yPositions = listOf(size.height * 0.24f, size.height * 0.5f, size.height * 0.76f)
-                            val knobPositions = listOf(size.width * 0.36f, size.width * 0.68f, size.width * 0.43f)
-                            yPositions.forEachIndexed { index, y ->
-                                drawLine(
-                                    color = mainText,
-                                    start = Offset(lineStart, y),
-                                    end = Offset(lineEnd, y),
-                                    strokeWidth = stroke
-                                )
-                                drawCircle(
-                                    color = mainText,
-                                    radius = knobRadius,
-                                    center = Offset(knobPositions[index], y)
-                                )
-                            }
-                        }
+                        Icon(
+                            imageVector = SettingsIcon,
+                            contentDescription = "Settings",
+                            tint = mainText,
+                            modifier = Modifier.size(20.dp)
+                        )
                         Spacer(Modifier.width(12.dp))
                         Text(
                             "Dislauncher Settings",
