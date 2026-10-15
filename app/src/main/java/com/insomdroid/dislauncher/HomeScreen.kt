@@ -84,7 +84,6 @@ internal fun HomeScreen(
     isActive: Boolean,
     isDark: Boolean,
     fontFamily: FontFamily,
-    fontScale: Float,
     onLaunch: (LauncherApp) -> Unit,
     onMoveFavorite: (String, String) -> Unit,
     onOpenTasks: () -> Unit,
@@ -240,7 +239,7 @@ internal fun HomeScreen(
             )
         }
         if (preferences.showDate) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
             Text(
                 dateText,
                 color = secondaryText,
@@ -252,7 +251,7 @@ internal fun HomeScreen(
             )
         }
         if (preferences.showYearProgress || preferences.showDayProgress) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
             if (preferences.showYearProgress) {
                 ProgressLine(
                     label = "Year in progress",
@@ -261,11 +260,10 @@ internal fun HomeScreen(
                     secondaryText = secondaryText,
                     fill = primaryText,
                     track = if (isDark) Color(0xFF555555) else Color(0xFFD5D5D5),
-                    fontScale = fontScale
                 )
             }
             if (preferences.showDayProgress) {
-                if (preferences.showYearProgress) Spacer(Modifier.height(6.dp))
+                if (preferences.showYearProgress) Spacer(Modifier.height(4.dp))
                 ProgressLine(
                     label = "Day in progress",
                     percent = (now.toSecondOfDay() * 100f / 86400f).toInt(),
@@ -273,14 +271,13 @@ internal fun HomeScreen(
                     secondaryText = secondaryText,
                     fill = primaryText,
                     track = if (isDark) Color(0xFF555555) else Color(0xFFD5D5D5),
-                    fontScale = fontScale
                 )
             }
         }
 
 
         if (preferences.showWeather || preferences.showBattery || preferences.showScreenTime || preferences.showCalendarShortcut) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -362,7 +359,7 @@ internal fun HomeScreen(
         }
 
         if (preferences.showMusic) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
             MusicPlayerWidget(
                 modifier = Modifier.fillMaxWidth(),
                 onOpenMusicApp = { openMusicPlayer(context, apps) }
@@ -482,8 +479,7 @@ private fun ProgressLine(
     primaryText: Color,
     secondaryText: Color,
     fill: Color,
-    track: Color,
-    fontScale: Float
+    track: Color
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
