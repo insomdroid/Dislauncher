@@ -137,7 +137,7 @@ internal fun AppIcon(app: LauncherApp, iconPack: String, size: Dp = 20.dp) {
 private val iconPackMappings = ConcurrentHashMap<String, Map<String, String>>()
 
 private fun loadIconPackMappings(context: Context, packageName: String): Map<String, String> {
-    return iconPackMappings.getOrPut(packageName) {
+    return iconPackMappings.computeIfAbsent(packageName) {
         runCatching {
             val resources = context.packageManager.getResourcesForApplication(packageName)
             val xmlId = resources.getIdentifier("appfilter", "xml", packageName)
