@@ -121,7 +121,7 @@ internal fun WeatherScreen(
         }
 
         Text(
-            "Dislauncher uses approximate location for local weather and sends the coordinates to Open-Meteo over HTTPS. Dislauncher does not save your coordinates; weather results are cached on this device.",
+            "Dislauncher uses approximate location for local weather and sends coordinates to Open-Meteo over HTTPS. Android's geocoding service may also be used to resolve the area name. Dislauncher does not save your coordinates; weather results are cached on this device.",
             color = secondary,
             style = MaterialTheme.typography.bodySmall,
             textAlign = TextAlign.Center,
