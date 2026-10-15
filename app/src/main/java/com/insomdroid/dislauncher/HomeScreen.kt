@@ -369,7 +369,7 @@ internal fun HomeScreen(
         }
         val latestOrderedMainItemIds = rememberUpdatedState(orderedMainItemIds)
         val latestMoveHomeItem = rememberUpdatedState(onMoveHomeItem)
-        Spacer(Modifier.height(240.dp))
+        Spacer(Modifier.height(220.dp))
         orderedMainItemIds.forEach { itemId ->
             val app = favoriteAppsByPackage[itemId]
             val label = when (itemId) {
