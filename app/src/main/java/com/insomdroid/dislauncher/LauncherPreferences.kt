@@ -76,6 +76,13 @@ internal data class LauncherPreferences(
         }
 
         fun load(p: SharedPreferences): LauncherPreferences {
+            if (p.getInt("music_default_migration_version", 0) < 1) {
+                p.edit()
+                    .putBoolean("show_music", true)
+                    .putInt("music_default_migration_version", 1)
+                    .apply()
+            }
+
             // Default to both day and year progress after merging the old pin option.
             if (p.getInt("home_layout_version", 0) < 2) {
                 p.edit()
