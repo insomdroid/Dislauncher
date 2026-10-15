@@ -95,7 +95,6 @@ internal fun AppsScreen(
     isDark: Boolean,
     isActive: Boolean,
     fontFamily: FontFamily,
-    fontScale: Float,
     onLaunch: (LauncherApp) -> Unit,
     onToggleFavorite: (String) -> Unit,
     onToggleHidden: (String) -> Unit,
@@ -180,8 +179,8 @@ internal fun AppsScreen(
                         Text(
                             app.label,
                             color = mainText,
-                            fontSize = 25.sp * fontScale,
-                            lineHeight = 32.sp * fontScale,
+                            fontSize = 25.sp,
+                            lineHeight = 32.sp,
                             fontFamily = fontFamily,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -215,8 +214,8 @@ internal fun AppsScreen(
                         Text(
                             "Dislauncher Settings",
                             color = mainText,
-                            fontSize = 20.sp * fontScale,
-                            lineHeight = 26.sp * fontScale,
+                            fontSize = 20.sp,
+                            lineHeight = 26.sp,
                             fontFamily = fontFamily,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -237,7 +236,7 @@ internal fun AppsScreen(
                             "Search Apps",
                             color = searchColor,
                             style = MaterialTheme.typography.bodyLarge,
-                            fontSize = 15.sp * fontScale
+                            fontSize = 15.sp
                         )
                     }
                     BasicTextField(
@@ -248,7 +247,7 @@ internal fun AppsScreen(
                         textStyle = MaterialTheme.typography.bodyLarge.copy(
                             color = mainText,
                             fontFamily = fontFamily,
-                            fontSize = 15.sp * fontScale
+                            fontSize = 15.sp
                         ),
                         cursorBrush = SolidColor(mainText)
                     )

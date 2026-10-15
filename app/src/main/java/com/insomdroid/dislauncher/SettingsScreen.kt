@@ -369,7 +369,7 @@ internal fun SettingsScreen(
                         Column(Modifier.weight(1f)) {
                             Text("Choose .ttf / .otf file")
                             Text(
-                                preferences.customFontName ?: "Maximum 10 MB",
+                                preferences.customFontName ?: "Maximum 5 MB",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

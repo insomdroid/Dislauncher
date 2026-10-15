@@ -189,7 +189,7 @@ private fun DislauncherRoot() {
                 if (selectedFontName == null) {
                     android.widget.Toast.makeText(
                         context,
-                        "Invalid font. Choose a valid .ttf or .otf file up to 10 MB.",
+                        "Invalid font. Choose a valid .ttf or .otf file up to 5 MB.",
                         android.widget.Toast.LENGTH_LONG
                     ).show()
                 } else {
@@ -452,7 +452,7 @@ private fun DislauncherRoot() {
             "custom" -> {
                 val fontFile = listOf("ttf", "otf")
                     .map { File(context.filesDir, "fonts/custom-font.$it") }
-                    .firstOrNull { it.isFile && it.length() in 12L..(10L * 1024L * 1024L) }
+                    .firstOrNull { it.isFile && it.length() in 12L..MAX_CUSTOM_FONT_BYTES.toLong() }
                 fontFile?.let { file ->
                     runCatching { FontFamily(Typeface.createFromFile(file)) }.getOrNull()
                 } ?: FontFamily.Default
@@ -622,7 +622,6 @@ private fun DislauncherRoot() {
                             isActive = page == pagerState.currentPage,
                             isDark = isDark,
                             fontFamily = fontFamily,
-                            fontScale = fontScale,
                             onLaunch = { launchApp(context, it) },
                             onMoveFavorite = ::moveFavorite,
                             onOpenTasks = { screen = LauncherScreen.TASKS },
@@ -649,7 +648,6 @@ private fun DislauncherRoot() {
                             isDark = isDark,
                             isActive = page == pagerState.currentPage,
                             fontFamily = fontFamily,
-                            fontScale = fontScale,
                             onLaunch = { launchApp(context, it) },
                             onToggleFavorite = ::toggleFavorite,
                             onToggleHidden = ::toggleHidden,
@@ -664,7 +662,7 @@ private fun DislauncherRoot() {
     }
 }
 
-private const val MAX_CUSTOM_FONT_BYTES = 10 * 1024 * 1024
+private const val MAX_CUSTOM_FONT_BYTES = 5 * 1024 * 1024
 
 private fun importUserCustomFont(context: Context, uri: Uri): String {
     val resolver = context.contentResolver
@@ -701,7 +699,7 @@ private fun importUserCustomFont(context: Context, uri: Uri): String {
                     if (count < 0) break
                     if (count == 0) continue
                     if (totalBytes + count > MAX_CUSTOM_FONT_BYTES.toLong()) {
-                        throw IllegalArgumentException("Font files must be 10 MB or smaller.")
+                        throw IllegalArgumentException("Font files must be 5 MB or smaller.")
                     }
                     val headerPart = minOf(count, header.size - headerCount)
                     if (headerPart > 0) {
