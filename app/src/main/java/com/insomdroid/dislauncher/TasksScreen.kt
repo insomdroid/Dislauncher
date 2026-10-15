@@ -185,7 +185,7 @@ internal fun TasksScreen(
                     onValueChange = { draft = it },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    textStyle = TextStyle(color = primary, fontSize = 16.sp, lineHeight = 24.sp),
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = primary, fontSize = 16.sp, lineHeight = 24.sp),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(
                         onDone = {
