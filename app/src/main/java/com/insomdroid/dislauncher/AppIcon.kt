@@ -117,9 +117,10 @@ internal fun AppIcon(app: LauncherApp, iconPack: String, size: Dp = 20.dp) {
             .padding(size * 0.10f),
         contentAlignment = Alignment.Center
     ) {
-        if (image != null) {
+        val loadedImage = image
+        if (loadedImage != null) {
             Image(
-                bitmap = image,
+                bitmap = loadedImage,
                 contentDescription = app.label,
                 modifier = Modifier.fillMaxSize()
             )
