@@ -3,7 +3,6 @@ package com.insomdroid.dislauncher
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.provider.Settings
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -34,7 +33,6 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -57,7 +55,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.LocalTime
@@ -91,14 +88,12 @@ internal fun HomeScreen(
     val currentOpenSettings by rememberUpdatedState(onOpenSettings)
     val currentLockScreen by rememberUpdatedState(onDoubleTapToLock)
     val currentSolarInfoChange by rememberUpdatedState(onSolarInfoChange)
-    val coroutineScope = rememberCoroutineScope()
     var hostResumed by remember(lifecycleOwner) {
         mutableStateOf(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
     }
     var now by remember { mutableStateOf(LocalTime.now()) }
     var batteryPercent by remember { mutableStateOf(readBatteryPercent(context)) }
     var batteryCharging by remember { mutableStateOf(readBatteryCharging(context)) }
-    var screenTimeMinutes by remember { mutableStateOf<Long?>(null) }
     var weatherInfo by remember { mutableStateOf(cachedWeather) }
     var weatherStatus by remember { mutableStateOf("Tap to allow location") }
     val today = LocalDate.now()
@@ -132,19 +127,6 @@ internal fun HomeScreen(
             now = LocalTime.now()
             batteryPercent = readBatteryPercent(context)
             batteryCharging = readBatteryCharging(context)
-        }
-    }
-
-    LaunchedEffect(isActive, hostResumed, preferences.showScreenTime) {
-        if (!isActive || !hostResumed || !preferences.showScreenTime) {
-            if (!preferences.showScreenTime) screenTimeMinutes = null
-            return@LaunchedEffect
-        }
-
-        screenTimeMinutes = withContext(Dispatchers.IO) { readScreenTimeMinutes(context) }
-        while (true) {
-            delay(5 * 60_000L)
-            screenTimeMinutes = withContext(Dispatchers.IO) { readScreenTimeMinutes(context) }
         }
     }
 
@@ -226,7 +208,7 @@ internal fun HomeScreen(
             onOpenCalendar = { openCalendar(context) }
         )
 
-        if (preferences.showWeather || preferences.showBattery || preferences.showScreenTime || preferences.showCalendarShortcut) {
+        if (preferences.showWeather || preferences.showBattery || preferences.showCalendarShortcut) {
                         Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -238,34 +220,6 @@ internal fun HomeScreen(
                         color = primaryText,
                         fontSize = 12.sp,
                         maxLines = 1
-                    )
-                }
-                if (preferences.showScreenTime) {
-                    val screenText = screenTimeMinutes?.let { formatMinutes(it) } ?: "SCREEN TIME"
-                    Text(
-                        screenText,
-                        color = primaryText,
-                        fontSize = 12.sp,
-                        maxLines = 1,
-                        modifier = Modifier.clickable {
-                            if (!hasUsageStatsAccess(context)) {
-                                runCatching {
-                                    context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
-                                }
-                            } else {
-                                coroutineScope.launch {
-                                    val refreshed = withContext(Dispatchers.IO) {
-                                        readScreenTimeMinutes(context)
-                                    }
-                                    screenTimeMinutes = refreshed
-                                    if (refreshed == null) {
-                                        runCatching {
-                                            context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
-                                        }
-                                    }
-                                }
-                            }
-                        }
                     )
                 }
                 if (preferences.showWeather || preferences.showCalendarShortcut) {
