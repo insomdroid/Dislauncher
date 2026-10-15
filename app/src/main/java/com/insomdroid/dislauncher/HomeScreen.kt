@@ -2,15 +2,9 @@ package com.insomdroid.dislauncher
 
 import android.Manifest
 import android.content.Intent
-import android.content.IntentFilter
-import android.app.AppOpsManager
-import android.app.usage.UsageStatsManager
-import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Process
 import android.provider.Settings
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -47,7 +41,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -219,58 +212,19 @@ internal fun HomeScreen(
             .padding(horizontal = 26.dp, vertical = 6.dp),
         verticalArrangement = Arrangement.Top
     ) {
-        if (preferences.showClock) {
-            Text(
-                timeText,
-                color = primaryText,
-                fontSize = 30.sp,
-                lineHeight = 36.sp,
-                letterSpacing = (-0.6).sp,
-                fontWeight = FontWeight.Light,
-                fontFamily = fontFamily,
-                maxLines = 1,
-                softWrap = false,
-                modifier = Modifier.clip(RoundedCornerShape(5.dp))
-                    .clickable { openClock(context) }
-            )
-        }
-        if (preferences.showDate) {
-            Spacer(Modifier.height(4.dp))
-            Text(
-                dateText,
-                color = secondaryText,
-                fontSize = 14.sp,
-                fontFamily = fontFamily,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.clip(RoundedCornerShape(5.dp)).clickable { openCalendar(context) }
-            )
-        }
-        if (preferences.showYearProgress || preferences.showDayProgress) {
-            Spacer(Modifier.height(5.dp))
-            if (preferences.showYearProgress) {
-                ProgressLine(
-                    label = "Year in progress",
-                    percent = (today.dayOfYear * 100f / today.lengthOfYear()).toInt(),
-                    primaryText = primaryText,
-                    secondaryText = secondaryText,
-                    fill = primaryText,
-                    track = if (isDark) Color(0xFF555555) else Color(0xFFD5D5D5),
-                )
-            }
-            if (preferences.showDayProgress) {
-                if (preferences.showYearProgress) Spacer(Modifier.height(2.dp))
-                ProgressLine(
-                    label = "Day in progress",
-                    percent = (now.toSecondOfDay() * 100f / 86400f).toInt(),
-                    primaryText = primaryText,
-                    secondaryText = secondaryText,
-                    fill = primaryText,
-                    track = if (isDark) Color(0xFF555555) else Color(0xFFD5D5D5),
-                )
-            }
-        }
-
+        HomeHeader(
+            preferences = preferences,
+            timeText = timeText,
+            dateText = dateText,
+            today = today,
+            now = now,
+            isDark = isDark,
+            fontFamily = fontFamily,
+            primaryText = primaryText,
+            secondaryText = secondaryText,
+            onOpenClock = { openClock(context) },
+            onOpenCalendar = { openCalendar(context) }
+        )
 
         if (preferences.showWeather || preferences.showBattery || preferences.showScreenTime || preferences.showCalendarShortcut) {
                         Row(
@@ -464,98 +418,3 @@ internal fun HomeScreen(
 
 }
 
-@Composable
-private fun ProgressLine(
-    label: String,
-    percent: Int,
-    primaryText: Color,
-    secondaryText: Color,
-    fill: Color,
-    track: Color
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(3.dp)
-    ) {
-        Text(
-            "$label $percent%",
-            color = primaryText,
-            fontSize = 14.sp,
-            lineHeight = 18.sp,
-            fontWeight = FontWeight.Normal
-        )
-        Canvas(
-            modifier = Modifier.fillMaxWidth(0.36f).height(13.dp)
-        ) {
-            val stepX = 4.dp.toPx()
-            val stepY = 4.dp.toPx()
-            val radius = 1.1.dp.toPx()
-            val columns = (size.width / stepX).toInt().coerceAtLeast(1)
-            val rows = (size.height / stepY).toInt().coerceAtLeast(1)
-            for (row in 0..rows) {
-                for (column in 0..columns) {
-                    val x = column * stepX + radius
-                    val y = row * stepY + radius
-                    if (x <= size.width && y <= size.height) {
-                        val color = if (x / size.width * 100f <= percent.coerceIn(0, 100)) {
-                            fill
-                        } else {
-                            track.copy(alpha = 0.85f)
-                        }
-                        drawCircle(color = color, radius = radius, center = Offset(x, y))
-                    }
-                }
-            }
-        }
-    }
-}
-
-private fun readBatteryCharging(context: Context): Boolean {
-    val intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)) ?: return false
-    return intent.getIntExtra("plugged", 0) != 0
-}
-
-private fun formatHomeDate(date: LocalDate): String {
-    val locale = Locale.getDefault()
-    if (locale.language != "en") {
-        return date.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", locale))
-    }
-    val day = date.dayOfMonth
-    val suffix = when {
-        day % 100 in 11..13 -> "th"
-        day % 10 == 1 -> "st"
-        day % 10 == 2 -> "nd"
-        day % 10 == 3 -> "rd"
-        else -> "th"
-    }
-    return date.format(DateTimeFormatter.ofPattern("EEEE, ", locale)) +
-        day + suffix + date.format(DateTimeFormatter.ofPattern(" MMMM", locale))
-}
-
-private fun hasUsageStatsAccess(context: Context): Boolean {
-    val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager ?: return false
-    val mode = runCatching {
-        appOps.checkOpNoThrow(
-            AppOpsManager.OPSTR_GET_USAGE_STATS,
-            Process.myUid(),
-            context.packageName
-        )
-    }.getOrDefault(AppOpsManager.MODE_DEFAULT)
-    return mode == AppOpsManager.MODE_ALLOWED
-}
-
-private fun readScreenTimeMinutes(context: Context): Long? {
-    if (!hasUsageStatsAccess(context)) return null
-    val manager = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager ?: return null
-    val start = LocalDate.now().atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
-    val end = System.currentTimeMillis()
-    val usage = runCatching { manager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, start, end) }
-        .getOrNull() ?: return null
-    return usage.sumOf { it.totalTimeInForeground } / 60_000L
-}
-
-private fun formatMinutes(minutes: Long): String {
-    val hours = minutes / 60
-    val remaining = minutes % 60
-    return if (hours > 0) "${hours}h ${remaining}m" else "${remaining}m"
-}
