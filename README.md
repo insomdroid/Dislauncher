@@ -6,7 +6,7 @@ A minimalist, text-first Android launcher designed to keep your home screen calm
 
 - A simple clock and date with optional day and year progress indicators.
 - Keep favourite apps close at hand.
-- Add only the information and shortcuts you want: weather, battery, screen time, tasks, calls, music, calendar, and Settings.
+- Add only the information and shortcuts you want: weather, battery, tasks, calls, music, calendar, and Settings.
 - Tap the clock to open your clock app or the date to open your calendar.
 - Choose a clean layout with adjustable widget visibility and spacing.
 - Weather readings are saved locally after a successful update, so the last reading can remain visible when location permission is disabled.
@@ -38,7 +38,7 @@ A minimalist, text-first Android launcher designed to keep your home screen calm
 
 Settings are saved locally and let you configure:
 
-- Visibility of the clock, date, weather, battery, status bar, search bar, day/year progress, screen time, tasks, calls, music, calendar shortcut, and Settings shortcut.
+- Visibility of the clock, date, weather, battery, status bar, search bar, day/year progress, tasks, calls, music, calendar shortcut, and Settings shortcut.
 - Celsius or Fahrenheit, plus system, 12-hour, or 24-hour time formats.
 - App icons, compatible icon packs, font family, font size, and theme.
 - Placement of the year progress indicator near the clock.
@@ -50,7 +50,6 @@ Settings are saved locally and let you configure:
 - **Weather:** Location permission and an internet connection are required to refresh weather. The most recent successful reading is saved locally and can remain visible if location permission is later disabled. Weather data comes from Open-Meteo. Android Geocoder is used on a best-effort basis to label the approximate location. Sunrise and sunset times from the weather response are used for the automatic solar theme.
 - **Calendar agenda:** If enabled, calendar access is required to show today's remaining events. Events can be opened in the system calendar.
 - **Music controls:** Media-session controls may require enabling Dislauncher in Android's notification-listener settings.
-- **Screen time:** Android's Usage Access permission must be granted in system settings.
 - **Double-tap to lock:** Android requires you to explicitly enable Dislauncher as a device administrator.
 - **Swipe down for notifications:** This is best-effort. Android versions and device manufacturers may prevent third-party apps from expanding the system notification shade.
 - **Icon packs:** Only installed icon packs with compatible ADW/Nova-style `appfilter.xml` entries are supported. Otherwise, the system app icon is shown.
