@@ -360,25 +360,9 @@ internal fun SettingsScreen(
                         onPreferencesChange(preferences.copy(iconPack = "system"))
                         openDialog = ""
                     }
-                    IconPackChoice("Dot", "builtin:dot", preferences.iconPack) {
-                        onPreferencesChange(preferences.copy(iconPack = "builtin:dot"))
-                        openDialog = ""
-                    }
-                    IconPackChoice("Chevron", "builtin:chevron", preferences.iconPack) {
-                        onPreferencesChange(preferences.copy(iconPack = "builtin:chevron"))
-                        openDialog = ""
-                    }
-                    IconPackChoice("Box", "builtin:box", preferences.iconPack) {
-                        onPreferencesChange(preferences.copy(iconPack = "builtin:box"))
-                        openDialog = ""
-                    }
-                    IconPackChoice("Circle", "builtin:circle", preferences.iconPack) {
-                        onPreferencesChange(preferences.copy(iconPack = "builtin:circle"))
-                        openDialog = ""
-                    }
                     if (iconPacks.isEmpty()) {
                         Text(
-                            "No other installed icon packs were found.",
+                            "No compatible installed icon pack was detected. Packs supporting ADW/Nova-style appfilter.xml are used.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(vertical = 8.dp)

@@ -19,7 +19,7 @@ A minimalist, text-first Android launcher that keeps everyday essentials close a
 - Pin up to five favourites.
 - Long-press an app to rename it, hide it, open its app info, or request uninstall.
 - Hide individual apps or system apps.
-- Choose the system icons, a compatible installed icon pack, or one of four built-in symbol styles: Dot, Chevron, Box, and Circle.
+- Use compatible installed icon packs, or keep the system icons.
 
 ### Personalization
 - Choose a system, light, or dark theme, with Android wallpaper-based accent colors where supported.
