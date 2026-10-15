@@ -112,7 +112,7 @@ internal fun WeatherScreen(
         if (currentWeather != null) {
             Spacer(Modifier.weight(1f))
             Text(
-                currentWeather.locationName,
+                currentWeather.locationName ?: "Weather",
                 color = secondary,
                 fontSize = 20.sp,
                 lineHeight = 26.sp,
