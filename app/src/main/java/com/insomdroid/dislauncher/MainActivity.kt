@@ -149,8 +149,9 @@ private fun DislauncherRoot() {
         }
     }
     var appNameOverrides by remember { mutableStateOf(readAppNameOverrides(prefsStore)) }
-    var solarWeather by remember { mutableStateOf<WeatherInfo?>(null) }
-    var weatherForScreen by remember { mutableStateOf<WeatherInfo?>(null) }
+    val initialWeatherCache = remember { loadWeatherCache(context, preferences.weatherUnit) }
+    var solarWeather by remember { mutableStateOf<WeatherInfo?>(initialWeatherCache) }
+    var weatherForScreen by remember { mutableStateOf<WeatherInfo?>(initialWeatherCache) }
     var homeItemOrder by remember { mutableStateOf(readHomeItemOrder(prefsStore, favorites)) }
     var hiddenApps by remember {
         mutableStateOf(prefsStore.getStringSet("hidden_packages", emptySet())?.toSet().orEmpty())
@@ -552,8 +553,12 @@ private fun DislauncherRoot() {
                 weatherUnit = preferences.weatherUnit,
                 cachedWeather = weatherForScreen ?: solarWeather,
                 onWeatherChange = { updated ->
-                    solarWeather = updated
-                    weatherForScreen = updated
+                    if (updated != null) {
+                        val normalized = convertWeatherUnit(updated, preferences.weatherUnit)
+                        solarWeather = normalized
+                        weatherForScreen = normalized
+                        saveWeatherCache(context, normalized)
+                    }
                 },
                 onBack = { screen = LauncherScreen.HOME }
             )
@@ -626,7 +631,13 @@ private fun DislauncherRoot() {
                             onDoubleTapToLock = { lockDevice(context, adminComponent, devicePolicyManager) },
                             homeItemOrder = homeItemOrder,
                             onMoveHomeItem = ::moveHomeItem,
-                            onSolarInfoChange = { solarWeather = it }
+                            onSolarInfoChange = { updated ->
+                                if (updated != null) {
+                                    val normalized = convertWeatherUnit(updated, preferences.weatherUnit)
+                                    solarWeather = normalized
+                                    saveWeatherCache(context, normalized)
+                                }
+                            }
                         )
                     } else {
                         AppsScreen(

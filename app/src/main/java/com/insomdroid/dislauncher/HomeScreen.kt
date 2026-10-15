@@ -177,17 +177,18 @@ internal fun HomeScreen(
             currentSolarInfoChange(null)
             return@LaunchedEffect
         }
+        val usableCache = cachedWeather?.let { convertWeatherUnit(it, preferences.weatherUnit) }
         val hasLocation = ContextCompat.checkSelfPermission(
             context, Manifest.permission.ACCESS_COARSE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(
             context, Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
         if (!hasLocation) {
-            weatherInfo = cachedWeather
-            weatherStatus = if (cachedWeather == null && preferences.showWeather) "Tap to allow location" else ""
-            currentSolarInfoChange(cachedWeather)
+            weatherInfo = usableCache
+            weatherStatus = if (usableCache == null && preferences.showWeather) "Tap to allow location" else ""
+            currentSolarInfoChange(usableCache)
         } else {
-            val matchingCache = cachedWeather?.takeIf {
+            val matchingCache = usableCache?.takeIf {
                 it.temperature.endsWith("°${preferences.weatherUnit}")
             }
             if (matchingCache != null) {
@@ -239,7 +240,7 @@ internal fun HomeScreen(
             )
         }
         if (preferences.showDate) {
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(8.dp))
             Text(
                 dateText,
                 color = secondaryText,
@@ -251,7 +252,7 @@ internal fun HomeScreen(
             )
         }
         if (preferences.showYearProgress || preferences.showDayProgress) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
             if (preferences.showYearProgress) {
                 ProgressLine(
                     label = "Year in progress",
@@ -264,7 +265,7 @@ internal fun HomeScreen(
                 )
             }
             if (preferences.showDayProgress) {
-                if (preferences.showYearProgress) Spacer(Modifier.height(4.dp))
+                if (preferences.showYearProgress) Spacer(Modifier.height(6.dp))
                 ProgressLine(
                     label = "Day in progress",
                     percent = (now.toSecondOfDay() * 100f / 86400f).toInt(),
@@ -279,7 +280,7 @@ internal fun HomeScreen(
 
 
         if (preferences.showWeather || preferences.showBattery || preferences.showScreenTime || preferences.showCalendarShortcut) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -335,7 +336,9 @@ internal fun HomeScreen(
                             ) == PackageManager.PERMISSION_GRANTED
                             val weatherText = weatherInfo?.let {
                                 "${it.temperature} ${it.condition.lowercase(Locale.getDefault())}"
-                            } ?: if (!hasLocation) "Weather unavailable" else weatherStatus
+                            } ?: weatherStatus.ifBlank {
+                                if (!hasLocation) "Tap to allow location" else ""
+                            }
                             Text(
                                 weatherText,
                                 color = primaryText,
@@ -359,7 +362,7 @@ internal fun HomeScreen(
         }
 
         if (preferences.showMusic) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
             MusicPlayerWidget(
                 modifier = Modifier.fillMaxWidth(),
                 onOpenMusicApp = { openMusicPlayer(context, apps) }
