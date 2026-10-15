@@ -201,7 +201,7 @@ internal fun AppsScreen(
                     Row(
                         modifier = Modifier.fillMaxWidth()
                             .clickable(onClick = onOpenSettings)
-                            .padding(vertical = 10.dp, horizontal = 20.dp),
+                            .padding(vertical = 10.dp, horizontal = 0.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
