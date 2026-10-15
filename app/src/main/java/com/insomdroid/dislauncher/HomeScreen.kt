@@ -220,7 +220,7 @@ internal fun HomeScreen(
                     if (preferences.doubleTapToLock) currentLockScreen()
                 }
             )
-            .padding(horizontal = 26.dp, vertical = 8.dp),
+            .padding(horizontal = 26.dp, vertical = 6.dp),
         verticalArrangement = Arrangement.Top
     ) {
         if (preferences.showClock) {
@@ -239,7 +239,7 @@ internal fun HomeScreen(
             )
         }
         if (preferences.showDate) {
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(4.dp))
             Text(
                 dateText,
                 color = secondaryText,
@@ -251,7 +251,7 @@ internal fun HomeScreen(
             )
         }
         if (preferences.showYearProgress || preferences.showDayProgress) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(5.dp))
             if (preferences.showYearProgress) {
                 ProgressLine(
                     label = "Year in progress",
@@ -263,7 +263,7 @@ internal fun HomeScreen(
                 )
             }
             if (preferences.showDayProgress) {
-                if (preferences.showYearProgress) Spacer(Modifier.height(4.dp))
+                if (preferences.showYearProgress) Spacer(Modifier.height(2.dp))
                 ProgressLine(
                     label = "Day in progress",
                     percent = (now.toSecondOfDay() * 100f / 86400f).toInt(),
@@ -277,7 +277,7 @@ internal fun HomeScreen(
 
 
         if (preferences.showWeather || preferences.showBattery || preferences.showScreenTime || preferences.showCalendarShortcut) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(5.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -359,7 +359,7 @@ internal fun HomeScreen(
         }
 
         if (preferences.showMusic) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(5.dp))
             MusicPlayerWidget(
                 modifier = Modifier.fillMaxWidth(),
                 onOpenMusicApp = { openMusicPlayer(context, apps) }
@@ -483,7 +483,7 @@ private fun ProgressLine(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(5.dp)
+        verticalArrangement = Arrangement.spacedBy(3.dp)
     ) {
         Text(
             "$label $percent%",

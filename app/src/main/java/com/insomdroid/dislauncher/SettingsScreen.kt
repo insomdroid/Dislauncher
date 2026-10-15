@@ -2,7 +2,6 @@ package com.insomdroid.dislauncher
 
 import android.app.AppOpsManager
 import android.content.Intent
-import android.net.Uri
 import android.os.Process
 import android.provider.Settings
 import androidx.compose.foundation.clickable
@@ -319,18 +318,20 @@ internal fun SettingsScreen(
             }
 
             SettingsGroup("About", "A minimalist, text-first Android launcher.") {
-                SettingAction(
-                    "Dislauncher",
-                    "Version 0.1.0 · Built for a calmer Home screen.",
-                    "GitHub",
-                    {
-                        runCatching {
-                            context.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/insomdroid/dislauncher"))
-                            )
-                        }
-                    }
-                )
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(3.dp)
+                ) {
+                    Text("Dislauncher", style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        "Version 0.1.0 · Built for a calmer Home screen.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 16.sp,
+                        maxLines = 2,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                }
             }
             Spacer(Modifier.height(16.dp))
         }
