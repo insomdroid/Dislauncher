@@ -277,7 +277,7 @@ internal fun HomeScreen(
 
 
         if (preferences.showWeather || preferences.showBattery || preferences.showScreenTime || preferences.showCalendarShortcut) {
-            Spacer(Modifier.height(2.dp))
+            Spacer(Modifier.height(0.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -359,7 +359,7 @@ internal fun HomeScreen(
         }
 
         if (preferences.showMusic) {
-            Spacer(Modifier.height(2.dp))
+            Spacer(Modifier.height(0.dp))
             MusicPlayerWidget(
                 modifier = Modifier.fillMaxWidth(),
                 onOpenMusicApp = { openMusicPlayer(context, apps) }
@@ -377,7 +377,7 @@ internal fun HomeScreen(
         }
         val latestOrderedMainItemIds = rememberUpdatedState(orderedMainItemIds)
         val latestMoveHomeItem = rememberUpdatedState(onMoveHomeItem)
-        Spacer(Modifier.height(180.dp))
+        Spacer(Modifier.height(240.dp))
         orderedMainItemIds.forEach { itemId ->
             val app = favoriteAppsByPackage[itemId]
             val label = when (itemId) {
