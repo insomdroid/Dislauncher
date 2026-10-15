@@ -1,7 +1,9 @@
 package com.insomdroid.dislauncher
 
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.ResolveInfo
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
@@ -27,28 +29,66 @@ import org.xmlpull.v1.XmlPullParser
 
 internal data class IconPackInfo(val packageName: String, val label: String)
 
+private val iconPackActions = listOf(
+    "org.adw.launcher.THEMES",
+    "com.novalauncher.THEME",
+    "com.anddoes.launcher.THEME",
+    "com.teslacoilsw.launcher.THEME",
+    "com.gau.go.launcherex.theme",
+    "com.dlto.atom.launcher.THEME",
+    "com.smartlauncher.THEME",
+    "com.actionlauncher.THEME",
+    "com.dreamon.theme"
+)
+
+@Suppress("DEPRECATION")
+private fun queryActivities(context: Context, intent: Intent): List<ResolveInfo> {
+    return runCatching {
+        context.packageManager.queryIntentActivities(
+            intent,
+            PackageManager.MATCH_DEFAULT_ONLY
+        )
+    }.getOrDefault(emptyList())
+}
+
+private fun hasAppFilter(context: Context, packageName: String): Boolean {
+    return runCatching {
+        val resources = context.packageManager.getResourcesForApplication(packageName)
+        resources.getIdentifier("appfilter", "xml", packageName) != 0
+    }.getOrDefault(false)
+}
+
 internal fun findIconPacks(context: Context): List<IconPackInfo> {
-    val actions = listOf(
-        "org.adw.launcher.THEMES",
-        "com.novalauncher.THEME",
-        "com.anddoes.launcher.THEME",
-        "com.teslacoilsw.launcher.THEME",
-        "com.gau.go.launcherex.theme",
-        "com.dlto.atom.launcher.THEME"
-    )
     val pm = context.packageManager
-    return actions.flatMap { action ->
-        runCatching {
-            @Suppress("DEPRECATION")
-            pm.queryIntentActivities(android.content.Intent(action), PackageManager.MATCH_DEFAULT_ONLY)
-        }.getOrDefault(emptyList())
-    }.mapNotNull { result ->
-        val activity = result.activityInfo ?: return@mapNotNull null
-        val pkg = activity.packageName
-        if (pkg == context.packageName) return@mapNotNull null
-        val label = runCatching { result.loadLabel(pm).toString() }.getOrDefault(pkg)
-        IconPackInfo(pkg, label)
-    }.distinctBy { it.packageName }.sortedBy { it.label.lowercase() }
+    val candidates = linkedSetOf<String>()
+
+    iconPackActions.forEach { action ->
+        queryActivities(context, Intent(action)).forEach { result ->
+            result.activityInfo?.packageName?.let(candidates::add)
+        }
+    }
+
+    val launcherIntent = Intent(Intent.ACTION_MAIN).apply {
+        addCategory(Intent.CATEGORY_LAUNCHER)
+    }
+    queryActivities(context, launcherIntent).forEach { result ->
+        result.activityInfo?.packageName?.let(candidates::add)
+    }
+
+    return candidates.asSequence()
+        .filter { it != context.packageName }
+        .filter { hasAppFilter(context, it) }
+        .mapNotNull { packageName ->
+            runCatching {
+                val appInfo = pm.getApplicationInfo(packageName, 0)
+                val label = pm.getApplicationLabel(appInfo).toString()
+                    .ifBlank { packageName }
+                IconPackInfo(packageName, label)
+            }.getOrNull()
+        }
+        .distinctBy { it.packageName }
+        .sortedBy { it.label.lowercase() }
+        .toList()
 }
 
 @Composable
