@@ -206,6 +206,7 @@ internal fun SettingsScreen(
                 SettingToggle("Show year in %", "Display a thin progress bar for the year.", preferences.showYearProgress) {
                     onPreferencesChange(preferences.copy(showYearProgress = it))
                 }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                 SettingToggle("Show Settings button", "When disabled, long-press empty space on Home to open Settings.", preferences.showSettingsButton) {
                     onPreferencesChange(preferences.copy(showSettingsButton = it))
                 }
