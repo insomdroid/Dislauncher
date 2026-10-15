@@ -144,7 +144,7 @@ internal fun SettingsScreen(
                     )
                     SettingToggle(
                         "Dynamic color",
-                        "Use Android wallpaper colors when Theme is set to System (Android 12+).",
+                        "Use Android wallpaper colors for accents and controls on Android 12+. Dark mode keeps its pure-black background.",
                         preferences.dynamicColor
                     ) { onPreferencesChange(preferences.copy(dynamicColor = it)) }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
@@ -590,9 +590,9 @@ private fun SettingToggle(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color(0xFF111111),
-                checkedTrackColor = Color(0xFF8AB4F8),
-                checkedBorderColor = Color(0xFF8AB4F8),
+                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                checkedBorderColor = MaterialTheme.colorScheme.primary,
                 uncheckedThumbColor = Color(0xFFBDBDBD),
                 uncheckedTrackColor = Color(0xFF424242),
                 uncheckedBorderColor = Color(0xFF808080)
