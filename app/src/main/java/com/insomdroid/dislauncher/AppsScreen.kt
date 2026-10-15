@@ -210,7 +210,7 @@ internal fun AppsScreen(
                             tint = mainText,
                             modifier = Modifier.size(20.dp)
                         )
-                        Spacer(Modifier.width(12.dp))
+                        Spacer(Modifier.width(9.dp))
                         Text(
                             "Dislauncher Settings",
                             color = mainText,
