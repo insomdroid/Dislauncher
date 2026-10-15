@@ -83,23 +83,23 @@ internal fun SettingsScreen(
                 .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            SettingsGroup("Manage apps", "Choose what appears on the Home screen and in the drawer.") {
+            SettingsGroup("Manage Apps", "Choose what appears on the Home screen and in the drawer.") {
                 SettingAction(
-                    "Manage hidden apps",
+                    "Manage Hidden Apps",
                     "${hiddenApps.size} hidden · hide apps without uninstalling",
                     "Manage",
                     { openDialog = "hidden" }
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                 SettingAction(
-                    "Manage favourites",
+                    "Manage Favourites",
                     "${favorites.size}/5 pinned apps · long-press apps in the drawer as well",
                     "Manage",
                     { openDialog = "favorites" }
                 )
             }
 
-            SettingsGroup("Appearance", "Make the launcher feel personal with clear choices and expressive Material surfaces.") {
+            SettingsGroup("Theme", "Make the launcher feel personal with clear choices and expressive Material surfaces.") {
                 Column(Modifier.fillMaxWidth().padding(15.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
                     ChoiceRow(
                         "Theme",
@@ -107,14 +107,10 @@ internal fun SettingsScreen(
                         listOf(
                             "system" to "System",
                             "light" to "Light",
-                            "dark" to "Dark"
+                            "dark" to "Dark",
+                            "black" to "Black"
                         )
                     ) { onPreferencesChange(preferences.copy(themeMode = it)) }
-                    Text(
-                        "System follows Android appearance. Light uses a light palette. Dark always uses a pure-black background.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                     SettingToggle(
                         "Dynamic color",
                         "Use Android wallpaper colors for accents and controls on Android 12+. Dark mode keeps its pure-black background.",
@@ -122,7 +118,7 @@ internal fun SettingsScreen(
                     ) { onPreferencesChange(preferences.copy(dynamicColor = it)) }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                     SettingAction(
-                        "Custom Fonts",
+                        "Custom font",
                         when (preferences.fontMode) {
                             "mono" -> "Monospace"
                             "custom" -> preferences.customFontName ?: "Custom font"
@@ -240,7 +236,7 @@ internal fun SettingsScreen(
                 }
             }
 
-            SettingsGroup("Android", "System-owned settings open outside dislauncher.") {
+            SettingsGroup("Misc", "System-owned settings open outside dislauncher.") {
                 SettingAction(
                     "Music controls access",
                     "Allow Dislauncher to read active media sessions so Previous, Play and Next can control your music app.",
@@ -364,9 +360,25 @@ internal fun SettingsScreen(
                         onPreferencesChange(preferences.copy(iconPack = "system"))
                         openDialog = ""
                     }
+                    IconPackChoice("Dot", "builtin:dot", preferences.iconPack) {
+                        onPreferencesChange(preferences.copy(iconPack = "builtin:dot"))
+                        openDialog = ""
+                    }
+                    IconPackChoice("Chevron", "builtin:chevron", preferences.iconPack) {
+                        onPreferencesChange(preferences.copy(iconPack = "builtin:chevron"))
+                        openDialog = ""
+                    }
+                    IconPackChoice("Box", "builtin:box", preferences.iconPack) {
+                        onPreferencesChange(preferences.copy(iconPack = "builtin:box"))
+                        openDialog = ""
+                    }
+                    IconPackChoice("Circle", "builtin:circle", preferences.iconPack) {
+                        onPreferencesChange(preferences.copy(iconPack = "builtin:circle"))
+                        openDialog = ""
+                    }
                     if (iconPacks.isEmpty()) {
                         Text(
-                            "No compatible installed icon pack was detected. Packs supporting ADW/Nova-style appfilter.xml are used.",
+                            "No other installed icon packs were found.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(vertical = 8.dp)

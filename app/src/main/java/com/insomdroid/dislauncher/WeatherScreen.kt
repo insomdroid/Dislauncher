@@ -114,9 +114,9 @@ internal fun WeatherScreen(
             Text(
                 currentWeather.locationName ?: "Weather",
                 color = secondary,
-                fontSize = 20.sp,
-                lineHeight = 26.sp,
-                fontWeight = FontWeight.Medium,
+                fontSize = 22.sp,
+                lineHeight = 28.sp,
+                fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,

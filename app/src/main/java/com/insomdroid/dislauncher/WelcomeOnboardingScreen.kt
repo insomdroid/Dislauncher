@@ -386,7 +386,7 @@ internal fun WelcomeOnboardingScreen(
                                     0 -> "A text-first launcher for the things you check every day—not another feed to scroll."
                                     2 -> "Keep your clock, date, weather, battery, calendar and music close. Choose which items show up in Settings."
                                     3 -> "Search at the bottom of the app drawer, or slide along the letter rail on the right. Long-press apps to pin, rename or hide them."
-                                    else -> "Use Android's wallpaper colors, or choose a light or dark look. Dark mode can use regular surfaces or true-black AMOLED surfaces."
+                                    else -> "Use Android's wallpaper colors, or choose system, light, dark, or black."
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 style = MaterialTheme.typography.bodyLarge,
@@ -408,26 +408,12 @@ internal fun WelcomeOnboardingScreen(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     verticalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    listOf("system" to "System", "light" to "Light", "dark" to "Dark").forEach { (value, label) ->
+                                    listOf("system" to "System", "light" to "Light", "dark" to "Dark", "black" to "Black").forEach { (value, label) ->
                                         FilterChip(
                                             selected = preferences.themeMode == value,
                                             onClick = { onPreferencesChange(preferences.copy(themeMode = value)) },
                                             label = { Text(label) }
                                         )
-                                    }
-                                }
-                                if (preferences.themeMode == "dark") {
-                                    FlowRow(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        listOf("system" to "Dark · System", "amoled" to "Dark · AMOLED").forEach { (value, label) ->
-                                            FilterChip(
-                                                selected = preferences.darkAppearance == value,
-                                                onClick = { onPreferencesChange(preferences.copy(darkAppearance = value)) },
-                                                label = { Text(label) }
-                                            )
-                                        }
                                     }
                                 }
                                 FilterChip(
