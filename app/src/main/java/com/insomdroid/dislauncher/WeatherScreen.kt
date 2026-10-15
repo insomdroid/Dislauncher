@@ -110,79 +110,87 @@ internal fun WeatherScreen(
         }
 
         if (currentWeather != null) {
-            Spacer(Modifier.weight(1f))
-            Text(
-                currentWeather.locationName ?: "Weather",
-                color = secondary,
-                fontSize = 22.sp,
-                lineHeight = 28.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)
-            )
-            Spacer(Modifier.height(14.dp))
-            WeatherIcon(currentWeather.condition, primary, Modifier.size(190.dp))
-            Spacer(Modifier.height(12.dp))
-            Text(
-                currentWeather.temperature,
-                color = primary,
-                fontSize = 56.sp,
-                lineHeight = 64.sp,
-                letterSpacing = (-1.4).sp,
-                fontWeight = FontWeight.Normal,
-                maxLines = 1,
-                softWrap = false,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                currentWeather.condition.lowercase(Locale.getDefault()).replaceFirstChar { it.uppercase() },
-                color = secondary,
-                fontSize = 18.sp,
-                lineHeight = 25.sp,
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Column(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    currentWeather.locationName ?: "Weather",
+                    color = secondary,
+                    fontSize = 22.sp,
+                    lineHeight = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)
+                )
+                Spacer(Modifier.height(14.dp))
+                WeatherIcon(currentWeather.condition, primary, Modifier.size(164.dp))
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    currentWeather.temperature,
+                    color = primary,
+                    fontSize = 52.sp,
+                    lineHeight = 60.sp,
+                    letterSpacing = (-1.2).sp,
+                    fontWeight = FontWeight.Normal,
+                    maxLines = 1,
+                    softWrap = false,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    currentWeather.condition.lowercase(Locale.getDefault()).replaceFirstChar { it.uppercase() },
+                    color = secondary,
+                    fontSize = 18.sp,
+                    lineHeight = 24.sp,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
 
-            if (currentWeather.feelsLike != null || currentWeather.high != null || currentWeather.low != null) {
-                Spacer(Modifier.height(28.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    currentWeather.feelsLike?.let {
-                        WeatherMetric("FEELS LIKE", it, primary, secondary)
-                    }
-                    if (currentWeather.high != null || currentWeather.low != null) {
-                        val highLow = "H: " + (currentWeather.high ?: "—") + "   L: " + (currentWeather.low ?: "—")
-                        WeatherMetric("HIGH / LOW", highLow, primary, secondary)
+                if (currentWeather.feelsLike != null || currentWeather.high != null || currentWeather.low != null) {
+                    Spacer(Modifier.height(26.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        currentWeather.feelsLike?.let {
+                            WeatherMetric("FEELS LIKE", it, primary, secondary)
+                        }
+                        if (currentWeather.high != null || currentWeather.low != null) {
+                            val highLow = "H: " + (currentWeather.high ?: "—") + "   L: " + (currentWeather.low ?: "—")
+                            WeatherMetric("HIGH / LOW", highLow, primary, secondary)
+                        }
                     }
                 }
             }
-            Spacer(Modifier.weight(1f))
         } else {
-            Spacer(Modifier.weight(1f))
-            Text(
-                if (loading) "Getting weather…" else status,
-                color = secondary,
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
-            )
-            if (!locationGranted && !loading) {
-                Spacer(Modifier.height(12.dp))
-                TextButton(
-                    onClick = {
-                        permissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
-                    }
-                ) { Text("Allow location") }
+            Column(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    if (loading) "Getting weather…" else status,
+                    color = secondary,
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                )
+                if (!locationGranted && !loading) {
+                    Spacer(Modifier.height(12.dp))
+                    TextButton(
+                        onClick = {
+                            permissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+                        }
+                    ) { Text("Allow location") }
+                }
             }
-            Spacer(Modifier.weight(1f))
         }
     }
 }
@@ -198,12 +206,12 @@ private fun WeatherMetric(
         Text(
             label,
             color = secondary,
-            fontSize = 10.sp,
-            lineHeight = 14.sp,
-            fontWeight = FontWeight.Medium
+            fontSize = 11.sp,
+            lineHeight = 15.sp,
+            fontWeight = FontWeight.SemiBold
         )
         Spacer(Modifier.height(4.dp))
-        Text(value, color = primary, fontSize = 15.sp, lineHeight = 20.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(value, color = primary, fontSize = 16.sp, lineHeight = 22.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

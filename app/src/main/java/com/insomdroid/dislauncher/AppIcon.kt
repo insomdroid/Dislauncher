@@ -23,7 +23,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import org.xmlpull.v1.XmlPullParser
 
 internal data class IconPackInfo(val packageName: String, val label: String)
@@ -55,56 +54,33 @@ internal fun findIconPacks(context: Context): List<IconPackInfo> {
 @Composable
 internal fun AppIcon(app: LauncherApp, iconPack: String, size: Dp = 20.dp) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val builtInSymbol = when (iconPack) {
-        "builtin:dot" -> "·"
-        "builtin:chevron" -> ">"
-        "builtin:box" -> "■"
-        "builtin:circle" -> "○"
-        else -> null
-    }
     val image = remember(context, app.packageName, app.activityName, iconPack) {
-        if (builtInSymbol != null) null
-        else drawableToBitmap(resolveAppDrawable(context, app, iconPack))?.asImageBitmap()
+        drawableToBitmap(resolveAppDrawable(context, app, iconPack))?.asImageBitmap()
     }
-    if (builtInSymbol != null) {
-        Box(modifier = Modifier.size(size), contentAlignment = Alignment.Center) {
-            Text(
-                builtInSymbol,
-                color = MaterialTheme.colorScheme.onBackground,
-                fontSize = (size.value * 0.95f).sp,
-                lineHeight = size.value.sp,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                softWrap = false
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(RoundedCornerShape(size * 0.30f))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(size * 0.10f),
+        contentAlignment = Alignment.Center
+    ) {
+        if (image != null) {
+            Image(
+                bitmap = image,
+                contentDescription = app.label,
+                modifier = Modifier.fillMaxSize()
             )
-        }
-    } else {
-        Box(
-            modifier = Modifier
-                .size(size)
-                .clip(RoundedCornerShape(size * 0.30f))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(size * 0.10f),
-            contentAlignment = Alignment.Center
-        ) {
-            if (image != null) {
-                Image(
-                    bitmap = image,
-                    contentDescription = app.label,
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                Text(
-                    app.label.firstOrNull()?.uppercaseChar()?.toString() ?: "•",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+        } else {
+            Text(
+                app.label.firstOrNull()?.uppercaseChar()?.toString() ?: "•",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
-
 private fun resolveAppDrawable(context: Context, app: LauncherApp, iconPack: String): Drawable? {
     val pm = context.packageManager
     if (iconPack != "system") {

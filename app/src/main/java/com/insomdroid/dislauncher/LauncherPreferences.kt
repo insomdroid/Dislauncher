@@ -86,6 +86,14 @@ internal data class LauncherPreferences(
                     .apply()
             }
 
+            if (p.getInt("icon_pack_migration_version", 0) < 1) {
+                val savedIconPack = p.getString("icon_pack", "system") ?: "system"
+                p.edit()
+                    .putString("icon_pack", if (savedIconPack.startsWith("builtin:")) "system" else savedIconPack)
+                    .putInt("icon_pack_migration_version", 1)
+                    .apply()
+            }
+
             if (p.getInt("music_default_migration_version", 0) < 1) {
                 p.edit()
                     .putBoolean("show_music", true)
