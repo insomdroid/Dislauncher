@@ -1,12 +1,9 @@
 package com.insomdroid.dislauncher
 
-import android.app.AppOpsManager
-import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
-import android.os.Process
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -57,12 +54,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 import java.util.Locale
-import java.time.LocalDate
-import java.time.ZoneId
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -106,14 +99,6 @@ internal fun AppsScreen(
     var renamingApp by remember { mutableStateOf<LauncherApp?>(null) }
     var renameValue by remember { mutableStateOf("") }
     val context = androidx.compose.ui.platform.LocalContext.current
-    var usageMinutesByPackage by remember { mutableStateOf<Map<String, Long>>(emptyMap()) }
-
-    LaunchedEffect(isActive) {
-        if (isActive) {
-            usageMinutesByPackage = withContext(Dispatchers.IO) { readAppUsageMinutes(context) }
-        }
-    }
-
     LaunchedEffect(isActive, preferences.autoLaunchKeyboard, preferences.showSearchBar) {
         if (isActive && preferences.autoLaunchKeyboard && preferences.showSearchBar) {
             delay(180L)
@@ -166,15 +151,6 @@ internal fun AppsScreen(
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
-                        usageMinutesByPackage[app.packageName]?.takeIf { it > 0 }?.let { minutes ->
-                            Text(
-                                "${minutes}m",
-                                color = secondary,
-                                fontSize = 11.sp,
-                                lineHeight = 15.sp,
-                                modifier = Modifier.padding(start = 8.dp)
-                            )
-                        }
                     }
                 }
                 item(key = "dislauncher-settings") {
@@ -327,29 +303,6 @@ internal fun AppsScreen(
 
 }
 
-
-private fun readAppUsageMinutes(context: android.content.Context): Map<String, Long> {
-    val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager
-        ?: return emptyMap()
-    val allowed = runCatching {
-        appOps.checkOpNoThrow(
-            AppOpsManager.OPSTR_GET_USAGE_STATS,
-            Process.myUid(),
-            context.packageName
-        ) == AppOpsManager.MODE_ALLOWED
-    }.getOrDefault(false)
-    if (!allowed) return emptyMap()
-
-    val manager = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
-        ?: return emptyMap()
-    val start = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-    val now = System.currentTimeMillis()
-    return runCatching {
-        manager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, start, now)
-            .groupBy { it.packageName }
-            .mapValues { (_, stats) -> stats.sumOf { it.totalTimeInForeground } / 60_000L }
-    }.getOrDefault(emptyMap())
-}
 
 private fun openApplicationInfo(context: Context, app: LauncherApp) {
     val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${app.packageName}"))

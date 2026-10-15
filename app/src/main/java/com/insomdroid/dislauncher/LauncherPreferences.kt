@@ -22,7 +22,6 @@ internal data class LauncherPreferences(
     val showWeather: Boolean = true,
     val weatherUnit: String = "C",
     val timeFormat: String = "system",
-    val showScreenTime: Boolean = false,
     val showTasks: Boolean = true,
     val showCall: Boolean = true,
     val showSettingsButton: Boolean = true,
@@ -53,7 +52,6 @@ internal data class LauncherPreferences(
             .putBoolean("show_weather", showWeather)
             .putString("weather_unit", weatherUnit)
             .putString("time_format", timeFormat)
-            .putBoolean("show_screen_time", showScreenTime)
             .putBoolean("show_tasks", showTasks)
             .putBoolean("show_call", showCall)
             .putBoolean("show_settings_button", showSettingsButton)
@@ -109,7 +107,6 @@ internal data class LauncherPreferences(
                 showWeather = p.getBoolean("show_weather", true),
                 weatherUnit = p.getString("weather_unit", "C") ?: "C",
                 timeFormat = p.getString("time_format", "system") ?: "system",
-                showScreenTime = p.getBoolean("show_screen_time", false),
                 showTasks = p.getBoolean("show_tasks", true),
                 showCall = p.getBoolean("show_call", true),
                 showSettingsButton = p.getBoolean("show_settings_button", true),

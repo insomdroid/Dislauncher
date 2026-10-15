@@ -1,12 +1,10 @@
 package com.insomdroid.dislauncher
 
 import android.Manifest
-import android.app.AppOpsManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Process
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -98,7 +96,6 @@ internal fun WelcomeOnboardingScreen(
     val calendarGranted = permissionRefresh >= 0 &&
         ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) ==
             PackageManager.PERMISSION_GRANTED
-    val usageGranted = permissionRefresh >= 0 && hasUsageAccessForOnboarding(context)
     val musicControlsGranted = permissionRefresh >= 0 && hasMusicNotificationAccess(context)
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
@@ -223,14 +220,6 @@ internal fun WelcomeOnboardingScreen(
                                 onClick = { openSystemSettings(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS) }
                             )
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
-                            PermissionActionRow(
-                                title = "Usage access · Screen time",
-                                description = "Android opens a special-access page. Enable Dislauncher there to read daily app usage.",
-                                granted = usageGranted,
-                                actionLabel = "Open",
-                                onClick = { openSystemSettings(Settings.ACTION_USAGE_ACCESS_SETTINGS) }
-                            )
                             Spacer(Modifier.height(10.dp))
                             Text(
                                 "Optional: Double tap to lock needs Device Admin approval. You can enable that gesture later in Settings.",
@@ -395,7 +384,7 @@ internal fun WelcomeOnboardingScreen(
                             Text(
                                 when (currentPage) {
                                     0 -> "A text-first launcher for the things you check every day—not another feed to scroll."
-                                    2 -> "Keep your clock, date, weather, battery, calendar, screen time and music close. Choose which items show up in Settings."
+                                    2 -> "Keep your clock, date, weather, battery, calendar and music close. Choose which items show up in Settings."
                                     3 -> "Search at the bottom of the app drawer, or slide along the letter rail on the right. Long-press apps to pin, rename or hide them."
                                     else -> "Use Android's wallpaper colors, or choose a light or dark look. Dark mode can use regular surfaces or true-black AMOLED surfaces."
                                 },
@@ -547,19 +536,6 @@ private fun PermissionActionRow(
         }
     }
 }
-
-private fun hasUsageAccessForOnboarding(context: Context): Boolean {
-    val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager ?: return false
-    val mode = runCatching {
-        appOps.checkOpNoThrow(
-            AppOpsManager.OPSTR_GET_USAGE_STATS,
-            Process.myUid(),
-            context.packageName
-        )
-    }.getOrDefault(AppOpsManager.MODE_DEFAULT)
-    return mode == AppOpsManager.MODE_ALLOWED
-}
-
 
 private fun hasMusicNotificationAccess(context: Context): Boolean {
     val component = ComponentName(context, DislauncherNotificationListener::class.java)

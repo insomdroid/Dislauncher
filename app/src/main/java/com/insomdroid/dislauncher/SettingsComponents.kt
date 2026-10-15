@@ -1,7 +1,5 @@
 package com.insomdroid.dislauncher
 
-import android.app.AppOpsManager
-import android.os.Process
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -148,90 +146,5 @@ internal fun SettingsGroup(
             Spacer(Modifier.height(2.dp))
             Column(content = content)
         }
-    }
-}
-
-internal fun hasUsageStatsPermission(context: android.content.Context): Boolean {
-    val appOps = context.getSystemService(android.content.Context.APP_OPS_SERVICE) as? AppOpsManager
-        ?: return false
-    return runCatching {
-        appOps.checkOpNoThrow(
-            AppOpsManager.OPSTR_GET_USAGE_STATS,
-            Process.myUid(),
-            context.packageName
-        ) == AppOpsManager.MODE_ALLOWED
-    }.getOrDefault(false)
-}
-
-@Composable
-internal fun SettingToggle(
-    title: String,
-    description: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(
-            modifier = Modifier.weight(1f)
-                .clip(RoundedCornerShape(18.dp))
-                .clickable { onCheckedChange(!checked) }
-                .padding(start = 0.dp, top = 9.dp, end = 14.dp, bottom = 9.dp),
-            verticalArrangement = Arrangement.spacedBy(3.dp)
-        ) {
-            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
-            Text(
-                description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = 16.sp,
-                maxLines = 2,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-            )
-        }
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                checkedTrackColor = MaterialTheme.colorScheme.primary,
-                checkedBorderColor = MaterialTheme.colorScheme.primary,
-                uncheckedThumbColor = Color(0xFFBDBDBD),
-                uncheckedTrackColor = Color(0xFF424242),
-                uncheckedBorderColor = Color(0xFF808080)
-            )
-        )
-    }
-}
-
-@Composable
-internal fun SettingAction(
-    title: String,
-    description: String,
-    actionLabel: String,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(
-            modifier = Modifier.weight(1f).padding(end = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(3.dp)
-        ) {
-            Text(title, style = MaterialTheme.typography.titleSmall)
-            Text(
-                description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = 16.sp,
-                maxLines = 2,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-            )
-        }
-        TextButton(onClick = onClick) { Text(actionLabel) }
     }
 }
