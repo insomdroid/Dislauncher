@@ -386,21 +386,25 @@ private fun DislauncherRoot() {
         else -> systemDark
     }
     val useDynamicColor = preferences.dynamicColor &&
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-        preferences.themeMode == "system"
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val fallbackPrimary = if (isDark) Color(0xFF8AB4F8) else Color(0xFF1967D2)
     val baseColorScheme = when {
-        preferences.themeMode == "dark" -> darkColorScheme()
         useDynamicColor && isDark -> dynamicDarkColorScheme(context)
         useDynamicColor -> dynamicLightColorScheme(context)
-        isDark -> darkColorScheme()
-        else -> lightColorScheme()
+        isDark -> darkColorScheme().copy(
+            primary = fallbackPrimary,
+            onPrimary = Color(0xFF101010)
+        )
+        else -> lightColorScheme().copy(
+            primary = fallbackPrimary,
+            onPrimary = Color.White
+        )
     }
     val textSafeDarkScheme = if (isDark) {
         baseColorScheme.copy(
-            primary = Color(0xFF8AB4F8),
             secondary = Color.White,
             tertiary = Color.White,
-            onPrimary = Color(0xFF101010),
+            onPrimary = baseColorScheme.onPrimary,
             onSecondary = Color(0xFF101010),
             onTertiary = Color(0xFF101010),
             onBackground = Color.White,
@@ -428,10 +432,8 @@ private fun DislauncherRoot() {
             surfaceContainerHigh = Color.Black,
             surfaceContainerHighest = Color.Black,
             surfaceTint = Color.Transparent,
-            primary = Color(0xFF8AB4F8),
             secondary = Color.White,
             tertiary = Color.White,
-            onPrimary = Color(0xFF101010),
             onSecondary = Color(0xFF101010),
             onTertiary = Color(0xFF101010),
             outline = Color(0xFFBDBDBD),
