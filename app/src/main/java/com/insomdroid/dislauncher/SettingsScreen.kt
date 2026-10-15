@@ -165,6 +165,14 @@ internal fun SettingsScreen(
             }
 
             SettingsGroup("Home screen", "Turn each lightweight item on or off.") {
+                SettingToggle("Show default tasks", "A small task list stored locally on this device.", preferences.showTasks) {
+                    onPreferencesChange(preferences.copy(showTasks = it))
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                SettingToggle("Show default call", "A compact shortcut that opens the Android dialer.", preferences.showCall) {
+                    onPreferencesChange(preferences.copy(showCall = it))
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                 SettingToggle("Show status bar", "Keep Android's status bar visible at the top.", !preferences.hideStatusBar) {
                     onPreferencesChange(preferences.copy(hideStatusBar = !it))
                 }
@@ -179,6 +187,10 @@ internal fun SettingsScreen(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                 SettingToggle("Show calendar agenda", "Read today's upcoming events on Home; Android asks for calendar access when needed.", preferences.showCalendarShortcut) {
                     onPreferencesChange(preferences.copy(showCalendarShortcut = it))
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                SettingToggle("Show music player", "Show the active track and playback controls on Home. Media access may be requested.", preferences.showMusic) {
+                    onPreferencesChange(preferences.copy(showMusic = it))
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                 SettingToggle("Show weather", "Uses approximate device location and Open-Meteo weather data.", preferences.showWeather) {
@@ -210,19 +222,6 @@ internal fun SettingsScreen(
                 SettingToggle("Show screen time", "Requires Android Usage Access. Tap its Home row to open access settings.", preferences.showScreenTime) {
                     onPreferencesChange(preferences.copy(showScreenTime = it))
                 }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingToggle("Show default tasks", "A small task list stored locally on this device.", preferences.showTasks) {
-                    onPreferencesChange(preferences.copy(showTasks = it))
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingToggle("Show default call", "A compact shortcut that opens the Android dialer.", preferences.showCall) {
-                    onPreferencesChange(preferences.copy(showCall = it))
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingToggle("Show music player", "Show the active track and playback controls on Home. Media access may be requested.", preferences.showMusic) {
-                    onPreferencesChange(preferences.copy(showMusic = it))
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                 SettingToggle("Show Settings button", "When disabled, long-press empty space on Home to open Settings.", preferences.showSettingsButton) {
                     onPreferencesChange(preferences.copy(showSettingsButton = it))
                 }

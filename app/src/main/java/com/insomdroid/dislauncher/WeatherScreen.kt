@@ -107,29 +107,22 @@ internal fun WeatherScreen(
                     .clickable(onClick = onBack)
                     .padding(end = 12.dp)
             )
+        }
+
+        if (currentWeather != null) {
+            Spacer(Modifier.weight(1f))
             Text(
-                currentWeather?.locationName ?: cachedWeather?.locationName ?: "Weather",
-                color = primary,
+                currentWeather.locationName,
+                color = secondary,
                 fontSize = 20.sp,
                 lineHeight = 26.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = 46.dp)
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)
             )
-        }
-
-        Text(
-            "Dislauncher uses approximate location for local weather and sends coordinates to Open-Meteo over HTTPS. Android's geocoding service may also be used to resolve the area name. Dislauncher does not save your coordinates; weather results are cached on this device.",
-            color = secondary,
-            style = MaterialTheme.typography.bodySmall,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp)
-        )
-
-        if (currentWeather != null) {
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(14.dp))
             WeatherIcon(currentWeather.condition, primary, Modifier.size(190.dp))
             Spacer(Modifier.height(12.dp))
             Text(
