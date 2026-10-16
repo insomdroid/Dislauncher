@@ -10,6 +10,7 @@ internal data class LauncherPreferences(
     val customFontName: String? = null,
     val fontSize: String = "medium",
     val iconPack: String = "system",
+    val iconShape: String = "original",
     val showAppIcons: Boolean = false,
     val hideStatusBar: Boolean = false,
     val showSearchBar: Boolean = true,
@@ -40,6 +41,7 @@ internal data class LauncherPreferences(
             .putString("custom_font_name", customFontName)
             .putString("font_size", fontSize)
             .putString("icon_pack", iconPack)
+            .putString("icon_shape", iconShape)
             .putBoolean("show_app_icons", showAppIcons)
             .putBoolean("hide_status_bar", hideStatusBar)
             .putBoolean("show_search_bar", showSearchBar)
@@ -120,6 +122,7 @@ internal data class LauncherPreferences(
                 customFontName = p.getString("custom_font_name", null)?.take(80),
                 fontSize = p.getString("font_size", "medium") ?: "medium",
                 iconPack = p.getString("icon_pack", "system") ?: "system",
+                iconShape = p.getString("icon_shape", "original")?.takeIf { it in setOf("original", "circle", "outline_square", "filled_square", "filled_rectangle") } ?: "original",
                 showAppIcons = p.getBoolean("show_app_icons", false),
                 hideStatusBar = p.getBoolean("hide_status_bar", false),
                 showSearchBar = p.getBoolean("show_search_bar", true),
