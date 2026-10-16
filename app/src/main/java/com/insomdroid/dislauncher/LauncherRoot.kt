@@ -45,7 +45,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
-private const val MAX_PINNED_APPS = 5
+private const val MAX_PINNED_APPS = 6
 
 @OptIn(ExperimentalTextApi::class)
 @Composable
@@ -81,7 +81,6 @@ internal fun DislauncherRoot() {
     var hiddenApps by remember {
         mutableStateOf(prefsStore.getStringSet("hidden_packages", emptySet())?.toSet().orEmpty())
     }
-    var tasks by remember { mutableStateOf(readLauncherTasks(prefsStore)) }
     var favoriteOrder by remember { mutableStateOf(readFavoriteOrder(prefsStore, favorites)) }
     var apps by remember { mutableStateOf<List<LauncherApp>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
@@ -130,7 +129,7 @@ internal fun DislauncherRoot() {
         if (packageName !in favorites && favorites.size >= MAX_PINNED_APPS) {
             android.widget.Toast.makeText(
                 context,
-                "You can pin up to 5 apps.",
+                "You can pin up to 6 apps.",
                 android.widget.Toast.LENGTH_SHORT
             ).show()
             return
@@ -153,7 +152,7 @@ internal fun DislauncherRoot() {
         saveHomeItemOrder(prefsStore, homeItemOrder)
     }
 
-    fun finishOnboarding(selectedPackages: Set<String>?, useDefaultFavorites: Boolean) {
+    fun finishOnboarding(selectedPackages: Set<String>) {
         scope.launch {
             val allApps = if (apps.isNotEmpty()) {
                 apps
@@ -164,13 +163,9 @@ internal fun DislauncherRoot() {
             }
             val orderedAvailable = (allApps.filterNot { it.isSystem } + allApps.filter { it.isSystem })
                 .distinctBy { it.packageName }
-            val selected = if (useDefaultFavorites) {
-                orderedAvailable.take(MAX_PINNED_APPS).map { it.packageName }
-            } else {
-                orderedAvailable.filter { it.packageName in selectedPackages.orEmpty() }
-                    .take(MAX_PINNED_APPS)
-                    .map { it.packageName }
-            }
+            val selected = orderedAvailable.filter { it.packageName in selectedPackages }
+                .take(MAX_PINNED_APPS)
+                .map { it.packageName }
             val selectedSet = selected.toSet()
             favorites = selectedSet
             favoriteOrder = selected
@@ -188,7 +183,7 @@ internal fun DislauncherRoot() {
 
     fun moveHomeItem(sourceId: String, targetId: String) {
         if (sourceId == targetId) return
-        val order = (homeItemOrder + listOf(HOME_ITEM_TASKS, HOME_ITEM_CALLS, HOME_ITEM_MUSIC) + favorites).distinct().toMutableList()
+        val order = (homeItemOrder + favorites).distinct().toMutableList()
         val sourceIndex = order.indexOf(sourceId)
         val targetIndex = order.indexOf(targetId)
         if (sourceIndex < 0 || targetIndex < 0) return
@@ -217,11 +212,6 @@ internal fun DislauncherRoot() {
         order[targetIndex] = moving
         favoriteOrder = order
         saveFavoriteOrder(prefsStore, order)
-    }
-
-    fun updateTasks(next: List<LauncherTask>) {
-        tasks = next
-        saveLauncherTasks(prefsStore, next)
     }
 
     fun toggleHidden(packageName: String) {
@@ -298,11 +288,10 @@ internal fun DislauncherRoot() {
     }
 
     BackHandler(
-        enabled = screen == LauncherScreen.SETTINGS || screen == LauncherScreen.TASKS ||
-            screen == LauncherScreen.WEATHER || pagerState.settledPage == 1
+        enabled = screen == LauncherScreen.SETTINGS || screen == LauncherScreen.WEATHER || pagerState.settledPage == 1
     ) {
         when (screen) {
-            LauncherScreen.SETTINGS, LauncherScreen.TASKS, LauncherScreen.WEATHER ->
+            LauncherScreen.SETTINGS, LauncherScreen.WEATHER ->
                 screen = LauncherScreen.HOME
             LauncherScreen.APPS -> scope.launch { pagerState.animateScrollToPage(0) }
             else -> Unit
@@ -359,12 +348,6 @@ internal fun DislauncherRoot() {
                 onDoubleTapLockChange = ::changeDoubleTapLock,
                 onToggleFavorite = ::toggleFavorite,
                 onToggleHidden = ::toggleHidden,
-                onBack = { screen = LauncherScreen.HOME }
-            )
-        } else if (screen == LauncherScreen.TASKS) {
-            TasksScreen(
-                tasks = tasks,
-                onTasksChange = ::updateTasks,
                 onBack = { screen = LauncherScreen.HOME }
             )
         } else if (screen == LauncherScreen.WEATHER) {
@@ -443,7 +426,6 @@ internal fun DislauncherRoot() {
                             fontFamily = fontFamily,
                             onLaunch = { launchApp(context, it) },
                             onMoveFavorite = ::moveFavorite,
-                            onOpenTasks = { screen = LauncherScreen.TASKS },
                             onOpenWeather = { cached -> weatherForScreen = cached ?: solarWeather; screen = LauncherScreen.WEATHER },
                             onOpenSettings = { screen = LauncherScreen.SETTINGS },
                             onDoubleTapToLock = { lockDevice(context, adminComponent, devicePolicyManager) },

@@ -1,7 +1,6 @@
 package com.insomdroid.dislauncher
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -37,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -44,7 +44,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -52,6 +54,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -79,7 +82,6 @@ internal fun HomeScreen(
     fontFamily: FontFamily,
     onLaunch: (LauncherApp) -> Unit,
     onMoveFavorite: (String, String) -> Unit,
-    onOpenTasks: () -> Unit,
     onOpenWeather: (WeatherInfo?) -> Unit,
     onOpenSettings: () -> Unit,
     onDoubleTapToLock: () -> Unit,
@@ -111,6 +113,13 @@ internal fun HomeScreen(
     val timeText = now.format(DateTimeFormatter.ofPattern(timePattern, Locale.getDefault()))
     val dateText = formatHomeDate(today)
     val background = MaterialTheme.colorScheme.background
+    val wallpaperBitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+        initialValue = null, context, preferences.wallpaperMode, preferences.wallpaperUri
+    ) {
+        value = if (preferences.wallpaperMode == "solid") null else withContext(Dispatchers.IO) {
+            loadWallpaperBitmap(context, preferences.wallpaperMode, preferences.wallpaperUri)?.asImageBitmap()
+        }
+    }
     val primaryText = MaterialTheme.colorScheme.onBackground
     val secondaryText = MaterialTheme.colorScheme.onSurfaceVariant
     val visibleFavorites = remember(apps, favorites) {
@@ -183,7 +192,16 @@ internal fun HomeScreen(
 
     Column(
         modifier = Modifier.fillMaxSize()
-            .background(background)
+            .drawBehind {
+                when {
+                    preferences.wallpaperMode == "solid" -> drawRect(Color(wallpaperColorInt(preferences.wallpaperColor)))
+                    wallpaperBitmap != null -> {
+                        drawImage(wallpaperBitmap!!, dstSize = IntSize(size.width.toInt(), size.height.toInt()))
+                        drawRect(background.copy(alpha = 0.48f))
+                    }
+                    else -> drawRect(background)
+                }
+            }
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .verticalScroll(rememberScrollState())
             .combinedClickable(
@@ -271,11 +289,7 @@ internal fun HomeScreen(
             )
         }
 
-        val activeMainItemIds = buildList {
-            if (preferences.showTasks) add(HOME_ITEM_TASKS)
-            if (preferences.showCall) add(HOME_ITEM_CALLS)
-            addAll(visibleFavorites.map { it.packageName })
-        }
+        val activeMainItemIds = visibleFavorites.map { it.packageName }
         val orderedMainItemIds = remember(activeMainItemIds, homeItemOrder) {
             val existing = homeItemOrder.filter { it in activeMainItemIds }
             (existing + activeMainItemIds.filterNot { it in existing }).distinct()
@@ -285,11 +299,7 @@ internal fun HomeScreen(
         Spacer(Modifier.height(220.dp))
         orderedMainItemIds.forEach { itemId ->
             val app = favoriteAppsByPackage[itemId]
-            val label = when (itemId) {
-                HOME_ITEM_TASKS -> "Tasks"
-                HOME_ITEM_CALLS -> "Calls"
-                else -> app?.label.orEmpty()
-            }
+            val label = app?.label.orEmpty()
             key(itemId) {
                 Row(
                     modifier = Modifier.fillMaxWidth()
@@ -328,17 +338,7 @@ internal fun HomeScreen(
                                 }
                             )
                         }
-                        .then(
-                            if (itemId == HOME_ITEM_MUSIC) Modifier else Modifier.clickable {
-                                when {
-                                    app != null -> onLaunch(app)
-                                    itemId == HOME_ITEM_TASKS -> onOpenTasks()
-                                    itemId == HOME_ITEM_CALLS -> runCatching {
-                                        context.startActivity(Intent(Intent.ACTION_DIAL))
-                                    }
-                                }
-                            }
-                        )
+                        .clickable { app?.let(onLaunch) }
                         .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -354,7 +354,7 @@ internal fun HomeScreen(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
-                            .padding(start = if (app != null && preferences.showAppIcons) 8.dp else 0.dp)
+                            .padding(start = if (app != null && preferences.showAppIcons) 9.dp else 0.dp)
                     )
                 }
             }

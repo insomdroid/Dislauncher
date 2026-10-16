@@ -2,6 +2,8 @@ package com.insomdroid.dislauncher
 
 import android.content.Intent
 import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -29,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +39,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,6 +65,13 @@ internal fun SettingsScreen(
     }
     var openDialog by remember { mutableStateOf("") }
     var showFontsDialog by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val wallpaperPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            runCatching { context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+            onPreferencesChange(preferences.copy(wallpaperMode = "image", wallpaperUri = uri.toString()))
+        }
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -98,9 +111,59 @@ internal fun SettingsScreen(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                 SettingAction(
                     "Manage Favourites",
-                    "${favorites.size}/5 pinned apps · long-press apps in the drawer as well",
+                    "${favorites.size}/6 pinned apps · long-press apps in the drawer as well",
                     "Manage",
                     { openDialog = "favorites" }
+                )
+            }
+
+            SettingsGroup("Wallpaper", "Use the current system wallpaper, a photo, or a solid color.") {
+                ChoiceRow(
+                    "Wallpaper source",
+                    preferences.wallpaperMode,
+                    listOf("system" to "System", "image" to "Photo", "solid" to "Solid color")
+                ) { onPreferencesChange(preferences.copy(wallpaperMode = it)) }
+
+                if (preferences.wallpaperMode == "image") {
+                    SettingAction(
+                        "Choose photo",
+                        if (preferences.wallpaperUri != null) "Photo selected" else "No photo selected",
+                        "Choose",
+                        { wallpaperPicker.launch(arrayOf("image/*")) }
+                    )
+                }
+                if (preferences.wallpaperMode == "solid") {
+                    ChoiceRow(
+                        "Solid color",
+                        preferences.wallpaperColor,
+                        WALLPAPER_COLOR_OPTIONS.map { it.key to it.label }
+                    ) { onPreferencesChange(preferences.copy(wallpaperColor = it)) }
+                }
+                ChoiceRow(
+                    "Apply to",
+                    preferences.wallpaperTarget,
+                    listOf("home" to "Home screen", "lock" to "Lock screen", "both" to "Both")
+                ) { onPreferencesChange(preferences.copy(wallpaperTarget = it)) }
+                SettingAction(
+                    "Apply wallpaper",
+                    when (preferences.wallpaperMode) {
+                        "image" -> "Apply the selected photo to the chosen screen."
+                        "solid" -> "Apply the selected color to the chosen screen."
+                        else -> "Use the current system wallpaper as the Home background."
+                    },
+                    "Apply",
+                    {
+                        scope.launch {
+                            val applied = if (preferences.wallpaperMode == "system") true else withContext(Dispatchers.IO) {
+                                applySelectedWallpaper(context, preferences.wallpaperMode, preferences.wallpaperUri, preferences.wallpaperColor, preferences.wallpaperTarget)
+                            }
+                            android.widget.Toast.makeText(
+                                context,
+                                if (applied) "Wallpaper applied." else "Choose a photo or solid color first.",
+                                android.widget.Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
                 )
             }
 
@@ -198,14 +261,6 @@ internal fun SettingsScreen(
             }
 
             SettingsGroup("Home screen", "Turn each lightweight item on or off.") {
-                SettingToggle("Show default tasks", "A small task list stored locally on this device.", preferences.showTasks) {
-                    onPreferencesChange(preferences.copy(showTasks = it))
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingToggle("Show default call", "A compact shortcut that opens the Android dialer.", preferences.showCall) {
-                    onPreferencesChange(preferences.copy(showCall = it))
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                 SettingToggle("Show status bar", "Keep Android's status bar visible at the top.", !preferences.hideStatusBar) {
                     onPreferencesChange(preferences.copy(hideStatusBar = !it))
                 }

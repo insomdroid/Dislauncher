@@ -71,13 +71,12 @@ internal fun WelcomeOnboardingScreen(
     onPreferencesChange: (LauncherPreferences) -> Unit,
     apps: List<LauncherApp>,
     favorites: Set<String>,
-    onFinish: (selectedPackages: Set<String>?, useDefaultFavorites: Boolean) -> Unit
+    onFinish: (selectedPackages: Set<String>) -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var page by remember { mutableStateOf(0) }
     var selectedFavorites by remember { mutableStateOf(favorites.toSet()) }
-    var useSelectedAsHomeApps by remember { mutableStateOf(true) }
     var permissionRefresh by remember { mutableStateOf(0) }
     val pageCount = 6
 
@@ -231,7 +230,7 @@ internal fun WelcomeOnboardingScreen(
                         }
                         5 -> {
                             Text(
-                                "Choose your five favourites",
+                                "Choose your six favourites",
                                 modifier = Modifier.fillMaxWidth(),
                                 style = MaterialTheme.typography.headlineMedium,
                                 color = MaterialTheme.colorScheme.onBackground,
@@ -240,37 +239,12 @@ internal fun WelcomeOnboardingScreen(
                             )
                             Spacer(Modifier.height(8.dp))
                             Text(
-                                "Choose which apps appear on Home by default, or let Dislauncher pick its default apps.",
+                                "Choose up to six apps to appear on Home. Only your selected favourites will appear.",
                                 modifier = Modifier.fillMaxWidth(),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center
                             )
-                            Row(
-                                modifier = Modifier.fillMaxWidth()
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .clickable { useSelectedAsHomeApps = !useSelectedAsHomeApps }
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Checkbox(
-                                    checked = useSelectedAsHomeApps,
-                                    onCheckedChange = { useSelectedAsHomeApps = it }
-                                )
-                                Column(Modifier.weight(1f)) {
-                                    Text(
-                                        "Use selected apps as default Home apps",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        color = MaterialTheme.colorScheme.onBackground
-                                    )
-                                    Text(
-                                        "Turn off to use Dislauncher's default app choices.",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                            Spacer(Modifier.height(4.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -282,7 +256,7 @@ internal fun WelcomeOnboardingScreen(
                                     color = MaterialTheme.colorScheme.onBackground
                                 )
                                 Text(
-                                    "${selectedFavorites.size.coerceAtMost(5)}/5",
+                                    "${selectedFavorites.size.coerceAtMost(6)}/6",
                                     color = MaterialTheme.colorScheme.primary,
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold
@@ -300,7 +274,7 @@ internal fun WelcomeOnboardingScreen(
                                             .clickable {
                                                 selectedFavorites = when {
                                                     checked -> selectedFavorites - app.packageName
-                                                    selectedFavorites.size < 5 -> selectedFavorites + app.packageName
+                                                    selectedFavorites.size < 6 -> selectedFavorites + app.packageName
                                                     else -> selectedFavorites
                                                 }
                                             }
@@ -322,7 +296,7 @@ internal fun WelcomeOnboardingScreen(
                                             onCheckedChange = { enabled ->
                                                 selectedFavorites = when {
                                                     !enabled -> selectedFavorites - app.packageName
-                                                    selectedFavorites.size < 5 -> selectedFavorites + app.packageName
+                                                    selectedFavorites.size < 6 -> selectedFavorites + app.packageName
                                                     else -> selectedFavorites
                                                 }
                                             }
@@ -467,7 +441,7 @@ internal fun WelcomeOnboardingScreen(
                         if (page < pageCount - 1) {
                             page++
                         } else {
-                            onFinish(if (useSelectedAsHomeApps) selectedFavorites else null, !useSelectedAsHomeApps)
+                            onFinish(selectedFavorites)
                         }
                     },
                     shape = MaterialTheme.shapes.extraLarge,
