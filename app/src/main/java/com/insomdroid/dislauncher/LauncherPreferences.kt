@@ -15,6 +15,7 @@ internal data class LauncherPreferences(
     val iconPack: String = "system",
     val iconShape: String = "original",
     val showAppIcons: Boolean = false,
+    val showBuiltInApps: Boolean = true,
     val hideStatusBar: Boolean = false,
     val showSearchBar: Boolean = true,
     val showAlphabetIndex: Boolean = true,
@@ -50,6 +51,7 @@ internal data class LauncherPreferences(
             .putString("icon_pack", iconPack)
             .putString("icon_shape", iconShape)
             .putBoolean("show_app_icons", showAppIcons)
+            .putBoolean("show_built_in_apps", showBuiltInApps)
             .putBoolean("hide_status_bar", hideStatusBar)
             .putBoolean("show_search_bar", showSearchBar)
             .putBoolean("show_alphabet_index", showAlphabetIndex)
@@ -135,6 +137,7 @@ internal data class LauncherPreferences(
                 iconPack = p.getString("icon_pack", "system") ?: "system",
                 iconShape = p.getString("icon_shape", "original")?.takeIf { it in setOf("original", "circle", "outline_square", "filled_square", "filled_rectangle") } ?: "original",
                 showAppIcons = p.getBoolean("show_app_icons", false),
+                showBuiltInApps = p.getBoolean("show_built_in_apps", true),
                 hideStatusBar = p.getBoolean("hide_status_bar", false),
                 showSearchBar = p.getBoolean("show_search_bar", true),
                 showAlphabetIndex = p.getBoolean("show_alphabet_index", true),
