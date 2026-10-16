@@ -449,7 +449,7 @@ private fun CalculatorTool(modifier: Modifier = Modifier) {
             Row(Modifier.fillMaxWidth().height(58.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
                 rowKeys.forEach { key ->
                     if (key.isBlank()) {
-                        Spacer(Modifier.weight(1f))
+                        Spacer(Modifier.size(54.dp))
                     } else {
                         val operator = key in listOf("÷", "×", "−", "+", "=")
                         val action: () -> Unit = {
