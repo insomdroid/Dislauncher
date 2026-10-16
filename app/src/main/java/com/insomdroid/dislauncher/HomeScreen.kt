@@ -343,7 +343,7 @@ internal fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (app != null && preferences.showAppIcons) {
-                        AppIcon(app, preferences.iconPack, size = 19.dp)
+                        AppIcon(app, preferences.iconPack, size = 19.dp, iconShape = preferences.iconShape)
                     }
                     Text(
                         text = label,
