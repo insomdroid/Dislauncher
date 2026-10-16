@@ -15,7 +15,9 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -289,17 +291,35 @@ internal fun AppsScreen(
                                         .toInt().coerceIn(0, alphabetLetters.lastIndex)
                                     return alphabetLetters[index]
                                 }
-                                detectVerticalDragGestures(
-                                    onDragStart = { offset ->
-                                        scrubberProgress = (offset.y / size.height.coerceAtLeast(1)).coerceIn(0f, 1f)
-                                        scrollToLetter(letterAt(offset.y))
-                                    },
-                                    onDragEnd = { scrubberProgress = null },
-                                    onDragCancel = { scrubberProgress = null }
-                                ) { change, _ ->
-                                    change.consume()
-                                    scrubberProgress = (change.position.y / size.height.coerceAtLeast(1)).coerceIn(0f, 1f)
-                                    scrollToLetter(letterAt(change.position.y))
+                                awaitEachGesture {
+                                    val down = awaitFirstDown(
+                                        pass = PointerEventPass.Initial,
+                                        requireUnconsumed = false
+                                    )
+                                    var lastLetter = letterAt(down.position.y)
+                                    scrubberProgress = (down.position.y / size.height.coerceAtLeast(1))
+                                        .coerceIn(0f, 1f)
+                                    scrollToLetter(lastLetter)
+                                    var pointerDown = true
+                                    while (pointerDown) {
+                                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                                        val change = event.changes.firstOrNull { it.id == down.id }
+                                            ?: break
+                                        if (!change.pressed) {
+                                            pointerDown = false
+                                        } else {
+                                            val progress = (change.position.y / size.height.coerceAtLeast(1))
+                                                .coerceIn(0f, 1f)
+                                            scrubberProgress = progress
+                                            val nextLetter = letterAt(change.position.y)
+                                            if (nextLetter != lastLetter) {
+                                                lastLetter = nextLetter
+                                                scrollToLetter(nextLetter)
+                                            }
+                                            change.consume()
+                                        }
+                                    }
+                                    scrubberProgress = null
                                 }
                             },
                         verticalArrangement = Arrangement.SpaceEvenly,
@@ -323,7 +343,7 @@ internal fun AppsScreen(
                                 label = "alphabet-letter-wave"
                             )
                             Box(
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.fillMaxWidth().weight(1f)
                                     .background(
                                         color = if (isActiveLetter) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
                                         else androidx.compose.ui.graphics.Color.Transparent,
