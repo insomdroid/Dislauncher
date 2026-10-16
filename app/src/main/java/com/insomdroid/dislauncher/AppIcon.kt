@@ -96,43 +96,154 @@ internal fun findIconPacks(context: Context): List<IconPackInfo> {
 }
 
 @Composable
-internal fun AppIcon(app: LauncherApp, iconPack: String, size: Dp = 20.dp) {
+internal fun AppIcon(
+    app: LauncherApp,
+    iconPack: String,
+    size: Dp = 20.dp,
+    iconShape: String = "original"
+) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val image by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
-        initialValue = null,
-        context,
-        app.packageName,
-        app.activityName,
-        iconPack
-    ) {
-        value = withContext(Dispatchers.IO) {
-            drawableToBitmap(resolveAppDrawable(context, app, iconPack))?.asImageBitmap()
+    if (iconShape == "original") {
+        val image by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+            initialValue = null, context, app.packageName, app.activityName, iconPack
+        ) {
+            value = withContext(Dispatchers.IO) {
+                drawableToBitmap(resolveAppDrawable(context, app, iconPack))?.asImageBitmap()
+            }
+        }
+        Box(
+            modifier = Modifier.size(size).clip(RoundedCornerShape(size * 0.30f))
+                .background(MaterialTheme.colorScheme.surfaceVariant).padding(size * 0.10f),
+            contentAlignment = Alignment.Center
+        ) {
+            val loadedImage = image
+            if (loadedImage != null) {
+                Image(bitmap = loadedImage, contentDescription = app.label, modifier = Modifier.fillMaxSize())
+            } else {
+                Text(
+                    app.label.firstOrNull()?.uppercaseChar()?.toString() ?: "•",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    } else {
+        val iconColor by produceState(
+            initialValue = androidx.compose.ui.graphics.Color(0xFF6488B8), context, app.packageName
+        ) {
+            value = withContext(Dispatchers.IO) { dominantAppIconColor(context, app.packageName) }
+        }
+        Box(modifier = Modifier.size(size), contentAlignment = Alignment.Center) {
+            androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+                val side = this.size.minDimension
+                val iconSize = side * 0.44f
+                val rectWidth = side * 0.56f
+                val rectHeight = side * 0.31f
+                when (iconShape) {
+                    "circle" -> drawCircle(color = iconColor, radius = iconSize / 2f)
+                    "outline_square" -> drawRect(
+                        color = iconColor,
+                        topLeft = androidx.compose.ui.geometry.Offset(
+                            (this.size.width - iconSize) / 2f, (this.size.height - iconSize) / 2f
+                        ),
+                        size = androidx.compose.ui.geometry.Size(iconSize, iconSize),
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(
+                            width = (iconSize * 0.075f).coerceAtLeast(1.dp.toPx())
+                        )
+                    )
+                    "filled_square" -> drawRect(
+                        color = iconColor,
+                        topLeft = androidx.compose.ui.geometry.Offset(
+                            (this.size.width - iconSize) / 2f, (this.size.height - iconSize) / 2f
+                        ),
+                        size = androidx.compose.ui.geometry.Size(iconSize, iconSize)
+                    )
+                    "filled_rectangle" -> drawRect(
+                        color = iconColor,
+                        topLeft = androidx.compose.ui.geometry.Offset(
+                            (this.size.width - rectWidth) / 2f, (this.size.height - rectHeight) / 2f
+                        ),
+                        size = androidx.compose.ui.geometry.Size(rectWidth, rectHeight)
+                    )
+                }
+            }
         }
     }
-    Box(
-        modifier = Modifier
-            .size(size)
-            .clip(RoundedCornerShape(size * 0.30f))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(size * 0.10f),
-        contentAlignment = Alignment.Center
-    ) {
-        val loadedImage = image
-        if (loadedImage != null) {
-            Image(
-                bitmap = loadedImage,
-                contentDescription = app.label,
-                modifier = Modifier.fillMaxSize()
+}
+
+@Composable
+internal fun BuiltInIconShapePreview(iconShape: String, modifier: Modifier = Modifier) {
+    val previewColor = androidx.compose.ui.graphics.Color(0xFF6488B8)
+    androidx.compose.foundation.Canvas(modifier = modifier.size(48.dp)) {
+        val side = this.size.minDimension
+        val iconSize = side * 0.44f
+        val rectWidth = side * 0.56f
+        val rectHeight = side * 0.31f
+        when (iconShape) {
+            "circle" -> drawCircle(color = previewColor, radius = iconSize / 2f)
+            "outline_square" -> drawRect(
+                color = previewColor,
+                topLeft = androidx.compose.ui.geometry.Offset(
+                    (this.size.width - iconSize) / 2f, (this.size.height - iconSize) / 2f
+                ),
+                size = androidx.compose.ui.geometry.Size(iconSize, iconSize),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(
+                    width = (iconSize * 0.075f).coerceAtLeast(1.dp.toPx())
+                )
             )
-        } else {
-            Text(
-                app.label.firstOrNull()?.uppercaseChar()?.toString() ?: "•",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold
+            "filled_square" -> drawRect(
+                color = previewColor,
+                topLeft = androidx.compose.ui.geometry.Offset(
+                    (this.size.width - iconSize) / 2f, (this.size.height - iconSize) / 2f
+                ),
+                size = androidx.compose.ui.geometry.Size(iconSize, iconSize)
+            )
+            "filled_rectangle" -> drawRect(
+                color = previewColor,
+                topLeft = androidx.compose.ui.geometry.Offset(
+                    (this.size.width - rectWidth) / 2f, (this.size.height - rectHeight) / 2f
+                ),
+                size = androidx.compose.ui.geometry.Size(rectWidth, rectHeight)
             )
         }
     }
+}
+
+private fun dominantAppIconColor(context: Context, packageName: String): androidx.compose.ui.graphics.Color {
+    val bitmap = runCatching {
+        drawableToBitmap(context.packageManager.getApplicationIcon(packageName))
+    }.getOrNull() ?: return androidx.compose.ui.graphics.Color(0xFF6488B8)
+    val buckets = HashMap<Int, Int>()
+    var sampled = 0
+    var saturationTotal = 0f
+    val stepX = (bitmap.width / 32).coerceAtLeast(1)
+    val stepY = (bitmap.height / 32).coerceAtLeast(1)
+    for (y in 0 until bitmap.height step stepY) {
+        for (x in 0 until bitmap.width step stepX) {
+            val pixel = bitmap.getPixel(x, y)
+            if (android.graphics.Color.alpha(pixel) < 160) continue
+            val red = android.graphics.Color.red(pixel)
+            val green = android.graphics.Color.green(pixel)
+            val blue = android.graphics.Color.blue(pixel)
+            val hsv = FloatArray(3)
+            android.graphics.Color.RGBToHSV(red, green, blue, hsv)
+            if (hsv[2] < 0.16f) continue
+            saturationTotal += hsv[1]
+            sampled++
+            val key = ((red shr 4) shl 8) or ((green shr 4) shl 4) or (blue shr 4)
+            buckets[key] = (buckets[key] ?: 0) + 1
+        }
+    }
+    if (sampled == 0 || saturationTotal / sampled < 0.12f) {
+        return androidx.compose.ui.graphics.Color(0xFF6488B8)
+    }
+    val dominant = buckets.maxByOrNull { it.value }?.key
+        ?: return androidx.compose.ui.graphics.Color(0xFF6488B8)
+    val red = (((dominant shr 8) and 0xF) * 16 + 8).coerceIn(0, 255)
+    val green = (((dominant shr 4) and 0xF) * 16 + 8).coerceIn(0, 255)
+    val blue = ((dominant and 0xF) * 16 + 8).coerceIn(0, 255)
+    return androidx.compose.ui.graphics.Color(android.graphics.Color.rgb(red, green, blue))
 }
 // appfilter.xml can contain thousands of entries. Parse it once per pack.
 private val iconPackMappings = ConcurrentHashMap<String, Map<String, String>>()
