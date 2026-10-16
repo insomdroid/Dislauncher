@@ -103,8 +103,8 @@ internal fun AppsScreen(
     val searching = query.isNotBlank()
     // Keep Dislauncher's own tools in a dedicated section so they cannot get lost
     // among installed apps or be affected by the system-app visibility preference.
-    val filteredBuiltIns = remember(apps, query) {
-        apps.filter {
+    val filteredBuiltIns = remember(apps, query, preferences.showBuiltInApps) {
+        if (!preferences.showBuiltInApps) emptyList() else apps.filter {
             it.packageName.startsWith("internal:") &&
                 it.label.contains(query.trim(), ignoreCase = true)
         }.sortedBy { it.label.lowercase(Locale.getDefault()) }
@@ -126,8 +126,8 @@ internal fun AppsScreen(
     var scrubberProgress by remember { mutableStateOf<Float?>(null) }
     val firstIndexByLetter = remember(filtered, filteredBuiltIns) {
         val result = linkedMapOf<String, Int>()
-        // LazyColumn has one heading followed by each visible built-in tool.
-        val installedAppsOffset = if (filteredBuiltIns.isNotEmpty()) filteredBuiltIns.size + 1 else 0
+        // Built-in tools occupy one horizontal row in the first list item.
+        val installedAppsOffset = if (filteredBuiltIns.isNotEmpty()) 1 else 0
         filtered.forEachIndexed { index, app ->
             val letter = app.label.firstOrNull()?.uppercaseChar()?.toString()
                 ?.takeIf { it in alphabetLetters } ?: "#"
@@ -186,59 +186,49 @@ internal fun AppsScreen(
                     }
                 }
                 if (filteredBuiltIns.isNotEmpty()) {
-                    item(key = "built-in-apps-heading") {
-                        Text(
-                            "Built-in apps",
-                            color = secondary,
-                            fontSize = 14.sp,
-                            lineHeight = 18.sp,
-                            fontFamily = fontFamily,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-                            modifier = Modifier.padding(top = 10.dp, bottom = 6.dp, start = 1.dp)
-                        )
-                    }
-                    filteredBuiltIns.forEach { app ->
-                        item(key = "built-in-row-${app.packageName}") {
-                            val toolIcon = when (app.packageName) {
-                                "internal:calculator" -> androidx.compose.material.icons.Icons.Outlined.Calculate
-                                "internal:calendar" -> androidx.compose.material.icons.Icons.Outlined.CalendarMonth
-                                else -> androidx.compose.material.icons.Icons.Outlined.Description
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth()
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .clickable { onLaunch(app) }
-                                    .padding(vertical = 12.dp, horizontal = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier.size(36.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                                    contentAlignment = Alignment.Center
+                    item(key = "built-in-apps-row") {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(18.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            filteredBuiltIns.forEach { app ->
+                                val toolIcon = when (app.packageName) {
+                                    "internal:calculator" -> androidx.compose.material.icons.Icons.Outlined.Calculate
+                                    "internal:calendar" -> androidx.compose.material.icons.Icons.Outlined.CalendarMonth
+                                    else -> androidx.compose.material.icons.Icons.Outlined.Description
+                                }
+                                Column(
+                                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(14.dp))
+                                        .clickable { onLaunch(app) }.padding(vertical = 8.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    Icon(
-                                        imageVector = toolIcon,
-                                        contentDescription = app.label,
-                                        tint = mainText,
-                                        modifier = Modifier.size(21.dp)
+                                    Box(
+                                        modifier = Modifier.size(42.dp).clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = toolIcon,
+                                            contentDescription = app.label,
+                                            tint = mainText,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+                                    Text(
+                                        app.label,
+                                        color = mainText,
+                                        fontSize = 12.sp,
+                                        lineHeight = 15.sp,
+                                        fontFamily = fontFamily,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
-                                Spacer(Modifier.width(12.dp))
-                                Text(
-                                    app.label,
-                                    color = mainText,
-                                    fontSize = 25.sp,
-                                    lineHeight = 32.sp,
-                                    fontFamily = fontFamily,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f)
-                                )
                             }
                         }
                     }
-                    item(key = "built-in-apps-spacer") { Spacer(Modifier.height(10.dp)) }
                 }
                 items(filtered, key = { it.packageName }) { app ->
                     Row(
