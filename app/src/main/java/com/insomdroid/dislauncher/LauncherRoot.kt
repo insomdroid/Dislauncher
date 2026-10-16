@@ -233,12 +233,8 @@ internal fun DislauncherRoot() {
 
     fun changeDoubleTapLock(enabled: Boolean) {
         if (!enabled) {
+            // Disabling the gesture should not revoke device-admin access automatically.
             updatePreferences(preferences.copy(doubleTapToLock = false))
-            runCatching {
-                if (devicePolicyManager.isAdminActive(adminComponent)) {
-                    devicePolicyManager.removeActiveAdmin(adminComponent)
-                }
-            }
             return
         }
         if (devicePolicyManager.isAdminActive(adminComponent)) {
