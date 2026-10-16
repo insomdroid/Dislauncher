@@ -113,11 +113,17 @@ internal fun HomeScreen(
     val timeText = now.format(DateTimeFormatter.ofPattern(timePattern, Locale.getDefault()))
     val dateText = formatHomeDate(today)
     val background = MaterialTheme.colorScheme.background
+    val homeWallpaperMode = if (preferences.wallpaperMode != "system" && preferences.wallpaperTarget == "lock") {
+        "system"
+    } else {
+        preferences.wallpaperMode
+    }
+    val homeWallpaperUri = if (homeWallpaperMode == "image") preferences.wallpaperUri else null
     val wallpaperBitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
-        initialValue = null, context, preferences.wallpaperMode, preferences.wallpaperUri
+        initialValue = null, context, homeWallpaperMode, homeWallpaperUri
     ) {
-        value = if (preferences.wallpaperMode == "solid") null else withContext(Dispatchers.IO) {
-            loadWallpaperBitmap(context, preferences.wallpaperMode, preferences.wallpaperUri)?.asImageBitmap()
+        value = if (homeWallpaperMode == "solid") null else withContext(Dispatchers.IO) {
+            loadWallpaperBitmap(context, homeWallpaperMode, homeWallpaperUri)?.asImageBitmap()
         }
     }
     val primaryText = MaterialTheme.colorScheme.onBackground
@@ -194,7 +200,7 @@ internal fun HomeScreen(
         modifier = Modifier.fillMaxSize()
             .drawBehind {
                 when {
-                    preferences.wallpaperMode == "solid" -> drawRect(Color(wallpaperColorInt(preferences.wallpaperColor)))
+                    homeWallpaperMode == "solid" -> drawRect(Color(wallpaperColorInt(preferences.wallpaperColor)))
                     wallpaperBitmap != null -> {
                         drawImage(wallpaperBitmap!!, dstSize = IntSize(size.width.toInt(), size.height.toInt()))
                         drawRect(background.copy(alpha = 0.48f))
