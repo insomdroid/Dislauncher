@@ -12,10 +12,6 @@ internal data class LauncherPreferences(
     val iconPack: String = "system",
     val iconShape: String = "original",
     val showAppIcons: Boolean = false,
-    val wallpaperMode: String = "default",
-    val wallpaperUri: String? = null,
-    val wallpaperColor: String = "black",
-    val wallpaperTarget: String = "home",
     val hideStatusBar: Boolean = false,
     val showSearchBar: Boolean = true,
     val autoLaunchKeyboard: Boolean = false,
@@ -45,10 +41,6 @@ internal data class LauncherPreferences(
             .putString("icon_pack", iconPack)
             .putString("icon_shape", iconShape)
             .putBoolean("show_app_icons", showAppIcons)
-            .putString("wallpaper_mode", wallpaperMode)
-            .putString("wallpaper_uri", wallpaperUri)
-            .putString("wallpaper_color", wallpaperColor)
-            .putString("wallpaper_target", wallpaperTarget)
             .putBoolean("hide_status_bar", hideStatusBar)
             .putBoolean("show_search_bar", showSearchBar)
             .putBoolean("auto_launch_keyboard", autoLaunchKeyboard)
@@ -128,13 +120,6 @@ internal data class LauncherPreferences(
                 iconPack = p.getString("icon_pack", "system") ?: "system",
                 iconShape = p.getString("icon_shape", "original")?.takeIf { it in setOf("original", "circle", "outline_square", "filled_square", "filled_rectangle") } ?: "original",
                 showAppIcons = p.getBoolean("show_app_icons", false),
-                wallpaperMode = when (p.getString("wallpaper_mode", "default")) {
-                    "image" -> "image"
-                    else -> "default"
-                },
-                wallpaperUri = p.getString("wallpaper_uri", null),
-                wallpaperColor = p.getString("wallpaper_color", "black")?.takeIf { it in setOf("black", "white", "slate", "navy", "forest", "plum", "sand", "rose") } ?: "black",
-                wallpaperTarget = p.getString("wallpaper_target", "home")?.takeIf { it in setOf("home", "lock", "both") } ?: "home",
                 hideStatusBar = p.getBoolean("hide_status_bar", false),
                 showSearchBar = p.getBoolean("show_search_bar", true),
                 autoLaunchKeyboard = p.getBoolean("auto_launch_keyboard", false),
