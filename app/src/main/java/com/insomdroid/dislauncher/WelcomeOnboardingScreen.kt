@@ -104,7 +104,11 @@ internal fun WelcomeOnboardingScreen(
         ActivityResultContracts.RequestPermission()
     ) { permissionRefresh++ }
 
-    fun skipOnboarding() = onFinish(emptySet())
+    fun skipOnboarding() {
+        val orderedApps = (apps.filterNot { it.isSystem } + apps.filter { it.isSystem })
+            .distinctBy { it.packageName }
+        onFinish(orderedApps.take(5).map { it.packageName }.toSet())
+    }
     fun openSystemSettings(action: String) {
         runCatching { context.startActivity(Intent(action)) }
     }
