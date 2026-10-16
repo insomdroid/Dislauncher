@@ -13,6 +13,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -55,9 +56,6 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -102,7 +100,7 @@ internal fun AppsScreen(
     var searchFocused by remember { mutableStateOf(false) }
     val searchColor = if (searchFocused || query.isNotEmpty()) mainText else secondary.copy(alpha = 0.65f)
     val alphabetLetters = remember { ('A'..'Z').map(Char::toString) + "#" }
-    var selectedAlphabetLetter by remember { mutableStateOf<String?>(null) }
+    var scrubberProgress by remember { mutableStateOf<Float?>(null) }
     val firstIndexByLetter = remember(filtered) {
         val result = linkedMapOf<String, Int>()
         filtered.forEachIndexed { index, app ->
@@ -214,80 +212,83 @@ internal fun AppsScreen(
                 }
             }
             if (preferences.showAlphabetIndex && !searching && filtered.isNotEmpty()) {
-                Column(
+                BoxWithConstraints(
                     modifier = Modifier.align(Alignment.BottomEnd)
                         .padding(bottom = 48.dp)
-                        .fillMaxHeight(0.5f)
+                        .fillMaxHeight(0.56f)
                         .width(20.dp)
-                        .pointerInput(alphabetLetters, firstIndexByLetter) {
-                            fun letterAt(y: Float): String {
-                                val height = size.height.coerceAtLeast(1)
-                                val index = ((y / height) * alphabetLetters.size)
-                                    .toInt().coerceIn(0, alphabetLetters.lastIndex)
-                                return alphabetLetters[index]
-                            }
-                            detectVerticalDragGestures(
-                                onDragStart = { offset ->
-                                    selectedAlphabetLetter = letterAt(offset.y)
-                                    scrollToLetter(letterAt(offset.y))
-                                },
-                                onDragEnd = { selectedAlphabetLetter = null },
-                                onDragCancel = { selectedAlphabetLetter = null }
-                            ) { change, _ ->
-                                change.consume()
-                                val letter = letterAt(change.position.y)
-                                selectedAlphabetLetter = letter
-                                scrollToLetter(letter)
-                            }
-                        },
-                    verticalArrangement = Arrangement.SpaceEvenly,
-                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    alphabetLetters.forEach { letter ->
-                        val selected = selectedAlphabetLetter == letter
-                        val distance = selectedAlphabetLetter?.let {
-                            kotlin.math.abs(alphabetLetters.indexOf(it) - alphabetLetters.indexOf(letter))
-                        } ?: Int.MAX_VALUE
-                        val scale by animateFloatAsState(
-                            targetValue = when (distance) {
-                                0 -> 1.65f
-                                1 -> 1.35f
-                                2 -> 1.12f
-                                else -> 1f
-                            },
-                            animationSpec = spring(dampingRatio = 0.48f, stiffness = 420f),
-                            label = "alphabet-wave-$letter"
-                        )
-                        Box(
-                            modifier = Modifier.size(18.dp)
-                                .graphicsLayer {
-                                    scaleX = scale
-                                    scaleY = scale
+                    Column(
+                        modifier = Modifier.fillMaxSize()
+                            .pointerInput(alphabetLetters, firstIndexByLetter) {
+                                fun letterAt(y: Float): String {
+                                    val height = size.height.coerceAtLeast(1)
+                                    val index = ((y / height) * alphabetLetters.size)
+                                        .toInt().coerceIn(0, alphabetLetters.lastIndex)
+                                    return alphabetLetters[index]
                                 }
-                                .background(
-                                    color = if (selected) MaterialTheme.colorScheme.primaryContainer
-                                        else androidx.compose.ui.graphics.Color.Transparent,
-                                    shape = CircleShape
+                                detectVerticalDragGestures(
+                                    onDragStart = { offset ->
+                                        scrubberProgress = (offset.y / size.height.coerceAtLeast(1)).coerceIn(0f, 1f)
+                                        scrollToLetter(letterAt(offset.y))
+                                    },
+                                    onDragEnd = { scrubberProgress = null },
+                                    onDragCancel = { scrubberProgress = null }
+                                ) { change, _ ->
+                                    change.consume()
+                                    scrubberProgress = (change.position.y / size.height.coerceAtLeast(1)).coerceIn(0f, 1f)
+                                    scrollToLetter(letterAt(change.position.y))
+                                }
+                            },
+                        verticalArrangement = Arrangement.SpaceEvenly,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        alphabetLetters.forEach { letter ->
+                            Box(
+                                modifier = Modifier.size(18.dp)
+                                    .clickable(enabled = letter in firstIndexByLetter) {
+                                        scrollToLetter(letter)
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    letter,
+                                    color = if (letter in firstIndexByLetter) {
+                                        secondary.copy(alpha = 0.42f)
+                                    } else {
+                                        secondary.copy(alpha = 0.18f)
+                                    },
+                                    fontSize = 8.sp,
+                                    lineHeight = 9.sp
                                 )
-                                .clickable(enabled = letter in firstIndexByLetter) {
-                                    selectedAlphabetLetter = letter
-                                    scrollToLetter(letter)
-                                    scope.launch {
-                                        delay(420L)
-                                        if (selectedAlphabetLetter == letter) selectedAlphabetLetter = null
-                                    }
-                                },
+                            }
+                        }
+                    }
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = scrubberProgress != null,
+                        modifier = Modifier.align(Alignment.TopStart).offset(
+                            x = (-48).dp,
+                            y = (maxHeight * (scrubberProgress ?: 0f) - 20.dp)
+                                .coerceIn(0.dp, (maxHeight - 40.dp).coerceAtLeast(0.dp))
+                        ),
+                        enter = androidx.compose.animation.fadeIn() +
+                            androidx.compose.animation.slideInHorizontally { it / 2 },
+                        exit = androidx.compose.animation.fadeOut() +
+                            androidx.compose.animation.slideOutHorizontally { it / 2 }
+                    ) {
+                        Box(
+                            modifier = Modifier.size(40.dp)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                letter,
-                                color = when {
-                                    selected -> MaterialTheme.colorScheme.onPrimaryContainer
-                                    letter in firstIndexByLetter -> secondary.copy(alpha = 0.38f)
-                                    else -> secondary.copy(alpha = 0.18f)
-                                },
-                                fontSize = 8.sp,
-                                lineHeight = 9.sp
+                                scrubberProgress?.let {
+                                    alphabetLetters[((it * alphabetLetters.size).toInt())
+                                        .coerceIn(0, alphabetLetters.lastIndex)]
+                                } ?: "",
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                fontSize = 18.sp,
+                                lineHeight = 20.sp
                             )
                         }
                     }
