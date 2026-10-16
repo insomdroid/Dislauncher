@@ -1,30 +1,41 @@
 package com.insomdroid.dislauncher
 
+import android.Manifest
+import android.app.admin.DevicePolicyManager
+import android.app.role.RoleManager
+import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.provider.Settings
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,9 +45,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+
+private enum class SettingsCategory {
+    APPEARANCE, HOME, APPS, GESTURES, ACCESS, ABOUT
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,12 +73,92 @@ internal fun SettingsScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val isIndonesian = context.resources.configuration.locales[0]?.language == "id"
+    fun tr(english: String, indonesian: String): String =
+        settingsLocalizedText(context, english, indonesian)
+
+    var selectedCategory by remember { mutableStateOf<SettingsCategory?>(null) }
+    var openDialog by remember { mutableStateOf("") }
     var detectedIconPacks by remember { mutableStateOf(iconPacks) }
+    var refreshVersion by remember { mutableStateOf(0) }
+
     LaunchedEffect(context) {
         detectedIconPacks = findIconPacks(context)
     }
-    var openDialog by remember { mutableStateOf("") }
-    var showFontsDialog by remember { mutableStateOf(false) }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) refreshVersion++
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    BackHandler(enabled = selectedCategory != null) {
+        selectedCategory = null
+        openDialog = ""
+    }
+
+    val adminComponent = remember(context) {
+        ComponentName(context, DislauncherAdminReceiver::class.java)
+    }
+    val devicePolicyManager = remember(context) {
+        context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+    }
+    val notificationAccessEnabled = remember(refreshVersion) {
+        val enabled = Settings.Secure.getString(
+            context.contentResolver,
+            "enabled_notification_listeners"
+        ).orEmpty()
+        enabled.split(':').any { entry ->
+            ComponentName.unflattenFromString(entry)?.let {
+                it.packageName == context.packageName &&
+                    it.className == DislauncherNotificationListener::class.java.name
+            } == true
+        }
+    }
+    val adminActive = remember(refreshVersion) {
+        runCatching { devicePolicyManager.isAdminActive(adminComponent) }.getOrDefault(false)
+    }
+    val defaultLauncher = remember(refreshVersion) { isDislauncherDefaultHome(context) }
+    val calendarPermission = remember(refreshVersion) {
+        ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) ==
+            PackageManager.PERMISSION_GRANTED
+    }
+    val locationPermission = remember(refreshVersion) {
+        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
+    }
+    val appVersion = remember {
+        runCatching {
+            @Suppress("DEPRECATION")
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        }.getOrNull() ?: "—"
+    }
+
+    fun openSystemPage(intent: Intent) {
+        runCatching { context.startActivity(intent) }
+    }
+
+    fun openAppPermissionSettings() {
+        openSystemPage(
+            Intent(
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.fromParts("package", context.packageName, null)
+            )
+        )
+    }
+
+    val categoryTitle = when (selectedCategory) {
+        SettingsCategory.APPEARANCE -> tr("Appearance", "Tampilan")
+        SettingsCategory.HOME -> tr("Home screen", "Layar utama")
+        SettingsCategory.APPS -> tr("Apps", "Aplikasi")
+        SettingsCategory.GESTURES -> tr("Gestures", "Gestur")
+        SettingsCategory.ACCESS -> tr("Permissions and access", "Izin dan akses")
+        SettingsCategory.ABOUT -> tr("About", "Tentang")
+        null -> tr("Settings", "Setelan")
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -67,15 +166,20 @@ internal fun SettingsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Settings",
+                        categoryTitle,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold
                     )
                 },
                 navigationIcon = {
-                    TextButton(onClick = onBack) {
-                        Text("←", fontSize = 24.sp)
-                    }
+                    TextButton(
+                        onClick = {
+                            if (selectedCategory != null) {
+                                selectedCategory = null
+                                openDialog = ""
+                            } else onBack()
+                        }
+                    ) { Text("←", fontSize = 24.sp) }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
@@ -84,300 +188,355 @@ internal fun SettingsScreen(
         }
     ) { innerPadding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(innerPadding)
+            modifier = Modifier.fillMaxSize()
+                .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            SettingsGroup("Manage Apps", "Choose what appears on the Home screen and in the drawer.") {
-                SettingAction(
-                    "Manage Hidden Apps",
-                    "${hiddenApps.size} hidden · hide apps without uninstalling",
-                    "Manage",
-                    { openDialog = "hidden" }
+            if (selectedCategory == null) {
+                Text(
+                    tr("Choose a category", "Pilih kategori"),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
                 )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingAction(
-                    "Manage Favourites",
-                    "${favorites.size}/6 pinned apps · long-press apps in the drawer as well",
-                    "Manage",
-                    { openDialog = "favorites" }
+                val categories = listOf(
+                    Triple(SettingsCategory.APPEARANCE, "◐", tr("Appearance", "Tampilan")) to
+                        tr("Theme, fonts and app icons", "Tema, font, dan ikon aplikasi"),
+                    Triple(SettingsCategory.HOME, "⌂", tr("Home screen", "Layar utama")) to
+                        tr("Home elements, widgets and formats", "Elemen Home, widget, dan format"),
+                    Triple(SettingsCategory.APPS, "▦", tr("Apps", "Aplikasi")) to
+                        tr("Favourites, hidden apps and app drawer", "Favorit, aplikasi tersembunyi, dan app drawer"),
+                    Triple(SettingsCategory.GESTURES, "↘", tr("Gestures", "Gestur")) to
+                        tr("Quick actions for the Home screen", "Aksi cepat pada layar utama"),
+                    Triple(SettingsCategory.ACCESS, "✓", tr("Permissions and access", "Izin dan akses")) to
+                        tr("Check access required by features", "Periksa akses yang diperlukan fitur"),
+                    Triple(SettingsCategory.ABOUT, "ⓘ", tr("About", "Tentang")) to
+                        tr("Version and project information", "Versi dan informasi proyek")
                 )
-            }
-
-            SettingsGroup("Theme", "Make the launcher feel personal with clear choices and expressive Material surfaces.") {
-                Column(Modifier.fillMaxWidth().padding(15.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                    ChoiceRow(
-                        "Theme",
-                        preferences.themeMode,
-                        listOf(
-                            "system" to "System",
-                            "light" to "Light",
-                            "dark" to "Dark",
-                            "black" to "Black"
-                        )
-                    ) { onPreferencesChange(preferences.copy(themeMode = it)) }
-                    SettingToggle(
-                        "Dynamic color",
-                        "Use Android wallpaper colors for accents and controls on Android 12+. Dark mode keeps its pure-black background.",
-                        preferences.dynamicColor
-                    ) { onPreferencesChange(preferences.copy(dynamicColor = it)) }
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                    SettingAction(
-                        "Custom font",
-                        when (preferences.fontMode) {
-                            "mono" -> "Monospace"
-                            "custom" -> preferences.customFontName ?: "Custom font"
-                            else -> "System font"
-                        },
-                        "Choose",
-                        { showFontsDialog = true }
+                categories.forEachIndexed { index, entry ->
+                    val (category, icon, title) = entry.first
+                    SettingsCategoryRow(
+                        icon = icon,
+                        title = title,
+                        description = entry.second,
+                        onClick = { selectedCategory = category }
                     )
-                    ChoiceRow(
-                        "Font size",
-                        preferences.fontSize,
-                        listOf("small" to "Small", "medium" to "Medium", "large" to "Large")
-                    ) { onPreferencesChange(preferences.copy(fontSize = it)) }
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                    SettingToggle(
-                        "Show app icons",
-                        "Show compact app icons beside names in Home and the drawer.",
-                        preferences.showAppIcons
-                    ) { onPreferencesChange(preferences.copy(showAppIcons = it)) }
-                    if (preferences.showAppIcons) {
-                        ChoiceRow(
-                            "Built-in icon shape",
-                            preferences.iconShape,
-                            listOf(
-                                "original" to "Original",
-                                "circle" to "Circle",
-                                "outline_square" to "Outline square",
-                                "filled_square" to "Filled square",
-                                "filled_rectangle" to "Rectangle"
-                            )
-                        ) { onPreferencesChange(preferences.copy(iconShape = it)) }
-                    } else {
-                        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                            Text(
-                                "Built-in icon shape",
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Text(
-                                "Enable Show app icons to change the shape.",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
+                    if (index < categories.lastIndex) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
                     }
-                    if (preferences.showAppIcons) {
-                        SettingAction(
-                            "Icon pack",
-                            detectedIconPacks.firstOrNull { it.packageName == preferences.iconPack }?.label
-                                ?: if (preferences.iconPack == "system") "System default" else "Selected pack not installed",
-                            "Choose",
-                            {
-                                detectedIconPacks = findIconPacks(context)
-                                openDialog = "iconpack"
+                }
+            } else {
+                when (selectedCategory) {
+                    SettingsCategory.APPEARANCE -> {
+                        SettingsGroup(tr("Theme and color", "Tema dan warna")) {
+                            ChoiceRow(
+                                tr("Theme", "Tema"),
+                                preferences.themeMode,
+                                listOf(
+                                    "system" to tr("System", "Sistem"),
+                                    "light" to tr("Light", "Terang"),
+                                    "dark" to tr("Dark", "Gelap"),
+                                    "black" to tr("Black", "Hitam")
+                                )
+                            ) { onPreferencesChange(preferences.copy(themeMode = it)) }
+                            SettingToggle(
+                                tr("Dynamic color", "Warna dinamis"),
+                                tr("Use Android wallpaper colors for accents.", "Gunakan warna dari wallpaper Android untuk aksen."),
+                                preferences.dynamicColor
+                            ) { onPreferencesChange(preferences.copy(dynamicColor = it)) }
+                        }
+                        SettingsGroup(tr("Font and text size", "Font dan ukuran teks")) {
+                            ChoiceRow(
+                                tr("Built-in font", "Font bawaan"),
+                                preferences.fontMode,
+                                listOf(
+                                    "system" to tr("System", "Sistem"),
+                                    "mono" to "Monospace",
+                                    "custom" to tr("Custom", "Kustom")
+                                )
+                            ) { value ->
+                                if (value == "custom") onChooseCustomFont()
+                                else onPreferencesChange(preferences.copy(fontMode = value))
                             }
-                        )
-                    } else {
-                        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                            Text(
-                                "Icon pack",
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-                                style = MaterialTheme.typography.bodyLarge
+                            SettingAction(
+                                tr("Custom font file", "File font kustom"),
+                                if (preferences.fontMode == "custom") {
+                                    tr("Active: ", "Aktif: ") + (preferences.customFontName
+                                        ?: tr("Custom font", "Font kustom"))
+                                } else {
+                                    preferences.customFontName
+                                        ?: tr("No custom font selected", "Belum ada font kustom dipilih")
+                                },
+                                tr("Choose file", "Pilih file"),
+                                onChooseCustomFont
                             )
-                            Text(
-                                "Enable Show app icons to choose an icon pack.",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                style = MaterialTheme.typography.bodySmall
-                            )
+                            ChoiceRow(
+                                tr("Font size", "Ukuran font"),
+                                preferences.fontSize,
+                                listOf(
+                                    "small" to tr("Small", "Kecil"),
+                                    "medium" to tr("Medium", "Sedang"),
+                                    "large" to tr("Large", "Besar")
+                                )
+                            ) { onPreferencesChange(preferences.copy(fontSize = it)) }
+                        }
+                        SettingsGroup(tr("App icons", "Ikon aplikasi")) {
+                            SettingToggle(
+                                tr("Show app icons", "Tampilkan ikon aplikasi"),
+                                "",
+                                preferences.showAppIcons
+                            ) { onPreferencesChange(preferences.copy(showAppIcons = it)) }
+                            if (preferences.showAppIcons) {
+                                ChoiceRow(
+                                    tr("Built-in icon shape", "Bentuk ikon bawaan"),
+                                    preferences.iconShape,
+                                    listOf(
+                                        "original" to tr("Original", "Asli"),
+                                        "circle" to tr("Circle", "Lingkaran"),
+                                        "outline_square" to tr("Outline square", "Kotak outline"),
+                                        "filled_square" to tr("Filled square", "Kotak penuh"),
+                                        "filled_rectangle" to tr("Rectangle", "Persegi panjang")
+                                    )
+                                ) { onPreferencesChange(preferences.copy(iconShape = it)) }
+                                SettingAction(
+                                    tr("Icon pack", "Paket ikon"),
+                                    detectedIconPacks.firstOrNull { it.packageName == preferences.iconPack }?.label
+                                        ?: if (preferences.iconPack == "system") {
+                                            tr("System default", "Bawaan sistem")
+                                        } else tr("Selected pack not installed", "Paket terpilih tidak terpasang"),
+                                    tr("Choose", "Pilih")
+                                ) {
+                                    detectedIconPacks = findIconPacks(context)
+                                    openDialog = "iconpack"
+                                }
+                            } else {
+                                Text(
+                                    tr(
+                                        "Turn on app icons to configure their shape or icon pack.",
+                                        "Aktifkan ikon aplikasi untuk mengatur bentuk atau paket ikon."
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
-                }
-            }
 
-            SettingsGroup("Home screen", "Turn each lightweight item on or off.") {
-                SettingToggle("Show status bar", "Keep Android's status bar visible at the top.", !preferences.hideStatusBar) {
-                    onPreferencesChange(preferences.copy(hideStatusBar = !it))
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingToggle("Show clock", "Tap the clock on Home to open the clock app.", preferences.showClock) {
-                    onPreferencesChange(preferences.copy(showClock = it))
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingToggle("Show date", "Tap the date to open the calendar app.", preferences.showDate) {
-                    onPreferencesChange(preferences.copy(showDate = it))
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingToggle("Show calendar agenda", "Read today's upcoming events on Home; Android asks for calendar access when needed.", preferences.showCalendarShortcut) {
-                    onPreferencesChange(preferences.copy(showCalendarShortcut = it))
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingToggle("Show music player", "Show the active track and playback controls on Home. Media access may be requested.", preferences.showMusic) {
-                    onPreferencesChange(preferences.copy(showMusic = it))
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingToggle("Show weather", "Uses approximate device location and Open-Meteo weather data.", preferences.showWeather) {
-                    onPreferencesChange(preferences.copy(showWeather = it))
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                ChoiceRow("Weather unit", preferences.weatherUnit, listOf("C" to "°C", "F" to "°F")) {
-                    onPreferencesChange(preferences.copy(weatherUnit = it))
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                ChoiceRow(
-                    "Time format",
-                    preferences.timeFormat,
-                    listOf("system" to "System", "12" to "12-hour", "24" to "24-hour")
-                ) { onPreferencesChange(preferences.copy(timeFormat = it)) }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingToggle("Battery % widget", "Show the current battery percentage on Home.", preferences.showBattery) {
-                    onPreferencesChange(preferences.copy(showBattery = it))
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingToggle("Show day in %", "Display a thin progress bar for today's elapsed time.", preferences.showDayProgress) {
-                    onPreferencesChange(preferences.copy(showDayProgress = it))
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingToggle("Show year in %", "Display a thin progress bar for the year.", preferences.showYearProgress) {
-                    onPreferencesChange(preferences.copy(showYearProgress = it))
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingToggle("Show Settings button", "When disabled, long-press empty space on Home to open Settings.", preferences.showSettingsButton) {
-                    onPreferencesChange(preferences.copy(showSettingsButton = it))
-                }
-            }
-
-            SettingsGroup("App drawer", "Keep the list compact and make navigation easier.") {
-                SettingToggle("Show search bar", "Show the app search field.", preferences.showSearchBar) {
-                    onPreferencesChange(preferences.copy(showSearchBar = it))
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingToggle("Auto-launch keyboard", "Focus the search field and open the keyboard when the drawer opens.", preferences.autoLaunchKeyboard) {
-                    onPreferencesChange(preferences.copy(autoLaunchKeyboard = it))
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingToggle("Hide system apps", "Hide apps marked by Android as system apps.", preferences.hideSystemApps) {
-                    onPreferencesChange(preferences.copy(hideSystemApps = it))
-                }
-            }
-
-            SettingsGroup("Gestures", "Optional shortcuts. Screen lock requires device-admin approval.") {
-                SettingToggle("Double tap to lock", "Android asks you to enable dislauncher as a device admin before this works.", preferences.doubleTapToLock) {
-                    onDoubleTapLockChange(it)
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingToggle(
-                    "Swipe down for notifications",
-                    "Swipe down across the Home screen to open the notification shade. Some Android builds may restrict this system action.",
-                    preferences.swipeDownNotifications
-                ) { enabled ->
-                    onPreferencesChange(preferences.copy(swipeDownNotifications = enabled))
-                }
-            }
-
-            SettingsGroup("Misc", "System-owned settings open outside dislauncher.") {
-                SettingAction(
-                    "Music controls access",
-                    "Allow Dislauncher to read active media sessions so Previous, Play and Next can control your music app.",
-                    "Open",
-                    {
-                        runCatching {
-                            context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                    SettingsCategory.HOME -> {
+                        SettingsGroup(tr("Home elements", "Elemen Home")) {
+                            SettingToggle(tr("Show status bar", "Tampilkan status bar"), "", !preferences.hideStatusBar) {
+                                onPreferencesChange(preferences.copy(hideStatusBar = !it))
+                            }
+                            SettingToggle(
+                                tr("Show clock", "Tampilkan jam"),
+                                tr("Tap the clock to open the clock app.", "Ketuk jam untuk membuka aplikasi jam."),
+                                preferences.showClock
+                            ) { onPreferencesChange(preferences.copy(showClock = it)) }
+                            SettingToggle(
+                                tr("Show date", "Tampilkan tanggal"),
+                                tr("Tap the date to open the calendar.", "Ketuk tanggal untuk membuka kalender."),
+                                preferences.showDate
+                            ) { onPreferencesChange(preferences.copy(showDate = it)) }
+                            SettingToggle(
+                                tr("Show Settings button", "Tampilkan tombol Setelan"),
+                                tr("When hidden, long-press empty Home space to open Settings.", "Jika disembunyikan, tekan lama area kosong Home untuk membuka Setelan."),
+                                preferences.showSettingsButton
+                            ) { onPreferencesChange(preferences.copy(showSettingsButton = it)) }
+                        }
+                        SettingsGroup(tr("Widgets and indicators", "Widget dan indikator")) {
+                            SettingToggle(tr("Calendar agenda", "Agenda kalender"), "", preferences.showCalendarShortcut) {
+                                onPreferencesChange(preferences.copy(showCalendarShortcut = it))
+                            }
+                            SettingToggle(
+                                tr("Music player", "Pemutar musik"),
+                                tr("Shows the active track and media controls.", "Menampilkan lagu aktif dan kontrol media."),
+                                preferences.showMusic
+                            ) { onPreferencesChange(preferences.copy(showMusic = it)) }
+                            SettingToggle(tr("Weather", "Cuaca"), "", preferences.showWeather) {
+                                onPreferencesChange(preferences.copy(showWeather = it))
+                            }
+                            SettingToggle(tr("Battery percentage", "Persentase baterai"), "", preferences.showBattery) {
+                                onPreferencesChange(preferences.copy(showBattery = it))
+                            }
+                            SettingToggle(
+                                tr("Day progress", "Progres hari"),
+                                tr("Shows how much of today has elapsed.", "Menunjukkan bagian hari yang telah berlalu."),
+                                preferences.showDayProgress
+                            ) { onPreferencesChange(preferences.copy(showDayProgress = it)) }
+                            SettingToggle(
+                                tr("Year progress", "Progres tahun"),
+                                tr("Shows how much of the year has elapsed.", "Menunjukkan bagian tahun yang telah berlalu."),
+                                preferences.showYearProgress
+                            ) { onPreferencesChange(preferences.copy(showYearProgress = it)) }
+                        }
+                        SettingsGroup(tr("Format", "Format")) {
+                            ChoiceRow(
+                                tr("Time format", "Format waktu"),
+                                preferences.timeFormat,
+                                listOf(
+                                    "system" to tr("System", "Sistem"),
+                                    "12" to "12 " + tr("hour", "jam"),
+                                    "24" to "24 " + tr("hour", "jam")
+                                )
+                            ) { onPreferencesChange(preferences.copy(timeFormat = it)) }
+                            ChoiceRow(
+                                tr("Temperature unit", "Satuan suhu"),
+                                preferences.weatherUnit,
+                                listOf("C" to "°C", "F" to "°F")
+                            ) { onPreferencesChange(preferences.copy(weatherUnit = it)) }
                         }
                     }
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingAction(
-                    "Change default launcher",
-                    "Choose which Home app Android should use.",
-                    "Open",
-                    {
-                        runCatching { context.startActivity(Intent(Settings.ACTION_HOME_SETTINGS)) }
-                    }
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                SettingAction(
-                    "Device settings",
-                    "Open Android Settings.",
-                    "Open",
-                    { runCatching { context.startActivity(Intent(Settings.ACTION_SETTINGS)) } }
-                )
-            }
 
-            SettingsGroup("About", "A minimalist, text-first Android launcher.") {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(3.dp)
-                ) {
-                    Text("Dislauncher", style = MaterialTheme.typography.titleSmall)
-                    Text(
-                        "Version 0.1.0 · Built for a calmer Home screen.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        lineHeight = 16.sp,
-                        maxLines = 2,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                    )
+                    SettingsCategory.APPS -> {
+                        SettingsGroup(tr("Favourites", "Favorit")) {
+                            SettingAction(
+                                tr("Manage favourites", "Kelola favorit"),
+                                favorites.size.toString() + "/6 " + tr("apps selected", "aplikasi dipilih"),
+                                tr("Manage", "Kelola")
+                            ) { openDialog = "favorites" }
+                        }
+                        SettingsGroup(tr("Hidden apps", "Aplikasi tersembunyi")) {
+                            SettingAction(
+                                tr("Manage hidden apps", "Kelola aplikasi tersembunyi"),
+                                hiddenApps.size.toString() + " " + tr("apps hidden", "aplikasi disembunyikan"),
+                                tr("Manage", "Kelola")
+                            ) { openDialog = "hidden" }
+                        }
+                        SettingsGroup(tr("App drawer", "App drawer")) {
+                            SettingToggle(
+                                tr("Show search bar", "Tampilkan kolom pencarian"),
+                                "",
+                                preferences.showSearchBar
+                            ) { onPreferencesChange(preferences.copy(showSearchBar = it)) }
+                            SettingToggle(
+                                tr("Auto-launch keyboard", "Buka keyboard otomatis"),
+                                tr("Focus search when the app drawer opens.", "Fokus ke pencarian saat app drawer dibuka."),
+                                preferences.autoLaunchKeyboard
+                            ) { onPreferencesChange(preferences.copy(autoLaunchKeyboard = it)) }
+                            SettingToggle(
+                                tr("Show system apps", "Tampilkan aplikasi sistem"),
+                                "",
+                                !preferences.hideSystemApps
+                            ) { onPreferencesChange(preferences.copy(hideSystemApps = !it)) }
+                        }
+                    }
+
+                    SettingsCategory.GESTURES -> {
+                        SettingsGroup(tr("Home gestures", "Gestur Home")) {
+                            SettingToggle(
+                                tr("Double tap to lock", "Ketuk dua kali untuk mengunci layar"),
+                                tr("Requires device-admin activation.", "Memerlukan aktivasi admin perangkat."),
+                                preferences.doubleTapToLock
+                            ) { onDoubleTapLockChange(it) }
+                            SettingToggle(
+                                tr("Swipe down for notifications", "Usap ke bawah untuk notifikasi"),
+                                tr("Opens the Android notification panel.", "Membuka panel notifikasi Android."),
+                                preferences.swipeDownNotifications
+                            ) { enabled ->
+                                onPreferencesChange(preferences.copy(swipeDownNotifications = enabled))
+                            }
+                        }
+                    }
+
+                    SettingsCategory.ACCESS -> {
+                        SettingsGroup(tr("Feature access", "Akses fitur")) {
+                            SettingAction(
+                                tr("Music and notification access", "Akses musik dan notifikasi"),
+                                if (notificationAccessEnabled) tr("Enabled", "Aktif")
+                                else tr("Not enabled", "Belum aktif"),
+                                tr("Open settings", "Buka setelan")
+                            ) {
+                                openSystemPage(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                            }
+                            SettingAction(
+                                tr("Device admin", "Admin perangkat"),
+                                if (adminActive) tr("Active", "Aktif")
+                                else tr("Not active · needed to lock the screen", "Belum aktif · diperlukan untuk mengunci layar"),
+                                if (adminActive) tr("Active", "Aktif") else tr("Activate", "Aktifkan")
+                            ) {
+                                if (!adminActive) onDoubleTapLockChange(true)
+                            }
+                            SettingAction(
+                                tr("Default launcher", "Launcher default"),
+                                if (defaultLauncher) tr("Dislauncher is the default Home app", "Dislauncher adalah aplikasi Home default")
+                                else tr("Another Home app is selected", "Aplikasi Home lain sedang dipilih"),
+                                tr("Open settings", "Buka setelan")
+                            ) {
+                                openSystemPage(Intent(Settings.ACTION_HOME_SETTINGS))
+                            }
+                        }
+                        SettingsGroup(tr("Android permissions", "Izin Android")) {
+                            SettingAction(
+                                tr("Calendar access", "Akses kalender"),
+                                if (calendarPermission) tr("Allowed", "Diizinkan")
+                                else tr("Not allowed", "Belum diizinkan"),
+                                tr("Manage", "Kelola"),
+                                ::openAppPermissionSettings
+                            )
+                            SettingAction(
+                                tr("Location access", "Akses lokasi"),
+                                if (locationPermission) tr("Allowed", "Diizinkan")
+                                else tr("Not allowed", "Belum diizinkan"),
+                                tr("Manage", "Kelola"),
+                                ::openAppPermissionSettings
+                            )
+                        }
+                        SettingsGroup(tr("System", "Sistem")) {
+                            SettingAction(
+                                tr("Android settings", "Setelan Android"),
+                                tr("Open device settings.", "Buka setelan perangkat."),
+                                tr("Open", "Buka")
+                            ) {
+                                openSystemPage(Intent(Settings.ACTION_SETTINGS))
+                            }
+                        }
+                    }
+
+                    SettingsCategory.ABOUT -> {
+                        SettingsGroup(tr("Dislauncher", "Dislauncher")) {
+                            Text(
+                                tr("A minimalist, text-first Android launcher.", "Launcher Android minimalis yang mengutamakan teks."),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    tr("Version", "Versi") + " " + appVersion,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            SettingAction(
+                                tr("Project on GitHub", "Proyek di GitHub"),
+                                "github.com/insomdroid/dislauncher",
+                                tr("Open", "Buka")
+                            ) {
+                                openSystemPage(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/insomdroid/dislauncher"))
+                                )
+                            }
+                        }
+                    }
+
+                    null -> Unit
                 }
             }
             Spacer(Modifier.height(16.dp))
         }
     }
 
-    if (showFontsDialog) {
-        AlertDialog(
-            onDismissRequest = { showFontsDialog = false },
-            title = { Text("Custom Fonts") },
-            text = {
-                Column(Modifier.fillMaxWidth()) {
-                    IconPackChoice("System", "system", preferences.fontMode) {
-                        onPreferencesChange(preferences.copy(fontMode = "system"))
-                        showFontsDialog = false
-                    }
-                    IconPackChoice("Monospace", "mono", preferences.fontMode) {
-                        onPreferencesChange(preferences.copy(fontMode = "mono"))
-                        showFontsDialog = false
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth()
-                            .clickable {
-                                showFontsDialog = false
-                                onChooseCustomFont()
-                            }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = preferences.fontMode == "custom",
-                            onClick = {
-                                showFontsDialog = false
-                                onChooseCustomFont()
-                            }
-                        )
-                        Column(Modifier.weight(1f)) {
-                            Text("Choose .ttf / .otf file")
-                            Text(
-                                preferences.customFontName ?: "Maximum 5 MB",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showFontsDialog = false }) { Text("Done") }
-            }
-        )
-    }
-
     if (openDialog == "hidden") {
         AppSelectionDialog(
-            title = "Manage hidden apps",
-            subtitle = "Checked apps are hidden from Home and the drawer.",
+            title = tr("Manage hidden apps", "Kelola aplikasi tersembunyi"),
+            subtitle = tr(
+                "Checked apps are hidden from Home and the drawer.",
+                "Aplikasi yang dicentang disembunyikan dari Home dan app drawer."
+            ),
             apps = apps,
             checkedPackages = hiddenApps,
             onToggle = onToggleHidden,
@@ -385,8 +544,11 @@ internal fun SettingsScreen(
         )
     } else if (openDialog == "favorites") {
         AppSelectionDialog(
-            title = "Manage favourites",
-            subtitle = "Checked apps appear in the Home favourites list.",
+            title = tr("Manage favourites", "Kelola favorit"),
+            subtitle = tr(
+                "Checked apps appear in the Home favourites list.",
+                "Aplikasi yang dicentang muncul di daftar favorit Home."
+            ),
             apps = apps,
             checkedPackages = favorites,
             onToggle = onToggleFavorite,
@@ -395,16 +557,26 @@ internal fun SettingsScreen(
     } else if (openDialog == "iconpack") {
         AlertDialog(
             onDismissRequest = { openDialog = "" },
-            title = { Text("Icon pack") },
+            title = { Text(tr("Icon pack", "Paket ikon")) },
             text = {
-                Column(Modifier.fillMaxWidth().heightIn(max = 400.dp).verticalScroll(rememberScrollState())) {
-                    IconPackChoice("System default", "system", preferences.iconPack) {
+                Column(
+                    Modifier.fillMaxWidth().heightIn(max = 400.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    IconPackChoice(
+                        tr("System default", "Bawaan sistem"),
+                        "system",
+                        preferences.iconPack
+                    ) {
                         onPreferencesChange(preferences.copy(iconPack = "system"))
                         openDialog = ""
                     }
                     if (detectedIconPacks.isEmpty()) {
                         Text(
-                            "No compatible installed icon pack was detected. Packs supporting ADW/Nova-style appfilter.xml are used.",
+                            tr(
+                                "No compatible installed icon pack was detected.",
+                                "Tidak ditemukan paket ikon terpasang yang kompatibel."
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(vertical = 8.dp)
@@ -418,7 +590,62 @@ internal fun SettingsScreen(
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { openDialog = "" }) { Text("Done") } }
+            confirmButton = {
+                TextButton(onClick = { openDialog = "" }) { Text(tr("Done", "Selesai")) }
+            }
         )
     }
+}
+
+@Composable
+private fun SettingsCategoryRow(
+    icon: String,
+    title: String,
+    description: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
+            .padding(vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(14.dp))
+                .padding(horizontal = 13.dp, vertical = 10.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                icon,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+            Text(
+                description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        Text("›", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+private fun isDislauncherDefaultHome(context: Context): Boolean {
+    return runCatching {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val roleManager = context.getSystemService(Context.ROLE_SERVICE) as RoleManager
+            roleManager.isRoleHeld(RoleManager.ROLE_HOME)
+        } else {
+            val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+            @Suppress("DEPRECATION")
+            context.packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
+                ?.activityInfo?.packageName == context.packageName
+        }
+    }.getOrDefault(false)
 }
