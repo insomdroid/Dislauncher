@@ -386,6 +386,27 @@ internal fun SettingsScreen(
                                 preferences.showYearProgress
                             ) { onPreferencesChange(preferences.copy(showYearProgress = it)) }
                         }
+                        SettingsGroup(tr("Notification dots", "Notification dot")) {
+                            SettingToggle(
+                                tr("Show notification dots", "Tampilkan notification dot"),
+                                tr(
+                                    "Show a small dot beside selected apps with active notifications.",
+                                    "Tampilkan titik kecil di sebelah aplikasi pilihan yang memiliki notifikasi aktif."
+                                ),
+                                preferences.notificationDotsEnabled
+                            ) { enabled ->
+                                onPreferencesChange(preferences.copy(notificationDotsEnabled = enabled))
+                                if (enabled && !notificationAccessEnabled) {
+                                    openSystemPage(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                                }
+                            }
+                            SettingAction(
+                                tr("Choose apps", "Pilih aplikasi"),
+                                preferences.notificationDotPackages.size.toString() + " " +
+                                    tr("apps selected", "aplikasi dipilih"),
+                                tr("Choose", "Pilih")
+                            ) { openDialog = "notificationdots" }
+                        }
                         SettingsGroup(tr("Format", "Format")) {
                             ChoiceRow(
                                 tr("Time format", "Format waktu"),
@@ -567,6 +588,23 @@ internal fun SettingsScreen(
             apps = apps,
             checkedPackages = favorites,
             onToggle = onToggleFavorite,
+            onDismiss = { openDialog = "" }
+        )
+    } else if (openDialog == "notificationdots") {
+        AppSelectionDialog(
+            title = tr("Notification dot apps", "Aplikasi notification dot"),
+            subtitle = tr(
+                "Only selected apps can show a dot on Home when they have active non-persistent notifications.",
+                "Hanya aplikasi terpilih yang menampilkan titik di Home saat memiliki notifikasi aktif nonpersisten."
+            ),
+            apps = apps,
+            checkedPackages = preferences.notificationDotPackages,
+            onToggle = { packageName ->
+                val nextPackages = preferences.notificationDotPackages.toMutableSet().apply {
+                    if (!add(packageName)) remove(packageName)
+                }
+                onPreferencesChange(preferences.copy(notificationDotPackages = nextPackages))
+            },
             onDismiss = { openDialog = "" }
         )
     } else if (openDialog == "iconpack") {

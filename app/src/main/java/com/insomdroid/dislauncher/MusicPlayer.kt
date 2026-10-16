@@ -1,7 +1,9 @@
 package com.insomdroid.dislauncher
 
+import android.app.Notification
 import android.content.ComponentName
 import android.content.Context
+import android.service.notification.StatusBarNotification
 import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSessionManager
@@ -20,7 +22,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -212,4 +216,79 @@ internal fun MusicPlayerWidget(
     }
 }
 
-internal class DislauncherNotificationListener : android.service.notification.NotificationListenerService()
+internal object NotificationDotState {
+    var activePackages by mutableStateOf<Set<String>>(emptySet())
+        private set
+
+    @Volatile
+    private var listener: DislauncherNotificationListener? = null
+
+    fun attach(service: DislauncherNotificationListener) {
+        listener = service
+        service.refreshDotPackages()
+    }
+
+    fun detach(service: DislauncherNotificationListener) {
+        if (listener === service) {
+            listener = null
+            activePackages = emptySet()
+        }
+    }
+
+    fun refresh() {
+        listener?.refreshDotPackages()
+    }
+
+    internal fun update(packages: Set<String>) {
+        activePackages = packages
+    }
+}
+
+internal class DislauncherNotificationListener : android.service.notification.NotificationListenerService() {
+    override fun onListenerConnected() {
+        super.onListenerConnected()
+        NotificationDotState.attach(this)
+    }
+
+    override fun onNotificationPosted(sbn: StatusBarNotification) {
+        refreshDotPackages()
+    }
+
+    override fun onNotificationRemoved(sbn: StatusBarNotification) {
+        refreshDotPackages()
+    }
+
+    override fun onListenerDisconnected() {
+        NotificationDotState.detach(this)
+        super.onListenerDisconnected()
+    }
+
+    override fun onDestroy() {
+        NotificationDotState.detach(this)
+        super.onDestroy()
+    }
+
+    internal fun refreshDotPackages() {
+        val prefs = getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("notification_dots_enabled", false)) {
+            NotificationDotState.update(emptySet())
+            return
+        }
+
+        val selectedPackages = prefs.getStringSet("notification_dot_packages", emptySet()).orEmpty()
+        if (selectedPackages.isEmpty()) {
+            NotificationDotState.update(emptySet())
+            return
+        }
+
+        val active = runCatching {
+            activeNotifications.orEmpty()
+                .asSequence()
+                .filterNot { it.isOngoing || (it.notification.flags and Notification.FLAG_ONGOING_EVENT) != 0 }
+                .map { it.packageName }
+                .filter { it in selectedPackages }
+                .toSet()
+        }.getOrDefault(emptySet())
+        NotificationDotState.update(active)
+    }
+}

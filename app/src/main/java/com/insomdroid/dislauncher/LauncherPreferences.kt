@@ -28,7 +28,9 @@ internal data class LauncherPreferences(
     val hideSystemApps: Boolean = false,
     val doubleTapToLock: Boolean = false,
     val swipeDownNotifications: Boolean = true,
-    val showCalendarShortcut: Boolean = true
+    val showCalendarShortcut: Boolean = true,
+    val notificationDotsEnabled: Boolean = false,
+    val notificationDotPackages: Set<String> = emptySet()
 ) {
     fun save(p: SharedPreferences) {
         p.edit()
@@ -58,6 +60,8 @@ internal data class LauncherPreferences(
             .putBoolean("double_tap_to_lock", doubleTapToLock)
             .putBoolean("swipe_down_notifications", swipeDownNotifications)
             .putBoolean("show_calendar_shortcut", showCalendarShortcut)
+            .putBoolean("notification_dots_enabled", notificationDotsEnabled)
+            .putStringSet("notification_dot_packages", notificationDotPackages.toMutableSet())
             .apply()
     }
 
@@ -136,7 +140,9 @@ internal data class LauncherPreferences(
                 hideSystemApps = p.getBoolean("hide_system_apps", false),
                 doubleTapToLock = p.getBoolean("double_tap_to_lock", false),
                 swipeDownNotifications = p.getBoolean("swipe_down_notifications", true),
-                showCalendarShortcut = p.getBoolean("show_calendar_shortcut", true)
+                showCalendarShortcut = p.getBoolean("show_calendar_shortcut", true),
+                notificationDotsEnabled = p.getBoolean("notification_dots_enabled", false),
+                notificationDotPackages = p.getStringSet("notification_dot_packages", emptySet()).orEmpty().toSet()
             )
         }
     }

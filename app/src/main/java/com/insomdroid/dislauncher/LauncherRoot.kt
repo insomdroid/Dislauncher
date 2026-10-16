@@ -98,8 +98,12 @@ internal fun DislauncherRoot() {
     val iconPacks = remember { findIconPacks(context) }
 
     fun updatePreferences(next: LauncherPreferences) {
+        val notificationDotSettingsChanged =
+            preferences.notificationDotsEnabled != next.notificationDotsEnabled ||
+                preferences.notificationDotPackages != next.notificationDotPackages
         preferences = next
         next.save(prefsStore)
+        if (notificationDotSettingsChanged) NotificationDotState.refresh()
     }
 
     val customFontPicker = rememberLauncherForActivityResult(
