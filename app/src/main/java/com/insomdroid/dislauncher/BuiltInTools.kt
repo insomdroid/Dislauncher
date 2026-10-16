@@ -1,7 +1,15 @@
 package com.insomdroid.dislauncher
 
+import android.Manifest
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,43 +21,151 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.NoteAdd
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import org.json.JSONArray
+import org.json.JSONObject
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.YearMonth
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import java.util.UUID
 
 internal enum class BuiltInTool { NOTES, CALCULATOR, CALENDAR }
+
+private data class LocalNote(
+    val id: String,
+    val title: String,
+    val content: String,
+    val updatedAt: Long
+)
+
+private data class LocalTask(
+    val id: String,
+    val title: String,
+    val type: String,
+    val date: String,
+    val time: String,
+    val reminderAt: Long,
+    val priority: Int,
+    val completed: Boolean = false
+)
+
+private fun notesStore(context: Context) =
+    context.getSharedPreferences("dislauncher_notes", Context.MODE_PRIVATE)
+
+private fun loadNotes(context: Context): List<LocalNote> = runCatching {
+    val array = JSONArray(notesStore(context).getString("notes_json", "[]") ?: "[]")
+    (0 until array.length()).mapNotNull { i ->
+        val o = array.optJSONObject(i) ?: return@mapNotNull null
+        LocalNote(o.optString("id"), o.optString("title"), o.optString("content"), o.optLong("updatedAt"))
+    }.filter { it.id.isNotBlank() }
+}.getOrDefault(emptyList()).sortedByDescending { it.updatedAt }
+
+private fun saveNotes(context: Context, notes: List<LocalNote>) {
+    val array = JSONArray()
+    notes.forEach { note ->
+        array.put(JSONObject().put("id", note.id).put("title", note.title)
+            .put("content", note.content).put("updatedAt", note.updatedAt))
+    }
+    notesStore(context).edit().putString("notes_json", array.toString()).apply()
+}
+
+private fun tasksStore(context: Context) =
+    context.getSharedPreferences("dislauncher_local_tasks", Context.MODE_PRIVATE)
+
+private fun loadTasks(context: Context): List<LocalTask> = runCatching {
+    val array = JSONArray(tasksStore(context).getString("tasks_json", "[]") ?: "[]")
+    (0 until array.length()).mapNotNull { i ->
+        val o = array.optJSONObject(i) ?: return@mapNotNull null
+        LocalTask(
+            id = o.optString("id"),
+            title = o.optString("title"),
+            type = o.optString("type", "todo"),
+            date = o.optString("date"),
+            time = o.optString("time"),
+            reminderAt = o.optLong("reminderAt"),
+            priority = o.optInt("priority", 2).coerceIn(1, 3),
+            completed = o.optBoolean("completed")
+        )
+    }.filter { it.id.isNotBlank() && it.date.isNotBlank() }
+}.getOrDefault(emptyList())
+
+private fun saveTasks(context: Context, tasks: List<LocalTask>) {
+    val array = JSONArray()
+    tasks.forEach { task ->
+        array.put(JSONObject().put("id", task.id).put("title", task.title)
+            .put("type", task.type).put("date", task.date).put("time", task.time)
+            .put("reminderAt", task.reminderAt).put("priority", task.priority)
+            .put("completed", task.completed))
+    }
+    tasksStore(context).edit().putString("tasks_json", array.toString()).apply()
+}
+
+private fun priorityLabel(priority: Int): String = when (priority) {
+    1 -> "Rendah"
+    3 -> "Tinggi"
+    else -> "Sedang"
+}
+
+private fun priorityColor(priority: Int) = when (priority) {
+    1 -> androidx.compose.ui.graphics.Color(0xFFDCEBE0)
+    3 -> androidx.compose.ui.graphics.Color(0xFFF4DAD8)
+    else -> androidx.compose.ui.graphics.Color(0xFFF4E9C9)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    BackHandler(onBack = onBack)
+    var notesEditing by remember { mutableStateOf(false) }
+    var notesBackSignal by remember { mutableStateOf(0) }
+    BackHandler(enabled = tool != BuiltInTool.NOTES || !notesEditing, onBack = onBack)
     val title = when (tool) {
-        BuiltInTool.NOTES -> "Notes"
+        BuiltInTool.NOTES -> if (notesEditing) "Note" else "Notes"
         BuiltInTool.CALCULATOR -> "Calculator"
         BuiltInTool.CALENDAR -> "Calendar"
     }
@@ -59,7 +175,10 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
             TopAppBar(
                 title = { Text(title, fontWeight = FontWeight.Medium) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {
+                        if (tool == BuiltInTool.NOTES && notesEditing) notesBackSignal++
+                        else onBack()
+                    }) {
                         Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
                     }
                 },
@@ -67,78 +186,226 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
             )
         }
     ) { padding ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        Box(Modifier.fillMaxSize().padding(padding).padding(horizontal = 18.dp, vertical = 8.dp)) {
             when (tool) {
-                BuiltInTool.NOTES -> NotesTool(context, Modifier.weight(1f))
-                BuiltInTool.CALCULATOR -> CalculatorTool()
-                BuiltInTool.CALENDAR -> CalendarTool()
+                BuiltInTool.NOTES -> NotesTool(
+                    context = context,
+                    backSignal = notesBackSignal,
+                    onEditingChanged = { notesEditing = it },
+                    modifier = Modifier.fillMaxSize()
+                )
+                BuiltInTool.CALCULATOR -> CalculatorTool(Modifier.fillMaxSize())
+                BuiltInTool.CALENDAR -> CalendarTool(context, Modifier.fillMaxSize())
             }
         }
     }
 }
 
 @Composable
-private fun NotesTool(context: Context, modifier: Modifier = Modifier) {
-    val store = remember(context) { context.getSharedPreferences("dislauncher_notes", Context.MODE_PRIVATE) }
-    var note by remember { mutableStateOf(store.getString("content", "") ?: "") }
-    Text("Your notes stay on this device.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    OutlinedTextField(
-        value = note,
-        onValueChange = {
-            note = it
-            store.edit().putString("content", it).apply()
-        },
-        modifier = modifier.fillMaxWidth(),
-        placeholder = { Text("Write something…") },
-        minLines = 8,
-        maxLines = Int.MAX_VALUE
-    )
-}
+private fun NotesTool(
+    context: Context,
+    backSignal: Int,
+    onEditingChanged: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var notes by remember(context) { mutableStateOf(loadNotes(context)) }
+    var selectedId by remember { mutableStateOf<String?>(null) }
+    var title by remember { mutableStateOf("") }
+    var body by remember { mutableStateOf("") }
+    var deleteTarget by remember { mutableStateOf<String?>(null) }
 
-@Composable
-private fun CalculatorTool() {
-    var expression by remember { mutableStateOf("") }
-    var result by remember { mutableStateOf("") }
-    OutlinedTextField(
-        value = expression,
-        onValueChange = { expression = it; result = "" },
-        modifier = Modifier.fillMaxWidth(),
-        singleLine = true,
-        label = { Text("Expression") },
-        placeholder = { Text("12 × (3 + 4)") }
-    )
-    val keys = listOf("7", "8", "9", "÷", "4", "5", "6", "×", "1", "2", "3", "−", "0", ".", "(", ")", "+", "⌫", "C", "=")
-    keys.chunked(4).forEach { rowKeys ->
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-            rowKeys.forEach { key ->
-                TextButton(
-                    onClick = {
-                        when (key) {
-                            "C" -> { expression = ""; result = "" }
-                            "⌫" -> { expression = expression.dropLast(1); result = "" }
-                            "=" -> result = runCatching { formatCalculation(ExpressionParser(expression).parse()) }
-                                .getOrElse { "Invalid expression" }
-                            else -> {
-                                expression += when (key) {
-                                    "×" -> "*"
-                                    "÷" -> "/"
-                                    "−" -> "-"
-                                    else -> key
-                                }
-                                result = ""
+    fun saveCurrent() {
+        val id = selectedId ?: return
+        val current = LocalNote(id, title.trim(), body, System.currentTimeMillis())
+        notes = (notes.filterNot { it.id == id } + current).sortedByDescending { it.updatedAt }
+        saveNotes(context, notes)
+    }
+    fun openNote(note: LocalNote) {
+        selectedId = note.id
+        title = note.title
+        body = note.content
+        onEditingChanged(true)
+    }
+    fun closeEditor() {
+        saveCurrent()
+        selectedId = null
+        onEditingChanged(false)
+    }
+
+    LaunchedEffect(backSignal) {
+        if (backSignal > 0 && selectedId != null) closeEditor()
+    }
+    BackHandler(enabled = selectedId != null) { closeEditor() }
+
+    if (selectedId == null) {
+        Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.weight(1f)) {
+                    Text("Your notes", style = MaterialTheme.typography.titleLarge)
+                    Text("Saved on this device", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                FilledTonalButton(onClick = {
+                    val note = LocalNote(UUID.randomUUID().toString(), "", "", System.currentTimeMillis())
+                    notes = listOf(note) + notes
+                    saveNotes(context, notes)
+                    openNote(note)
+                }) {
+                    Icon(Icons.Outlined.NoteAdd, contentDescription = null)
+                    Spacer(Modifier.size(6.dp))
+                    Text("New")
+                }
+            }
+            if (notes.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No notes yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(notes, key = { it.id }) { note ->
+                        Surface(
+                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
+                                .clickable { openNote(note) },
+                            color = MaterialTheme.colorScheme.surfaceContainerLow,
+                            shape = RoundedCornerShape(18.dp)
+                        ) {
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                                Text(note.title.ifBlank { "Untitled note" }, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                                Text(note.content.ifBlank { "No content" }, style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
+                                Text(
+                                    java.time.Instant.ofEpochMilli(note.updatedAt).atZone(ZoneId.systemDefault())
+                                        .format(DateTimeFormatter.ofPattern("d MMM, HH:mm", Locale.getDefault())),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
-                    },
-                    modifier = Modifier.weight(1f).height(48.dp)
-                ) { Text(key, fontSize = 18.sp) }
+                    }
+                }
             }
-            repeat(4 - rowKeys.size) { Spacer(Modifier.weight(1f)) }
+        }
+    } else {
+        Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedTextField(
+                value = title,
+                onValueChange = { title = it; saveCurrent() },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Title (optional)") },
+                singleLine = true,
+                textStyle = MaterialTheme.typography.titleLarge
+            )
+            OutlinedTextField(
+                value = body,
+                onValueChange = { body = it; saveCurrent() },
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                placeholder = { Text("Write something…") },
+                minLines = 8,
+                maxLines = Int.MAX_VALUE
+            )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = { deleteTarget = selectedId }) {
+                    Icon(Icons.Outlined.DeleteOutline, contentDescription = null)
+                    Spacer(Modifier.size(5.dp))
+                    Text("Delete note")
+                }
+            }
         }
     }
-    if (result.isNotEmpty()) Text(result, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
+
+    if (deleteTarget != null) {
+        AlertDialog(
+            onDismissRequest = { deleteTarget = null },
+            title = { Text("Delete note?") },
+            text = { Text("This note will be permanently deleted from this device.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    val id = deleteTarget
+                    notes = notes.filterNot { it.id == id }
+                    saveNotes(context, notes)
+                    deleteTarget = null
+                    selectedId = null
+                    title = ""
+                    body = ""
+                    onEditingChanged(false)
+                }) { Text("Delete") }
+            },
+            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancel") } }
+        )
+    }
+}
+
+@Composable
+private fun CalculatorTool(modifier: Modifier = Modifier) {
+    var expression by remember { mutableStateOf("") }
+    var result by remember { mutableStateOf("") }
+    val keyRows = listOf(
+        listOf("C", "⌫", "%", "÷"),
+        listOf("7", "8", "9", "×"),
+        listOf("4", "5", "6", "−"),
+        listOf("1", "2", "3", "+"),
+        listOf("(", "0", ")", "."),
+        listOf("±", "00", "=", " ")
+    )
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(
+            modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 4.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.Bottom,
+            horizontalAlignment = Alignment.End
+        ) {
+            Text(expression.ifBlank { "0" }, style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.End, maxLines = 2)
+            if (result.isNotEmpty()) {
+                Spacer(Modifier.height(8.dp))
+                Text(result, style = MaterialTheme.typography.displaySmall,
+                    color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.End, maxLines = 1)
+            }
+        }
+        keyRows.forEach { rowKeys ->
+            Row(Modifier.fillMaxWidth().height(54.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                rowKeys.forEach { key ->
+                    if (key.isBlank()) {
+                        Spacer(Modifier.weight(1f))
+                    } else {
+                        val operator = key in listOf("÷", "×", "−", "+", "=")
+                        val action: () -> Unit = {
+                            when (key) {
+                                "C" -> { expression = ""; result = "" }
+                                "⌫" -> { expression = expression.dropLast(1); result = "" }
+                                "=" -> result = runCatching { formatCalculation(ExpressionParser(expression).parse()) }
+                                    .getOrElse { "Invalid expression" }
+                                "%" -> {
+                                    if (expression.lastOrNull()?.isDigit() == true) expression += "/100"
+                                    result = ""
+                                }
+                                "±" -> {
+                                    if (expression.isNotBlank()) expression = "-(" + expression + ")"
+                                    result = ""
+                                }
+                                else -> {
+                                    expression += when (key) {
+                                        "×" -> "*"
+                                        "÷" -> "/"
+                                        "−" -> "-"
+                                        else -> key
+                                    }
+                                    result = ""
+                                }
+                            }
+                        }
+                        if (operator) {
+                            Button(onClick = action, modifier = Modifier.weight(1f).fillMaxSize(),
+                                shape = RoundedCornerShape(18.dp)) { Text(key, fontSize = 21.sp) }
+                        } else {
+                            FilledTonalButton(onClick = action, modifier = Modifier.weight(1f).fillMaxSize(),
+                                shape = RoundedCornerShape(18.dp)) {
+                                Text(key, fontSize = if (key.length > 1) 17.sp else 20.sp)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 private fun formatCalculation(value: Double): String =
@@ -203,51 +470,253 @@ private class ExpressionParser(raw: String) {
 }
 
 @Composable
-private fun CalendarTool() {
+private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
+    var tasks by remember(context) { mutableStateOf(loadTasks(context)) }
     var month by remember { mutableStateOf(YearMonth.now()) }
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
-    val today = LocalDate.now()
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            TextButton(onClick = { month = month.minusMonths(1) }) { Text("‹") }
-            Text(month.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())), modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleLarge)
-            TextButton(onClick = { month = month.plusMonths(1) }) { Text("›") }
+    var showEditor by remember { mutableStateOf(false) }
+    var title by remember { mutableStateOf("") }
+    var type by remember { mutableStateOf("todo") }
+    var date by remember { mutableStateOf(LocalDate.now()) }
+    var time by remember { mutableStateOf(LocalTime.of(9, 0)) }
+    var priority by remember { mutableStateOf(2) }
+    var pendingReminder by remember { mutableStateOf<LocalTask?>(null) }
+    var deleteTarget by remember { mutableStateOf<LocalTask?>(null) }
+
+    fun addTask(task: LocalTask, schedule: Boolean) {
+        tasks = (tasks.filterNot { it.id == task.id } + task)
+        saveTasks(context, tasks)
+        if (schedule && task.type == "reminder" && task.reminderAt > System.currentTimeMillis()) {
+            scheduleLocalReminder(context, task.id, task.title, task.reminderAt)
         }
-        Row(modifier = Modifier.fillMaxWidth()) {
+        selectedDate = LocalDate.parse(task.date)
+        month = YearMonth.from(selectedDate)
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        val task = pendingReminder
+        pendingReminder = null
+        if (task != null) {
+            addTask(task, granted)
+            if (!granted) Toast.makeText(context, "Reminder saved without a notification. Allow notifications in Android settings to receive reminders.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    fun beginNewTask() {
+        title = ""
+        type = "todo"
+        date = selectedDate
+        time = LocalTime.of(9, 0)
+        priority = 2
+        showEditor = true
+    }
+
+    val dateFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", Locale.getDefault())
+    val taskDate = selectedDate.toString()
+    val dayTasks = tasks.filter { it.date == taskDate }
+        .sortedWith(compareBy<LocalTask> { it.completed }.thenByDescending { it.priority }
+            .thenBy { if (it.time.isBlank()) "99:99" else it.time })
+
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            IconButton(onClick = { month = month.minusMonths(1); selectedDate = month.atDay(1) }) {
+                Text("‹", fontSize = 27.sp)
+            }
+            Text(month.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())),
+                modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleLarge)
+            IconButton(onClick = { month = month.plusMonths(1); selectedDate = month.atDay(1) }) {
+                Text("›", fontSize = 27.sp)
+            }
+        }
+        Row(Modifier.fillMaxWidth()) {
             listOf("M", "T", "W", "T", "F", "S", "S").forEach { day ->
-                Text(day, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(day, Modifier.weight(1f), textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
             }
         }
         val firstOffset = month.atDay(1).dayOfWeek.value - 1
         val cells = List(firstOffset) { 0 } + (1..month.lengthOfMonth()).toList()
         cells.chunked(7).forEach { week ->
-            Row(modifier = Modifier.fillMaxWidth()) {
+            Row(Modifier.fillMaxWidth()) {
                 week.forEach { day ->
-                    Box(
-                        modifier = Modifier.weight(1f).height(42.dp).padding(2.dp)
-                            .then(if (day > 0) Modifier.clickable { selectedDate = month.atDay(day) } else Modifier),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(Modifier.weight(1f).height(37.dp).padding(1.dp), contentAlignment = Alignment.Center) {
                         if (day > 0) {
-                            val date = month.atDay(day)
-                            val selected = date == selectedDate
-                            Text(
-                                day.toString(),
-                                modifier = if (selected) Modifier.background(MaterialTheme.colorScheme.primary, androidx.compose.foundation.shape.CircleShape).padding(horizontal = 10.dp, vertical = 5.dp) else Modifier,
-                                color = when {
+                            val dateValue = month.atDay(day)
+                            val selected = dateValue == selectedDate
+                            val hasTasks = tasks.any { it.date == dateValue.toString() }
+                            Column(
+                                modifier = Modifier.fillMaxSize().clip(CircleShape)
+                                    .background(if (selected) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Transparent)
+                                    .clickable { selectedDate = dateValue },
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text(day.toString(), color = when {
                                     selected -> MaterialTheme.colorScheme.onPrimary
-                                    date == today -> MaterialTheme.colorScheme.primary
-                                    else -> MaterialTheme.colorScheme.onBackground
-                                }
-                            )
+                                    dateValue == LocalDate.now() -> MaterialTheme.colorScheme.primary
+                                    else -> MaterialTheme.colorScheme.onSurface
+                                }, style = MaterialTheme.typography.bodyMedium)
+                                if (hasTasks && !selected) Box(Modifier.padding(top = 1.dp).size(3.dp)
+                                    .clip(CircleShape).background(MaterialTheme.colorScheme.primary))
+                            }
                         }
                     }
                 }
                 repeat(7 - week.size) { Spacer(Modifier.weight(1f)) }
             }
         }
-        Spacer(Modifier.height(4.dp))
-        Text(selectedDate.format(DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", Locale.getDefault())), style = MaterialTheme.typography.titleMedium)
-        Text(if (selectedDate == today) "Today" else "Selected date", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(selectedDate.format(dateFormatter), style = MaterialTheme.typography.titleMedium)
+                Text(dayTasks.size.toString() + if (dayTasks.size == 1) " task" else " tasks",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            FilledTonalButton(onClick = ::beginNewTask) {
+                Text("+ Add task")
+            }
+        }
+        if (dayTasks.isEmpty()) {
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Text("Nothing planned", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        } else {
+            LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(dayTasks, key = { it.id }) { task ->
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerLow).padding(horizontal = 8.dp, vertical = 7.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (task.type == "todo") {
+                            Checkbox(checked = task.completed, onCheckedChange = { checked ->
+                                tasks = tasks.map { if (it.id == task.id) it.copy(completed = checked) else it }
+                                saveTasks(context, tasks)
+                            })
+                        } else {
+                            Icon(Icons.Outlined.Notifications, contentDescription = "Reminder",
+                                tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 10.dp))
+                        }
+                        Column(Modifier.weight(1f).padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text(task.title, style = MaterialTheme.typography.bodyLarge,
+                                textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None,
+                                color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface)
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Surface(color = priorityColor(task.priority), shape = RoundedCornerShape(50)) {
+                                    Text(priorityLabel(task.priority), modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                        style = MaterialTheme.typography.labelSmall, color = androidx.compose.ui.graphics.Color(0xFF353535))
+                                }
+                                if (task.time.isNotBlank()) Text(task.time, style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                if (task.type == "reminder") Text("Reminder", style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                        IconButton(onClick = { deleteTarget = task }) {
+                            Icon(Icons.Outlined.DeleteOutline, contentDescription = "Delete task",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showEditor) {
+        AlertDialog(
+            onDismissRequest = { showEditor = false },
+            title = { Text("New task") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(value = title, onValueChange = { title = it },
+                        modifier = Modifier.fillMaxWidth(), label = { Text("Title") }, singleLine = true)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (type == "todo") Button(onClick = { type = "todo" }, modifier = Modifier.weight(1f)) { Text("To-do") }
+                        else FilledTonalButton(onClick = { type = "todo" }, modifier = Modifier.weight(1f)) { Text("To-do") }
+                        if (type == "reminder") Button(onClick = { type = "reminder" }, modifier = Modifier.weight(1f)) { Text("Reminder") }
+                        else FilledTonalButton(onClick = { type = "reminder" }, modifier = Modifier.weight(1f)) { Text("Reminder") }
+                    }
+                    TextButton(onClick = {
+                        DatePickerDialog(context, { _, y, m, d -> date = LocalDate.of(y, m + 1, d) },
+                            date.year, date.monthValue - 1, date.dayOfMonth).show()
+                    }, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Outlined.Event, contentDescription = null)
+                        Spacer(Modifier.size(8.dp))
+                        Text(date.format(DateTimeFormatter.ofPattern("d MMM yyyy", Locale.getDefault())))
+                    }
+                    if (type == "reminder") {
+                        TextButton(onClick = {
+                            TimePickerDialog(context, { _, h, m -> time = LocalTime.of(h, m) },
+                                time.hour, time.minute, true).show()
+                        }, modifier = Modifier.fillMaxWidth()) {
+                            Icon(Icons.Outlined.Schedule, contentDescription = null)
+                            Spacer(Modifier.size(8.dp))
+                            Text(time.format(DateTimeFormatter.ofPattern("HH:mm")))
+                        }
+                    }
+                    Text("Priority", style = MaterialTheme.typography.labelLarge)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        (1..3).forEach { level ->
+                            val label = priorityLabel(level)
+                            Surface(
+                                modifier = Modifier.weight(1f).clip(RoundedCornerShape(50)).clickable { priority = level },
+                                color = if (priority == level) priorityColor(level) else MaterialTheme.colorScheme.surfaceContainer,
+                                shape = RoundedCornerShape(50)
+                            ) {
+                                Text(label, modifier = Modifier.padding(horizontal = 5.dp, vertical = 9.dp),
+                                    textAlign = TextAlign.Center, style = MaterialTheme.typography.labelMedium)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (title.isBlank()) {
+                        Toast.makeText(context, "Enter a task title", Toast.LENGTH_SHORT).show()
+                    } else {
+                        val at = if (type == "reminder") date.atTime(time).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() else 0L
+                        if (type == "reminder" && at <= System.currentTimeMillis()) {
+                            Toast.makeText(context, "Choose a future time for the reminder", Toast.LENGTH_SHORT).show()
+                        } else {
+                            val task = LocalTask(UUID.randomUUID().toString(), title.trim(), type,
+                                date.toString(), if (type == "reminder") time.format(DateTimeFormatter.ofPattern("HH:mm")) else "",
+                                at, priority)
+                            showEditor = false
+                            val permissionMissing = Build.VERSION.SDK_INT >= 33 &&
+                                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                            if (type == "reminder" && permissionMissing) {
+                                pendingReminder = task
+                                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            } else {
+                                addTask(task, type == "reminder")
+                            }
+                        }
+                    }
+                }) { Text("Save") }
+            },
+            dismissButton = { TextButton(onClick = { showEditor = false }) { Text("Cancel") } }
+        )
+    }
+
+    if (deleteTarget != null) {
+        AlertDialog(
+            onDismissRequest = { deleteTarget = null },
+            title = { Text("Delete task?") },
+            text = { Text("This task will be removed from your local calendar.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    val task = deleteTarget
+                    if (task != null) {
+                        cancelLocalReminder(context, task.id)
+                        tasks = tasks.filterNot { it.id == task.id }
+                        saveTasks(context, tasks)
+                    }
+                    deleteTarget = null
+                }) { Text("Delete") }
+            },
+            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancel") } }
+        )
     }
 }
