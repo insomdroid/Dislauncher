@@ -91,6 +91,7 @@ internal fun DislauncherRoot() {
     var favoriteOrder by remember { mutableStateOf(readFavoriteOrder(prefsStore, favorites)) }
     var apps by remember { mutableStateOf<List<LauncherApp>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
+    var builtInReturnScreen by remember { mutableStateOf(LauncherScreen.APPS) }
     var screen by remember {
         mutableStateOf(
             if (prefsStore.getBoolean("onboarding_completed", false)) {
@@ -311,9 +312,10 @@ internal fun DislauncherRoot() {
             screen == LauncherScreen.CALENDAR || pagerState.settledPage == 1
     ) {
         when (screen) {
-            LauncherScreen.SETTINGS, LauncherScreen.WEATHER, LauncherScreen.NOTES,
-            LauncherScreen.CALCULATOR, LauncherScreen.CALENDAR ->
+            LauncherScreen.SETTINGS, LauncherScreen.WEATHER ->
                 screen = LauncherScreen.HOME
+            LauncherScreen.NOTES, LauncherScreen.CALCULATOR, LauncherScreen.CALENDAR ->
+                screen = builtInReturnScreen
             LauncherScreen.APPS -> scope.launch { pagerState.animateScrollToPage(0) }
             else -> Unit
         }
@@ -411,7 +413,7 @@ internal fun DislauncherRoot() {
                     LauncherScreen.CALCULATOR -> BuiltInTool.CALCULATOR
                     else -> BuiltInTool.CALENDAR
                 },
-                onBack = { screen = LauncherScreen.HOME }
+                onBack = { screen = builtInReturnScreen }
             )
         } else {
             val notificationsGestureEnabled =
@@ -513,9 +515,9 @@ internal fun DislauncherRoot() {
                             fontFamily = fontFamily,
                             onLaunch = { app ->
                                 when (app.packageName) {
-                                    "internal:notes" -> screen = LauncherScreen.NOTES
-                                    "internal:calculator" -> screen = LauncherScreen.CALCULATOR
-                                    "internal:calendar" -> screen = LauncherScreen.CALENDAR
+                                    "internal:notes" -> { builtInReturnScreen = LauncherScreen.APPS; screen = LauncherScreen.NOTES }
+                                    "internal:calculator" -> { builtInReturnScreen = LauncherScreen.APPS; screen = LauncherScreen.CALCULATOR }
+                                    "internal:calendar" -> { builtInReturnScreen = LauncherScreen.APPS; screen = LauncherScreen.CALENDAR }
                                     else -> launchApp(context, app)
                                 }
                             },
