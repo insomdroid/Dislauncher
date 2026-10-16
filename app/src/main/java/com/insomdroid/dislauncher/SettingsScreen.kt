@@ -270,37 +270,34 @@ internal fun SettingsScreen(
                                 listOf(
                                     "default" to tr("Default", "Bawaan"),
                                     "solid" to tr("Solid color", "Warna solid"),
-                                    "image" to tr("Image", "Gambar")
+                                    "image" to tr("Custom", "Kustom")
                                 )
                             ) { mode ->
-                                if (mode == "image") onChooseWallpaper()
-                                else onPreferencesChange(preferences.copy(wallpaperMode = mode))
+                                // Choosing Custom only switches the style. The picker belongs
+                                // to the dedicated action below, not to the mode chip.
+                                onPreferencesChange(preferences.copy(wallpaperMode = mode))
                             }
                             if (preferences.wallpaperMode == "solid") {
                                 ChoiceRow(
                                     tr("Solid color", "Warna solid"),
                                     preferences.wallpaperColor,
                                     listOf(
-                                        "#000000" to tr("Black", "Hitam"),
                                         "#202124" to tr("Charcoal", "Arang"),
-                                        "#263238" to tr("Blue grey", "Abu biru"),
-                                        "#1B3A32" to tr("Forest", "Hutan"),
-                                        "#3B2438" to tr("Plum", "Plum"),
                                         "#17324D" to tr("Navy", "Biru navy"),
-                                        "#8D6E63" to tr("Taupe", "Cokelat taupe"),
                                         "#D8D0C0" to tr("Sand", "Pasir"),
-                                        "#F2EBDD" to tr("Cream", "Krem"),
-                                        "#E7E0F4" to tr("Lavender", "Lavender")
+                                        "#F2EBDD" to tr("Cream", "Krem")
                                     )
                                 ) { onPreferencesChange(preferences.copy(wallpaperColor = it, wallpaperMode = "solid")) }
                             }
-                            SettingAction(
-                                tr("Choose image", "Pilih gambar"),
-                                if (preferences.wallpaperUri != null) tr("Custom image selected", "Gambar kustom dipilih")
-                                else tr("Use an image from your device", "Gunakan gambar dari perangkat"),
-                                tr("Pick image", "Pilih gambar"),
-                                onChooseWallpaper
-                            )
+                            if (preferences.wallpaperMode == "image") {
+                                SettingAction(
+                                    tr("Custom wallpaper", "Wallpaper kustom"),
+                                    if (preferences.wallpaperUri != null) tr("Custom image selected", "Gambar kustom dipilih")
+                                    else tr("Choose an image for your wallpaper", "Pilih gambar untuk wallpaper"),
+                                    tr("Choose image", "Pilih gambar"),
+                                    onChooseWallpaper
+                                )
+                            }
                         }
                         SettingsGroup(tr("Font and text size", "Font dan ukuran teks")) {
                             ChoiceRow(
@@ -312,8 +309,9 @@ internal fun SettingsScreen(
                                     "custom" to tr("Custom", "Kustom")
                                 )
                             ) { value ->
-                                if (value == "custom") onChooseCustomFont()
-                                else onPreferencesChange(preferences.copy(fontMode = value))
+                                // Selecting Custom activates the mode without launching
+                                // the document picker; the action below opens it explicitly.
+                                onPreferencesChange(preferences.copy(fontMode = value))
                             }
                             SettingAction(
                                 tr("Custom font file", "File font kustom"),
