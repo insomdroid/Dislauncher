@@ -113,9 +113,7 @@ internal fun HomeScreen(
     val timeText = now.format(DateTimeFormatter.ofPattern(timePattern, Locale.getDefault()))
     val dateText = formatHomeDate(today)
     val background = MaterialTheme.colorScheme.background
-    val homeWallpaperMode = if (
-        preferences.wallpaperMode in setOf("image", "solid") && preferences.wallpaperTarget == "lock"
-    ) {
+    val homeWallpaperMode = if (preferences.wallpaperMode == "image" && preferences.wallpaperTarget == "lock") {
         "default"
     } else {
         preferences.wallpaperMode
@@ -202,9 +200,7 @@ internal fun HomeScreen(
         modifier = Modifier.fillMaxSize()
             .drawBehind {
                 when {
-                    homeWallpaperMode == "default" -> drawRect(if (isDark) Color.Black else Color.White)
-                    homeWallpaperMode == "solid" -> drawRect(Color(wallpaperColorInt(preferences.wallpaperColor)))
-                    wallpaperBitmap != null -> {
+                    homeWallpaperMode == "image" && wallpaperBitmap != null -> {
                         drawImage(wallpaperBitmap!!, dstSize = IntSize(size.width.toInt(), size.height.toInt()))
                         drawRect(background.copy(alpha = 0.48f))
                     }
