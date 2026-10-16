@@ -138,7 +138,7 @@ internal fun AppsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (preferences.showAppIcons) {
-                            AppIcon(app, preferences.iconPack, size = 24.dp)
+                            AppIcon(app, preferences.iconPack, size = 24.dp, iconShape = preferences.iconShape)
                             Spacer(Modifier.width(9.dp))
                         }
                         Text(
