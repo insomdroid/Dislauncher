@@ -134,7 +134,7 @@ internal fun AppsScreen(
                         modifier = Modifier.fillMaxWidth().combinedClickable(
                             onClick = { onLaunch(app) },
                             onLongClick = { selectedApp = app }
-                        ).padding(vertical = 8.dp, horizontal = 20.dp),
+                        ).padding(vertical = 8.dp, horizontal = 0.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (preferences.showAppIcons) {
