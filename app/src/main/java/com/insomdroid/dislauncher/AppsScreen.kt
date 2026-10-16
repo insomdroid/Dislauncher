@@ -196,7 +196,7 @@ internal fun AppsScreen(
                                 val toolIcon = when (app.packageName) {
                                     "internal:calculator" -> androidx.compose.material.icons.Icons.Outlined.Calculate
                                     "internal:calendar" -> androidx.compose.material.icons.Icons.Outlined.CalendarMonth
-                                    else -> androidx.compose.material.icons.Icons.Outlined.NoteAlt
+                                    else -> androidx.compose.material.icons.Icons.Outlined.Description
                                 }
                                 Column(
                                     modifier = Modifier.weight(1f).clip(RoundedCornerShape(14.dp))
