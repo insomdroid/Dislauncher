@@ -9,7 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.border
@@ -78,6 +78,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.math.abs
+import kotlin.math.exp
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -296,15 +297,79 @@ internal fun AppsScreen(
                     modifier = Modifier.align(Alignment.BottomEnd)
                         .padding(bottom = 48.dp)
                         .fillMaxHeight(0.56f)
-                        .width(24.dp)
+                        .width(116.dp)
                 ) {
                     val animatedProgress by animateFloatAsState(
                         targetValue = scrubberProgress ?: 0f,
-                        animationSpec = spring(dampingRatio = 0.62f, stiffness = 470f),
+                        animationSpec = spring(dampingRatio = 0.72f, stiffness = 520f),
                         label = "alphabet-scrubber-progress"
                     )
+                    val maxBellOffset = 78.dp
+                    val activeIndex = scrubberProgress?.let {
+                        (it * alphabetLetters.lastIndex).toInt().coerceIn(0, alphabetLetters.lastIndex)
+                    }
+
+                    // Bell-curve wave: the selected letter travels furthest to the left,
+                    // while neighbouring letters fan out by a Gaussian falloff.
                     Column(
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.SpaceEvenly,
+                        horizontalAlignment = Alignment.End
+                    ) {
+                        alphabetLetters.forEachIndexed { index, letter ->
+                            val distance = activeIndex?.let { abs(it - index) }
+                            val bellCurve = distance?.let {
+                                exp(-(it * it).toDouble() / 5.0).toFloat()
+                            } ?: 0f
+                            val targetOffset = if (scrubberProgress != null) {
+                                maxBellOffset * bellCurve
+                            } else {
+                                0.dp
+                            }
+                            val animatedOffset by animateDpAsState(
+                                targetValue = targetOffset,
+                                animationSpec = spring(dampingRatio = 0.68f, stiffness = 560f),
+                                label = "alphabet-bell-curve-offset"
+                            )
+                            val isActiveLetter = activeIndex == index
+                            Box(
+                                modifier = Modifier.fillMaxWidth().weight(1f),
+                                contentAlignment = Alignment.CenterEnd
+                            ) {
+                                Box(
+                                    modifier = Modifier.width(24.dp).fillMaxHeight()
+                                        .offset(x = -animatedOffset)
+                                        .clickable(enabled = letter in firstIndexByLetter) {
+                                            scrollToLetter(letter)
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        letter,
+                                        color = when {
+                                            isActiveLetter -> MaterialTheme.colorScheme.primary
+                                            letter in firstIndexByLetter -> secondary.copy(alpha = 0.70f)
+                                            else -> secondary.copy(alpha = 0.22f)
+                                        },
+                                        fontSize = 11.sp,
+                                        lineHeight = 12.sp,
+                                        fontWeight = if (isActiveLetter) {
+                                            androidx.compose.ui.text.font.FontWeight.Bold
+                                        } else {
+                                            androidx.compose.ui.text.font.FontWeight.Normal
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Keep the touch target narrow so app names remain tappable while
+                    // the visual bell-curve animation can expand horizontally to the left.
+                    Box(
+                        modifier = Modifier.align(Alignment.CenterEnd)
+                            .width(24.dp)
+                            .fillMaxHeight()
                             .pointerInput(alphabetLetters, firstIndexByLetter) {
                                 fun letterAt(y: Float): String {
                                     val height = size.height.coerceAtLeast(1)
@@ -342,57 +407,14 @@ internal fun AppsScreen(
                                     }
                                     scrubberProgress = null
                                 }
-                            },
-                        verticalArrangement = Arrangement.SpaceEvenly,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        alphabetLetters.forEachIndexed { index, letter ->
-                            val activeIndex = scrubberProgress?.let {
-                                (it * alphabetLetters.lastIndex).toInt().coerceIn(0, alphabetLetters.lastIndex)
                             }
-                            val distance = activeIndex?.let { abs(it - index) }
-                            val isActiveLetter = activeIndex == index
-                            val letterScale by animateFloatAsState(
-                                targetValue = when (distance) {
-                                    0 -> 1.85f
-                                    1 -> 1.48f
-                                    2 -> 1.22f
-                                    3 -> 1.08f
-                                    else -> 1f
-                                },
-                                animationSpec = spring(dampingRatio = 0.52f, stiffness = 430f),
-                                label = "alphabet-letter-wave"
-                            )
-                            Box(
-                                modifier = Modifier.fillMaxWidth().weight(1f)
-                                    .background(
-                                        color = if (isActiveLetter) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-                                        else androidx.compose.ui.graphics.Color.Transparent,
-                                        shape = CircleShape
-                                    )
-                                    .graphicsLayer { scaleX = letterScale; scaleY = letterScale }
-                                    .clickable(enabled = letter in firstIndexByLetter) {
-                                        scrollToLetter(letter)
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    letter,
-                                    color = when {
-                                        isActiveLetter -> MaterialTheme.colorScheme.primary
-                                        letter in firstIndexByLetter -> secondary.copy(alpha = 0.62f)
-                                        else -> secondary.copy(alpha = 0.18f)
-                                    },
-                                    fontSize = 9.sp,
-                                    lineHeight = 10.sp
-                                )
-                            }
-                        }
-                    }
+                    )
+
+                    val popupHorizontalOffset = if (scrubberProgress != null) maxBellOffset else 0.dp
                     androidx.compose.animation.AnimatedVisibility(
                         visible = scrubberProgress != null,
                         modifier = Modifier.align(Alignment.TopStart).offset(
-                            x = (-52).dp,
+                            x = maxWidth - 80.dp - popupHorizontalOffset,
                             y = (maxHeight * animatedProgress - 25.dp)
                                 .coerceIn(0.dp, (maxHeight - 50.dp).coerceAtLeast(0.dp))
                         ),
