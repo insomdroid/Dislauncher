@@ -66,7 +66,7 @@ internal fun DislauncherTheme(
     } else {
         baseColorScheme
     }
-    val colorScheme = if (preferences.themeMode == "black") {
+    val baseThemeColorScheme = if (preferences.themeMode == "black") {
         textSafeDarkScheme.copy(
             background = Color.Black,
             surface = Color.Black,
@@ -87,6 +87,30 @@ internal fun DislauncherTheme(
     } else {
         textSafeDarkScheme
     }
+    val wallpaperColor = if (preferences.wallpaperMode == "solid") {
+        runCatching { Color(android.graphics.Color.parseColor(preferences.wallpaperColor)) }.getOrNull()
+    } else null
+    val wallpaperIsDark = wallpaperColor?.let {
+        android.graphics.Color.luminance(android.graphics.Color.parseColor(preferences.wallpaperColor)) < 0.45f
+    } ?: false
+    val colorScheme = wallpaperColor?.let { color ->
+        val foreground = if (wallpaperIsDark) Color.White else Color(0xFF151515)
+        baseThemeColorScheme.copy(
+            background = color,
+            surface = color,
+            surfaceVariant = color,
+            surfaceContainerLowest = color,
+            surfaceContainerLow = color,
+            surfaceContainer = color,
+            surfaceContainerHigh = color,
+            surfaceContainerHighest = color,
+            onBackground = foreground,
+            onSurface = foreground,
+            onSurfaceVariant = foreground.copy(alpha = 0.78f),
+            outline = foreground.copy(alpha = 0.48f),
+            outlineVariant = foreground.copy(alpha = 0.25f)
+        )
+    } ?: baseThemeColorScheme
     val fontFamily = remember(preferences.fontMode, preferences.customFontName) {
         when (preferences.fontMode) {
             "mono" -> FontFamily.Monospace

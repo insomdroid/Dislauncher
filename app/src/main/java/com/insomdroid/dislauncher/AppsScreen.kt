@@ -7,6 +7,10 @@ import android.provider.Settings
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
@@ -67,6 +71,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
+import kotlin.math.abs
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -85,7 +90,7 @@ internal fun AppsScreen(
     onRenameApp: (String, String) -> Unit,
     onOpenSettings: () -> Unit
 ) {
-    val background = MaterialTheme.colorScheme.background
+    val background = if (preferences.wallpaperMode == "image") androidx.compose.ui.graphics.Color.Transparent else MaterialTheme.colorScheme.background
     val mainText = MaterialTheme.colorScheme.onBackground
     val secondary = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.62f)
     val searching = query.isNotBlank()
@@ -165,7 +170,7 @@ internal fun AppsScreen(
                     Row(
                         modifier = Modifier.fillMaxWidth().combinedClickable(
                             onClick = { onLaunch(app) },
-                            onLongClick = { selectedApp = app }
+                            onLongClick = { if (!app.packageName.startsWith("internal:")) selectedApp = app }
                         ).padding(vertical = 8.dp, horizontal = 0.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -219,6 +224,11 @@ internal fun AppsScreen(
                         .fillMaxHeight(0.56f)
                         .width(20.dp)
                 ) {
+                    val animatedProgress by animateFloatAsState(
+                        targetValue = scrubberProgress ?: 0f,
+                        animationSpec = spring(dampingRatio = 0.72f, stiffness = 650f),
+                        label = "alphabet-scrubber-progress"
+                    )
                     Column(
                         modifier = Modifier.fillMaxSize()
                             .pointerInput(alphabetLetters, firstIndexByLetter) {
@@ -244,9 +254,24 @@ internal fun AppsScreen(
                         verticalArrangement = Arrangement.SpaceEvenly,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        alphabetLetters.forEach { letter ->
+                        alphabetLetters.forEachIndexed { index, letter ->
+                            val activeIndex = scrubberProgress?.let {
+                                (it * alphabetLetters.lastIndex).toInt().coerceIn(0, alphabetLetters.lastIndex)
+                            }
+                            val distance = activeIndex?.let { abs(it - index) }
+                            val letterScale by animateFloatAsState(
+                                targetValue = when (distance) {
+                                    0 -> 1.38f
+                                    1 -> 1.16f
+                                    2 -> 1.06f
+                                    else -> 1f
+                                },
+                                animationSpec = spring(dampingRatio = 0.62f, stiffness = 520f),
+                                label = "alphabet-letter-wave"
+                            )
                             Box(
                                 modifier = Modifier.size(18.dp)
+                                    .graphicsLayer { scaleX = letterScale; scaleY = letterScale }
                                     .clickable(enabled = letter in firstIndexByLetter) {
                                         scrollToLetter(letter)
                                     },
@@ -269,8 +294,8 @@ internal fun AppsScreen(
                         visible = scrubberProgress != null,
                         modifier = Modifier.align(Alignment.TopStart).offset(
                             x = (-48).dp,
-                            y = (maxHeight * (scrubberProgress ?: 0f) - 20.dp)
-                                .coerceIn(0.dp, (maxHeight - 40.dp).coerceAtLeast(0.dp))
+                            y = (maxHeight * animatedProgress - 22.dp)
+                                .coerceIn(0.dp, (maxHeight - 44.dp).coerceAtLeast(0.dp))
                         ),
                         enter = androidx.compose.animation.fadeIn() +
                             androidx.compose.animation.slideInHorizontally { it / 2 },
@@ -278,7 +303,8 @@ internal fun AppsScreen(
                             androidx.compose.animation.slideOutHorizontally { it / 2 }
                     ) {
                         Box(
-                            modifier = Modifier.size(40.dp)
+                            modifier = Modifier.size(44.dp)
+                                .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.primary, CircleShape),
                             contentAlignment = Alignment.Center
                         ) {

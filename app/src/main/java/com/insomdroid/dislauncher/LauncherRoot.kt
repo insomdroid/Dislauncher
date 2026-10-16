@@ -5,10 +5,13 @@ import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.graphics.BitmapFactory
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -24,10 +27,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -104,6 +111,17 @@ internal fun DislauncherRoot() {
         preferences = next
         next.save(prefsStore)
         if (notificationDotSettingsChanged) NotificationDotState.refresh()
+    }
+
+    val wallpaperPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            updatePreferences(preferences.copy(wallpaperMode = "image", wallpaperUri = uri.toString()))
+        }
     }
 
     val customFontPicker = rememberLauncherForActivityResult(
@@ -288,10 +306,13 @@ internal fun DislauncherRoot() {
     }
 
     BackHandler(
-        enabled = screen == LauncherScreen.SETTINGS || screen == LauncherScreen.WEATHER || pagerState.settledPage == 1
+        enabled = screen == LauncherScreen.SETTINGS || screen == LauncherScreen.WEATHER ||
+            screen == LauncherScreen.NOTES || screen == LauncherScreen.CALCULATOR ||
+            screen == LauncherScreen.CALENDAR || pagerState.settledPage == 1
     ) {
         when (screen) {
-            LauncherScreen.SETTINGS, LauncherScreen.WEATHER ->
+            LauncherScreen.SETTINGS, LauncherScreen.WEATHER, LauncherScreen.NOTES,
+            LauncherScreen.CALCULATOR, LauncherScreen.CALENDAR ->
                 screen = LauncherScreen.HOME
             LauncherScreen.APPS -> scope.launch { pagerState.animateScrollToPage(0) }
             else -> Unit
@@ -307,6 +328,24 @@ internal fun DislauncherRoot() {
     }
     val visibleApps = remember(apps, preferences.hideSystemApps, hiddenApps) {
         apps.filter { (!preferences.hideSystemApps || !it.isSystem) && it.packageName !in hiddenApps }
+    }
+    val drawerApps = remember(visibleApps) {
+        visibleApps + listOf(
+            LauncherApp("internal:calculator", "", "Calculator", true),
+            LauncherApp("internal:calendar", "", "Calendar", true),
+            LauncherApp("internal:notes", "", "Notes", true)
+        )
+    }
+    val wallpaperImage = produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+        initialValue = null,
+        key1 = preferences.wallpaperUri
+    ) {
+        value = withContext(Dispatchers.IO) {
+            val uri = preferences.wallpaperUri?.let(Uri::parse)
+            if (uri == null) null else runCatching {
+                context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it)?.asImageBitmap() }
+            }.getOrNull()
+        }
     }
 
     SideEffect {
@@ -345,6 +384,7 @@ internal fun DislauncherRoot() {
                 iconPacks = iconPacks,
                 onPreferencesChange = ::updatePreferences,
                 onChooseCustomFont = { customFontPicker.launch(arrayOf("*/*")) },
+                onChooseWallpaper = { wallpaperPicker.launch(arrayOf("image/*")) },
                 onDoubleTapLockChange = ::changeDoubleTapLock,
                 onToggleFavorite = ::toggleFavorite,
                 onToggleHidden = ::toggleHidden,
@@ -364,12 +404,24 @@ internal fun DislauncherRoot() {
                 },
                 onBack = { screen = LauncherScreen.HOME }
             )
+        } else if (screen == LauncherScreen.NOTES || screen == LauncherScreen.CALCULATOR || screen == LauncherScreen.CALENDAR) {
+            BuiltInToolScreen(
+                tool = when (screen) {
+                    LauncherScreen.NOTES -> BuiltInTool.NOTES
+                    LauncherScreen.CALCULATOR -> BuiltInTool.CALCULATOR
+                    else -> BuiltInTool.CALENDAR
+                },
+                onBack = { screen = LauncherScreen.HOME }
+            )
         } else {
             val notificationsGestureEnabled =
                 screen == LauncherScreen.HOME && pagerState.currentPage == 0 && preferences.swipeDownNotifications
             Box(
                 modifier = Modifier.fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
+                    .background(
+                        if (preferences.wallpaperMode == "image" && wallpaperImage.value != null) Color.Transparent
+                        else MaterialTheme.colorScheme.background
+                    )
                     .pointerInput(notificationsGestureEnabled) {
                         if (!notificationsGestureEnabled) return@pointerInput
                         val triggerDistance = 100.dp.toPx()
@@ -408,6 +460,16 @@ internal fun DislauncherRoot() {
                         }
                     }
             ) {
+                if (preferences.wallpaperMode == "image") {
+                    wallpaperImage.value?.let { bitmap ->
+                        Image(
+                            bitmap = bitmap,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
                 HorizontalPager(
                     state = pagerState,
                     modifier = Modifier.fillMaxSize(),
@@ -441,7 +503,7 @@ internal fun DislauncherRoot() {
                         )
                     } else {
                         AppsScreen(
-                            apps = visibleApps,
+                            apps = drawerApps,
                             favorites = favorites,
                             query = searchQuery,
                             onQueryChange = { searchQuery = it },
@@ -449,7 +511,14 @@ internal fun DislauncherRoot() {
                             isDark = isDark,
                             isActive = page == pagerState.currentPage,
                             fontFamily = fontFamily,
-                            onLaunch = { launchApp(context, it) },
+                            onLaunch = { app ->
+                                when (app.packageName) {
+                                    "internal:notes" -> screen = LauncherScreen.NOTES
+                                    "internal:calculator" -> screen = LauncherScreen.CALCULATOR
+                                    "internal:calendar" -> screen = LauncherScreen.CALENDAR
+                                    else -> launchApp(context, app)
+                                }
+                            },
                             onToggleFavorite = ::toggleFavorite,
                             onToggleHidden = ::toggleHidden,
                             onRenameApp = ::renameApp,
