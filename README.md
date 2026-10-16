@@ -1,53 +1,57 @@
 # Dislauncher
 
-A minimalist, text-first Android launcher that keeps everyday essentials close and unnecessary clutter out of sight.
+A minimalist, text-first Android launcher for a calmer Home screen. Keep the essentials visible, your apps easy to reach, and the clutter out of the way.
+
+## Screenshots
+
+![Dislauncher screenshot](Screenshot/ic_0001.png)
 
 ## Features
 
 ### Home screen
-- A clean clock and date, with optional day and year progress indicators.
-- Up to five favourite apps, with controls to arrange Home items to fit your routine.
-- Optional weather, battery percentage, calendar agenda, music controls, task list, call shortcut, and Settings shortcut.
-- Weather details at a glance, including current conditions, feels-like temperature, daily high and low, humidity, and wind when available.
-- A saved weather reading can remain visible when a new update is unavailable or location access is turned off.
-- Tap the clock or date to open your clock or calendar app.
+- Clean clock and date, with optional day and year progress indicators.
+- Pin up to six favourite apps and reorder them on Home.
+- Optional weather, battery percentage, calendar agenda, music controls, and Settings shortcut.
+- Weather page with current conditions and details such as feels-like temperature, daily high and low, humidity, and wind when available.
+- Cached weather can remain visible when a refresh is unavailable.
+- Tap the clock or date to open the corresponding clock or calendar app.
 - Choose Celsius or Fahrenheit and system, 12-hour, or 24-hour time.
+- Swipe between Home and the app drawer.
 
 ### App drawer
 - Browse installed apps alphabetically, with a letter rail for quick navigation.
-- Search for apps by name.
-- Pin up to five favourites.
-- Long-press an app to rename it, hide it, open its app info, or request uninstall.
+- Search apps by name, with an option to open the keyboard automatically.
+- Long-press an app to rename it, add or remove it from favourites, hide it, open app info, or request uninstall.
 - Hide individual apps or system apps.
-- Use compatible installed icon packs, or keep the system icons.
+- Use compatible installed icon packs or keep system icons.
 
 ### Personalization
-- Choose a system, light, or dark theme, with Android wallpaper-based accent colors where supported.
-- Dark mode uses a pure-black background.
-- Use the system font, a monospace font, or import your own TTF/OTF font.
-- Adjust font size and choose whether app icons appear.
-- Show or hide individual Home items, the status bar, and the app drawer search bar.
-- Double-tap an empty area of Home to lock the screen, or long-press empty space to open Settings.
-- Swipe between Home and the app drawer, or swipe down on Home to try to open notifications.
+- Choose System, Light, Dark, or pure-black themes.
+- Use Android dynamic colors for accents where supported.
+- Choose the system font, monospace, or import a custom TTF/OTF font.
+- Adjust font size and show or hide app icons.
+- Customize icon shapes when built-in icons are enabled.
+- Toggle Home elements, the status bar, and app drawer search independently.
+- Double-tap Home to lock the screen, long-press empty Home space to open Settings, or swipe down to open notifications.
 
 ## Why Dislauncher
 
-- **Keep Home uncluttered:** display only the widgets and shortcuts you actually use.
-- **See essentials quickly:** time, date, battery, weather, calendar events, tasks, and music controls can live on one screen.
-- **Make it personal:** tune the layout, text, icons, theme, and gestures to your preferences.
-- **Stay in control:** favourites, hidden apps, and optional widgets keep the launcher focused on your routine.
-- **Keep simple tasks nearby:** your task list is stored locally on your device.
+- **Less clutter:** keep only the Home items you actually use.
+- **At-a-glance essentials:** put time, date, weather, calendar events, battery, and music controls within easy reach.
+- **Your layout, your rules:** organize favourites and adjust text, icons, colors, and gestures.
+- **A focused app list:** find apps quickly and hide the ones you do not want in view.
+- **No unnecessary complexity:** everyday launcher actions stay straightforward.
 
 ## Permissions and special access
 
-Dislauncher uses access only for the features described below. You can skip optional features that need their own access.
+Dislauncher only uses access needed for its listed features. Optional features can be left disabled.
 
 - **Internet** (`INTERNET`) — retrieves weather data.
-- **Approximate location** (`ACCESS_COARSE_LOCATION`) — finds local weather. Dislauncher does not request precise location.
-- **Calendar** (`READ_CALENDAR`) — reads today's calendar events when the Home agenda is enabled.
-- **Notification access** — when enabled in Android Settings, lets the music widget show the active track and control playback.
-- **Device administrator** — optional; required only for the double-tap-to-lock gesture.
-- **Notification shade** (`EXPAND_STATUS_BAR`) — used for the swipe-down notification gesture. Android or the device manufacturer may restrict this action.
-- **Uninstall requests** (`REQUEST_DELETE_PACKAGES`) — lets you choose Uninstall from an app's long-press menu and continue through Android's confirmation screen.
+- **Approximate location** (`ACCESS_COARSE_LOCATION`) — gets local weather. Precise location is not requested.
+- **Calendar** (`READ_CALENDAR`) — reads calendar events for the Home agenda.
+- **Notification access** — optional access enabled in Android Settings so the music widget can show the active track and control playback.
+- **Device administrator** — optional; required for the double-tap-to-lock gesture.
+- **Notification shade** (`EXPAND_STATUS_BAR`) — used by the swipe-down notification gesture. Android or the device manufacturer may restrict this action.
+- **Uninstall requests** (`REQUEST_DELETE_PACKAGES`) — lets you start an uninstall from an app's long-press menu; Android still shows its confirmation flow.
 
-Dislauncher remains usable without location, calendar, notification, or device-admin access; only the related features are unavailable or limited.
+Dislauncher remains usable without location, calendar, notification, or device-admin access. Only the features that depend on the unavailable access are limited.
