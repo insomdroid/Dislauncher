@@ -13,8 +13,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -243,9 +243,9 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
         AnimatedVisibility(
             visible = visible,
             enter = fadeIn(animationSpec = tween(220)) +
-                slideInHorizontally(animationSpec = tween(220)) { it / 10 },
-            exit = fadeOut(animationSpec = tween(200)) +
-                slideOutHorizontally(animationSpec = tween(200)) { it / 10 }
+                scaleIn(initialScale = 0.92f, animationSpec = tween(220)),
+            exit = fadeOut(animationSpec = tween(180)) +
+                scaleOut(targetScale = 0.96f, animationSpec = tween(180))
         ) {
             Scaffold(
                 containerColor = MaterialTheme.colorScheme.background,
