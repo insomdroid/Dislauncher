@@ -138,8 +138,8 @@ internal fun AppsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (preferences.showAppIcons) {
-                            AppIcon(app, preferences.iconPack, size = 24.dp, iconShape = preferences.iconShape)
-                            Spacer(Modifier.width(9.dp))
+                            AppIcon(app, preferences.iconPack, size = 18.dp, iconShape = preferences.iconShape)
+                            Spacer(Modifier.width(2.dp))
                         }
                         Text(
                             app.label,
@@ -150,6 +150,7 @@ internal fun AppsScreen(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
+                                .padding(start = if (preferences.showAppIcons) 0.dp else 20.dp)
                         )
                     }
                 }
