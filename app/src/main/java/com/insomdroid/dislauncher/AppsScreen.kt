@@ -145,7 +145,7 @@ internal fun AppsScreen(
                     end = if (preferences.showAlphabetIndex && !searching) 15.dp else 0.dp
                 ),
                 contentPadding = PaddingValues(bottom = 16.dp, top = 2.dp),
-                verticalArrangement = Arrangement.spacedBy(0.dp)
+                verticalArrangement = if (searching) Arrangement.Bottom else Arrangement.Top
             ) {
                 if (filtered.isEmpty()) {
                     item(key = "empty-app-list") {
@@ -209,12 +209,17 @@ internal fun AppsScreen(
                 }
             }
             if (preferences.showAlphabetIndex && !searching && filtered.isNotEmpty()) {
+                var alphabetIndexActive by remember { mutableStateOf(false) }
                 Column(
-                    modifier = Modifier.align(Alignment.CenterEnd)
-                        .fillMaxHeight()
+                    modifier = Modifier.align(Alignment.BottomEnd)
+                        .fillMaxHeight(0.5f)
                         .width(15.dp)
                         .pointerInput(alphabetLetters, firstIndexByLetter) {
-                            detectVerticalDragGestures { change, _ ->
+                            detectVerticalDragGestures(
+                                onDragStart = { alphabetIndexActive = true },
+                                onDragEnd = { alphabetIndexActive = false },
+                                onDragCancel = { alphabetIndexActive = false }
+                            ) { change, _ ->
                                 change.consume()
                                 val height = size.height.coerceAtLeast(1)
                                 val letterIndex = ((change.position.y / height) * alphabetLetters.size)
@@ -228,7 +233,8 @@ internal fun AppsScreen(
                     alphabetLetters.forEach { letter ->
                         Text(
                             letter,
-                            color = if (letter in firstIndexByLetter) secondary else secondary.copy(alpha = 0.28f),
+                            color = (if (letter in firstIndexByLetter) secondary else secondary.copy(alpha = 0.28f))
+                                .copy(alpha = if (alphabetIndexActive) 1f else 0.38f),
                             fontSize = 8.sp,
                             lineHeight = 9.sp,
                             modifier = Modifier.clickable(enabled = letter in firstIndexByLetter) {
