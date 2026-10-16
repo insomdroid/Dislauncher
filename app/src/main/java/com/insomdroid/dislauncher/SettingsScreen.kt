@@ -143,6 +143,38 @@ internal fun SettingsScreen(
                         "Show compact app icons beside names in Home and the drawer.",
                         preferences.showAppIcons
                     ) { onPreferencesChange(preferences.copy(showAppIcons = it)) }
+                    ChoiceRow(
+                        "Built-in icon shape",
+                        preferences.iconShape,
+                        listOf(
+                            "original" to "Original",
+                            "circle" to "Circle",
+                            "outline_square" to "Outline square",
+                            "filled_square" to "Filled square",
+                            "filled_rectangle" to "Rectangle"
+                        )
+                    ) { onPreferencesChange(preferences.copy(iconShape = it)) }
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        listOf("circle", "outline_square", "filled_square", "filled_rectangle").forEach { shape ->
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                BuiltInIconShapePreview(shape)
+                                Text(
+                                    when (shape) {
+                                        "circle" -> "Circle"
+                                        "outline_square" -> "Outline"
+                                        "filled_square" -> "Square"
+                                        else -> "Rectangle"
+                                    },
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
                     SettingAction(
                         "Icon pack",
                         detectedIconPacks.firstOrNull { it.packageName == preferences.iconPack }?.label
