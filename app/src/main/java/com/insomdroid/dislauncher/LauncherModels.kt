@@ -1,6 +1,6 @@
 package com.insomdroid.dislauncher
 
-internal enum class LauncherScreen { ONBOARDING, HOME, APPS, SETTINGS, WEATHER }
+internal enum class LauncherScreen { ONBOARDING, HOME, APPS, SETTINGS, WEATHER, NOTES, CALCULATOR, CALENDAR }
 
 internal data class LauncherApp(
     val packageName: String,

@@ -108,7 +108,7 @@ internal fun HomeScreen(
     }
     val timeText = now.format(DateTimeFormatter.ofPattern(timePattern, Locale.getDefault()))
     val dateText = formatHomeDate(today)
-    val background = MaterialTheme.colorScheme.background
+    val background = if (preferences.wallpaperMode == "image") androidx.compose.ui.graphics.Color.Transparent else MaterialTheme.colorScheme.background
     val primaryText = MaterialTheme.colorScheme.onBackground
     val secondaryText = MaterialTheme.colorScheme.onSurfaceVariant
     val activeNotificationPackages = NotificationDotState.activePackages

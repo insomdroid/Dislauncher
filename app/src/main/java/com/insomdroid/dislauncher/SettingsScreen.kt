@@ -78,6 +78,7 @@ internal fun SettingsScreen(
     iconPacks: List<IconPackInfo>,
     onPreferencesChange: (LauncherPreferences) -> Unit,
     onChooseCustomFont: () -> Unit,
+    onChooseWallpaper: () -> Unit,
     onDoubleTapLockChange: (Boolean) -> Unit,
     onToggleFavorite: (String) -> Unit,
     onToggleHidden: (String) -> Unit,
@@ -261,6 +262,45 @@ internal fun SettingsScreen(
                                 tr("Use Android wallpaper colors for accents.", "Gunakan warna dari wallpaper Android untuk aksen."),
                                 preferences.dynamicColor
                             ) { onPreferencesChange(preferences.copy(dynamicColor = it)) }
+                        }
+                        SettingsGroup(tr("Wallpaper", "Wallpaper")) {
+                            ChoiceRow(
+                                tr("Wallpaper style", "Gaya wallpaper"),
+                                preferences.wallpaperMode,
+                                listOf(
+                                    "default" to tr("Default", "Bawaan"),
+                                    "solid" to tr("Solid color", "Warna solid"),
+                                    "image" to tr("Image", "Gambar")
+                                )
+                            ) { mode ->
+                                if (mode == "image") onChooseWallpaper()
+                                else onPreferencesChange(preferences.copy(wallpaperMode = mode))
+                            }
+                            if (preferences.wallpaperMode == "solid") {
+                                ChoiceRow(
+                                    tr("Solid color", "Warna solid"),
+                                    preferences.wallpaperColor,
+                                    listOf(
+                                        "#000000" to tr("Black", "Hitam"),
+                                        "#202124" to tr("Charcoal", "Arang"),
+                                        "#263238" to tr("Blue grey", "Abu biru"),
+                                        "#1B3A32" to tr("Forest", "Hutan"),
+                                        "#3B2438" to tr("Plum", "Plum"),
+                                        "#17324D" to tr("Navy", "Biru navy"),
+                                        "#8D6E63" to tr("Taupe", "Cokelat taupe"),
+                                        "#D8D0C0" to tr("Sand", "Pasir"),
+                                        "#F2EBDD" to tr("Cream", "Krem"),
+                                        "#E7E0F4" to tr("Lavender", "Lavender")
+                                    )
+                                ) { onPreferencesChange(preferences.copy(wallpaperColor = it, wallpaperMode = "solid")) }
+                            }
+                            SettingAction(
+                                tr("Choose image", "Pilih gambar"),
+                                if (preferences.wallpaperUri != null) tr("Custom image selected", "Gambar kustom dipilih")
+                                else tr("Use an image from your device", "Gunakan gambar dari perangkat"),
+                                tr("Pick image", "Pilih gambar"),
+                                onChooseWallpaper
+                            )
                         }
                         SettingsGroup(tr("Font and text size", "Font dan ukuran teks")) {
                             ChoiceRow(
