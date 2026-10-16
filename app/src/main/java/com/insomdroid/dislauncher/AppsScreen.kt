@@ -139,7 +139,7 @@ internal fun AppsScreen(
                     ) {
                         if (preferences.showAppIcons) {
                             AppIcon(app, preferences.iconPack, size = 18.dp, iconShape = preferences.iconShape)
-                            Spacer(Modifier.width(2.dp))
+                            Spacer(Modifier.width(9.dp))
                         }
                         Text(
                             app.label,

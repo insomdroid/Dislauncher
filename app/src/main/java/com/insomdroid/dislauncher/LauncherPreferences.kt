@@ -12,6 +12,10 @@ internal data class LauncherPreferences(
     val iconPack: String = "system",
     val iconShape: String = "original",
     val showAppIcons: Boolean = false,
+    val wallpaperMode: String = "system",
+    val wallpaperUri: String? = null,
+    val wallpaperColor: String = "black",
+    val wallpaperTarget: String = "home",
     val hideStatusBar: Boolean = false,
     val showSearchBar: Boolean = true,
     val autoLaunchKeyboard: Boolean = false,
@@ -23,8 +27,6 @@ internal data class LauncherPreferences(
     val showWeather: Boolean = true,
     val weatherUnit: String = "C",
     val timeFormat: String = "system",
-    val showTasks: Boolean = true,
-    val showCall: Boolean = true,
     val showSettingsButton: Boolean = true,
     val showMusic: Boolean = true,
     val hideSystemApps: Boolean = false,
@@ -43,6 +45,10 @@ internal data class LauncherPreferences(
             .putString("icon_pack", iconPack)
             .putString("icon_shape", iconShape)
             .putBoolean("show_app_icons", showAppIcons)
+            .putString("wallpaper_mode", wallpaperMode)
+            .putString("wallpaper_uri", wallpaperUri)
+            .putString("wallpaper_color", wallpaperColor)
+            .putString("wallpaper_target", wallpaperTarget)
             .putBoolean("hide_status_bar", hideStatusBar)
             .putBoolean("show_search_bar", showSearchBar)
             .putBoolean("auto_launch_keyboard", autoLaunchKeyboard)
@@ -54,8 +60,6 @@ internal data class LauncherPreferences(
             .putBoolean("show_weather", showWeather)
             .putString("weather_unit", weatherUnit)
             .putString("time_format", timeFormat)
-            .putBoolean("show_tasks", showTasks)
-            .putBoolean("show_call", showCall)
             .putBoolean("show_settings_button", showSettingsButton)
             .putBoolean("show_music", showMusic)
             .putBoolean("hide_system_apps", hideSystemApps)
@@ -124,6 +128,10 @@ internal data class LauncherPreferences(
                 iconPack = p.getString("icon_pack", "system") ?: "system",
                 iconShape = p.getString("icon_shape", "original")?.takeIf { it in setOf("original", "circle", "outline_square", "filled_square", "filled_rectangle") } ?: "original",
                 showAppIcons = p.getBoolean("show_app_icons", false),
+                wallpaperMode = p.getString("wallpaper_mode", "system")?.takeIf { it in setOf("system", "image", "solid") } ?: "system",
+                wallpaperUri = p.getString("wallpaper_uri", null),
+                wallpaperColor = p.getString("wallpaper_color", "black")?.takeIf { it in setOf("black", "white", "slate", "navy", "forest", "plum", "sand", "rose") } ?: "black",
+                wallpaperTarget = p.getString("wallpaper_target", "home")?.takeIf { it in setOf("home", "lock", "both") } ?: "home",
                 hideStatusBar = p.getBoolean("hide_status_bar", false),
                 showSearchBar = p.getBoolean("show_search_bar", true),
                 autoLaunchKeyboard = p.getBoolean("auto_launch_keyboard", false),
@@ -135,8 +143,6 @@ internal data class LauncherPreferences(
                 showWeather = p.getBoolean("show_weather", true),
                 weatherUnit = p.getString("weather_unit", "C") ?: "C",
                 timeFormat = p.getString("time_format", "system") ?: "system",
-                showTasks = p.getBoolean("show_tasks", true),
-                showCall = p.getBoolean("show_call", true),
                 showSettingsButton = p.getBoolean("show_settings_button", true),
                 showMusic = p.getBoolean("show_music", true),
                 hideSystemApps = p.getBoolean("hide_system_apps", false),
