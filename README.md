@@ -4,7 +4,6 @@ A minimalist, text-first Android launcher for a calmer Home screen. Keep the ess
 
 ## Screenshots
 
-![Dislauncher screenshot](Screenshot/ic_0001.png)
 
 ## Features
 
