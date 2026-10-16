@@ -240,9 +240,16 @@ private fun dominantAppIconColor(context: Context, packageName: String): android
     }
     val dominant = buckets.maxByOrNull { it.value }?.key
         ?: return androidx.compose.ui.graphics.Color(0xFF6488B8)
-    val red = (((dominant shr 8) and 0xF) * 16 + 8).coerceIn(0, 255)
-    val green = (((dominant shr 4) and 0xF) * 16 + 8).coerceIn(0, 255)
-    val blue = ((dominant and 0xF) * 16 + 8).coerceIn(0, 255)
+    var red = (((dominant shr 8) and 0xF) * 16 + 8).coerceIn(0, 255)
+    var green = (((dominant shr 4) and 0xF) * 16 + 8).coerceIn(0, 255)
+    var blue = ((dominant and 0xF) * 16 + 8).coerceIn(0, 255)
+    val brightness = (0.2126f * red + 0.7152f * green + 0.0722f * blue) / 255f
+    if (brightness > 0.70f) {
+        val darkening = 0.70f / brightness
+        red = (red * darkening).toInt()
+        green = (green * darkening).toInt()
+        blue = (blue * darkening).toInt()
+    }
     return androidx.compose.ui.graphics.Color(android.graphics.Color.rgb(red, green, blue))
 }
 // appfilter.xml can contain thousands of entries. Parse it once per pack.
