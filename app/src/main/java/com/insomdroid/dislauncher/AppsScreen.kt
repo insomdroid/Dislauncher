@@ -42,6 +42,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Calculate
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.filled.Search as SearchIcon
 import androidx.compose.material.icons.filled.Settings as SettingsIcon
 import androidx.compose.material3.Icon
@@ -186,37 +189,55 @@ internal fun AppsScreen(
                         Text(
                             "Built-in apps",
                             color = secondary,
-                            fontSize = 12.sp,
-                            lineHeight = 16.sp,
+                            fontSize = 14.sp,
+                            lineHeight = 18.sp,
                             fontFamily = fontFamily,
-                            modifier = Modifier.padding(top = 6.dp, bottom = 4.dp, start = 1.dp)
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                            modifier = Modifier.padding(top = 10.dp, bottom = 6.dp, start = 1.dp)
                         )
                     }
-                items(filteredBuiltIns, key = { it.packageName }) { app ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().combinedClickable(
-                            onClick = { onLaunch(app) },
-                            onLongClick = { if (!app.packageName.startsWith("internal:")) selectedApp = app }
-                        ).padding(vertical = 8.dp, horizontal = 0.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (preferences.showAppIcons) {
-                            AppIcon(app, preferences.iconPack, size = 18.dp, iconShape = preferences.iconShape)
-                            Spacer(Modifier.width(9.dp))
+                    filteredBuiltIns.forEach { app ->
+                        item(key = "built-in-row-${app.packageName}") {
+                            val toolIcon = when (app.packageName) {
+                                "internal:calculator" -> androidx.compose.material.icons.Icons.Outlined.Calculate
+                                "internal:calendar" -> androidx.compose.material.icons.Icons.Outlined.CalendarMonth
+                                else -> androidx.compose.material.icons.Icons.Outlined.Description
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .clickable { onLaunch(app) }
+                                    .padding(vertical = 12.dp, horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier.size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = toolIcon,
+                                        contentDescription = app.label,
+                                        tint = mainText,
+                                        modifier = Modifier.size(21.dp)
+                                    )
+                                }
+                                Spacer(Modifier.width(12.dp))
+                                Text(
+                                    app.label,
+                                    color = mainText,
+                                    fontSize = 25.sp,
+                                    lineHeight = 32.sp,
+                                    fontFamily = fontFamily,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
                         }
-                        Text(
-                            app.label,
-                            color = mainText,
-                            fontSize = 25.sp,
-                            lineHeight = 32.sp,
-                            fontFamily = fontFamily,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
-                                .padding(start = if (preferences.showAppIcons) 0.dp else 20.dp)
-                        )
                     }
-                }
+                    item(key = "built-in-apps-spacer") { Spacer(Modifier.height(10.dp)) }
                 }
                 items(filtered, key = { it.packageName }) { app ->
                     Row(
