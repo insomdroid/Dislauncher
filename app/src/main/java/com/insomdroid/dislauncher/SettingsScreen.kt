@@ -121,7 +121,7 @@ internal fun SettingsScreen(
                 ChoiceRow(
                     "Wallpaper source",
                     preferences.wallpaperMode,
-                    listOf("system" to "System", "image" to "Photo", "solid" to "Solid color")
+                    listOf("default" to "Theme default", "system" to "System", "image" to "Photo", "solid" to "Solid color")
                 ) { onPreferencesChange(preferences.copy(wallpaperMode = it)) }
 
                 if (preferences.wallpaperMode == "image") {
@@ -147,6 +147,7 @@ internal fun SettingsScreen(
                 SettingAction(
                     "Apply wallpaper",
                     when (preferences.wallpaperMode) {
+                        "default" -> "Use black in dark mode and white in light mode."
                         "image" -> "Apply the selected photo to the chosen screen."
                         "solid" -> "Apply the selected color to the chosen screen."
                         else -> "Use the current system wallpaper as the Home background."
@@ -154,12 +155,14 @@ internal fun SettingsScreen(
                     "Apply",
                     {
                         scope.launch {
-                            val applied = if (preferences.wallpaperMode == "system") true else withContext(Dispatchers.IO) {
+                            val applied = if (preferences.wallpaperMode == "system" || preferences.wallpaperMode == "default") true else withContext(Dispatchers.IO) {
                                 applySelectedWallpaper(context, preferences.wallpaperMode, preferences.wallpaperUri, preferences.wallpaperColor, preferences.wallpaperTarget)
                             }
                             android.widget.Toast.makeText(
                                 context,
-                                if (applied) "Wallpaper applied." else "Choose a photo or solid color first.",
+                                if (applied) {
+                                    if (preferences.wallpaperMode == "default") "Theme-matched wallpaper enabled." else "Wallpaper applied."
+                                } else "Choose a photo or solid color first.",
                                 android.widget.Toast.LENGTH_SHORT
                             ).show()
                         }
