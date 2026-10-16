@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -110,6 +111,7 @@ internal fun HomeScreen(
     val background = MaterialTheme.colorScheme.background
     val primaryText = MaterialTheme.colorScheme.onBackground
     val secondaryText = MaterialTheme.colorScheme.onSurfaceVariant
+    val activeNotificationPackages = NotificationDotState.activePackages
     val visibleFavorites = remember(apps, favorites) {
         apps.filter { it.packageName in favorites }
     }
@@ -332,9 +334,20 @@ internal fun HomeScreen(
                         fontFamily = fontFamily,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f, fill = false)
                             .padding(start = if (app != null && preferences.showAppIcons) 9.dp else 0.dp)
                     )
+                    if (app != null && preferences.notificationDotsEnabled &&
+                        app.packageName in preferences.notificationDotPackages &&
+                        app.packageName in activeNotificationPackages
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .padding(start = 6.dp)
+                                .size(5.dp)
+                                .background(primaryText, CircleShape)
+                        )
+                    }
                 }
             }
         }
