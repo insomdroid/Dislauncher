@@ -478,6 +478,13 @@ internal fun SettingsScreen(
                                 tr("Manage", "Kelola")
                             ) { openDialog = "hidden" }
                         }
+                        SettingsGroup(tr("Built-in apps", "Aplikasi bawaan")) {
+                            SettingToggle(
+                                tr("Show built-in apps", "Tampilkan aplikasi bawaan"),
+                                tr("Show Calculator, Calendar and Notes in the app drawer.", "Tampilkan Kalkulator, Kalender, dan Catatan di app drawer."),
+                                preferences.showBuiltInApps
+                            ) { onPreferencesChange(preferences.copy(showBuiltInApps = it)) }
+                        }
                         SettingsGroup(tr("App drawer", "App drawer")) {
                             SettingToggle(
                                 tr("Show search bar", "Tampilkan kolom pencarian"),
