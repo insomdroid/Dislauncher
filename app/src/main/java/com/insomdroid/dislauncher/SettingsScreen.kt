@@ -2,8 +2,6 @@ package com.insomdroid.dislauncher
 
 import android.content.Intent
 import android.provider.Settings
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,7 +29,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,9 +36,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,13 +60,6 @@ internal fun SettingsScreen(
     }
     var openDialog by remember { mutableStateOf("") }
     var showFontsDialog by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-    val wallpaperPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
-            runCatching { context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
-            onPreferencesChange(preferences.copy(wallpaperMode = "image", wallpaperUri = uri.toString()))
-        }
-    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -114,51 +102,6 @@ internal fun SettingsScreen(
                     "${favorites.size}/6 pinned apps · long-press apps in the drawer as well",
                     "Manage",
                     { openDialog = "favorites" }
-                )
-            }
-
-            SettingsGroup("Wallpaper", "Keep the original theme background, or choose a custom photo for the Home and/or Lock screen.") {
-                ChoiceRow(
-                    "Wallpaper source",
-                    preferences.wallpaperMode,
-                    listOf("default" to "Theme default", "image" to "Custom photo")
-                ) { onPreferencesChange(preferences.copy(wallpaperMode = it)) }
-
-                if (preferences.wallpaperMode == "image") {
-                    SettingAction(
-                        "Choose photo",
-                        if (preferences.wallpaperUri != null) "Photo selected" else "No photo selected",
-                        "Choose",
-                        { wallpaperPicker.launch(arrayOf("image/*")) }
-                    )
-                }
-                ChoiceRow(
-                    "Apply to",
-                    preferences.wallpaperTarget,
-                    listOf("home" to "Home screen", "lock" to "Lock screen", "both" to "Both")
-                ) { onPreferencesChange(preferences.copy(wallpaperTarget = it)) }
-                SettingAction(
-                    "Apply wallpaper",
-                    if (preferences.wallpaperMode == "image") {
-                        "Apply the selected photo to the chosen screen."
-                    } else {
-                        "Restore the background provided by the selected theme."
-                    },
-                    "Apply",
-                    {
-                        scope.launch {
-                            val applied = if (preferences.wallpaperMode == "default") true else withContext(Dispatchers.IO) {
-                                applySelectedWallpaper(context, preferences.wallpaperMode, preferences.wallpaperUri, preferences.wallpaperColor, preferences.wallpaperTarget)
-                            }
-                            android.widget.Toast.makeText(
-                                context,
-                                if (applied) {
-                                    if (preferences.wallpaperMode == "default") "Theme background restored." else "Custom photo applied."
-                                } else "Choose a photo first.",
-                                android.widget.Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
                 )
             }
 
