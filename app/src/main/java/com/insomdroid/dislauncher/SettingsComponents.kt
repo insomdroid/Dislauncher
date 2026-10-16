@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.dp
 
 internal fun settingsLocalizedText(context: Context, english: String, indonesian: String): String {
     val language = context.resources.configuration.locales[0]?.language
-    return if (language == "id") indonesian else english
+    return if (language == "id" || language == "in") indonesian else english
 }
 
 @Composable
