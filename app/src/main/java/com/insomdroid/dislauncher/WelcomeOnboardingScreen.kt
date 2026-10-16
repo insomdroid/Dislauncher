@@ -104,7 +104,7 @@ internal fun WelcomeOnboardingScreen(
         ActivityResultContracts.RequestPermission()
     ) { permissionRefresh++ }
 
-    fun skipOnboarding() = onFinish(null, true)
+    fun skipOnboarding() = onFinish(emptySet())
     fun openSystemSettings(action: String) {
         runCatching { context.startActivity(Intent(action)) }
     }
