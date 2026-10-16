@@ -26,7 +26,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Gesture
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -46,9 +56,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -179,7 +189,12 @@ internal fun SettingsScreen(
                                 openDialog = ""
                             } else onBack()
                         }
-                    ) { Text("←", fontSize = 24.sp) }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.ArrowBack,
+                            contentDescription = tr("Back", "Kembali")
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
@@ -202,17 +217,17 @@ internal fun SettingsScreen(
                     modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
                 )
                 val categories = listOf(
-                    Triple(SettingsCategory.APPEARANCE, "◐", tr("Appearance", "Tampilan")) to
+                    Triple(SettingsCategory.APPEARANCE, Icons.Outlined.Palette, tr("Appearance", "Tampilan")) to
                         tr("Theme, fonts and app icons", "Tema, font, dan ikon aplikasi"),
-                    Triple(SettingsCategory.HOME, "⌂", tr("Home screen", "Layar utama")) to
+                    Triple(SettingsCategory.HOME, Icons.Outlined.Home, tr("Home screen", "Layar utama")) to
                         tr("Home elements, widgets and formats", "Elemen Home, widget, dan format"),
-                    Triple(SettingsCategory.APPS, "▦", tr("Apps", "Aplikasi")) to
+                    Triple(SettingsCategory.APPS, Icons.Outlined.Apps, tr("Apps", "Aplikasi")) to
                         tr("Favourites, hidden apps and app drawer", "Favorit, aplikasi tersembunyi, dan app drawer"),
-                    Triple(SettingsCategory.GESTURES, "↘", tr("Gestures", "Gestur")) to
+                    Triple(SettingsCategory.GESTURES, Icons.Outlined.Gesture, tr("Gestures", "Gestur")) to
                         tr("Quick actions for the Home screen", "Aksi cepat pada layar utama"),
-                    Triple(SettingsCategory.ACCESS, "✓", tr("Permissions and access", "Izin dan akses")) to
+                    Triple(SettingsCategory.ACCESS, Icons.Outlined.Security, tr("Permissions and access", "Izin dan akses")) to
                         tr("Check access required by features", "Periksa akses yang diperlukan fitur"),
-                    Triple(SettingsCategory.ABOUT, "ⓘ", tr("About", "Tentang")) to
+                    Triple(SettingsCategory.ABOUT, Icons.Outlined.Info, tr("About", "Tentang")) to
                         tr("Version and project information", "Versi dan informasi proyek")
                 )
                 categories.forEachIndexed { index, entry ->
@@ -599,7 +614,7 @@ internal fun SettingsScreen(
 
 @Composable
 private fun SettingsCategoryRow(
-    icon: String,
+    icon: ImageVector,
     title: String,
     description: String,
     onClick: () -> Unit
@@ -616,10 +631,10 @@ private fun SettingsCategoryRow(
                 .padding(horizontal = 13.dp, vertical = 10.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                icon,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -632,7 +647,7 @@ private fun SettingsCategoryRow(
                 overflow = TextOverflow.Ellipsis
             )
         }
-        Text("›", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
