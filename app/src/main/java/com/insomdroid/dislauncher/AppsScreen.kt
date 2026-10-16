@@ -6,6 +6,7 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -29,8 +30,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search as SearchIcon
 import androidx.compose.material.icons.filled.Settings as SettingsIcon
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -49,6 +50,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
@@ -183,9 +185,33 @@ internal fun AppsScreen(
         }
         if (preferences.showSearchBar) {
             Spacer(Modifier.height(10.dp))
-            Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(top = 3.dp)) {
+            val searchShape = RoundedCornerShape(24.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(top = 3.dp)
+                    .height(46.dp)
+                    .border(
+                        width = 1.dp,
+                        color = if (searchFocused || query.isNotEmpty()) {
+                            mainText.copy(alpha = 0.62f)
+                        } else {
+                            secondary.copy(alpha = 0.38f)
+                        },
+                        shape = searchShape
+                    )
+                    .padding(horizontal = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.SearchIcon,
+                    contentDescription = "Search apps",
+                    tint = searchColor,
+                    modifier = Modifier.size(19.dp)
+                )
+                Spacer(Modifier.width(10.dp))
                 Box(
-                    modifier = Modifier.fillMaxWidth().height(48.dp).padding(start = 12.dp),
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
                     contentAlignment = Alignment.CenterStart
                 ) {
                     if (query.isEmpty()) {
@@ -199,7 +225,9 @@ internal fun AppsScreen(
                     BasicTextField(
                         value = query,
                         onValueChange = onQueryChange,
-                        modifier = Modifier.fillMaxWidth().focusRequester(focusRequester).onFocusChanged { searchFocused = it.isFocused },
+                        modifier = Modifier.fillMaxWidth()
+                            .focusRequester(focusRequester)
+                            .onFocusChanged { searchFocused = it.isFocused },
                         singleLine = true,
                         textStyle = MaterialTheme.typography.bodyLarge.copy(
                             color = mainText,
@@ -209,11 +237,6 @@ internal fun AppsScreen(
                         cursorBrush = SolidColor(mainText)
                     )
                 }
-                HorizontalDivider(
-                    modifier = Modifier.fillMaxWidth(),
-                    thickness = 1.dp,
-                    color = if (searchFocused || query.isNotEmpty()) mainText.copy(alpha = 0.9f) else searchColor.copy(alpha = 0.75f)
-                )
             }
         }
     }
