@@ -117,11 +117,11 @@ internal fun SettingsScreen(
                 )
             }
 
-            SettingsGroup("Wallpaper", "Use the current system wallpaper, a photo, or a solid color.") {
+            SettingsGroup("Wallpaper", "Keep the original theme background, or choose a custom photo for the Home and/or Lock screen.") {
                 ChoiceRow(
                     "Wallpaper source",
                     preferences.wallpaperMode,
-                    listOf("default" to "Theme default", "system" to "System", "image" to "Photo", "solid" to "Solid color")
+                    listOf("default" to "Theme default", "image" to "Custom photo")
                 ) { onPreferencesChange(preferences.copy(wallpaperMode = it)) }
 
                 if (preferences.wallpaperMode == "image") {
@@ -132,13 +132,6 @@ internal fun SettingsScreen(
                         { wallpaperPicker.launch(arrayOf("image/*")) }
                     )
                 }
-                if (preferences.wallpaperMode == "solid") {
-                    ChoiceRow(
-                        "Solid color",
-                        preferences.wallpaperColor,
-                        WALLPAPER_COLOR_OPTIONS.map { it.key to it.label }
-                    ) { onPreferencesChange(preferences.copy(wallpaperColor = it)) }
-                }
                 ChoiceRow(
                     "Apply to",
                     preferences.wallpaperTarget,
@@ -146,23 +139,22 @@ internal fun SettingsScreen(
                 ) { onPreferencesChange(preferences.copy(wallpaperTarget = it)) }
                 SettingAction(
                     "Apply wallpaper",
-                    when (preferences.wallpaperMode) {
-                        "default" -> "Use black in dark mode and white in light mode."
-                        "image" -> "Apply the selected photo to the chosen screen."
-                        "solid" -> "Apply the selected color to the chosen screen."
-                        else -> "Use the current system wallpaper as the Home background."
+                    if (preferences.wallpaperMode == "image") {
+                        "Apply the selected photo to the chosen screen."
+                    } else {
+                        "Restore the background provided by the selected theme."
                     },
                     "Apply",
                     {
                         scope.launch {
-                            val applied = if (preferences.wallpaperMode == "system" || preferences.wallpaperMode == "default") true else withContext(Dispatchers.IO) {
+                            val applied = if (preferences.wallpaperMode == "default") true else withContext(Dispatchers.IO) {
                                 applySelectedWallpaper(context, preferences.wallpaperMode, preferences.wallpaperUri, preferences.wallpaperColor, preferences.wallpaperTarget)
                             }
                             android.widget.Toast.makeText(
                                 context,
                                 if (applied) {
-                                    if (preferences.wallpaperMode == "default") "Theme-matched wallpaper enabled." else "Wallpaper applied."
-                                } else "Choose a photo or solid color first.",
+                                    if (preferences.wallpaperMode == "default") "Theme background restored." else "Custom photo applied."
+                                } else "Choose a photo first.",
                                 android.widget.Toast.LENGTH_SHORT
                             ).show()
                         }
