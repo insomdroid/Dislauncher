@@ -113,8 +113,10 @@ internal fun HomeScreen(
     val timeText = now.format(DateTimeFormatter.ofPattern(timePattern, Locale.getDefault()))
     val dateText = formatHomeDate(today)
     val background = MaterialTheme.colorScheme.background
-    val homeWallpaperMode = if (preferences.wallpaperMode != "system" && preferences.wallpaperTarget == "lock") {
-        "system"
+    val homeWallpaperMode = if (
+        preferences.wallpaperMode in setOf("image", "solid") && preferences.wallpaperTarget == "lock"
+    ) {
+        "default"
     } else {
         preferences.wallpaperMode
     }
