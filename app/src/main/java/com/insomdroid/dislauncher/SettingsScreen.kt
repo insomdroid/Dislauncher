@@ -74,7 +74,6 @@ internal fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val isIndonesian = context.resources.configuration.locales[0]?.language == "id"
     fun tr(english: String, indonesian: String): String =
         settingsLocalizedText(context, english, indonesian)
 
@@ -473,7 +472,7 @@ internal fun SettingsScreen(
                                 if (calendarPermission) tr("Allowed", "Diizinkan")
                                 else tr("Not allowed", "Belum diizinkan"),
                                 tr("Manage", "Kelola"),
-                                ::openAppPermissionSettings
+                                { openAppPermissionSettings() }
                             )
                             SettingAction(
                                 tr("Location access", "Akses lokasi"),
