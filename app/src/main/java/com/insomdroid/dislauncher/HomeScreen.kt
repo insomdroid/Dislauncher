@@ -202,6 +202,7 @@ internal fun HomeScreen(
         modifier = Modifier.fillMaxSize()
             .drawBehind {
                 when {
+                    homeWallpaperMode == "default" -> drawRect(if (isDark) Color.Black else Color.White)
                     homeWallpaperMode == "solid" -> drawRect(Color(wallpaperColorInt(preferences.wallpaperColor)))
                     wallpaperBitmap != null -> {
                         drawImage(wallpaperBitmap!!, dstSize = IntSize(size.width.toInt(), size.height.toInt()))
