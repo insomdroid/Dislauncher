@@ -447,6 +447,11 @@ internal fun SettingsScreen(
                                 preferences.showSearchBar
                             ) { onPreferencesChange(preferences.copy(showSearchBar = it)) }
                             SettingToggle(
+                                tr("Alphabet index", "Indeks alfabet"),
+                                tr("Show a scrollable A–Z index on the right edge of the app drawer.", "Tampilkan indeks A–Z yang bisa digeser di tepi kanan app drawer."),
+                                preferences.showAlphabetIndex
+                            ) { onPreferencesChange(preferences.copy(showAlphabetIndex = it)) }
+                            SettingToggle(
                                 tr("Auto-launch keyboard", "Buka keyboard otomatis"),
                                 tr("Focus search when the app drawer opens.", "Fokus ke pencarian saat app drawer dibuka."),
                                 preferences.autoLaunchKeyboard

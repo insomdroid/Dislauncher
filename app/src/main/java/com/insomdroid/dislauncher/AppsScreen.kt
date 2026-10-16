@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -46,10 +48,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.activity.compose.BackHandler
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontFamily
@@ -57,6 +62,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -79,6 +85,7 @@ internal fun AppsScreen(
     val background = MaterialTheme.colorScheme.background
     val mainText = MaterialTheme.colorScheme.onBackground
     val secondary = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.62f)
+    val searching = query.isNotBlank()
     val filtered = remember(apps, query) {
         apps.filter { it.label.contains(query.trim(), ignoreCase = true) }
             .sortedBy { it.label.lowercase(Locale.getDefault()) }
@@ -86,16 +93,33 @@ internal fun AppsScreen(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val keyboard = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
     val focusRequester = remember { FocusRequester() }
     var searchFocused by remember { mutableStateOf(false) }
     val searchColor = if (searchFocused || query.isNotEmpty()) mainText else secondary.copy(alpha = 0.65f)
+    val alphabetLetters = remember { ('A'..'Z').map(Char::toString) + "#" }
     val firstIndexByLetter = remember(filtered) {
         val result = linkedMapOf<String, Int>()
         filtered.forEachIndexed { index, app ->
-            val letter = app.label.firstOrNull()?.uppercaseChar()?.toString() ?: "#"
+            val letter = app.label.firstOrNull()?.uppercaseChar()?.toString()
+                ?.takeIf { it in alphabetLetters } ?: "#"
             if (letter !in result) result[letter] = index
         }
         result
+    }
+    val scrollToLetter: (String) -> Unit = { letter ->
+        firstIndexByLetter[letter]?.let { index ->
+            scope.launch { listState.animateScrollToItem(index) }
+        }
+    }
+    BackHandler(enabled = searchFocused || searching) {
+        keyboard?.hide()
+        focusManager.clearFocus(force = true)
+        searchFocused = false
+        if (query.isNotEmpty()) onQueryChange("")
+    }
+    LaunchedEffect(query, filtered) {
+        if (searching) listState.scrollToItem(0)
     }
     var selectedApp by remember { mutableStateOf<LauncherApp?>(null) }
     var renamingApp by remember { mutableStateOf<LauncherApp?>(null) }
@@ -117,7 +141,9 @@ internal fun AppsScreen(
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             LazyColumn(
                 state = listState,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().padding(
+                    end = if (preferences.showAlphabetIndex && !searching) 15.dp else 0.dp
+                ),
                 contentPadding = PaddingValues(bottom = 16.dp, top = 2.dp),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
@@ -156,7 +182,7 @@ internal fun AppsScreen(
                         )
                     }
                 }
-                item(key = "dislauncher-settings") {
+                if (!searching) item(key = "dislauncher-settings") {
                     Row(
                         modifier = Modifier.fillMaxWidth()
                             .clickable(onClick = onOpenSettings)
@@ -182,14 +208,43 @@ internal fun AppsScreen(
                     }
                 }
             }
+            if (preferences.showAlphabetIndex && !searching && filtered.isNotEmpty()) {
+                Column(
+                    modifier = Modifier.align(Alignment.CenterEnd)
+                        .fillMaxHeight()
+                        .width(15.dp)
+                        .pointerInput(alphabetLetters, firstIndexByLetter) {
+                            detectVerticalDragGestures { change, _ ->
+                                change.consume()
+                                val height = size.height.coerceAtLeast(1)
+                                val letterIndex = ((change.position.y / height) * alphabetLetters.size)
+                                    .toInt().coerceIn(0, alphabetLetters.lastIndex)
+                                scrollToLetter(alphabetLetters[letterIndex])
+                            }
+                        },
+                    verticalArrangement = Arrangement.SpaceEvenly,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    alphabetLetters.forEach { letter ->
+                        Text(
+                            letter,
+                            color = if (letter in firstIndexByLetter) secondary else secondary.copy(alpha = 0.28f),
+                            fontSize = 8.sp,
+                            lineHeight = 9.sp,
+                            modifier = Modifier.clickable(enabled = letter in firstIndexByLetter) {
+                                scrollToLetter(letter)
+                            }
+                        )
+                    }
+                }
+            }
         }
         if (preferences.showSearchBar) {
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(2.dp))
             val searchShape = RoundedCornerShape(24.dp)
             Row(
                 modifier = Modifier.fillMaxWidth()
                     .padding(horizontal = 24.dp)
-                    .padding(top = 3.dp)
                     .height(46.dp)
                     .border(
                         width = 1.dp,
