@@ -128,7 +128,10 @@ internal data class LauncherPreferences(
                 iconPack = p.getString("icon_pack", "system") ?: "system",
                 iconShape = p.getString("icon_shape", "original")?.takeIf { it in setOf("original", "circle", "outline_square", "filled_square", "filled_rectangle") } ?: "original",
                 showAppIcons = p.getBoolean("show_app_icons", false),
-                wallpaperMode = p.getString("wallpaper_mode", "default")?.takeIf { it in setOf("default", "system", "image", "solid") } ?: "default",
+                wallpaperMode = when (p.getString("wallpaper_mode", "default")) {
+                    "image" -> "image"
+                    else -> "default"
+                },
                 wallpaperUri = p.getString("wallpaper_uri", null),
                 wallpaperColor = p.getString("wallpaper_color", "black")?.takeIf { it in setOf("black", "white", "slate", "navy", "forest", "plum", "sand", "rose") } ?: "black",
                 wallpaperTarget = p.getString("wallpaper_target", "home")?.takeIf { it in setOf("home", "lock", "both") } ?: "home",
