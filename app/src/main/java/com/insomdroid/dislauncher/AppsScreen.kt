@@ -8,6 +8,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -94,9 +95,19 @@ internal fun AppsScreen(
     val mainText = MaterialTheme.colorScheme.onBackground
     val secondary = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.62f)
     val searching = query.isNotBlank()
+    // Keep Dislauncher's own tools in a dedicated section so they cannot get lost
+    // among installed apps or be affected by the system-app visibility preference.
+    val filteredBuiltIns = remember(apps, query) {
+        apps.filter {
+            it.packageName.startsWith("internal:") &&
+                it.label.contains(query.trim(), ignoreCase = true)
+        }.sortedBy { it.label.lowercase(Locale.getDefault()) }
+    }
     val filtered = remember(apps, query) {
-        apps.filter { it.label.contains(query.trim(), ignoreCase = true) }
-            .sortedBy { it.label.lowercase(Locale.getDefault()) }
+        apps.filter {
+            !it.packageName.startsWith("internal:") &&
+                it.label.contains(query.trim(), ignoreCase = true)
+        }.sortedBy { it.label.lowercase(Locale.getDefault()) }
     }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -107,12 +118,14 @@ internal fun AppsScreen(
     val searchColor = if (searchFocused || query.isNotEmpty()) mainText else secondary.copy(alpha = 0.65f)
     val alphabetLetters = remember { ('A'..'Z').map(Char::toString) + "#" }
     var scrubberProgress by remember { mutableStateOf<Float?>(null) }
-    val firstIndexByLetter = remember(filtered) {
+    val firstIndexByLetter = remember(filtered, filteredBuiltIns) {
         val result = linkedMapOf<String, Int>()
+        // LazyColumn has one heading followed by each visible built-in tool.
+        val installedAppsOffset = if (filteredBuiltIns.isNotEmpty()) filteredBuiltIns.size + 1 else 0
         filtered.forEachIndexed { index, app ->
             val letter = app.label.firstOrNull()?.uppercaseChar()?.toString()
                 ?.takeIf { it in alphabetLetters } ?: "#"
-            if (letter !in result) result[letter] = index
+            if (letter !in result) result[letter] = installedAppsOffset + index
         }
         result
     }
@@ -156,7 +169,7 @@ internal fun AppsScreen(
                 contentPadding = PaddingValues(bottom = 16.dp, top = 2.dp),
                 verticalArrangement = if (searching) Arrangement.Bottom else Arrangement.Top
             ) {
-                if (filtered.isEmpty()) {
+                if (filtered.isEmpty() && filteredBuiltIns.isEmpty()) {
                     item(key = "empty-app-list") {
                         Text(
                             if (apps.isEmpty()) "Loading apps…" else "No matching apps",
@@ -165,6 +178,43 @@ internal fun AppsScreen(
                             modifier = Modifier.padding(vertical = 18.dp)
                         )
                     }
+                }
+                if (filteredBuiltIns.isNotEmpty()) {
+                    item(key = "built-in-apps-heading") {
+                        Text(
+                            "Built-in apps",
+                            color = secondary,
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
+                            fontFamily = fontFamily,
+                            modifier = Modifier.padding(top = 6.dp, bottom = 4.dp, start = 1.dp)
+                        )
+                    }
+                items(filteredBuiltIns, key = { it.packageName }) { app ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().combinedClickable(
+                            onClick = { onLaunch(app) },
+                            onLongClick = { if (!app.packageName.startsWith("internal:")) selectedApp = app }
+                        ).padding(vertical = 8.dp, horizontal = 0.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (preferences.showAppIcons) {
+                            AppIcon(app, preferences.iconPack, size = 18.dp, iconShape = preferences.iconShape)
+                            Spacer(Modifier.width(9.dp))
+                        }
+                        Text(
+                            app.label,
+                            color = mainText,
+                            fontSize = 25.sp,
+                            lineHeight = 32.sp,
+                            fontFamily = fontFamily,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                                .padding(start = if (preferences.showAppIcons) 0.dp else 20.dp)
+                        )
+                    }
+                }
                 }
                 items(filtered, key = { it.packageName }) { app ->
                     Row(
@@ -191,6 +241,7 @@ internal fun AppsScreen(
                         )
                     }
                 }
+
                 if (!searching) item(key = "dislauncher-settings") {
                     Row(
                         modifier = Modifier.fillMaxWidth()
@@ -222,11 +273,11 @@ internal fun AppsScreen(
                     modifier = Modifier.align(Alignment.BottomEnd)
                         .padding(bottom = 48.dp)
                         .fillMaxHeight(0.56f)
-                        .width(20.dp)
+                        .width(24.dp)
                 ) {
                     val animatedProgress by animateFloatAsState(
                         targetValue = scrubberProgress ?: 0f,
-                        animationSpec = spring(dampingRatio = 0.72f, stiffness = 650f),
+                        animationSpec = spring(dampingRatio = 0.62f, stiffness = 470f),
                         label = "alphabet-scrubber-progress"
                     )
                     Column(
@@ -259,18 +310,25 @@ internal fun AppsScreen(
                                 (it * alphabetLetters.lastIndex).toInt().coerceIn(0, alphabetLetters.lastIndex)
                             }
                             val distance = activeIndex?.let { abs(it - index) }
+                            val isActiveLetter = activeIndex == index
                             val letterScale by animateFloatAsState(
                                 targetValue = when (distance) {
-                                    0 -> 1.38f
-                                    1 -> 1.16f
-                                    2 -> 1.06f
+                                    0 -> 1.85f
+                                    1 -> 1.48f
+                                    2 -> 1.22f
+                                    3 -> 1.08f
                                     else -> 1f
                                 },
-                                animationSpec = spring(dampingRatio = 0.62f, stiffness = 520f),
+                                animationSpec = spring(dampingRatio = 0.52f, stiffness = 430f),
                                 label = "alphabet-letter-wave"
                             )
                             Box(
                                 modifier = Modifier.size(18.dp)
+                                    .background(
+                                        color = if (isActiveLetter) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                                        else androidx.compose.ui.graphics.Color.Transparent,
+                                        shape = CircleShape
+                                    )
                                     .graphicsLayer { scaleX = letterScale; scaleY = letterScale }
                                     .clickable(enabled = letter in firstIndexByLetter) {
                                         scrollToLetter(letter)
@@ -279,13 +337,13 @@ internal fun AppsScreen(
                             ) {
                                 Text(
                                     letter,
-                                    color = if (letter in firstIndexByLetter) {
-                                        secondary.copy(alpha = 0.42f)
-                                    } else {
-                                        secondary.copy(alpha = 0.18f)
+                                    color = when {
+                                        isActiveLetter -> MaterialTheme.colorScheme.primary
+                                        letter in firstIndexByLetter -> secondary.copy(alpha = 0.62f)
+                                        else -> secondary.copy(alpha = 0.18f)
                                     },
-                                    fontSize = 8.sp,
-                                    lineHeight = 9.sp
+                                    fontSize = 9.sp,
+                                    lineHeight = 10.sp
                                 )
                             }
                         }
@@ -293,29 +351,31 @@ internal fun AppsScreen(
                     androidx.compose.animation.AnimatedVisibility(
                         visible = scrubberProgress != null,
                         modifier = Modifier.align(Alignment.TopStart).offset(
-                            x = (-48).dp,
-                            y = (maxHeight * animatedProgress - 22.dp)
-                                .coerceIn(0.dp, (maxHeight - 44.dp).coerceAtLeast(0.dp))
+                            x = (-52).dp,
+                            y = (maxHeight * animatedProgress - 25.dp)
+                                .coerceIn(0.dp, (maxHeight - 50.dp).coerceAtLeast(0.dp))
                         ),
                         enter = androidx.compose.animation.fadeIn() +
-                            androidx.compose.animation.slideInHorizontally { it / 2 },
+                            androidx.compose.animation.scaleIn(initialScale = 0.68f),
                         exit = androidx.compose.animation.fadeOut() +
-                            androidx.compose.animation.slideOutHorizontally { it / 2 }
+                            androidx.compose.animation.scaleOut(targetScale = 0.68f)
                     ) {
                         Box(
-                            modifier = Modifier.size(44.dp)
+                            modifier = Modifier.size(50.dp)
+                                .shadow(7.dp, CircleShape)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.primary, CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 scrubberProgress?.let {
-                                    alphabetLetters[((it * alphabetLetters.size).toInt())
+                                    alphabetLetters[((it * alphabetLetters.lastIndex).toInt())
                                         .coerceIn(0, alphabetLetters.lastIndex)]
                                 } ?: "",
                                 color = MaterialTheme.colorScheme.onPrimary,
-                                fontSize = 18.sp,
-                                lineHeight = 20.sp
+                                fontSize = 21.sp,
+                                lineHeight = 23.sp,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
                             )
                         }
                     }
