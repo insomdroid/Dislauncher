@@ -6,6 +6,7 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
@@ -54,6 +55,9 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -98,6 +102,7 @@ internal fun AppsScreen(
     var searchFocused by remember { mutableStateOf(false) }
     val searchColor = if (searchFocused || query.isNotEmpty()) mainText else secondary.copy(alpha = 0.65f)
     val alphabetLetters = remember { ('A'..'Z').map(Char::toString) + "#" }
+    var selectedAlphabetLetter by remember { mutableStateOf<String?>(null) }
     val firstIndexByLetter = remember(filtered) {
         val result = linkedMapOf<String, Int>()
         filtered.forEachIndexed { index, app ->
@@ -209,38 +214,82 @@ internal fun AppsScreen(
                 }
             }
             if (preferences.showAlphabetIndex && !searching && filtered.isNotEmpty()) {
-                var alphabetIndexActive by remember { mutableStateOf(false) }
                 Column(
                     modifier = Modifier.align(Alignment.BottomEnd)
+                        .padding(bottom = 48.dp)
                         .fillMaxHeight(0.5f)
-                        .width(15.dp)
+                        .width(20.dp)
                         .pointerInput(alphabetLetters, firstIndexByLetter) {
+                            fun letterAt(y: Float): String {
+                                val height = size.height.coerceAtLeast(1)
+                                val index = ((y / height) * alphabetLetters.size)
+                                    .toInt().coerceIn(0, alphabetLetters.lastIndex)
+                                return alphabetLetters[index]
+                            }
                             detectVerticalDragGestures(
-                                onDragStart = { alphabetIndexActive = true },
-                                onDragEnd = { alphabetIndexActive = false },
-                                onDragCancel = { alphabetIndexActive = false }
+                                onDragStart = { offset ->
+                                    selectedAlphabetLetter = letterAt(offset.y)
+                                    scrollToLetter(letterAt(offset.y))
+                                },
+                                onDragEnd = { selectedAlphabetLetter = null },
+                                onDragCancel = { selectedAlphabetLetter = null }
                             ) { change, _ ->
                                 change.consume()
-                                val height = size.height.coerceAtLeast(1)
-                                val letterIndex = ((change.position.y / height) * alphabetLetters.size)
-                                    .toInt().coerceIn(0, alphabetLetters.lastIndex)
-                                scrollToLetter(alphabetLetters[letterIndex])
+                                val letter = letterAt(change.position.y)
+                                selectedAlphabetLetter = letter
+                                scrollToLetter(letter)
                             }
                         },
                     verticalArrangement = Arrangement.SpaceEvenly,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     alphabetLetters.forEach { letter ->
-                        Text(
-                            letter,
-                            color = (if (letter in firstIndexByLetter) secondary else secondary.copy(alpha = 0.28f))
-                                .copy(alpha = if (alphabetIndexActive) 1f else 0.38f),
-                            fontSize = 8.sp,
-                            lineHeight = 9.sp,
-                            modifier = Modifier.clickable(enabled = letter in firstIndexByLetter) {
-                                scrollToLetter(letter)
-                            }
+                        val selected = selectedAlphabetLetter == letter
+                        val distance = selectedAlphabetLetter?.let {
+                            kotlin.math.abs(alphabetLetters.indexOf(it) - alphabetLetters.indexOf(letter))
+                        } ?: Int.MAX_VALUE
+                        val scale by animateFloatAsState(
+                            targetValue = when (distance) {
+                                0 -> 1.65f
+                                1 -> 1.35f
+                                2 -> 1.12f
+                                else -> 1f
+                            },
+                            animationSpec = spring(dampingRatio = 0.48f, stiffness = 420f),
+                            label = "alphabet-wave-$letter"
                         )
+                        Box(
+                            modifier = Modifier.size(18.dp)
+                                .graphicsLayer {
+                                    scaleX = scale
+                                    scaleY = scale
+                                }
+                                .background(
+                                    color = if (selected) MaterialTheme.colorScheme.primaryContainer
+                                        else androidx.compose.ui.graphics.Color.Transparent,
+                                    shape = CircleShape
+                                )
+                                .clickable(enabled = letter in firstIndexByLetter) {
+                                    selectedAlphabetLetter = letter
+                                    scrollToLetter(letter)
+                                    scope.launch {
+                                        delay(420L)
+                                        if (selectedAlphabetLetter == letter) selectedAlphabetLetter = null
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                letter,
+                                color = when {
+                                    selected -> MaterialTheme.colorScheme.onPrimaryContainer
+                                    letter in firstIndexByLetter -> secondary.copy(alpha = 0.38f)
+                                    else -> secondary.copy(alpha = 0.18f)
+                                },
+                                fontSize = 8.sp,
+                                lineHeight = 9.sp
+                            )
+                        }
                     }
                 }
             }
