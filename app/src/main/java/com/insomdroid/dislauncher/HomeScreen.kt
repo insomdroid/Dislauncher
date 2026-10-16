@@ -36,7 +36,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -44,9 +43,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -54,7 +50,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -113,19 +108,6 @@ internal fun HomeScreen(
     val timeText = now.format(DateTimeFormatter.ofPattern(timePattern, Locale.getDefault()))
     val dateText = formatHomeDate(today)
     val background = MaterialTheme.colorScheme.background
-    val homeWallpaperMode = if (preferences.wallpaperMode == "image" && preferences.wallpaperTarget == "lock") {
-        "default"
-    } else {
-        preferences.wallpaperMode
-    }
-    val homeWallpaperUri = if (homeWallpaperMode == "image") preferences.wallpaperUri else null
-    val wallpaperBitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
-        initialValue = null, context, homeWallpaperMode, homeWallpaperUri
-    ) {
-        value = if (homeWallpaperMode == "solid") null else withContext(Dispatchers.IO) {
-            loadWallpaperBitmap(context, homeWallpaperMode, homeWallpaperUri)?.asImageBitmap()
-        }
-    }
     val primaryText = MaterialTheme.colorScheme.onBackground
     val secondaryText = MaterialTheme.colorScheme.onSurfaceVariant
     val visibleFavorites = remember(apps, favorites) {
@@ -198,15 +180,7 @@ internal fun HomeScreen(
 
     Column(
         modifier = Modifier.fillMaxSize()
-            .drawBehind {
-                when {
-                    homeWallpaperMode == "image" && wallpaperBitmap != null -> {
-                        drawImage(wallpaperBitmap!!, dstSize = IntSize(size.width.toInt(), size.height.toInt()))
-                        drawRect(background.copy(alpha = 0.48f))
-                    }
-                    else -> drawRect(background)
-                }
-            }
+            .background(background)
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .verticalScroll(rememberScrollState())
             .combinedClickable(
