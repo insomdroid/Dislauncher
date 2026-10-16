@@ -3,8 +3,12 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Bold geometric D frame with a dashboard motif, kept within the adaptive-icon safe area. -->
     <path
-        android:fillColor="#FF000000"
+        android:fillColor="#FFFFFFFF"
         android:fillType="evenOdd"
-        android:pathData="M30,22H52C69,22 82,36 82,54C82,72 69,86 52,86H30Z M43,35V73H51C62,73 70,65 70,54C70,43 62,35 51,35Z" />
+        android:pathData="M27,20H51C70,20 86,35 86,54C86,73 70,88 51,88H27Z M41,34V74H51C62,74 72,65 72,54C72,43 62,34 51,34Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M46,43H61V48H46Z M46,51.5H65V56.5H46Z M46,60H58V65H46Z" />
 </vector>
