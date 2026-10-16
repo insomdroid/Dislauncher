@@ -143,48 +143,57 @@ internal fun SettingsScreen(
                         "Show compact app icons beside names in Home and the drawer.",
                         preferences.showAppIcons
                     ) { onPreferencesChange(preferences.copy(showAppIcons = it)) }
-                    ChoiceRow(
-                        "Built-in icon shape",
-                        preferences.iconShape,
-                        listOf(
-                            "original" to "Original",
-                            "circle" to "Circle",
-                            "outline_square" to "Outline square",
-                            "filled_square" to "Filled square",
-                            "filled_rectangle" to "Rectangle"
-                        )
-                    ) { onPreferencesChange(preferences.copy(iconShape = it)) }
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        listOf("circle", "outline_square", "filled_square", "filled_rectangle").forEach { shape ->
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                BuiltInIconShapePreview(shape)
-                                Text(
-                                    when (shape) {
-                                        "circle" -> "Circle"
-                                        "outline_square" -> "Outline"
-                                        "filled_square" -> "Square"
-                                        else -> "Rectangle"
-                                    },
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                    if (preferences.showAppIcons) {
+                        ChoiceRow(
+                            "Built-in icon shape",
+                            preferences.iconShape,
+                            listOf(
+                                "original" to "Original",
+                                "circle" to "Circle",
+                                "outline_square" to "Outline square",
+                                "filled_square" to "Filled square",
+                                "filled_rectangle" to "Rectangle"
+                            )
+                        ) { onPreferencesChange(preferences.copy(iconShape = it)) }
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text(
+                                "Built-in icon shape",
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Text(
+                                "Enable Show app icons to change the shape.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                style = MaterialTheme.typography.bodySmall
+                            )
                         }
                     }
-                    SettingAction(
-                        "Icon pack",
-                        detectedIconPacks.firstOrNull { it.packageName == preferences.iconPack }?.label
-                            ?: if (preferences.iconPack == "system") "System default" else "Selected pack not installed",
-                        "Choose",
-                        {
-                            detectedIconPacks = findIconPacks(context)
-                            openDialog = "iconpack"
+                    if (preferences.showAppIcons) {
+                        SettingAction(
+                            "Icon pack",
+                            detectedIconPacks.firstOrNull { it.packageName == preferences.iconPack }?.label
+                                ?: if (preferences.iconPack == "system") "System default" else "Selected pack not installed",
+                            "Choose",
+                            {
+                                detectedIconPacks = findIconPacks(context)
+                                openDialog = "iconpack"
+                            }
+                        )
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text(
+                                "Icon pack",
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Text(
+                                "Enable Show app icons to choose an icon pack.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                style = MaterialTheme.typography.bodySmall
+                            )
                         }
-                    )
+                    }
                 }
             }
 
