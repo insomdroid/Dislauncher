@@ -251,12 +251,12 @@ internal fun AppsScreen(
                                         )
                                     }
                                     Text(
-                                        "Settings",
+                                        "Dislauncher Settings",
                                         color = secondary.copy(alpha = 0.9f),
                                         fontSize = 11.sp,
                                         lineHeight = 13.sp,
                                         fontFamily = fontFamily,
-                                        maxLines = 1,
+                                        maxLines = 2,
                                         overflow = TextOverflow.Ellipsis
                                     )
                                 }
