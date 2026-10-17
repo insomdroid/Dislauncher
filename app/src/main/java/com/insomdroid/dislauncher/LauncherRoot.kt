@@ -488,7 +488,7 @@ internal fun DislauncherRoot() {
         key1 = preferences.wallpaperUri,
         key2 = launcherStarted
     ) {
-        value = null
+        // Keep the last decoded bitmap visible while a lifecycle restart reloads the same URI.
         val savedUri = preferences.wallpaperUri?.let(Uri::parse)
         if (!launcherStarted || savedUri == null) return@produceState
 
