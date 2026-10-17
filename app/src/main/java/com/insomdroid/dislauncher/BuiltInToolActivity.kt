@@ -6,11 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.ui.platform.LocalDensity
 
 internal class BuiltInToolActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,17 +23,21 @@ internal class BuiltInToolActivity : ComponentActivity() {
             return
         }
 
+        val preferences = LauncherPreferences.load(
+            getSharedPreferences("dislauncher_preferences", MODE_PRIVATE)
+        )
         setContent {
-            val dark = isSystemInDarkTheme()
-            val scheme = when {
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && dark ->
-                    dynamicDarkColorScheme(this@BuiltInToolActivity)
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
-                    dynamicLightColorScheme(this@BuiltInToolActivity)
-                dark -> darkColorScheme()
-                else -> lightColorScheme()
+            val systemDark = isSystemInDarkTheme()
+            val isDark = when (preferences.themeMode) {
+                "light" -> false
+                "dark", "black" -> true
+                else -> systemDark
             }
-            MaterialTheme(colorScheme = scheme) {
+            DislauncherTheme(
+                preferences = preferences,
+                isDark = isDark,
+                baseDensity = LocalDensity.current
+            ) {
                 BuiltInToolScreen(tool = tool, onBack = { finish() })
             }
         }
