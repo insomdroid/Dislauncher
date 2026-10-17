@@ -41,6 +41,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -63,6 +64,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import kotlin.math.roundToInt
 
 private enum class SettingsCategory {
     APPEARANCE, HOME, APPS, GESTURES, ACCESS, ABOUT
@@ -79,6 +81,7 @@ internal fun SettingsScreen(
     onPreferencesChange: (LauncherPreferences) -> Unit,
     onChooseCustomFont: () -> Unit,
     onChooseWallpaper: () -> Unit,
+    onApplyWallpaperToSystem: () -> Unit,
     onDoubleTapLockChange: (Boolean) -> Unit,
     onToggleFavorite: (String) -> Unit,
     onToggleHidden: (String) -> Unit,
@@ -297,6 +300,17 @@ internal fun SettingsScreen(
                                     tr("Choose image", "Pilih gambar"),
                                     onChooseWallpaper
                                 )
+                                if (preferences.wallpaperUri != null) {
+                                    SettingAction(
+                                        tr("Apply to device Home and lock screen", "Terapkan ke Home dan lockscreen perangkat"),
+                                        tr(
+                                            "Apply this image to the device wallpaper. Dislauncher keeps its internal wallpaper separate.",
+                                            "Terapkan gambar ini ke wallpaper perangkat. Wallpaper internal Dislauncher tetap terpisah."
+                                        ),
+                                        tr("Apply", "Terapkan"),
+                                        onApplyWallpaperToSystem
+                                    )
+                                }
                                 Text(
                                     tr(
                                         "Custom wallpaper images must be 10 MB or smaller. Larger files are rejected.",
@@ -514,6 +528,40 @@ internal fun SettingsScreen(
                                 "",
                                 !preferences.hideSystemApps
                             ) { onPreferencesChange(preferences.copy(hideSystemApps = !it)) }
+                            if (preferences.wallpaperMode == "image") {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        tr("App drawer wallpaper transparency", "Transparansi wallpaper app drawer"),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Text(
+                                        "${preferences.appDrawerWallpaperTransparency}%",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                                Slider(
+                                    value = preferences.appDrawerWallpaperTransparency.toFloat(),
+                                    onValueChange = {
+                                        onPreferencesChange(
+                                            preferences.copy(appDrawerWallpaperTransparency = it.roundToInt())
+                                        )
+                                    },
+                                    valueRange = 0f..100f,
+                                    steps = 19
+                                )
+                                Text(
+                                    tr(
+                                        "0% shows the wallpaper fully; 100% covers it with the app drawer background.",
+                                        "0% menampilkan wallpaper sepenuhnya; 100% menutupinya dengan latar app drawer."
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
 
