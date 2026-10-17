@@ -373,47 +373,46 @@ private fun CalculatorTool(modifier: Modifier = Modifier) {
     )
 
     BoxWithConstraints(modifier = modifier) {
-        // Scale the circular keys with the available screen area instead of
-        // reserving oversized fixed-height rows on compact devices.
+        // Larger keys and compact gaps, while retaining all existing controls.
         val keySize = minOf(
-            52.dp,
-            (maxWidth - 24.dp) / 4,
-            (maxHeight - 130.dp) / 6
-        ).coerceAtLeast(24.dp)
+            72.dp,
+            (maxWidth - 32.dp) / 4,
+            (maxHeight - 190.dp) / 6
+        ).coerceAtLeast(36.dp)
 
         Column(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Column(
                 modifier = Modifier.weight(1f).fillMaxWidth()
-                    .padding(horizontal = 4.dp, vertical = 8.dp),
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.Bottom,
                 horizontalAlignment = Alignment.End
             ) {
+                if (expression.isNotBlank()) {
+                    Text(
+                        expression,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.End,
+                        maxLines = 2
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
                 Text(
-                    expression.ifBlank { "0" },
-                    style = MaterialTheme.typography.headlineMedium,
+                    result.ifBlank { expression.ifBlank { "0" } },
+                    style = MaterialTheme.typography.displayMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.End,
                     maxLines = 2
                 )
-                if (result.isNotEmpty()) {
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        result,
-                        style = MaterialTheme.typography.displaySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        textAlign = TextAlign.End,
-                        maxLines = 1
-                    )
-                }
             }
 
             keyRows.forEach { rowKeys ->
                 Row(
-                    modifier = Modifier.fillMaxWidth().height(keySize + 6.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    modifier = Modifier.fillMaxWidth().height(keySize),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     rowKeys.forEach { key ->
@@ -449,7 +448,7 @@ private fun CalculatorTool(modifier: Modifier = Modifier) {
                                     }
                                 }
                             }
-                            val labelSize = (keySize.value / 2.8f).coerceIn(14f, 18f).sp
+                            val labelSize = (keySize.value / 2.35f).coerceIn(18f, 28f).sp
                             if (operator) {
                                 Button(
                                     onClick = action,
