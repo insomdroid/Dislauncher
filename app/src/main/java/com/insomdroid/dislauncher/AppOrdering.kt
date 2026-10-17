@@ -3,6 +3,9 @@ package com.insomdroid.dislauncher
 import android.content.SharedPreferences
 import org.json.JSONArray
 
+internal fun prioritizeNonSystemApps(apps: List<LauncherApp>): List<LauncherApp> =
+    apps.filterNot { it.isSystem } + apps.filter { it.isSystem }
+
 internal fun readFavoriteOrder(prefs: SharedPreferences, favorites: Set<String>): List<String> {
     val saved = prefs.getString("favorite_order_json", null)
     val previous = if (saved.isNullOrBlank()) emptyList() else runCatching {

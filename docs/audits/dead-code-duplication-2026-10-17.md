@@ -17,7 +17,9 @@
 - Checked manifest component names and resource references against the current tree.
 - Compared the adaptive icon descriptors and retained both `ic_launcher.xml` and `ic_launcher_round.xml`: their XML content is the same, but AndroidManifest.xml names both resources through `android:icon` and `android:roundIcon`. The foreground and monochrome drawable files remain separate resources.
 - Retained Compose `getValue`/`setValue` operator imports. Their names are consumed implicitly by delegated Compose state properties (the `by` syntax), so a plain text reference-count check is not sufficient grounds to delete them.
-- No Kotlin implementation or resource file was deleted based only on a low reference count; no safely removable duplicated Kotlin implementation was confirmed in this pass.
+- Consolidated the duplicated non-system-first app ordering in onboarding and the root flow into `prioritizeNonSystemApps()` in `AppOrdering.kt`.
+- Consolidated repeated notification-to-dot state conversion in `MusicPlayer.kt` into `StatusBarNotification.toTrackedDotNotification()`, keeping the ongoing-notification exclusion logic identical in both call sites.
+- No Kotlin implementation or resource file was deleted based only on a low reference count. No additional safely removable duplicated implementation or manifest/resource declaration was confirmed.
 
 ## Confirmed cleanup
 

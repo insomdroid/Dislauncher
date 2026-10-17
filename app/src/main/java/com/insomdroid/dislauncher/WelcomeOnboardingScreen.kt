@@ -107,8 +107,7 @@ internal fun WelcomeOnboardingScreen(
     ) { permissionRefresh++ }
 
     fun skipOnboarding() {
-        val orderedApps = (apps.filterNot { it.isSystem } + apps.filter { it.isSystem })
-            .distinctBy { it.packageName }
+        val orderedApps = prioritizeNonSystemApps(apps).distinctBy { it.packageName }
         onFinish(orderedApps.take(5).map { it.packageName }.toSet())
     }
     fun openSystemSettings(action: String) {

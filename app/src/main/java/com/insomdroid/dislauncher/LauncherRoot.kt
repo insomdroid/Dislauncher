@@ -288,8 +288,7 @@ internal fun DislauncherRoot() {
                     appNameOverrides[app.packageName]?.let { app.copy(label = it) } ?: app
                 }.also { apps = it }
             }
-            val orderedAvailable = (allApps.filterNot { it.isSystem } + allApps.filter { it.isSystem })
-                .distinctBy { it.packageName }
+            val orderedAvailable = prioritizeNonSystemApps(allApps).distinctBy { it.packageName }
             val selected = orderedAvailable.filter { it.packageName in selectedPackages }
                 .take(MAX_PINNED_APPS)
                 .map { it.packageName }

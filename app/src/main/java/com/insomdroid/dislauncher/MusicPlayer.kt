@@ -264,6 +264,12 @@ private data class TrackedDotNotification(
     val ongoing: Boolean
 )
 
+private fun StatusBarNotification.toTrackedDotNotification(): TrackedDotNotification =
+    TrackedDotNotification(
+        packageName = packageName,
+        ongoing = isOngoing || (notification.flags and Notification.FLAG_ONGOING_EVENT) != 0
+    )
+
 internal class DislauncherNotificationListener : android.service.notification.NotificationListenerService() {
     private val trackedNotifications = linkedMapOf<String, TrackedDotNotification>()
 
@@ -274,10 +280,7 @@ internal class DislauncherNotificationListener : android.service.notification.No
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         synchronized(trackedNotifications) {
-            trackedNotifications[sbn.key] = TrackedDotNotification(
-                packageName = sbn.packageName,
-                ongoing = sbn.isOngoing || (sbn.notification.flags and Notification.FLAG_ONGOING_EVENT) != 0
-            )
+            trackedNotifications[sbn.key] = sbn.toTrackedDotNotification()
         }
         refreshDotPackages()
     }
@@ -307,11 +310,7 @@ internal class DislauncherNotificationListener : android.service.notification.No
             synchronized(trackedNotifications) {
                 trackedNotifications.clear()
                 current.forEach { sbn ->
-                    trackedNotifications[sbn.key] = TrackedDotNotification(
-                        packageName = sbn.packageName,
-                        ongoing = sbn.isOngoing ||
-                            (sbn.notification.flags and Notification.FLAG_ONGOING_EVENT) != 0
-                    )
+                    trackedNotifications[sbn.key] = sbn.toTrackedDotNotification()
                 }
             }
         }
