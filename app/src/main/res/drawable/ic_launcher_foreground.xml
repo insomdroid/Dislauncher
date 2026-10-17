@@ -4,26 +4,32 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Three nested angular D contours. The continuous left stem and broad
-         right-hand bowl keep the letter recognizable at launcher icon size. -->
+    <!-- Repeated angular outlines form one clear, block-style letter D. -->
     <path
         android:fillColor="#00000000"
         android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="1.05"
+        android:strokeWidth="0.9"
         android:strokeLineJoin="miter"
-        android:pathData="M28,22 H52 L81,35 V73 L52,86 H28 Z" />
+        android:pathData="M24,22 H49 L82,36 V72 L49,86 H24 Z" />
 
     <path
         android:fillColor="#00000000"
         android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="1.05"
+        android:strokeWidth="0.9"
         android:strokeLineJoin="miter"
-        android:pathData="M34,30 H51 L73,40 V68 L51,78 H34 Z" />
+        android:pathData="M29,27 H49 L77,39 V69 L49,81 H29 Z" />
 
     <path
         android:fillColor="#00000000"
         android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="1.05"
+        android:strokeWidth="0.9"
         android:strokeLineJoin="miter"
-        android:pathData="M40,38 H50 L65,45 V63 L50,70 H40 Z" />
+        android:pathData="M34,32 H49 L72,42 V66 L49,76 H34 Z" />
+
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="0.9"
+        android:strokeLineJoin="miter"
+        android:pathData="M39,37 H49 L67,45 V63 L49,71 H39 Z" />
 </vector>
