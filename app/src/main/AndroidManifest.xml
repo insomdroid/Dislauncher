@@ -60,6 +60,13 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".BuiltInToolActivity"
+            android:exported="false"
+            android:theme="@style/Theme.dislauncher"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:windowSoftInputMode="adjustResize" />
+
         <receiver
             android:name=".LocalReminderReceiver"
             android:exported="false" />
