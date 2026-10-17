@@ -3,12 +3,61 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Original angular monogram: high-contrast, geometric and safe-area friendly. -->
+
+    <!-- Thin, nested angular outlines based on the reference mark.
+         Keep the artwork centered inside the adaptive-icon safe area. -->
+    <group android:translateX="-7" android:translateY="-7">
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="0.85"
+            android:strokeLineJoin="miter"
+            android:pathData="M28,29 H40 V41 H68 V29 H80 V67 H68 V79 H40 V67 H28 Z" />
+    </group>
+    <group android:translateX="-5" android:translateY="-5">
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="0.85"
+            android:strokeLineJoin="miter"
+            android:pathData="M28,29 H40 V41 H68 V29 H80 V67 H68 V79 H40 V67 H28 Z" />
+    </group>
+    <group android:translateX="-3" android:translateY="-3">
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="0.85"
+            android:strokeLineJoin="miter"
+            android:pathData="M28,29 H40 V41 H68 V29 H80 V67 H68 V79 H40 V67 H28 Z" />
+    </group>
+    <group android:translateX="-1" android:translateY="-1">
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="0.85"
+            android:strokeLineJoin="miter"
+            android:pathData="M28,29 H40 V41 H68 V29 H80 V67 H68 V79 H40 V67 H28 Z" />
+    </group>
     <path
-        android:fillColor="#FFFFFFFF"
-        android:fillType="evenOdd"
-        android:pathData="M24,22H51L84,41V67L53,86H24Z M39,36V72H49L69,60V48L49,36Z" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M42,49L57,42L50,54H64L43,68L49,57H37Z" />
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="0.85"
+        android:strokeLineJoin="miter"
+        android:pathData="M28,29 H40 V41 H68 V29 H80 V67 H68 V79 H40 V67 H28 Z" />
+    <group android:translateX="3" android:translateY="3">
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="0.85"
+            android:strokeLineJoin="miter"
+            android:pathData="M28,29 H40 V41 H68 V29 H80 V67 H68 V79 H40 V67 H28 Z" />
+    </group>
+    <group android:translateX="5" android:translateY="5">
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="0.85"
+            android:strokeLineJoin="miter"
+            android:pathData="M28,29 H40 V41 H68 V29 H80 V67 H68 V79 H40 V67 H28 Z" />
+    </group>
 </vector>
