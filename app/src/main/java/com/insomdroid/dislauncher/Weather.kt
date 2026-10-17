@@ -12,6 +12,7 @@ import androidx.core.content.ContextCompat
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
+import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.time.LocalDateTime
@@ -45,6 +46,7 @@ internal data class WeatherInfo(
 private const val WEATHER_CACHE_KEY = "cached_weather_info"
 private const val WEATHER_CACHE_TIMESTAMP_KEY = "cached_weather_timestamp"
 private const val WEATHER_CACHE_MAX_AGE_MS = 30 * 60 * 1000L
+private const val MAX_WEATHER_RESPONSE_BYTES = 64 * 1024
 
 internal fun isWeatherCacheFresh(context: Context): Boolean {
     val savedAt = context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
@@ -151,8 +153,19 @@ internal suspend fun fetchWeather(context: Context, unit: String): WeatherInfo? 
             requestMethod = "GET"
         }
         try {
-            val payload = connection.inputStream.bufferedReader().use { it.readText() }
-            val response = JSONObject(payload)
+            val output = ByteArrayOutputStream()
+            connection.inputStream.use { input ->
+                val buffer = ByteArray(4096)
+                while (true) {
+                    val count = input.read(buffer)
+                    if (count < 0) break
+                    check(output.size() + count <= MAX_WEATHER_RESPONSE_BYTES) {
+                        "Weather response exceeds the allowed size"
+                    }
+                    output.write(buffer, 0, count)
+                }
+            }
+            val response = JSONObject(output.toString(Charsets.UTF_8.name()))
             val current = response.getJSONObject("current")
             val temp = current.getDouble("temperature_2m")
             val feels = current.optDouble("apparent_temperature").takeIf { !it.isNaN() }
