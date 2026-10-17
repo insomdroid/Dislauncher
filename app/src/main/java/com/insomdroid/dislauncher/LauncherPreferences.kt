@@ -9,7 +9,6 @@ internal data class LauncherPreferences(
     val wallpaperColor: String = "#202124",
     val wallpaperUri: String? = null,
     val appDrawerWallpaperTransparency: Int = 0,
-    val darkAppearance: String = "system",
     val fontMode: String = "system",
     val customFontName: String? = null,
     val fontSize: String = "medium",
@@ -46,7 +45,6 @@ internal data class LauncherPreferences(
             .putString("wallpaper_color", wallpaperColor)
             .putString("wallpaper_uri", wallpaperUri)
             .putInt("app_drawer_wallpaper_transparency", appDrawerWallpaperTransparency.coerceIn(0, 100))
-            .putString("dark_appearance", darkAppearance)
             .putString("font_mode", fontMode)
             .putString("custom_font_name", customFontName)
             .putString("font_size", fontSize)
@@ -131,10 +129,6 @@ internal data class LauncherPreferences(
                 wallpaperColor = (p.getString("wallpaper_color", "#202124") ?: "#202124").take(9),
                 wallpaperUri = p.getString("wallpaper_uri", null)?.take(2048),
                 appDrawerWallpaperTransparency = p.getInt("app_drawer_wallpaper_transparency", 0).coerceIn(0, 100),
-                darkAppearance = p.getString(
-                    "dark_appearance",
-                    if (p.getBoolean("pitch_black", false)) "amoled" else "system"
-                )?.let { if (it == "amoled") "amoled" else "system" } ?: "system",
                 fontMode = normalizeFontMode(p.getString("font_mode", "system") ?: "system"),
                 customFontName = p.getString("custom_font_name", null)?.take(80),
                 fontSize = p.getString("font_size", "medium") ?: "medium",

@@ -62,7 +62,18 @@ private fun hasAppFilter(context: Context, packageName: String): Boolean {
     }.getOrDefault(false)
 }
 
-internal fun findIconPacks(context: Context): List<IconPackInfo> {
+private val iconPackDetectionLock = Any()
+@Volatile
+private var cachedIconPackList: List<IconPackInfo>? = null
+
+internal fun invalidateIconPackDetectionCache() {
+    synchronized(iconPackDetectionLock) {
+        cachedIconPackList = null
+    }
+}
+
+internal fun findIconPacks(context: Context): List<IconPackInfo> = synchronized(iconPackDetectionLock) {
+    cachedIconPackList?.let { return@synchronized it }
     val pm = context.packageManager
     val candidates = linkedSetOf<String>()
 
@@ -79,7 +90,7 @@ internal fun findIconPacks(context: Context): List<IconPackInfo> {
         result.activityInfo?.packageName?.let(candidates::add)
     }
 
-    return candidates.asSequence()
+    val result = candidates.asSequence()
         .filter { it != context.packageName }
         .filter { hasAppFilter(context, it) }
         .mapNotNull { packageName ->
@@ -93,6 +104,8 @@ internal fun findIconPacks(context: Context): List<IconPackInfo> {
         .distinctBy { it.packageName }
         .sortedBy { it.label.lowercase() }
         .toList()
+    cachedIconPackList = result
+    result
 }
 
 @Composable
@@ -172,43 +185,6 @@ internal fun AppIcon(
     }
 }
 
-@Composable
-internal fun BuiltInIconShapePreview(iconShape: String, modifier: Modifier = Modifier) {
-    val previewColor = androidx.compose.ui.graphics.Color(0xFF6488B8)
-    androidx.compose.foundation.Canvas(modifier = modifier.size(48.dp)) {
-        val side = this.size.minDimension
-        val iconSize = side * 0.44f
-        val rectWidth = side * 0.56f
-        val rectHeight = side * 0.31f
-        when (iconShape) {
-            "circle" -> drawCircle(color = previewColor, radius = iconSize / 2f)
-            "outline_square" -> drawRect(
-                color = previewColor,
-                topLeft = androidx.compose.ui.geometry.Offset(
-                    (this.size.width - iconSize) / 2f, (this.size.height - iconSize) / 2f
-                ),
-                size = androidx.compose.ui.geometry.Size(iconSize, iconSize),
-                style = androidx.compose.ui.graphics.drawscope.Stroke(
-                    width = (iconSize * 0.075f).coerceAtLeast(1.dp.toPx())
-                )
-            )
-            "filled_square" -> drawRect(
-                color = previewColor,
-                topLeft = androidx.compose.ui.geometry.Offset(
-                    (this.size.width - iconSize) / 2f, (this.size.height - iconSize) / 2f
-                ),
-                size = androidx.compose.ui.geometry.Size(iconSize, iconSize)
-            )
-            "filled_rectangle" -> drawRect(
-                color = previewColor,
-                topLeft = androidx.compose.ui.geometry.Offset(
-                    (this.size.width - rectWidth) / 2f, (this.size.height - rectHeight) / 2f
-                ),
-                size = androidx.compose.ui.geometry.Size(rectWidth, rectHeight)
-            )
-        }
-    }
-}
 
 private val fallbackIconColor = androidx.compose.ui.graphics.Color(0xFF6488B8)
 
@@ -365,8 +341,22 @@ private fun loadCachedAppIconBitmap(
     return bitmap
 }
 
-internal fun clearAppIconBitmapCache() {
-    appIconBitmapCache.evictAll()
+internal fun invalidateAppIconCaches(packageName: String?) {
+    if (packageName.isNullOrBlank()) {
+        appIconBitmapCache.evictAll()
+        synchronized(dominantColorCache) { dominantColorCache.clear() }
+        synchronized(iconPackMappings) { iconPackMappings.clear() }
+        return
+    }
+
+    synchronized(appIconBitmapCache) {
+        val keys = appIconBitmapCache.snapshot().keys.filter {
+            it.startsWith("$packageName/") || it.endsWith("|$packageName")
+        }
+        keys.forEach { appIconBitmapCache.remove(it) }
+    }
+    synchronized(dominantColorCache) { dominantColorCache.remove(packageName) }
+    synchronized(iconPackMappings) { iconPackMappings.remove(packageName) }
 }
 
 private fun drawableToBitmap(drawable: Drawable?): Bitmap? {

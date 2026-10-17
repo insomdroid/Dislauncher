@@ -173,8 +173,13 @@ internal fun openClock(context: Context) {
 }
 
 internal fun openCalendar(context: Context) {
-    val appIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_CALENDAR)
-    val viewIntent = Intent(Intent.ACTION_VIEW, android.provider.CalendarContract.CONTENT_URI)
+    val appIntent = Intent(Intent.ACTION_MAIN)
+        .addCategory(Intent.CATEGORY_APP_CALENDAR)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    val viewIntent = Intent(
+        Intent.ACTION_VIEW,
+        android.provider.CalendarContract.CONTENT_URI
+    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     listOf(appIntent, viewIntent).firstOrNull {
         it.resolveActivity(context.packageManager) != null
     }?.let { runCatching { context.startActivity(it) } }

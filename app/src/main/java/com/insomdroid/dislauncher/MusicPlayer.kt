@@ -94,6 +94,17 @@ internal fun MusicPlayerWidget(
             useSessions(sessions)
         }
 
+        fun stopListening() {
+            if (listening) {
+                runCatching { manager.removeOnActiveSessionsChangedListener(listener) }
+                listening = false
+            }
+            controllerState.value?.unregisterCallback(callback)
+            controllerState.value = null
+            metadataState.value = null
+            playbackState.value = null
+        }
+
         fun refreshSessions() {
             try {
                 val sessions = manager.getActiveSessions(component)
@@ -110,15 +121,19 @@ internal fun MusicPlayerWidget(
         }
 
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) refreshSessions()
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> refreshSessions()
+                Lifecycle.Event.ON_PAUSE, Lifecycle.Event.ON_STOP -> stopListening()
+                else -> Unit
+            }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        refreshSessions()
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+            refreshSessions()
+        }
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            if (listening) runCatching { manager.removeOnActiveSessionsChangedListener(listener) }
-            controllerState.value?.unregisterCallback(callback)
-            controllerState.value = null
+            stopListening()
         }
     }
 
@@ -225,7 +240,7 @@ internal object NotificationDotState {
 
     fun attach(service: DislauncherNotificationListener) {
         listener = service
-        service.refreshDotPackages()
+        service.refreshDotPackages(reloadActiveNotifications = true)
     }
 
     fun detach(service: DislauncherNotificationListener) {
@@ -244,31 +259,63 @@ internal object NotificationDotState {
     }
 }
 
+private data class TrackedDotNotification(
+    val packageName: String,
+    val ongoing: Boolean
+)
+
 internal class DislauncherNotificationListener : android.service.notification.NotificationListenerService() {
+    private val trackedNotifications = linkedMapOf<String, TrackedDotNotification>()
+
     override fun onListenerConnected() {
         super.onListenerConnected()
         NotificationDotState.attach(this)
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
+        synchronized(trackedNotifications) {
+            trackedNotifications[sbn.key] = TrackedDotNotification(
+                packageName = sbn.packageName,
+                ongoing = sbn.isOngoing || (sbn.notification.flags and Notification.FLAG_ONGOING_EVENT) != 0
+            )
+        }
         refreshDotPackages()
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
+        synchronized(trackedNotifications) {
+            trackedNotifications.remove(sbn.key)
+        }
         refreshDotPackages()
     }
 
     override fun onListenerDisconnected() {
+        synchronized(trackedNotifications) { trackedNotifications.clear() }
         NotificationDotState.detach(this)
         super.onListenerDisconnected()
     }
 
     override fun onDestroy() {
+        synchronized(trackedNotifications) { trackedNotifications.clear() }
         NotificationDotState.detach(this)
         super.onDestroy()
     }
 
-    internal fun refreshDotPackages() {
+    internal fun refreshDotPackages(reloadActiveNotifications: Boolean = false) {
+        if (reloadActiveNotifications) {
+            val current = runCatching { activeNotifications.orEmpty().toList() }.getOrDefault(emptyList())
+            synchronized(trackedNotifications) {
+                trackedNotifications.clear()
+                current.forEach { sbn ->
+                    trackedNotifications[sbn.key] = TrackedDotNotification(
+                        packageName = sbn.packageName,
+                        ongoing = sbn.isOngoing ||
+                            (sbn.notification.flags and Notification.FLAG_ONGOING_EVENT) != 0
+                    )
+                }
+            }
+        }
+
         val prefs = getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
         if (!prefs.getBoolean("notification_dots_enabled", false)) {
             NotificationDotState.update(emptySet())
@@ -281,14 +328,13 @@ internal class DislauncherNotificationListener : android.service.notification.No
             return
         }
 
-        val active = runCatching {
-            activeNotifications.orEmpty()
-                .asSequence()
-                .filterNot { it.isOngoing || (it.notification.flags and Notification.FLAG_ONGOING_EVENT) != 0 }
+        val active = synchronized(trackedNotifications) {
+            trackedNotifications.values.asSequence()
+                .filterNot { it.ongoing }
                 .map { it.packageName }
                 .filter { it in selectedPackages }
                 .toSet()
-        }.getOrDefault(emptySet())
+        }
         NotificationDotState.update(active)
     }
 }

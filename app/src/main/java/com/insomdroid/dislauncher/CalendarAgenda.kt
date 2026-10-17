@@ -21,6 +21,10 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,6 +58,7 @@ private data class CalendarAgendaEvent(
 @Composable
 internal fun CalendarAgenda(timeFormat: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val primary = MaterialTheme.colorScheme.onBackground
     val secondary = MaterialTheme.colorScheme.onSurfaceVariant
     var hasPermission by remember { mutableStateOf(hasCalendarReadPermission(context)) }
@@ -67,6 +72,14 @@ internal fun CalendarAgenda(timeFormat: String, modifier: Modifier = Modifier) {
         hasPermission = granted || hasCalendarReadPermission(context)
         refreshKey++
     }
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) refreshKey++
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     LaunchedEffect(hasPermission, refreshKey) {
         if (!hasPermission) {
             events = emptyList()
@@ -100,7 +113,7 @@ internal fun CalendarAgenda(timeFormat: String, modifier: Modifier = Modifier) {
                     color = secondary,
                     fontSize = 11.sp,
                     modifier = Modifier.clickable {
-                        openSystemCalendar(context)
+                        openCalendar(context)
                         refreshKey++
                     }.padding(vertical = 3.dp)
                 )
@@ -238,18 +251,10 @@ private fun openCalendarEvent(context: Context, event: CalendarAgendaEvent) {
     val intent = Intent(Intent.ACTION_VIEW, eventUri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     runCatching {
         if (intent.resolveActivity(context.packageManager) != null) context.startActivity(intent)
-        else openSystemCalendar(context)
-    }.onFailure { openSystemCalendar(context) }
+        else openCalendar(context)
+    }.onFailure { openCalendar(context) }
 }
 
 private fun openMeetingUrl(context: Context, url: String) {
     runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-}
-
-private fun openSystemCalendar(context: Context) {
-    val appIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_CALENDAR)
-        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    val viewIntent = Intent(Intent.ACTION_VIEW, CalendarContract.CONTENT_URI).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    val intent = listOf(appIntent, viewIntent).firstOrNull { it.resolveActivity(context.packageManager) != null }
-    if (intent != null) runCatching { context.startActivity(intent) }
 }

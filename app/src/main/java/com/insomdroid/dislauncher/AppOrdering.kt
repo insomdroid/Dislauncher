@@ -12,11 +12,6 @@ internal fun readFavoriteOrder(prefs: SharedPreferences, favorites: Set<String>)
     return (previous.filter { it in favorites } + favorites.filter { it !in previous }.sorted()).distinct()
 }
 
-internal fun saveFavoriteOrder(prefs: SharedPreferences, order: List<String>) {
-    val array = JSONArray()
-    order.forEach { array.put(it) }
-    prefs.edit().putString("favorite_order_json", array.toString()).apply()
-}
 
 internal fun readHomeItemOrder(prefs: SharedPreferences, favorites: Set<String>): List<String> {
     val available = readFavoriteOrder(prefs, favorites)

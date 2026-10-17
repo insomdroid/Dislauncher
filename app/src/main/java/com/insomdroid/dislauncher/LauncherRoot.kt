@@ -43,11 +43,13 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -60,7 +62,7 @@ private const val MAX_PINNED_APPS = 6
 
 private const val MAX_CUSTOM_WALLPAPER_BYTES = 10L * 1024L * 1024L
 private const val MAX_CUSTOM_WALLPAPER_SOURCE_PIXELS = 250_000_000L
-private const val MAX_CUSTOM_WALLPAPER_DECODED_PIXELS = 6_000_000L
+private const val MAX_CUSTOM_WALLPAPER_DECODED_PIXELS = 3_000_000L
 
 /**
  * Decode custom wallpapers at a bounded size. Compressed file size is not a reliable
@@ -108,11 +110,11 @@ private fun decodeWallpaperForScreen(
 }
 
 
-@OptIn(ExperimentalTextApi::class)
 @Composable
 internal fun DislauncherRoot() {
     val context = LocalContext.current
     val view = LocalView.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val baseDensity = LocalDensity.current
     val prefsStore = remember {
         context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
@@ -141,7 +143,6 @@ internal fun DislauncherRoot() {
     var hiddenApps by remember {
         mutableStateOf(prefsStore.getStringSet("hidden_packages", emptySet())?.toSet().orEmpty())
     }
-    var favoriteOrder by remember { mutableStateOf(readFavoriteOrder(prefsStore, favorites)) }
     var apps by remember { mutableStateOf<List<LauncherApp>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
     var screen by remember {
@@ -156,7 +157,26 @@ internal fun DislauncherRoot() {
     var settingsOpenedFromApps by remember { mutableStateOf(false) }
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 2 })
     val scope = rememberCoroutineScope()
-    val iconPacks = remember { findIconPacks(context) }
+    var iconPacks by remember { mutableStateOf<List<IconPackInfo>>(emptyList()) }
+    var launcherStarted by remember {
+        mutableStateOf(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_START -> launcherStarted = true
+                Lifecycle.Event.ON_STOP -> launcherStarted = false
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    LaunchedEffect(context) {
+        iconPacks = withContext(Dispatchers.IO) { findIconPacks(context) }
+    }
 
     fun updatePreferences(next: LauncherPreferences) {
         val notificationDotSettingsChanged =
@@ -199,10 +219,19 @@ internal fun DislauncherRoot() {
                     ).show()
                     return@launch
                 }
+                val previousUri = preferences.wallpaperUri?.let(Uri::parse)
                 runCatching {
                     context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
                 updatePreferences(preferences.copy(wallpaperMode = "image", wallpaperUri = uri.toString()))
+                if (previousUri != null && previousUri != uri) {
+                    runCatching {
+                        context.contentResolver.releasePersistableUriPermission(
+                            previousUri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        )
+                    }
+                }
             }
         }
     }
@@ -241,19 +270,12 @@ internal fun DislauncherRoot() {
         }
         val next = if (packageName in favorites) favorites - packageName else favorites + packageName
         favorites = next
-        val nextOrder = if (packageName in next) {
-            (favoriteOrder.filter { it in next } + packageName).distinct()
-        } else {
-            favoriteOrder.filter { it in next }
-        }
-        favoriteOrder = nextOrder
         homeItemOrder = if (packageName in next) {
             (homeItemOrder + packageName).distinct()
         } else {
             homeItemOrder.filterNot { it == packageName }
         }
         prefsStore.edit().putStringSet("favorite_packages", next.toMutableSet()).apply()
-        saveFavoriteOrder(prefsStore, nextOrder)
         saveHomeItemOrder(prefsStore, homeItemOrder)
     }
 
@@ -273,10 +295,8 @@ internal fun DislauncherRoot() {
                 .map { it.packageName }
             val selectedSet = selected.toSet()
             favorites = selectedSet
-            favoriteOrder = selected
             val allAppPackages = allApps.map { it.packageName }.toSet()
             homeItemOrder = (homeItemOrder.filterNot { it in allAppPackages } + selected).distinct()
-            saveFavoriteOrder(prefsStore, selected)
             saveHomeItemOrder(prefsStore, homeItemOrder)
             prefsStore.edit()
                 .putStringSet("favorite_packages", selectedSet.toMutableSet())
@@ -307,17 +327,6 @@ internal fun DislauncherRoot() {
         apps = apps.map { if (it.packageName == packageName) it.copy(label = newName) else it }
     }
 
-    fun moveFavorite(sourcePackage: String, targetPackage: String) {
-        val order = readFavoriteOrder(prefsStore, favorites).toMutableList()
-        val sourceIndex = order.indexOf(sourcePackage)
-        val targetIndex = order.indexOf(targetPackage)
-        if (sourceIndex < 0 || targetIndex < 0 || sourceIndex == targetIndex) return
-        val moving = order[sourceIndex]
-        order[sourceIndex] = order[targetIndex]
-        order[targetIndex] = moving
-        favoriteOrder = order
-        saveFavoriteOrder(prefsStore, order)
-    }
 
     fun toggleHidden(packageName: String) {
         val next = if (packageName in hiddenApps) hiddenApps - packageName else hiddenApps + packageName
@@ -374,7 +383,9 @@ internal fun DislauncherRoot() {
         }
         val packageReceiver = object : BroadcastReceiver() {
             override fun onReceive(receiverContext: Context?, intent: Intent?) {
-                clearAppIconBitmapCache()
+                val changedPackage = intent?.data?.schemeSpecificPart
+                invalidateAppIconCaches(changedPackage)
+                invalidateIconPackDetectionCache()
                 refreshJob?.cancel()
                 refreshJob = scope.launch {
                     // Package installs can emit multiple related broadcasts in quick succession.
@@ -386,6 +397,7 @@ internal fun DislauncherRoot() {
                     }
                     // Preserve the current list instance when the visible app data is unchanged.
                     if (apps != refreshed) apps = refreshed
+                    iconPacks = withContext(Dispatchers.IO) { findIconPacks(context) }
                 }
             }
         }
@@ -445,17 +457,26 @@ internal fun DislauncherRoot() {
     }
     val wallpaperImage = produceState<androidx.compose.ui.graphics.ImageBitmap?>(
         initialValue = null,
-        key1 = preferences.wallpaperUri
+        key1 = preferences.wallpaperUri,
+        key2 = launcherStarted
     ) {
+        value = null
         val savedUri = preferences.wallpaperUri?.let(Uri::parse)
+        if (!launcherStarted || savedUri == null) return@produceState
         val decoded = withContext(Dispatchers.IO) {
-            savedUri?.let { uri -> runCatching { decodeWallpaperForScreen(context, uri) }.getOrNull() }
+            runCatching { decodeWallpaperForScreen(context, savedUri) }.getOrNull()
         }
         value = decoded
         // Never leave a bad wallpaper URI saved: otherwise every launcher restart could
         // decode the same problematic image again and repeatedly crash or exhaust memory.
-        if (savedUri != null && decoded == null && preferences.wallpaperUri == savedUri.toString()) {
+        if (decoded == null && preferences.wallpaperUri == savedUri.toString()) {
             updatePreferences(LauncherPreferences.load(prefsStore).copy(wallpaperMode = "default", wallpaperUri = null))
+            runCatching {
+                context.contentResolver.releasePersistableUriPermission(
+                    savedUri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            }
             android.widget.Toast.makeText(
                 context,
                 "Wallpaper couldn't be loaded safely. The default wallpaper has been restored.",
@@ -623,14 +644,12 @@ internal fun DislauncherRoot() {
                         HomeScreen(
                             apps = visibleApps,
                             favorites = favorites,
-                            favoriteOrder = favoriteOrder,
-                            preferences = preferences,
+                                        preferences = preferences,
                             cachedWeather = solarWeather,
                             isActive = page == pagerState.currentPage,
                             isDark = isDark,
                             fontFamily = fontFamily,
                             onLaunch = { launchApp(context, it) },
-                            onMoveFavorite = ::moveFavorite,
                             onOpenWeather = { cached -> weatherForScreen = cached ?: solarWeather; screen = LauncherScreen.WEATHER },
                             onOpenSettings = { settingsOpenedFromApps = false; screen = LauncherScreen.SETTINGS },
                             onDoubleTapToLock = { lockDevice(context, adminComponent, devicePolicyManager) },

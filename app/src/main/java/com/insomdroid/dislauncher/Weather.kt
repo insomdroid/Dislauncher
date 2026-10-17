@@ -24,29 +24,48 @@ import kotlin.coroutines.resume
 internal data class WeatherInfo(
     val temperature: String,
     val condition: String,
-    val humidity: Int?,
-    val wind: String?,
     val feelsLike: String? = null,
     val high: String? = null,
     val low: String? = null,
-    val locationName: String? = null,
-    val sunrise: LocalTime? = null,
-    val sunset: LocalTime? = null,
-    val timezone: String? = null
-) {
-    fun summary(): String {
-        val extras = listOfNotNull(humidity?.let { "$it% humidity" }, wind)
-        val conditions = listOf("$temperature · $condition", extras.takeIf { it.isNotEmpty() }?.joinToString(" · "))
-            .filterNotNull().joinToString("   ")
-        return listOfNotNull(locationName, conditions).joinToString(" · ")
-    }
-}
+    val locationName: String? = null
+)
 
 
 private const val WEATHER_CACHE_KEY = "cached_weather_info"
 private const val WEATHER_CACHE_TIMESTAMP_KEY = "cached_weather_timestamp"
 private const val WEATHER_CACHE_MAX_AGE_MS = 30 * 60 * 1000L
+private const val WEATHER_FAILURE_TIMESTAMP_KEY = "weather_last_failure_timestamp"
+private const val WEATHER_FAILURE_COUNT_KEY = "weather_consecutive_failures"
 private const val MAX_WEATHER_RESPONSE_BYTES = 64 * 1024
+private val WEATHER_RETRY_DELAYS_MS = longArrayOf(
+    60_000L, 120_000L, 240_000L, 480_000L, 960_000L, 1_800_000L
+)
+
+internal fun shouldBackoffWeatherFetch(context: Context): Boolean {
+    val prefs = context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
+    val failedAt = prefs.getLong(WEATHER_FAILURE_TIMESTAMP_KEY, 0L)
+    if (failedAt <= 0L) return false
+    val age = System.currentTimeMillis() - failedAt
+    if (age < 0L) return false
+    val failureCount = prefs.getInt(WEATHER_FAILURE_COUNT_KEY, 1)
+        .coerceIn(1, WEATHER_RETRY_DELAYS_MS.size)
+    return age < WEATHER_RETRY_DELAYS_MS[failureCount - 1]
+}
+
+internal fun recordWeatherFetchResult(context: Context, succeeded: Boolean) {
+    val prefs = context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
+    val editor = prefs.edit()
+    if (succeeded) {
+        editor.remove(WEATHER_FAILURE_TIMESTAMP_KEY)
+            .remove(WEATHER_FAILURE_COUNT_KEY)
+    } else {
+        val failureCount = (prefs.getInt(WEATHER_FAILURE_COUNT_KEY, 0) + 1)
+            .coerceIn(1, WEATHER_RETRY_DELAYS_MS.size)
+        editor.putLong(WEATHER_FAILURE_TIMESTAMP_KEY, System.currentTimeMillis())
+            .putInt(WEATHER_FAILURE_COUNT_KEY, failureCount)
+    }
+    editor.apply()
+}
 
 internal fun isWeatherCacheFresh(context: Context): Boolean {
     val savedAt = context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
@@ -59,15 +78,10 @@ internal fun saveWeatherCache(context: Context, weather: WeatherInfo) {
     val json = JSONObject()
         .put("temperature", weather.temperature)
         .put("condition", weather.condition)
-        .put("humidity", weather.humidity ?: JSONObject.NULL)
-        .put("wind", weather.wind ?: JSONObject.NULL)
         .put("feelsLike", weather.feelsLike ?: JSONObject.NULL)
         .put("high", weather.high ?: JSONObject.NULL)
         .put("low", weather.low ?: JSONObject.NULL)
         .put("locationName", weather.locationName ?: JSONObject.NULL)
-        .put("sunrise", weather.sunrise?.toString() ?: JSONObject.NULL)
-        .put("sunset", weather.sunset?.toString() ?: JSONObject.NULL)
-        .put("timezone", weather.timezone ?: JSONObject.NULL)
     context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
         .edit()
         .putString(WEATHER_CACHE_KEY, json.toString())
@@ -83,17 +97,13 @@ internal fun loadWeatherCache(context: Context, unit: String): WeatherInfo? = ru
     WeatherInfo(
         temperature = json.getString("temperature"),
         condition = json.optString("condition", "Weather"),
-        humidity = json.optInt("humidity", -1).takeIf { it >= 0 },
-        wind = optionalString("wind"),
         feelsLike = optionalString("feelsLike"),
         high = optionalString("high"),
         low = optionalString("low"),
-        locationName = optionalString("locationName"),
-        sunrise = optionalString("sunrise")?.let { runCatching { LocalTime.parse(it) }.getOrNull() },
-        sunset = optionalString("sunset")?.let { runCatching { LocalTime.parse(it) }.getOrNull() },
-        timezone = optionalString("timezone")
+        locationName = optionalString("locationName")
     ).let { convertWeatherUnit(it, unit) }
 }.getOrNull()
+
 
 internal fun convertWeatherUnit(weather: WeatherInfo, unit: String): WeatherInfo {
     fun convert(value: String?): String? {
@@ -143,8 +153,8 @@ internal suspend fun fetchWeather(context: Context, unit: String): WeatherInfo? 
         val url = URL(
             "https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}" +
                 "&longitude=${location.longitude}" +
-                "&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code" +
-                "&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&forecast_days=1" +
+                "&current=temperature_2m,apparent_temperature,weather_code" +
+                "&daily=temperature_2m_max,temperature_2m_min&forecast_days=1" +
                 "&temperature_unit=$temperatureUnit&wind_speed_unit=kmh&timezone=auto"
         )
         val connection = (url.openConnection() as HttpURLConnection).apply {
@@ -169,15 +179,9 @@ internal suspend fun fetchWeather(context: Context, unit: String): WeatherInfo? 
             val current = response.getJSONObject("current")
             val temp = current.getDouble("temperature_2m")
             val feels = current.optDouble("apparent_temperature").takeIf { !it.isNaN() }
-            val humidityValue = current.optInt("relative_humidity_2m").takeIf { it in 0..100 }
-            val windValue = current.optDouble("wind_speed_10m").takeIf { !it.isNaN() }?.toInt()
             val daily = response.optJSONObject("daily")
             val highValue = daily?.optJSONArray("temperature_2m_max")?.optDouble(0)?.takeIf { !it.isNaN() }
             val lowValue = daily?.optJSONArray("temperature_2m_min")?.optDouble(0)?.takeIf { !it.isNaN() }
-            val sunriseValue = daily?.optJSONArray("sunrise")?.optString(0)?.takeIf(String::isNotBlank)
-            val sunsetValue = daily?.optJSONArray("sunset")?.optString(0)?.takeIf(String::isNotBlank)
-            val sunriseTime = runCatching { LocalDateTime.parse(sunriseValue).toLocalTime() }.getOrNull()
-            val sunsetTime = runCatching { LocalDateTime.parse(sunsetValue).toLocalTime() }.getOrNull()
             val locality = runCatching {
                 @Suppress("DEPRECATION")
                 Geocoder(context, Locale.getDefault())
@@ -186,17 +190,12 @@ internal suspend fun fetchWeather(context: Context, unit: String): WeatherInfo? 
                     ?.let { it.locality ?: it.subAdminArea ?: it.adminArea ?: it.countryName }
             }.getOrNull()
             WeatherInfo(
-                temperature = "${temp.toInt()}°$unit",
+                temperature = "${temp.roundToInt()}°$unit",
                 condition = weatherCondition(current.getInt("weather_code")),
-                humidity = humidityValue,
-                wind = windValue?.let { "${it} km/h" },
-                feelsLike = feels?.let { "${it.toInt()}°$unit" },
-                high = highValue?.let { "${it.toInt()}°$unit" },
-                low = lowValue?.let { "${it.toInt()}°$unit" },
-                locationName = locality,
-                sunrise = sunriseTime,
-                sunset = sunsetTime,
-                timezone = response.optString("timezone").takeIf(String::isNotBlank)
+                feelsLike = feels?.roundToInt()?.let { "${it}°$unit" },
+                high = highValue?.roundToInt()?.let { "${it}°$unit" },
+                low = lowValue?.roundToInt()?.let { "${it}°$unit" },
+                locationName = locality
             )
         } finally {
             connection.disconnect()

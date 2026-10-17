@@ -61,6 +61,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -97,8 +99,8 @@ internal fun SettingsScreen(
     var detectedIconPacks by remember { mutableStateOf(iconPacks) }
     var refreshVersion by remember { mutableStateOf(0) }
 
-    LaunchedEffect(context) {
-        detectedIconPacks = findIconPacks(context)
+    LaunchedEffect(context, refreshVersion) {
+        detectedIconPacks = withContext(Dispatchers.IO) { findIconPacks(context) }
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -373,7 +375,6 @@ internal fun SettingsScreen(
                                         } else tr("Selected pack not installed", "Paket terpilih tidak terpasang"),
                                     tr("Choose", "Pilih")
                                 ) {
-                                    detectedIconPacks = findIconPacks(context)
                                     openDialog = "iconpack"
                                 }
                             } else {

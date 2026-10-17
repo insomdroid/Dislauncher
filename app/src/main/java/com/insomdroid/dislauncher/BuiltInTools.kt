@@ -231,6 +231,11 @@ private fun NotesTool(
 
     fun saveCurrent() {
         val id = selectedId ?: return
+        if (title.isBlank() && body.isBlank()) {
+            notes = notes.filterNot { it.id == id }
+            saveNotes(context, notes)
+            return
+        }
         val current = LocalNote(id, title.trim(), body, System.currentTimeMillis())
         notes = (notes.filterNot { it.id == id } + current).sortedByDescending { it.updatedAt }
         saveNotes(context, notes)
@@ -320,10 +325,10 @@ private fun NotesTool(
         if (selectedId == null) {
             FloatingActionButton(
                 onClick = {
-                    val note = LocalNote(UUID.randomUUID().toString(), "", "", System.currentTimeMillis())
-                    notes = listOf(note) + notes
-                    saveNotes(context, notes)
-                    openNote(note)
+                    selectedId = UUID.randomUUID().toString()
+                    title = ""
+                    body = ""
+                    onEditingChanged(true)
                 },
                 modifier = Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 24.dp),
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -424,7 +429,9 @@ private fun CalculatorTool(modifier: Modifier = Modifier) {
                                         formatCalculation(ExpressionParser(expression).parse())
                                     }.getOrElse { "Invalid expression" }
                                     "%" -> {
-                                        if (expression.lastOrNull()?.isDigit() == true) expression += "/100"
+                                        if (expression.lastOrNull()?.isDigit() == true) {
+                                            expression = applyCalculatorPercentage(expression)
+                                        }
                                         result = ""
                                     }
                                     "±" -> {
@@ -468,6 +475,31 @@ private fun CalculatorTool(modifier: Modifier = Modifier) {
             }
         }
     }
+}
+
+private fun applyCalculatorPercentage(expression: String): String {
+    var depth = 0
+    var lastAddSubtract = -1
+    for (index in expression.indices) {
+        when (expression[index]) {
+            '(' -> depth++
+            ')' -> depth--
+            '+', '-' -> {
+                val previous = expression.getOrNull(index - 1)
+                if (
+                    depth == 0 && index > 0 &&
+                    previous != null && previous !in charArrayOf('+', '-', '*', '/', '(')
+                ) {
+                    lastAddSubtract = index
+                }
+            }
+        }
+    }
+    if (lastAddSubtract <= 0) return "($expression)/100"
+    val left = expression.substring(0, lastAddSubtract)
+    val operator = expression[lastAddSubtract]
+    val right = expression.substring(lastAddSubtract + 1)
+    return "$left$operator(($left)*($right)/100)"
 }
 
 private fun formatCalculation(value: Double): String =

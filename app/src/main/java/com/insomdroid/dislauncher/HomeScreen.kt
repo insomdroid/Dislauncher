@@ -70,14 +70,12 @@ import java.util.Locale
 internal fun HomeScreen(
     apps: List<LauncherApp>,
     favorites: Set<String>,
-    favoriteOrder: List<String>,
     preferences: LauncherPreferences,
     cachedWeather: WeatherInfo?,
     isActive: Boolean,
     isDark: Boolean,
     fontFamily: FontFamily,
     onLaunch: (LauncherApp) -> Unit,
-    onMoveFavorite: (String, String) -> Unit,
     onOpenWeather: (WeatherInfo?) -> Unit,
     onOpenSettings: () -> Unit,
     onDoubleTapToLock: () -> Unit,
@@ -132,7 +130,8 @@ internal fun HomeScreen(
         }
 
         while (true) {
-            delay(60_000L)
+            val delayUntilNextMinute = 60_000L - (System.currentTimeMillis() % 60_000L)
+            delay(delayUntilNextMinute.coerceAtLeast(1L))
             now = LocalTime.now()
             if (preferences.showBattery) {
                 batteryPercent = readBatteryPercent(context)
@@ -178,9 +177,19 @@ internal fun HomeScreen(
                 currentSolarInfoChange(matchingCache)
                 return@LaunchedEffect
             }
+            if (shouldBackoffWeatherFetch(context)) {
+                weatherInfo = usableCache
+                weatherStatus = if (usableCache == null) {
+                    "Weather unavailable · tap to retry"
+                } else {
+                    ""
+                }
+                return@LaunchedEffect
+            }
             weatherInfo = usableCache
             weatherStatus = if (preferences.showWeather) "Loading weather…" else ""
             val fetched = withContext(Dispatchers.IO) { fetchWeather(context, preferences.weatherUnit) }
+            recordWeatherFetchResult(context, succeeded = fetched != null)
             weatherInfo = fetched ?: usableCache
             currentSolarInfoChange(fetched)
             weatherStatus = if (fetched == null && preferences.showWeather) "Weather unavailable · tap to retry" else ""

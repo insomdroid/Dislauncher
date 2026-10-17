@@ -83,6 +83,7 @@ internal fun WeatherScreen(
             loading = true
             status = "Getting weather…"
             val fetched = withContext(Dispatchers.IO) { fetchWeather(context, weatherUnit) }
+            recordWeatherFetchResult(context, succeeded = fetched != null)
             weather = fetched ?: cachedWeather?.let { convertWeatherUnit(it, weatherUnit) }
             status = if (fetched == null) "Weather is unavailable. Showing saved weather if available." else ""
             loading = false
