@@ -210,11 +210,26 @@ internal fun BuiltInIconShapePreview(iconShape: String, modifier: Modifier = Mod
     }
 }
 
+private val fallbackIconColor = androidx.compose.ui.graphics.Color(0xFF6488B8)
+
+// Bound the cache so installed apps or icon packs changing over time cannot grow it indefinitely.
+private val dominantColorCache = object : LinkedHashMap<String, androidx.compose.ui.graphics.Color>(256, 0.75f, true) {
+    override fun removeEldestEntry(
+        eldest: MutableMap.MutableEntry<String, androidx.compose.ui.graphics.Color>?
+    ): Boolean = size > 256
+}
+
 private fun dominantAppIconColor(context: Context, packageName: String): androidx.compose.ui.graphics.Color {
+    synchronized(dominantColorCache) {
+        dominantColorCache[packageName]?.let { return it }
+    }
+
     val bitmap = runCatching {
         drawableToBitmap(context.packageManager.getApplicationIcon(packageName))
-    }.getOrNull() ?: return androidx.compose.ui.graphics.Color(0xFF6488B8)
+    }.getOrNull() ?: return fallbackIconColor
+
     val buckets = HashMap<Int, Int>()
+    val hsv = FloatArray(3)
     var sampled = 0
     var saturationTotal = 0f
     val stepX = (bitmap.width / 32).coerceAtLeast(1)
@@ -226,7 +241,6 @@ private fun dominantAppIconColor(context: Context, packageName: String): android
             val red = android.graphics.Color.red(pixel)
             val green = android.graphics.Color.green(pixel)
             val blue = android.graphics.Color.blue(pixel)
-            val hsv = FloatArray(3)
             android.graphics.Color.RGBToHSV(red, green, blue, hsv)
             if (hsv[2] < 0.16f) continue
             saturationTotal += hsv[1]
@@ -235,33 +249,47 @@ private fun dominantAppIconColor(context: Context, packageName: String): android
             buckets[key] = (buckets[key] ?: 0) + 1
         }
     }
-    if (sampled == 0 || saturationTotal / sampled < 0.12f) {
-        return androidx.compose.ui.graphics.Color(0xFF6488B8)
+    val result = if (sampled == 0 || saturationTotal / sampled < 0.12f) {
+        fallbackIconColor
+    } else {
+        val dominant = buckets.maxByOrNull { it.value }?.key
+        if (dominant == null) {
+            fallbackIconColor
+        } else {
+            var red = (((dominant shr 8) and 0xF) * 16 + 8).coerceIn(0, 255)
+            var green = (((dominant shr 4) and 0xF) * 16 + 8).coerceIn(0, 255)
+            var blue = ((dominant and 0xF) * 16 + 8).coerceIn(0, 255)
+            val brightness = (0.2126f * red + 0.7152f * green + 0.0722f * blue) / 255f
+            if (brightness > 0.70f) {
+                val darkening = 0.70f / brightness
+                red = (red * darkening).toInt()
+                green = (green * darkening).toInt()
+                blue = (blue * darkening).toInt()
+            }
+            androidx.compose.ui.graphics.Color(android.graphics.Color.rgb(red, green, blue))
+        }
     }
-    val dominant = buckets.maxByOrNull { it.value }?.key
-        ?: return androidx.compose.ui.graphics.Color(0xFF6488B8)
-    var red = (((dominant shr 8) and 0xF) * 16 + 8).coerceIn(0, 255)
-    var green = (((dominant shr 4) and 0xF) * 16 + 8).coerceIn(0, 255)
-    var blue = ((dominant and 0xF) * 16 + 8).coerceIn(0, 255)
-    val brightness = (0.2126f * red + 0.7152f * green + 0.0722f * blue) / 255f
-    if (brightness > 0.70f) {
-        val darkening = 0.70f / brightness
-        red = (red * darkening).toInt()
-        green = (green * darkening).toInt()
-        blue = (blue * darkening).toInt()
+    synchronized(dominantColorCache) {
+        dominantColorCache[packageName] = result
     }
-    return androidx.compose.ui.graphics.Color(android.graphics.Color.rgb(red, green, blue))
+    return result
 }
-// appfilter.xml can contain thousands of entries. Parse it once per pack.
-private val iconPackMappings = ConcurrentHashMap<String, Map<String, String>>()
+
+// appfilter.xml can contain thousands of entries. Keep only a small LRU of parsed packs.
+private val iconPackMappings = object : LinkedHashMap<String, Map<String, String>>(8, 0.75f, true) {
+    override fun removeEldestEntry(
+        eldest: MutableMap.MutableEntry<String, Map<String, String>>?
+    ): Boolean = size > 8
+}
 
 private fun loadIconPackMappings(context: Context, packageName: String): Map<String, String> {
-    return iconPackMappings.computeIfAbsent(packageName) {
-        runCatching {
+    synchronized(iconPackMappings) {
+        iconPackMappings[packageName]?.let { return it }
+        val mappings = runCatching {
             val resources = context.packageManager.getResourcesForApplication(packageName)
             val xmlId = resources.getIdentifier("appfilter", "xml", packageName)
             if (xmlId == 0) return@runCatching emptyMap()
-            val mappings = HashMap<String, String>()
+            val parsed = HashMap<String, String>()
             val parser = resources.getXml(xmlId)
             try {
                 var event = parser.eventType
@@ -269,15 +297,17 @@ private fun loadIconPackMappings(context: Context, packageName: String): Map<Str
                     if (event == XmlPullParser.START_TAG && parser.name == "item") {
                         val key = componentKey(parser.getAttributeValue(null, "component"))
                         val drawable = parser.getAttributeValue(null, "drawable")
-                        if (key != null && !drawable.isNullOrBlank()) mappings.putIfAbsent(key, drawable)
+                        if (key != null && !drawable.isNullOrBlank()) parsed.putIfAbsent(key, drawable)
                     }
                     event = parser.next()
                 }
             } finally {
                 parser.close()
             }
-            mappings
+            parsed
         }.getOrDefault(emptyMap())
+        iconPackMappings[packageName] = mappings
+        return mappings
     }
 }
 
