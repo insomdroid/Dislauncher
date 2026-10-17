@@ -353,17 +353,7 @@ private fun loadCachedAppIconBitmap(
     app: LauncherApp,
     iconPack: String
 ): Bitmap? {
-    val pm = context.packageManager
-    val appUpdateTime = runCatching {
-        pm.getPackageInfo(app.packageName, 0).lastUpdateTime
-    }.getOrDefault(0L)
-    val iconPackUpdateTime = if (iconPack == "system") {
-        0L
-    } else {
-        runCatching { pm.getPackageInfo(iconPack, 0).lastUpdateTime }.getOrDefault(0L)
-    }
-    val cacheKey = "${app.packageName}/${app.activityName}|$iconPack|$appUpdateTime|$iconPackUpdateTime"
-
+    val cacheKey = "${app.packageName}/${app.activityName}|$iconPack"
     appIconBitmapCache.get(cacheKey)?.let { return it }
 
     val bitmap = drawableToBitmap(resolveAppDrawable(context, app, iconPack)) ?: return null
@@ -373,6 +363,10 @@ private fun loadCachedAppIconBitmap(
         }
     }
     return bitmap
+}
+
+internal fun clearAppIconBitmapCache() {
+    appIconBitmapCache.evictAll()
 }
 
 private fun drawableToBitmap(drawable: Drawable?): Bitmap? {
