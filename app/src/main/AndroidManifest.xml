@@ -46,7 +46,7 @@
         android:theme="@style/Theme.dislauncher">
         <activity
             android:name=".MainActivity"
-            android:enableOnBackInvokedCallback="false"
+            android:enableOnBackInvokedCallback="true"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="true"
             android:launchMode="singleTop"
