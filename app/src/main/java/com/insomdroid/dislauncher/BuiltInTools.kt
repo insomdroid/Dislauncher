@@ -373,9 +373,9 @@ private fun CalculatorTool(modifier: Modifier = Modifier) {
         // reserving oversized fixed-height rows on compact devices.
         val keySize = minOf(
             52.dp,
-            (maxWidth - 20.dp) / 4,
-            (maxHeight - 200.dp) / 6
-        ).coerceAtLeast(40.dp)
+            (maxWidth - 24.dp) / 4,
+            (maxHeight - 130.dp) / 6
+        ).coerceAtLeast(24.dp)
 
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -408,7 +408,7 @@ private fun CalculatorTool(modifier: Modifier = Modifier) {
 
             keyRows.forEach { rowKeys ->
                 Row(
-                    modifier = Modifier.fillMaxWidth().height(keySize + 8.dp),
+                    modifier = Modifier.fillMaxWidth().height(keySize + 6.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
