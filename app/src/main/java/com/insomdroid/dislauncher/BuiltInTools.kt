@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.widget.Toast
@@ -78,6 +79,15 @@ import java.util.Locale
 import java.util.UUID
 
 internal enum class BuiltInTool { NOTES, CALCULATOR, CALENDAR }
+
+private const val EXTRA_BUILT_IN_TOOL = "com.insomdroid.dislauncher.BUILT_IN_TOOL"
+
+internal fun launchBuiltInTool(context: Context, tool: BuiltInTool) {
+    context.startActivity(
+        Intent(context, BuiltInToolActivity::class.java)
+            .putExtra(EXTRA_BUILT_IN_TOOL, tool.name)
+    )
+}
 
 private data class LocalNote(
     val id: String,
