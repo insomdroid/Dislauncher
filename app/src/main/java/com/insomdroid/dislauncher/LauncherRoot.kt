@@ -54,6 +54,58 @@ import org.json.JSONObject
 
 private const val MAX_PINNED_APPS = 6
 
+
+private const val MAX_CUSTOM_WALLPAPER_BYTES = 100L * 1024L * 1024L
+private const val MAX_CUSTOM_WALLPAPER_SOURCE_PIXELS = 250_000_000L
+private const val MAX_CUSTOM_WALLPAPER_DECODED_PIXELS = 6_000_000L
+
+/**
+ * Decode custom wallpapers at a bounded size. Compressed file size is not a reliable
+ * estimate of bitmap memory use, so inspect dimensions before decoding the pixels.
+ */
+private fun decodeWallpaperForScreen(
+    context: Context,
+    uri: Uri
+): androidx.compose.ui.graphics.ImageBitmap? {
+    val fileLength = runCatching {
+        context.contentResolver.openAssetFileDescriptor(uri, "r")?.use { it.length }
+    }.getOrNull()
+    if (fileLength != null && fileLength > MAX_CUSTOM_WALLPAPER_BYTES) return null
+
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    context.contentResolver.openInputStream(uri)?.use { input ->
+        BitmapFactory.decodeStream(input, null, bounds)
+    } ?: return null
+
+    val width = bounds.outWidth
+    val height = bounds.outHeight
+    if (width <= 0 || height <= 0) return null
+    if (width.toLong() * height.toLong() > MAX_CUSTOM_WALLPAPER_SOURCE_PIXELS) return null
+
+    val metrics = context.resources.displayMetrics
+    val targetWidth = metrics.widthPixels.coerceAtLeast(1)
+    val targetHeight = metrics.heightPixels.coerceAtLeast(1)
+    var sampleSize = 1
+    while (
+        (width.toLong() / sampleSize) * (height.toLong() / sampleSize) >
+            MAX_CUSTOM_WALLPAPER_DECODED_PIXELS ||
+        width / sampleSize > targetWidth * 2 ||
+        height / sampleSize > targetHeight * 2
+    ) {
+        sampleSize *= 2
+    }
+
+    val options = BitmapFactory.Options().apply {
+        inSampleSize = sampleSize
+        inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888
+    }
+    val bitmap = context.contentResolver.openInputStream(uri)?.use { input ->
+        BitmapFactory.decodeStream(input, null, options)
+    } ?: return null
+    return bitmap.asImageBitmap()
+}
+
+
 @OptIn(ExperimentalTextApi::class)
 @Composable
 internal fun DislauncherRoot() {
@@ -342,11 +394,20 @@ internal fun DislauncherRoot() {
         initialValue = null,
         key1 = preferences.wallpaperUri
     ) {
-        value = withContext(Dispatchers.IO) {
-            val uri = preferences.wallpaperUri?.let(Uri::parse)
-            if (uri == null) null else runCatching {
-                context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it)?.asImageBitmap() }
-            }.getOrNull()
+        val savedUri = preferences.wallpaperUri?.let(Uri::parse)
+        val decoded = withContext(Dispatchers.IO) {
+            savedUri?.let { uri -> runCatching { decodeWallpaperForScreen(context, uri) }.getOrNull() }
+        }
+        value = decoded
+        // Never leave a bad wallpaper URI saved: otherwise every launcher restart could
+        // decode the same problematic image again and repeatedly crash or exhaust memory.
+        if (savedUri != null && decoded == null && preferences.wallpaperUri == savedUri.toString()) {
+            updatePreferences(preferences.copy(wallpaperMode = "default", wallpaperUri = null))
+            android.widget.Toast.makeText(
+                context,
+                "Wallpaper couldn't be loaded safely. The default wallpaper has been restored.",
+                android.widget.Toast.LENGTH_LONG
+            ).show()
         }
     }
 
