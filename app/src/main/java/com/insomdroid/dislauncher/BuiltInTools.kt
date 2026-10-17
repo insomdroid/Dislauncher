@@ -80,7 +80,7 @@ import java.util.UUID
 
 internal enum class BuiltInTool { NOTES, CALCULATOR, CALENDAR }
 
-private const val EXTRA_BUILT_IN_TOOL = "com.insomdroid.dislauncher.BUILT_IN_TOOL"
+internal const val EXTRA_BUILT_IN_TOOL = "com.insomdroid.dislauncher.BUILT_IN_TOOL"
 
 internal fun launchBuiltInTool(context: Context, tool: BuiltInTool) {
     context.startActivity(
