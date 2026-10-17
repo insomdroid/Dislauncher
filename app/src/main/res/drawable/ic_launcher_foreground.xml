@@ -4,60 +4,26 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Thin, nested angular outlines based on the reference mark.
-         Keep the artwork centered inside the adaptive-icon safe area. -->
-    <group android:translateX="-7" android:translateY="-7">
-        <path
-            android:fillColor="#00000000"
-            android:strokeColor="#FFFFFFFF"
-            android:strokeWidth="0.85"
-            android:strokeLineJoin="miter"
-            android:pathData="M28,29 H40 V41 H68 V29 H80 V67 H68 V79 H40 V67 H28 Z" />
-    </group>
-    <group android:translateX="-5" android:translateY="-5">
-        <path
-            android:fillColor="#00000000"
-            android:strokeColor="#FFFFFFFF"
-            android:strokeWidth="0.85"
-            android:strokeLineJoin="miter"
-            android:pathData="M28,29 H40 V41 H68 V29 H80 V67 H68 V79 H40 V67 H28 Z" />
-    </group>
-    <group android:translateX="-3" android:translateY="-3">
-        <path
-            android:fillColor="#00000000"
-            android:strokeColor="#FFFFFFFF"
-            android:strokeWidth="0.85"
-            android:strokeLineJoin="miter"
-            android:pathData="M28,29 H40 V41 H68 V29 H80 V67 H68 V79 H40 V67 H28 Z" />
-    </group>
-    <group android:translateX="-1" android:translateY="-1">
-        <path
-            android:fillColor="#00000000"
-            android:strokeColor="#FFFFFFFF"
-            android:strokeWidth="0.85"
-            android:strokeLineJoin="miter"
-            android:pathData="M28,29 H40 V41 H68 V29 H80 V67 H68 V79 H40 V67 H28 Z" />
-    </group>
+    <!-- Three nested angular D contours. The continuous left stem and broad
+         right-hand bowl keep the letter recognizable at launcher icon size. -->
     <path
         android:fillColor="#00000000"
         android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="0.85"
+        android:strokeWidth="1.05"
         android:strokeLineJoin="miter"
-        android:pathData="M28,29 H40 V41 H68 V29 H80 V67 H68 V79 H40 V67 H28 Z" />
-    <group android:translateX="3" android:translateY="3">
-        <path
-            android:fillColor="#00000000"
-            android:strokeColor="#FFFFFFFF"
-            android:strokeWidth="0.85"
-            android:strokeLineJoin="miter"
-            android:pathData="M28,29 H40 V41 H68 V29 H80 V67 H68 V79 H40 V67 H28 Z" />
-    </group>
-    <group android:translateX="5" android:translateY="5">
-        <path
-            android:fillColor="#00000000"
-            android:strokeColor="#FFFFFFFF"
-            android:strokeWidth="0.85"
-            android:strokeLineJoin="miter"
-            android:pathData="M28,29 H40 V41 H68 V29 H80 V67 H68 V79 H40 V67 H28 Z" />
-    </group>
+        android:pathData="M28,22 H52 L81,35 V73 L52,86 H28 Z" />
+
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.05"
+        android:strokeLineJoin="miter"
+        android:pathData="M34,30 H51 L73,40 V68 L51,78 H34 Z" />
+
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.05"
+        android:strokeLineJoin="miter"
+        android:pathData="M40,38 H50 L65,45 V63 L50,70 H40 Z" />
 </vector>
