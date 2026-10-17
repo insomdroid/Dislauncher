@@ -353,18 +353,27 @@ internal fun HomeScreen(
         }
 
         if (preferences.showSettingsButton) {
-            Box(
+            Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
                     .clickable(onClick = onOpenSettings)
-                    .padding(7.dp),
-                contentAlignment = Alignment.Center
+                    .padding(horizontal = 7.dp, vertical = 7.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
                     imageVector = Icons.Filled.Settings,
-                    contentDescription = "Settings",
+                    contentDescription = "Dislauncher Settings",
                     tint = secondaryText,
                     modifier = Modifier.size(22.dp)
+                )
+                Text(
+                    text = "Dislauncher Settings",
+                    color = secondaryText,
+                    fontSize = 14.sp,
+                    fontFamily = fontFamily,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
