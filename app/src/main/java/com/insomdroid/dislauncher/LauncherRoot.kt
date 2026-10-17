@@ -55,7 +55,7 @@ import org.json.JSONObject
 private const val MAX_PINNED_APPS = 6
 
 
-private const val MAX_CUSTOM_WALLPAPER_BYTES = 100L * 1024L * 1024L
+private const val MAX_CUSTOM_WALLPAPER_BYTES = 10L * 1024L * 1024L
 private const val MAX_CUSTOM_WALLPAPER_SOURCE_PIXELS = 250_000_000L
 private const val MAX_CUSTOM_WALLPAPER_DECODED_PIXELS = 6_000_000L
 
@@ -169,10 +169,39 @@ internal fun DislauncherRoot() {
         ActivityResultContracts.OpenDocument()
     ) { uri ->
         if (uri != null) {
-            runCatching {
-                context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            scope.launch {
+                val isWithinLimit = withContext(Dispatchers.IO) {
+                    runCatching {
+                        val knownLength = context.contentResolver.openAssetFileDescriptor(uri, "r")?.use { it.length }
+                        if (knownLength != null && knownLength > MAX_CUSTOM_WALLPAPER_BYTES) {
+                            false
+                        } else {
+                            context.contentResolver.openInputStream(uri)?.use { input ->
+                                val buffer = ByteArray(8192)
+                                var total = 0L
+                                while (total <= MAX_CUSTOM_WALLPAPER_BYTES) {
+                                    val read = input.read(buffer, 0, minOf(buffer.size.toLong(), MAX_CUSTOM_WALLPAPER_BYTES + 1L - total).toInt())
+                                    if (read < 0) break
+                                    total += read
+                                }
+                                total <= MAX_CUSTOM_WALLPAPER_BYTES
+                            } ?: false
+                        }
+                    }.getOrDefault(false)
+                }
+                if (!isWithinLimit) {
+                    android.widget.Toast.makeText(
+                        context,
+                        "Wallpaper must be an image no larger than 10 MB.",
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
+                    return@launch
+                }
+                runCatching {
+                    context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                updatePreferences(preferences.copy(wallpaperMode = "image", wallpaperUri = uri.toString()))
             }
-            updatePreferences(preferences.copy(wallpaperMode = "image", wallpaperUri = uri.toString()))
         }
     }
 
