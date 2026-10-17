@@ -484,17 +484,25 @@ internal fun DislauncherRoot() {
         }
     }
 
+    LaunchedEffect(preferences.hideStatusBar) {
+        val activity = context as? Activity ?: return@LaunchedEffect
+        val controller = WindowCompat.getInsetsController(activity.window, view)
+        controller.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        if (preferences.hideStatusBar) {
+            controller.hide(WindowInsetsCompat.Type.statusBars())
+        } else {
+            controller.show(WindowInsetsCompat.Type.statusBars())
+        }
+        controller.show(WindowInsetsCompat.Type.navigationBars())
+    }
+
     SideEffect {
         val activity = context as? Activity
         if (activity != null) {
-            val controller: WindowInsetsControllerCompat =
-                WindowCompat.getInsetsController(activity.window, view)
+            val controller = WindowCompat.getInsetsController(activity.window, view)
             controller.isAppearanceLightStatusBars = !isDark
             controller.isAppearanceLightNavigationBars = !isDark
-            controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            if (preferences.hideStatusBar) controller.hide(WindowInsetsCompat.Type.statusBars())
-            else controller.show(WindowInsetsCompat.Type.statusBars())
-            controller.show(WindowInsetsCompat.Type.navigationBars())
         }
     }
 
