@@ -73,9 +73,8 @@ private fun decodeWallpaperForScreen(
     if (fileLength != null && fileLength > MAX_CUSTOM_WALLPAPER_BYTES) return null
 
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    context.contentResolver.openInputStream(uri)?.use { input ->
-        BitmapFactory.decodeStream(input, null, bounds)
-    } ?: return null
+    val boundsStream = context.contentResolver.openInputStream(uri) ?: return null
+    boundsStream.use { input -> BitmapFactory.decodeStream(input, null, bounds) }
 
     val width = bounds.outWidth
     val height = bounds.outHeight
