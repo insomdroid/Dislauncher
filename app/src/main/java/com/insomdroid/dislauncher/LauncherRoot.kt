@@ -56,6 +56,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import java.io.File
 
 private const val MAX_PINNED_APPS = 6
 
@@ -68,6 +69,55 @@ private const val MAX_CUSTOM_WALLPAPER_DECODED_PIXELS = 3_000_000L
  * Decode custom wallpapers at a bounded size. Compressed file size is not a reliable
  * estimate of bitmap memory use, so inspect dimensions before decoding the pixels.
  */
+/**
+ * Keep a private copy of a selected wallpaper so it remains readable after reboot,
+ * even when the document provider does not retain its URI permission.
+ */
+private fun copyWallpaperToInternalStorage(context: Context, sourceUri: Uri): Uri? {
+    val directory = File(context.filesDir, "wallpapers")
+    if (!directory.exists() && !directory.mkdirs()) return null
+    val temporaryFile = runCatching { File.createTempFile("wallpaper-", ".tmp", directory) }
+        .getOrNull() ?: return null
+
+    try {
+        val input = context.contentResolver.openInputStream(sourceUri) ?: return null
+        var totalBytes = 0L
+        input.use { source ->
+            temporaryFile.outputStream().buffered().use { destination ->
+                val buffer = ByteArray(8192)
+                while (true) {
+                    val count = source.read(buffer)
+                    if (count < 0) break
+                    totalBytes += count
+                    if (totalBytes > MAX_CUSTOM_WALLPAPER_BYTES) return null
+                    destination.write(buffer, 0, count)
+                }
+            }
+        }
+        if (totalBytes <= 0L) return null
+
+        // Validate that this is a decodable image before replacing the active selection.
+        val validated = decodeWallpaperForScreen(context, Uri.fromFile(temporaryFile))
+            ?: return null
+        // The decoded bitmap is only for validation; the UI decodes the stored copy on demand.
+        val target = File(directory, "custom-wallpaper-${System.currentTimeMillis()}.img")
+        if (!temporaryFile.renameTo(target)) return null
+        return Uri.fromFile(target)
+    } catch (_: Exception) {
+        return null
+    } finally {
+        runCatching { temporaryFile.delete() }
+    }
+}
+
+private fun deleteOldInternalWallpapers(context: Context, keepUri: Uri?) {
+    val directory = File(context.filesDir, "wallpapers")
+    val keepFile = keepUri?.takeIf { it.scheme == "file" }?.path?.let(::File)
+    directory.listFiles()
+        ?.filter { it.name.startsWith("custom-wallpaper-") && it != keepFile }
+        ?.forEach { runCatching { it.delete() } }
+}
+
 private fun decodeWallpaperForScreen(
     context: Context,
     uri: Uri
@@ -192,39 +242,24 @@ internal fun DislauncherRoot() {
     ) { uri ->
         if (uri != null) {
             scope.launch {
-                val isWithinLimit = withContext(Dispatchers.IO) {
-                    runCatching {
-                        val knownLength = context.contentResolver.openAssetFileDescriptor(uri, "r")?.use { it.length }
-                        if (knownLength != null && knownLength > MAX_CUSTOM_WALLPAPER_BYTES) {
-                            false
-                        } else {
-                            context.contentResolver.openInputStream(uri)?.use { input ->
-                                val buffer = ByteArray(8192)
-                                var total = 0L
-                                while (total <= MAX_CUSTOM_WALLPAPER_BYTES) {
-                                    val read = input.read(buffer, 0, minOf(buffer.size.toLong(), MAX_CUSTOM_WALLPAPER_BYTES + 1L - total).toInt())
-                                    if (read < 0) break
-                                    total += read
-                                }
-                                total <= MAX_CUSTOM_WALLPAPER_BYTES
-                            } ?: false
-                        }
-                    }.getOrDefault(false)
+                val internalUri = withContext(Dispatchers.IO) {
+                    copyWallpaperToInternalStorage(context, uri)
                 }
-                if (!isWithinLimit) {
+                if (internalUri == null) {
                     android.widget.Toast.makeText(
                         context,
-                        "Wallpaper must be an image no larger than 10 MB.",
+                        "Wallpaper couldn't be read. Choose a valid image no larger than 10 MB.",
                         android.widget.Toast.LENGTH_LONG
                     ).show()
                     return@launch
                 }
+
                 val previousUri = preferences.wallpaperUri?.let(Uri::parse)
-                runCatching {
-                    context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }
-                updatePreferences(preferences.copy(wallpaperMode = "image", wallpaperUri = uri.toString()))
-                if (previousUri != null && previousUri != uri) {
+                updatePreferences(
+                    preferences.copy(wallpaperMode = "image", wallpaperUri = internalUri.toString())
+                )
+                deleteOldInternalWallpapers(context, internalUri)
+                if (previousUri != null && previousUri.scheme == "content") {
                     runCatching {
                         context.contentResolver.releasePersistableUriPermission(
                             previousUri,
@@ -462,25 +497,56 @@ internal fun DislauncherRoot() {
         value = null
         val savedUri = preferences.wallpaperUri?.let(Uri::parse)
         if (!launcherStarted || savedUri == null) return@produceState
+
         val decoded = withContext(Dispatchers.IO) {
             runCatching { decodeWallpaperForScreen(context, savedUri) }.getOrNull()
         }
         value = decoded
-        // Never leave a bad wallpaper URI saved: otherwise every launcher restart could
-        // decode the same problematic image again and repeatedly crash or exhaust memory.
+
         if (decoded == null && preferences.wallpaperUri == savedUri.toString()) {
-            updatePreferences(LauncherPreferences.load(prefsStore).copy(wallpaperMode = "default", wallpaperUri = null))
-            runCatching {
-                context.contentResolver.releasePersistableUriPermission(
-                    savedUri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
+            // A failed legacy/provider URI must not leave the launcher stuck on a blank image.
+            updatePreferences(
+                LauncherPreferences.load(prefsStore).copy(wallpaperMode = "default", wallpaperUri = null)
+            )
+            if (savedUri.scheme == "content") {
+                runCatching {
+                    context.contentResolver.releasePersistableUriPermission(
+                        savedUri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                }
             }
             android.widget.Toast.makeText(
                 context,
-                "Wallpaper couldn't be loaded safely. The default wallpaper has been restored.",
+                "Wallpaper couldn't be loaded. The default background has been restored.",
                 android.widget.Toast.LENGTH_LONG
             ).show()
+        } else if (
+            decoded != null &&
+            savedUri.scheme != "file" &&
+            preferences.wallpaperUri == savedUri.toString()
+        ) {
+            // Migrate wallpapers selected by older app versions to private storage.
+            val internalUri = withContext(Dispatchers.IO) {
+                copyWallpaperToInternalStorage(context, savedUri)
+            }
+            if (internalUri != null && preferences.wallpaperUri == savedUri.toString()) {
+                updatePreferences(
+                    LauncherPreferences.load(prefsStore).copy(
+                        wallpaperMode = "image",
+                        wallpaperUri = internalUri.toString()
+                    )
+                )
+                deleteOldInternalWallpapers(context, internalUri)
+                if (savedUri.scheme == "content") {
+                    runCatching {
+                        context.contentResolver.releasePersistableUriPermission(
+                            savedUri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        )
+                    }
+                }
+            }
         }
     }
 
