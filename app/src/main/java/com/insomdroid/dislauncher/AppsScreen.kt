@@ -124,10 +124,10 @@ internal fun AppsScreen(
     val searchColor = if (searchFocused || query.isNotEmpty()) mainText else secondary.copy(alpha = 0.65f)
     val alphabetLetters = remember { ('A'..'Z').map(Char::toString) + "#" }
     var scrubberProgress by remember { mutableStateOf<Float?>(null) }
-    val firstIndexByLetter = remember(filtered, filteredBuiltIns) {
+    val firstIndexByLetter = remember(filtered, filteredBuiltIns, preferences.showBuiltInApps, searching) {
         val result = linkedMapOf<String, Int>()
-        // Built-in tools occupy one horizontal row in the first list item.
-        val installedAppsOffset = if (filteredBuiltIns.isNotEmpty()) 1 else 0
+        // Built-in tools and Settings occupy one horizontal row in the first list item.
+        val installedAppsOffset = if (filteredBuiltIns.isNotEmpty() || (preferences.showBuiltInApps && !searching)) 1 else 0
         filtered.forEachIndexed { index, app ->
             val letter = app.label.firstOrNull()?.uppercaseChar()?.toString()
                 ?.takeIf { it in alphabetLetters } ?: "#"
@@ -185,7 +185,7 @@ internal fun AppsScreen(
                         )
                     }
                 }
-                if (filteredBuiltIns.isNotEmpty()) {
+                if (filteredBuiltIns.isNotEmpty() || (preferences.showBuiltInApps && !searching)) {
                     item(key = "built-in-apps-row") {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 12.dp),
@@ -227,6 +227,36 @@ internal fun AppsScreen(
                                     )
                                 }
                             }
+                            if (!searching && preferences.showBuiltInApps) {
+                                Column(
+                                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(14.dp))
+                                        .clickable(onClick = onOpenSettings).padding(vertical = 8.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier.size(36.dp).clip(CircleShape)
+                                            .background(if (isDark) androidx.compose.ui.graphics.Color(0xFF292929) else androidx.compose.ui.graphics.Color(0xFFEAEAEA)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.SettingsIcon,
+                                            contentDescription = "Dislauncher Settings",
+                                            tint = if (isDark) androidx.compose.ui.graphics.Color(0xFFE6E6E6) else androidx.compose.ui.graphics.Color(0xFF444444),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Text(
+                                        "Settings",
+                                        color = secondary.copy(alpha = 0.9f),
+                                        fontSize = 11.sp,
+                                        lineHeight = 13.sp,
+                                        fontFamily = fontFamily,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -256,31 +286,6 @@ internal fun AppsScreen(
                     }
                 }
 
-                if (!searching) item(key = "dislauncher-settings") {
-                    Row(
-                        modifier = Modifier.fillMaxWidth()
-                            .clickable(onClick = onOpenSettings)
-                            .padding(vertical = 10.dp, horizontal = 0.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.SettingsIcon,
-                            contentDescription = "Settings",
-                            tint = mainText,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(Modifier.width(9.dp))
-                        Text(
-                            "Dislauncher Settings",
-                            color = mainText,
-                            fontSize = 20.sp,
-                            lineHeight = 26.sp,
-                            fontFamily = fontFamily,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
             }
             if (preferences.showAlphabetIndex && !searching && filtered.isNotEmpty()) {
                 BoxWithConstraints(
