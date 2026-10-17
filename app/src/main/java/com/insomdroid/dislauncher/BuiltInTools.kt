@@ -189,7 +189,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     LaunchedEffect(tool) { visible = true }
     LaunchedEffect(closing) {
         if (closing) {
-            delay(240)
+            delay(220)
             onBack()
         }
     }
@@ -204,10 +204,8 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     MaterialTheme(colorScheme = monoScheme) {
         AnimatedVisibility(
             visible = visible,
-            enter = fadeIn(animationSpec = tween(260)) +
-                scaleIn(initialScale = 0.88f, animationSpec = tween(260)),
-            exit = fadeOut(animationSpec = tween(220)) +
-                scaleOut(targetScale = 0.92f, animationSpec = tween(220))
+            enter = fadeIn() + scaleIn(initialScale = 0.68f),
+            exit = fadeOut() + scaleOut(targetScale = 0.68f)
         ) {
             Scaffold(
                 containerColor = MaterialTheme.colorScheme.background,
