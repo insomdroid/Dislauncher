@@ -195,7 +195,9 @@ internal fun AppsScreen(
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 12.dp),
                             horizontalArrangement = Arrangement.spacedBy(18.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            // Align each item's fixed 36.dp icon area to the same top edge.
+                            // The two-line Settings label must not lift its icon above the others.
+                            verticalAlignment = Alignment.Top
                         ) {
                             filteredBuiltIns.forEach { app ->
                                 val toolIcon = when (app.packageName) {
