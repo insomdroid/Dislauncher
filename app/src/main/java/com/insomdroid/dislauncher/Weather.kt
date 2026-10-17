@@ -15,8 +15,6 @@ import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
-import java.time.LocalDateTime
-import java.time.LocalTime
 import java.util.Locale
 import kotlin.math.roundToInt
 import kotlin.coroutines.resume
@@ -155,7 +153,7 @@ internal suspend fun fetchWeather(context: Context, unit: String): WeatherInfo? 
                 "&longitude=${location.longitude}" +
                 "&current=temperature_2m,apparent_temperature,weather_code" +
                 "&daily=temperature_2m_max,temperature_2m_min&forecast_days=1" +
-                "&temperature_unit=$temperatureUnit&wind_speed_unit=kmh&timezone=auto"
+                "&temperature_unit=$temperatureUnit&timezone=auto"
         )
         val connection = (url.openConnection() as HttpURLConnection).apply {
             connectTimeout = 8000

@@ -429,7 +429,7 @@ private fun CalculatorTool(modifier: Modifier = Modifier) {
                                         formatCalculation(ExpressionParser(expression).parse())
                                     }.getOrElse { "Invalid expression" }
                                     "%" -> {
-                                        if (expression.lastOrNull()?.isDigit() == true) {
+                                        if (expression.lastOrNull()?.let { it.isDigit() || it == ')' } == true) {
                                             expression = applyCalculatorPercentage(expression)
                                         }
                                         result = ""
@@ -479,27 +479,33 @@ private fun CalculatorTool(modifier: Modifier = Modifier) {
 
 private fun applyCalculatorPercentage(expression: String): String {
     var depth = 0
-    var lastAddSubtract = -1
+    var lastOperator = -1
     for (index in expression.indices) {
         when (expression[index]) {
             '(' -> depth++
             ')' -> depth--
-            '+', '-' -> {
+            '+', '-', '*', '/' -> {
                 val previous = expression.getOrNull(index - 1)
                 if (
                     depth == 0 && index > 0 &&
                     previous != null && previous !in charArrayOf('+', '-', '*', '/', '(')
                 ) {
-                    lastAddSubtract = index
+                    lastOperator = index
                 }
             }
         }
     }
-    if (lastAddSubtract <= 0) return "($expression)/100"
-    val left = expression.substring(0, lastAddSubtract)
-    val operator = expression[lastAddSubtract]
-    val right = expression.substring(lastAddSubtract + 1)
-    return "$left$operator(($left)*($right)/100)"
+
+    if (lastOperator <= 0) return "($expression)/100"
+    val left = expression.substring(0, lastOperator)
+    val operator = expression[lastOperator]
+    val right = expression.substring(lastOperator + 1)
+    return when (operator) {
+        '+', '-' -> "$left$operator(($left)*($right)/100)"
+        '*' -> "$left*(($right)/100)"
+        '/' -> "$left/(($right)/100)"
+        else -> "($expression)/100"
+    }
 }
 
 private fun formatCalculation(value: Double): String =
