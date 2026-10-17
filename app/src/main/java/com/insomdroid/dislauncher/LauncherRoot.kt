@@ -2,6 +2,7 @@ package com.insomdroid.dislauncher
 
 import android.app.Activity
 import android.app.admin.DevicePolicyManager
+import android.app.WallpaperManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -472,6 +473,42 @@ internal fun DislauncherRoot() {
                 onPreferencesChange = ::updatePreferences,
                 onChooseCustomFont = { customFontPicker.launch(arrayOf("*/*")) },
                 onChooseWallpaper = { wallpaperPicker.launch(arrayOf("image/*")) },
+                onApplyWallpaperToSystem = {
+                    val selectedWallpaper = preferences.wallpaperUri?.let(Uri::parse)
+                    if (selectedWallpaper == null) {
+                        android.widget.Toast.makeText(
+                            context,
+                            "Choose a custom wallpaper first.",
+                            android.widget.Toast.LENGTH_LONG
+                        ).show()
+                    } else {
+                        scope.launch {
+                            val applied = withContext(Dispatchers.IO) {
+                                runCatching {
+                                    val stream = context.contentResolver.openInputStream(selectedWallpaper)
+                                        ?: error("Unable to open the selected wallpaper.")
+                                    stream.use {
+                                        WallpaperManager.getInstance(context).setStream(
+                                            it,
+                                            null,
+                                            true,
+                                            WallpaperManager.FLAG_SYSTEM or WallpaperManager.FLAG_LOCK
+                                        )
+                                    }
+                                }.isSuccess
+                            }
+                            android.widget.Toast.makeText(
+                                context,
+                                if (applied) {
+                                    "Wallpaper applied to the device Home screen and lock screen."
+                                } else {
+                                    "Unable to apply the wallpaper. Please try another image."
+                                },
+                                android.widget.Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
+                },
                 onDoubleTapLockChange = ::changeDoubleTapLock,
                 onToggleFavorite = ::toggleFavorite,
                 onToggleHidden = ::toggleHidden,
