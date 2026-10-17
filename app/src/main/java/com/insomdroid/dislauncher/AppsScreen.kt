@@ -73,6 +73,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -181,7 +182,7 @@ internal fun AppsScreen(
                 verticalArrangement = if (searching) Arrangement.Bottom else Arrangement.Top
             ) {
                 if (filtered.isEmpty() && filteredBuiltIns.isEmpty()) {
-                    item(key = "empty-app-list") {
+                    item(key = "empty-app-list", contentType = { "empty-state" }) {
                         Text(
                             if (apps.isEmpty()) "Loading apps…" else "No matching apps",
                             color = secondary,
@@ -191,7 +192,7 @@ internal fun AppsScreen(
                     }
                 }
                 if (filteredBuiltIns.isNotEmpty() || (preferences.showBuiltInApps && !searching)) {
-                    item(key = "built-in-apps-row") {
+                    item(key = "built-in-apps-row", contentType = { "built-in-apps" }) {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 12.dp),
                             horizontalArrangement = Arrangement.spacedBy(18.dp),
@@ -268,7 +269,7 @@ internal fun AppsScreen(
                         }
                     }
                 }
-                items(filtered, key = { it.packageName }) { app ->
+                items(filtered, key = { it.packageName }, contentType = { "app-row" }) { app ->
                     Row(
                         modifier = Modifier.fillMaxWidth().combinedClickable(
                             onClick = { onLaunch(app) },
@@ -341,7 +342,7 @@ internal fun AppsScreen(
                             ) {
                                 Box(
                                     modifier = Modifier.width(24.dp).fillMaxHeight()
-                                        .offset(x = -animatedOffset)
+                                        .offset { IntOffset(x = -animatedOffset.roundToPx(), y = 0) }
                                         .clickable(enabled = letter in firstIndexByLetter) {
                                             scrollToLetter(letter)
                                         },
@@ -416,11 +417,14 @@ internal fun AppsScreen(
                     val popupHorizontalOffset = if (scrubberProgress != null) maxBellOffset else 0.dp
                     androidx.compose.animation.AnimatedVisibility(
                         visible = scrubberProgress != null,
-                        modifier = Modifier.align(Alignment.TopStart).offset(
-                            x = maxWidth - 80.dp - popupHorizontalOffset,
-                            y = (maxHeight * animatedProgress - 25.dp)
-                                .coerceIn(0.dp, (maxHeight - 50.dp).coerceAtLeast(0.dp))
-                        ),
+                        modifier = Modifier.align(Alignment.TopStart).offset {
+                            IntOffset(
+                                x = (maxWidth - 80.dp - popupHorizontalOffset).roundToPx(),
+                                y = (maxHeight * animatedProgress - 25.dp)
+                                    .coerceIn(0.dp, (maxHeight - 50.dp).coerceAtLeast(0.dp))
+                                    .roundToPx()
+                            )
+                        },
                         enter = androidx.compose.animation.fadeIn() +
                             androidx.compose.animation.scaleIn(initialScale = 0.68f),
                         exit = androidx.compose.animation.fadeOut() +
