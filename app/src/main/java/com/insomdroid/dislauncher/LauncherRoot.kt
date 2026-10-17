@@ -4,8 +4,10 @@ import android.app.Activity
 import android.app.admin.DevicePolicyManager
 import android.app.WallpaperManager
 import android.content.ComponentName
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
 import android.graphics.BitmapFactory
 import androidx.activity.compose.BackHandler
@@ -42,13 +44,13 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -360,19 +362,38 @@ internal fun DislauncherRoot() {
         }
     }
 
-    DisposableEffect(lifecycleOwner, context, appNameOverrides) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                scope.launch {
-                    val refreshed = withContext(Dispatchers.IO) { loadLauncherApps(context) }.map { app ->
+    DisposableEffect(context, appNameOverrides) {
+        // Refresh only when the installed launcher-app set changes. Re-scanning all
+        // launcher activities on every ON_RESUME caused unnecessary work on app return.
+        var refreshJob: Job? = null
+        val packageFilter = IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGE_ADDED)
+            addAction(Intent.ACTION_PACKAGE_REMOVED)
+            addAction(Intent.ACTION_PACKAGE_CHANGED)
+            addAction(Intent.ACTION_PACKAGE_REPLACED)
+            addDataScheme("package")
+        }
+        val packageReceiver = object : BroadcastReceiver() {
+            override fun onReceive(receiverContext: Context?, intent: Intent?) {
+                refreshJob?.cancel()
+                refreshJob = scope.launch {
+                    // Package installs can emit multiple related broadcasts in quick succession.
+                    delay(150L)
+                    val refreshed = withContext(Dispatchers.IO) {
+                        loadLauncherApps(context)
+                    }.map { app ->
                         appNameOverrides[app.packageName]?.let { app.copy(label = it) } ?: app
                     }
-                    apps = refreshed
+                    // Preserve the current list instance when the visible app data is unchanged.
+                    if (apps != refreshed) apps = refreshed
                 }
             }
         }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+        context.registerReceiver(packageReceiver, packageFilter, Context.RECEIVER_NOT_EXPORTED)
+        onDispose {
+            refreshJob?.cancel()
+            context.unregisterReceiver(packageReceiver)
+        }
     }
 
     LaunchedEffect(pagerState.settledPage) {
