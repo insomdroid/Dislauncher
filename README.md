@@ -27,7 +27,8 @@ A minimalist, text-first Android launcher for a calmer Home screen. Keep the ess
 ### Personalization
 - Choose System, Light, Dark, or pure-black themes.
 - Use Android dynamic colors for accents where supported.
-- Choose the system font, monospace, or import a custom TTF/OTF font.
+- Choose the Android system font, Dislauncher’s bundled Plus Jakarta Sans, or import a custom TTF/OTF font.
+- Plus Jakarta Sans is bundled in the app, so it works offline and does not need to be downloaded during the build.
 - Adjust font size and show or hide app icons.
 - Customize icon shapes when built-in icons are enabled.
 - Toggle Home elements, the status bar, and app drawer search independently.
@@ -40,6 +41,10 @@ A minimalist, text-first Android launcher for a calmer Home screen. Keep the ess
 - **Your layout, your rules:** organize favourites and adjust text, icons, colors, and gestures.
 - **A focused app list:** find apps quickly and hide the ones you do not want in view.
 - **No unnecessary complexity:** everyday launcher actions stay straightforward.
+
+## Bundled font and license
+
+Dislauncher includes Plus Jakarta Sans by Tokotype, with Regular, Medium, and SemiBold weights bundled directly in the repository and APK. The font is distributed under the SIL Open Font License 1.1; its license is included in `app/src/main/assets/licenses/PLUS_JAKARTA_SANS_OFL.txt`. Upstream source: [tokotype/PlusJakartaSans](https://github.com/tokotype/PlusJakartaSans).
 
 ## Permissions and special access
 

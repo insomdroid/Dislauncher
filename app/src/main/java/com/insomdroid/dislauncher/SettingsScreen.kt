@@ -313,7 +313,7 @@ internal fun SettingsScreen(
                                 preferences.fontMode,
                                 listOf(
                                     "system" to tr("System", "Sistem"),
-                                    "mono" to "Monospace",
+                                    "dislauncher" to "Dislauncher",
                                     "custom" to tr("Custom", "Kustom")
                                 )
                             ) { value ->
