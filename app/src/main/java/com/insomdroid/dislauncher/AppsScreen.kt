@@ -97,7 +97,11 @@ internal fun AppsScreen(
     onRenameApp: (String, String) -> Unit,
     onOpenSettings: () -> Unit
 ) {
-    val background = if (preferences.wallpaperMode == "image") androidx.compose.ui.graphics.Color.Transparent else MaterialTheme.colorScheme.background
+    val background = if (preferences.wallpaperMode == "image") {
+        MaterialTheme.colorScheme.background.copy(
+            alpha = preferences.appDrawerWallpaperTransparency.coerceIn(0, 100) / 100f
+        )
+    } else MaterialTheme.colorScheme.background
     val mainText = MaterialTheme.colorScheme.onBackground
     val secondary = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.62f)
     val searching = query.isNotBlank()
