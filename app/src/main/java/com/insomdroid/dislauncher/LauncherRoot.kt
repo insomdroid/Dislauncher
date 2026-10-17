@@ -142,7 +142,6 @@ internal fun DislauncherRoot() {
     var favoriteOrder by remember { mutableStateOf(readFavoriteOrder(prefsStore, favorites)) }
     var apps by remember { mutableStateOf<List<LauncherApp>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
-    var builtInReturnScreen by remember { mutableStateOf(LauncherScreen.APPS) }
     var screen by remember {
         mutableStateOf(
             if (prefsStore.getBoolean("onboarding_completed", false)) {
@@ -388,14 +387,11 @@ internal fun DislauncherRoot() {
 
     BackHandler(
         enabled = screen == LauncherScreen.SETTINGS || screen == LauncherScreen.WEATHER ||
-            screen == LauncherScreen.NOTES || screen == LauncherScreen.CALCULATOR ||
-            screen == LauncherScreen.CALENDAR || pagerState.settledPage == 1
+            pagerState.settledPage == 1
     ) {
         when (screen) {
             LauncherScreen.SETTINGS, LauncherScreen.WEATHER ->
                 screen = LauncherScreen.HOME
-            LauncherScreen.NOTES, LauncherScreen.CALCULATOR, LauncherScreen.CALENDAR ->
-                screen = builtInReturnScreen
             LauncherScreen.APPS -> scope.launch { pagerState.animateScrollToPage(0) }
             else -> Unit
         }
