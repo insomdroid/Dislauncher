@@ -25,10 +25,10 @@
 - Kept the official Compose BOM, AndroidX dependencies used by the app, and bundled font/license files.
 - Kept R8 minification and resource shrinking enabled. The app uses the default optimized Android ProGuard configuration and has no custom keep-rule file to prune.
 
-## Build workflow update
+## Build workflow decision
 
-The APK workflow now runs `lintRelease`, `testReleaseUnitTest`, and `assembleRelease` before verifying and uploading the APK. At this audit date, the repository contains no unit-test source set, so the unit-test task is a future safety net rather than evidence of existing test coverage. Lint and successful APK assembly still do not replace testing on a physical device.
+The default APK workflow intentionally remains lean and runs `gradle assembleRelease`, verifies the APK exists, then uploads it. `lintRelease` and `testReleaseUnitTest` were considered but not retained because they add CI work, and this repository does not currently have a unit-test source set. They can be added later when the project has targeted tests or a demonstrated need for lint to gate each build. A successful APK assembly does not replace manual/device testing.
 
 ## Reference basis
 
-The workflow takes applicable guidance from the official [Android Skills repository](https://github.com/android/skills), especially [R8 analyzer](https://github.com/android/skills/tree/main/performance/r8-analyzer) for release shrinking/keep-rule review and [testing setup](https://github.com/android/skills/tree/main/testing/testing-setup) for checking test infrastructure. The project keeps its known-compatible AGP/Gradle/JDK versions instead of coupling this cleanup to a separate major toolchain migration.
+The review used applicable guidance from the official [Android Skills repository](https://github.com/android/skills), especially [R8 analyzer](https://github.com/android/skills/tree/main/performance/r8-analyzer) for release shrinking/keep-rule review and [testing setup](https://github.com/android/skills/tree/main/testing/testing-setup) for checking test infrastructure. The project keeps its known-compatible AGP/Gradle/JDK versions instead of coupling this cleanup to a separate major toolchain migration.
