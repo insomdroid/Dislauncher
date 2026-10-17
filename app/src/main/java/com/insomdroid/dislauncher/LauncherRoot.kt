@@ -66,10 +66,6 @@ private const val MAX_CUSTOM_WALLPAPER_SOURCE_PIXELS = 250_000_000L
 private const val MAX_CUSTOM_WALLPAPER_DECODED_PIXELS = 3_000_000L
 
 /**
- * Decode custom wallpapers at a bounded size. Compressed file size is not a reliable
- * estimate of bitmap memory use, so inspect dimensions before decoding the pixels.
- */
-/**
  * Keep a private copy of a selected wallpaper so it remains readable after reboot,
  * even when the document provider does not retain its URI permission.
  */
@@ -97,9 +93,7 @@ private fun copyWallpaperToInternalStorage(context: Context, sourceUri: Uri): Ur
         if (totalBytes <= 0L) return null
 
         // Validate that this is a decodable image before replacing the active selection.
-        val validated = decodeWallpaperForScreen(context, Uri.fromFile(temporaryFile))
-            ?: return null
-        // The decoded bitmap is only for validation; the UI decodes the stored copy on demand.
+        if (decodeWallpaperForScreen(context, Uri.fromFile(temporaryFile)) == null) return null
         val target = File(directory, "custom-wallpaper-${System.currentTimeMillis()}.img")
         if (!temporaryFile.renameTo(target)) return null
         return Uri.fromFile(target)
@@ -546,6 +540,19 @@ internal fun DislauncherRoot() {
                         )
                     }
                 }
+            } else if (preferences.wallpaperUri == savedUri.toString()) {
+                // Do not keep a provider-only URI that could fail again after reboot.
+                updatePreferences(
+                    LauncherPreferences.load(prefsStore).copy(
+                        wallpaperMode = "default",
+                        wallpaperUri = null
+                    )
+                )
+                android.widget.Toast.makeText(
+                    context,
+                    "Wallpaper couldn't be saved for reliable loading. The default background has been restored.",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
             }
         }
     }
