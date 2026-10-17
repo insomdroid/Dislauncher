@@ -10,12 +10,6 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -82,7 +76,6 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.UUID
-import kotlinx.coroutines.delay
 
 internal enum class BuiltInTool { NOTES, CALCULATOR, CALENDAR }
 
@@ -177,23 +170,8 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     val monoScheme = remember(baseScheme) { builtInToolScheme(baseScheme) }
     var notesEditing by remember { mutableStateOf(false) }
     var notesBackSignal by remember { mutableStateOf(0) }
-    var visible by remember(tool) { mutableStateOf(false) }
-    var closing by remember(tool) { mutableStateOf(false) }
-
-    fun requestClose() {
-        if (!closing) {
-            closing = true
-            visible = false
-        }
-    }
-    LaunchedEffect(tool) { visible = true }
-    LaunchedEffect(closing) {
-        if (closing) {
-            delay(220)
-            onBack()
-        }
-    }
-    BackHandler(enabled = (tool != BuiltInTool.NOTES || !notesEditing) && !closing) {
+    fun requestClose() = onBack()
+    BackHandler(enabled = tool != BuiltInTool.NOTES || !notesEditing) {
         requestClose()
     }
     val title = when (tool) {
@@ -202,12 +180,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
         BuiltInTool.CALENDAR -> "Calendar"
     }
     MaterialTheme(colorScheme = monoScheme) {
-        AnimatedVisibility(
-            visible = visible,
-            enter = fadeIn() + scaleIn(initialScale = 0.68f),
-            exit = fadeOut() + scaleOut(targetScale = 0.68f)
-        ) {
-            Scaffold(
+        Scaffold(
                 containerColor = MaterialTheme.colorScheme.background,
                 topBar = {
                     TopAppBar(
@@ -237,7 +210,6 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                     }
                 }
             }
-        }
     }
 }
 
