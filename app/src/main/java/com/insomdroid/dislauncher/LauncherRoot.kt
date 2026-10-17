@@ -495,15 +495,6 @@ internal fun DislauncherRoot() {
                 },
                 onBack = { screen = LauncherScreen.HOME }
             )
-        } else if (screen == LauncherScreen.NOTES || screen == LauncherScreen.CALCULATOR || screen == LauncherScreen.CALENDAR) {
-            BuiltInToolScreen(
-                tool = when (screen) {
-                    LauncherScreen.NOTES -> BuiltInTool.NOTES
-                    LauncherScreen.CALCULATOR -> BuiltInTool.CALCULATOR
-                    else -> BuiltInTool.CALENDAR
-                },
-                onBack = { screen = builtInReturnScreen }
-            )
         } else {
             val notificationsGestureEnabled =
                 screen == LauncherScreen.HOME && pagerState.currentPage == 0 && preferences.swipeDownNotifications
@@ -604,9 +595,9 @@ internal fun DislauncherRoot() {
                             fontFamily = fontFamily,
                             onLaunch = { app ->
                                 when (app.packageName) {
-                                    "internal:notes" -> { builtInReturnScreen = LauncherScreen.APPS; screen = LauncherScreen.NOTES }
-                                    "internal:calculator" -> { builtInReturnScreen = LauncherScreen.APPS; screen = LauncherScreen.CALCULATOR }
-                                    "internal:calendar" -> { builtInReturnScreen = LauncherScreen.APPS; screen = LauncherScreen.CALENDAR }
+                                    "internal:notes" -> launchBuiltInTool(context, BuiltInTool.NOTES)
+                                    "internal:calculator" -> launchBuiltInTool(context, BuiltInTool.CALCULATOR)
+                                    "internal:calendar" -> launchBuiltInTool(context, BuiltInTool.CALENDAR)
                                     else -> launchApp(context, app)
                                 }
                             },
