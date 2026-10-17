@@ -167,6 +167,9 @@ private fun priorityColor(priority: Int): Color = when (priority) {
     else -> Color(0xFFBEBEBE)
 }
 
+private fun builtInToolScheme(base: androidx.compose.material3.ColorScheme): androidx.compose.material3.ColorScheme = base
+
+/*
 private fun builtInMonochromeScheme(base: androidx.compose.material3.ColorScheme): androidx.compose.material3.ColorScheme {
     val dark = base.background.luminance() < 0.5f
     return if (dark) {
@@ -207,12 +210,14 @@ private fun builtInMonochromeScheme(base: androidx.compose.material3.ColorScheme
     }
 }
 
+*/
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val baseScheme = MaterialTheme.colorScheme
-    val monoScheme = remember(baseScheme) { builtInMonochromeScheme(baseScheme) }
+    val monoScheme = remember(baseScheme) { builtInToolScheme(baseScheme) }
     var notesEditing by remember { mutableStateOf(false) }
     var notesBackSignal by remember { mutableStateOf(0) }
     var visible by remember(tool) { mutableStateOf(false) }
@@ -242,10 +247,10 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     MaterialTheme(colorScheme = monoScheme) {
         AnimatedVisibility(
             visible = visible,
-            enter = fadeIn(animationSpec = tween(220)) +
-                scaleIn(initialScale = 0.92f, animationSpec = tween(220)),
-            exit = fadeOut(animationSpec = tween(180)) +
-                scaleOut(targetScale = 0.96f, animationSpec = tween(180))
+            enter = fadeIn(animationSpec = tween(260)) +
+                scaleIn(initialScale = 0.88f, animationSpec = tween(260)),
+            exit = fadeOut(animationSpec = tween(220)) +
+                scaleOut(targetScale = 0.92f, animationSpec = tween(220))
         ) {
             Scaffold(
                 containerColor = MaterialTheme.colorScheme.background,
@@ -390,7 +395,7 @@ private fun NotesTool(
                     saveNotes(context, notes)
                     openNote(note)
                 },
-                modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 24.dp),
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             ) { Icon(Icons.Outlined.NoteAdd, contentDescription = "New note") }
@@ -449,7 +454,7 @@ private fun CalculatorTool(modifier: Modifier = Modifier) {
             Row(Modifier.fillMaxWidth().height(58.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
                 rowKeys.forEach { key ->
                     if (key.isBlank()) {
-                        Spacer(Modifier.size(54.dp))
+                        Spacer(Modifier.size(50.dp))
                     } else {
                         val operator = key in listOf("÷", "×", "−", "+", "=")
                         val action: () -> Unit = {
@@ -478,12 +483,14 @@ private fun CalculatorTool(modifier: Modifier = Modifier) {
                             }
                         }
                         if (operator) {
-                            Button(onClick = action, modifier = Modifier.size(54.dp),
-                                shape = CircleShape) { Text(key, fontSize = 21.sp) }
+                            Button(onClick = action, modifier = Modifier.size(50.dp),
+                                shape = CircleShape, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+                                Text(key, fontSize = if (key.length > 1) 16.sp else 18.sp, lineHeight = 20.sp)
+                            }
                         } else {
-                            FilledTonalButton(onClick = action, modifier = Modifier.size(54.dp),
-                                shape = CircleShape) {
-                                Text(key, fontSize = if (key.length > 1) 17.sp else 20.sp)
+                            FilledTonalButton(onClick = action, modifier = Modifier.size(50.dp),
+                                shape = CircleShape, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+                                Text(key, fontSize = if (key.length > 1) 16.sp else 18.sp, lineHeight = 20.sp)
                             }
                         }
                     }
