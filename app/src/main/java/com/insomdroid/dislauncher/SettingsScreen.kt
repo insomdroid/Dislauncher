@@ -297,6 +297,14 @@ internal fun SettingsScreen(
                                     tr("Choose image", "Pilih gambar"),
                                     onChooseWallpaper
                                 )
+                                Text(
+                                    tr(
+                                        "Recommended: up to 10 MB. Larger images are resized to fit the screen; files over 100 MB or extremely high-resolution images are rejected.",
+                                        "Disarankan hingga 10 MB. Gambar lebih besar akan diperkecil sesuai layar; file di atas 100 MB atau resolusi yang terlalu tinggi akan ditolak."
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
                         SettingsGroup(tr("Font and text size", "Font dan ukuran teks")) {
