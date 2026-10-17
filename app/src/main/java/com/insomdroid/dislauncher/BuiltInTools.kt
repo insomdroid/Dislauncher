@@ -189,7 +189,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     LaunchedEffect(tool) { visible = true }
     LaunchedEffect(closing) {
         if (closing) {
-            delay(210)
+            delay(240)
             onBack()
         }
     }
