@@ -401,7 +401,7 @@ internal fun DislauncherRoot() {
         // Never leave a bad wallpaper URI saved: otherwise every launcher restart could
         // decode the same problematic image again and repeatedly crash or exhaust memory.
         if (savedUri != null && decoded == null && preferences.wallpaperUri == savedUri.toString()) {
-            updatePreferences(preferences.copy(wallpaperMode = "default", wallpaperUri = null))
+            updatePreferences(LauncherPreferences.load(prefsStore).copy(wallpaperMode = "default", wallpaperUri = null))
             android.widget.Toast.makeText(
                 context,
                 "Wallpaper couldn't be loaded safely. The default wallpaper has been restored.",
