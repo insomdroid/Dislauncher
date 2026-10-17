@@ -22,6 +22,9 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.positionChangeIgnoreConsumed
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -49,6 +53,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -110,10 +115,26 @@ private fun decodeWallpaperForScreen(
 
 @OptIn(ExperimentalTextApi::class)
 @Composable
-internal fun DislauncherRoot() {
+internal fun DislauncherRoot(returnAnimationTrigger: Int = 0) {
     val context = LocalContext.current
     val view = LocalView.current
     val baseDensity = LocalDensity.current
+    val returnAlpha = remember { Animatable(1f) }
+    val returnScale = remember { Animatable(1f) }
+    LaunchedEffect(returnAnimationTrigger) {
+        if (returnAnimationTrigger > 0) {
+            returnAlpha.snapTo(0.94f)
+            returnScale.snapTo(0.985f)
+            coroutineScope {
+                launch {
+                    returnAlpha.animateTo(1f, tween(durationMillis = 220, easing = FastOutSlowInEasing))
+                }
+                launch {
+                    returnScale.animateTo(1f, tween(durationMillis = 260, easing = FastOutSlowInEasing))
+                }
+            }
+        }
+    }
     val prefsStore = remember {
         context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
     }
@@ -615,7 +636,11 @@ internal fun DislauncherRoot() {
                 }
                 HorizontalPager(
                     state = pagerState,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().graphicsLayer {
+                        alpha = returnAlpha.value
+                        scaleX = returnScale.value
+                        scaleY = returnScale.value
+                    },
                     beyondViewportPageCount = 1,
                     pageSpacing = 0.dp
                 ) { page ->
