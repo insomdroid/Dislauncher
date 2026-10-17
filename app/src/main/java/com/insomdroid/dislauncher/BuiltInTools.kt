@@ -15,6 +15,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -366,61 +367,101 @@ private fun CalculatorTool(modifier: Modifier = Modifier) {
         listOf("(", "0", ")", "."),
         listOf("±", "00", "=", " ")
     )
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+
+    BoxWithConstraints(modifier = modifier) {
+        // Scale the circular keys with the available screen area instead of
+        // reserving oversized fixed-height rows on compact devices.
+        val keySize = minOf(
+            52.dp,
+            (maxWidth - 20.dp) / 4,
+            (maxHeight - 200.dp) / 6
+        ).coerceAtLeast(40.dp)
+
         Column(
-            modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 4.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.Bottom,
-            horizontalAlignment = Alignment.End
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text(expression.ifBlank { "0" }, style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.End, maxLines = 2)
-            if (result.isNotEmpty()) {
-                Spacer(Modifier.height(8.dp))
-                Text(result, style = MaterialTheme.typography.displaySmall,
-                    color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.End, maxLines = 1)
+            Column(
+                modifier = Modifier.weight(1f).fillMaxWidth()
+                    .padding(horizontal = 4.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.Bottom,
+                horizontalAlignment = Alignment.End
+            ) {
+                Text(
+                    expression.ifBlank { "0" },
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.End,
+                    maxLines = 2
+                )
+                if (result.isNotEmpty()) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        result,
+                        style = MaterialTheme.typography.displaySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        textAlign = TextAlign.End,
+                        maxLines = 1
+                    )
+                }
             }
-        }
-        keyRows.forEach { rowKeys ->
-            Row(Modifier.fillMaxWidth().height(58.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                rowKeys.forEach { key ->
-                    if (key.isBlank()) {
-                        Spacer(Modifier.size(50.dp))
-                    } else {
-                        val operator = key in listOf("÷", "×", "−", "+", "=")
-                        val action: () -> Unit = {
-                            when (key) {
-                                "C" -> { expression = ""; result = "" }
-                                "⌫" -> { expression = expression.dropLast(1); result = "" }
-                                "=" -> result = runCatching { formatCalculation(ExpressionParser(expression).parse()) }
-                                    .getOrElse { "Invalid expression" }
-                                "%" -> {
-                                    if (expression.lastOrNull()?.isDigit() == true) expression += "/100"
-                                    result = ""
-                                }
-                                "±" -> {
-                                    if (expression.isNotBlank()) expression = "-(" + expression + ")"
-                                    result = ""
-                                }
-                                else -> {
-                                    expression += when (key) {
-                                        "×" -> "*"
-                                        "÷" -> "/"
-                                        "−" -> "-"
-                                        else -> key
-                                    }
-                                    result = ""
-                                }
-                            }
-                        }
-                        if (operator) {
-                            Button(onClick = action, modifier = Modifier.size(50.dp),
-                                shape = CircleShape, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
-                                Text(key, fontSize = if (key.length > 1) 16.sp else 18.sp, lineHeight = 20.sp)
-                            }
+
+            keyRows.forEach { rowKeys ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().height(keySize + 8.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    rowKeys.forEach { key ->
+                        if (key.isBlank()) {
+                            Spacer(Modifier.size(keySize))
                         } else {
-                            FilledTonalButton(onClick = action, modifier = Modifier.size(50.dp),
-                                shape = CircleShape, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
-                                Text(key, fontSize = if (key.length > 1) 16.sp else 18.sp, lineHeight = 20.sp)
+                            val operator = key in listOf("÷", "×", "−", "+", "=")
+                            val action: () -> Unit = {
+                                when (key) {
+                                    "C" -> { expression = ""; result = "" }
+                                    "⌫" -> { expression = expression.dropLast(1); result = "" }
+                                    "=" -> result = runCatching {
+                                        formatCalculation(ExpressionParser(expression).parse())
+                                    }.getOrElse { "Invalid expression" }
+                                    "%" -> {
+                                        if (expression.lastOrNull()?.isDigit() == true) expression += "/100"
+                                        result = ""
+                                    }
+                                    "±" -> {
+                                        if (expression.isNotBlank()) expression = "-(" + expression + ")"
+                                        result = ""
+                                    }
+                                    else -> {
+                                        expression += when (key) {
+                                            "×" -> "*"
+                                            "÷" -> "/"
+                                            "−" -> "-"
+                                            else -> key
+                                        }
+                                        result = ""
+                                    }
+                                }
+                            }
+                            val labelSize = (keySize.value / 2.8f).coerceIn(14f, 18f).sp
+                            if (operator) {
+                                Button(
+                                    onClick = action,
+                                    modifier = Modifier.size(keySize),
+                                    shape = CircleShape,
+                                    contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
+                                ) {
+                                    Text(key, fontSize = labelSize, lineHeight = labelSize)
+                                }
+                            } else {
+                                FilledTonalButton(
+                                    onClick = action,
+                                    modifier = Modifier.size(keySize),
+                                    shape = CircleShape,
+                                    contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
+                                ) {
+                                    Text(key, fontSize = labelSize, lineHeight = labelSize)
+                                }
                             }
                         }
                     }
