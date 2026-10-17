@@ -72,6 +72,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -256,6 +257,7 @@ internal fun AppsScreen(
                                         fontSize = 11.sp,
                                         lineHeight = 13.sp,
                                         fontFamily = fontFamily,
+                                        textAlign = TextAlign.Center,
                                         maxLines = 2,
                                         overflow = TextOverflow.Ellipsis
                                     )
