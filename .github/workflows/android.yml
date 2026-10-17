@@ -31,8 +31,8 @@ jobs:
         with:
           gradle-version: "8.13"
 
-      - name: Build release APK (debug-signed for CI)
-        run: gradle assembleRelease
+      - name: Run Android lint, unit tests, and build release APK
+        run: gradle lintRelease testReleaseUnitTest assembleRelease
 
       - name: Verify APK output
         run: |

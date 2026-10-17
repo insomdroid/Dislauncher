@@ -1,0 +1,34 @@
+# Dislauncher dead-code and duplication audit
+
+**Date:** 2026-10-17  
+**Branch reviewed:** `main`  
+**Reviewed head:** `9fbb9d19e0a51e66f771603c30ec50f8e0479441`
+
+## Scope
+
+- All 24 Kotlin source files under `app/src/main/java/com/insomdroid/dislauncher/`.
+- `AndroidManifest.xml`, all XML resource declarations, adaptive icon descriptors, bundled font resources, and the bundled font license.
+- Root/module Gradle Kotlin DSL files, `gradle.properties`, `settings.gradle.kts`, and the existing APK workflow.
+- Existing release minification and resource-shrinking configuration.
+
+## Method and decisions
+
+- Checked imports and declarations for unused references, then checked screen/root APIs and Android components across files before treating a low local reference count as dead code.
+- Checked manifest component names and resource references against the current tree.
+- Compared the adaptive icon descriptors and retained both `ic_launcher.xml` and `ic_launcher_round.xml`: their XML content is the same, but AndroidManifest.xml names both resources through `android:icon` and `android:roundIcon`. The foreground and monochrome drawable files remain separate resources.
+- Retained Compose `getValue`/`setValue` operator imports. Their names are consumed implicitly by delegated Compose state properties (the `by` syntax), so a plain text reference-count check is not sufficient grounds to delete them.
+- No Kotlin implementation or resource file was deleted based only on a low reference count; no safely removable duplicated Kotlin implementation was confirmed in this pass.
+
+## Confirmed cleanup
+
+- Removed `debugImplementation("androidx.compose.ui:ui-tooling")`: the current source tree has no `@Preview`, `PreviewParameter`, or `ui.tooling` references, and the dependency is not needed by the release APK.
+- Kept the official Compose BOM, AndroidX dependencies used by the app, and bundled font/license files.
+- Kept R8 minification and resource shrinking enabled. The app uses the default optimized Android ProGuard configuration and has no custom keep-rule file to prune.
+
+## Build workflow update
+
+The APK workflow now runs `lintRelease`, `testReleaseUnitTest`, and `assembleRelease` before verifying and uploading the APK. At this audit date, the repository contains no unit-test source set, so the unit-test task is a future safety net rather than evidence of existing test coverage. Lint and successful APK assembly still do not replace testing on a physical device.
+
+## Reference basis
+
+The workflow takes applicable guidance from the official [Android Skills repository](https://github.com/android/skills), especially [R8 analyzer](https://github.com/android/skills/tree/main/performance/r8-analyzer) for release shrinking/keep-rule review and [testing setup](https://github.com/android/skills/tree/main/testing/testing-setup) for checking test infrastructure. The project keeps its known-compatible AGP/Gradle/JDK versions instead of coupling this cleanup to a separate major toolchain migration.
