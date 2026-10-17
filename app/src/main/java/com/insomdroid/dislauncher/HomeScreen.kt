@@ -95,8 +95,8 @@ internal fun HomeScreen(
         mutableStateOf(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
     }
     var now by remember { mutableStateOf(LocalTime.now()) }
-    var batteryPercent by remember { mutableStateOf(readBatteryPercent(context)) }
-    var batteryCharging by remember { mutableStateOf(readBatteryCharging(context)) }
+    var batteryPercent by remember { mutableStateOf<Int?>(null) }
+    var batteryCharging by remember { mutableStateOf(false) }
     var weatherInfo by remember { mutableStateOf(cachedWeather) }
     var weatherStatus by remember { mutableStateOf("Tap to allow location") }
     val today = LocalDate.now()
@@ -119,18 +119,25 @@ internal fun HomeScreen(
     var draggingMainItem by remember { mutableStateOf<String?>(null) }
     var dragDistance by remember { mutableFloatStateOf(0f) }
 
-    LaunchedEffect(isActive, hostResumed) {
+    LaunchedEffect(isActive, hostResumed, preferences.showBattery) {
         if (!isActive || !hostResumed) return@LaunchedEffect
 
         now = LocalTime.now()
-        batteryPercent = readBatteryPercent(context)
-        batteryCharging = readBatteryCharging(context)
+        if (preferences.showBattery) {
+            batteryPercent = readBatteryPercent(context)
+            batteryCharging = readBatteryCharging(context)
+        } else {
+            batteryPercent = null
+            batteryCharging = false
+        }
 
         while (true) {
             delay(60_000L)
             now = LocalTime.now()
-            batteryPercent = readBatteryPercent(context)
-            batteryCharging = readBatteryCharging(context)
+            if (preferences.showBattery) {
+                batteryPercent = readBatteryPercent(context)
+                batteryCharging = readBatteryCharging(context)
+            }
         }
     }
 
