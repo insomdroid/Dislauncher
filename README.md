@@ -23,6 +23,8 @@ A minimalist, text-first Android launcher for a calmer Home screen. Keep the ess
 - Long-press an app to rename it, add or remove it from favourites, hide it, open app info, or request uninstall.
 - Hide individual apps or system apps.
 - Use compatible installed icon packs or keep system icons.
+- Keep Built-in Apps and the Settings shortcut together in the drawer, or hide both by disabling Built-in Apps.
+- Adjust custom wallpaper transparency in the app drawer independently from Home.
 
 ### Personalization
 - Choose System, Light, Dark, or pure-black themes.
@@ -31,6 +33,7 @@ A minimalist, text-first Android launcher for a calmer Home screen. Keep the ess
 - Plus Jakarta Sans is bundled in the app, so it works offline and does not need to be downloaded during the build.
 - Adjust font size and show or hide app icons.
 - Customize icon shapes when built-in icons are enabled.
+- Use a custom wallpaper inside Dislauncher and optionally apply it to the device Home screen and lock screen.
 - Toggle Home elements, the status bar, and app drawer search independently.
 - Double-tap Home to lock the screen, long-press empty Home space to open Settings, or swipe down to open notifications.
 
@@ -51,6 +54,7 @@ Dislauncher includes Plus Jakarta Sans by Tokotype, with Regular, Medium, and Se
 Dislauncher only uses access needed for its listed features. Optional features can be left disabled.
 
 - **Internet** (`INTERNET`) — retrieves weather data.
+- **Set wallpaper** (`SET_WALLPAPER`) — applies a selected custom image to the device Home screen and lock screen when requested.
 - **Approximate location** (`ACCESS_COARSE_LOCATION`) — gets local weather. Precise location is not requested.
 - **Calendar** (`READ_CALENDAR`) — reads calendar events for the Home agenda.
 - **Notification access** — optional access enabled in Android Settings so the music widget can show the active track and control playback.
