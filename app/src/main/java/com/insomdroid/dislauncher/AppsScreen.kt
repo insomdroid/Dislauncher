@@ -182,7 +182,7 @@ internal fun AppsScreen(
                 verticalArrangement = if (searching) Arrangement.Bottom else Arrangement.Top
             ) {
                 if (filtered.isEmpty() && filteredBuiltIns.isEmpty()) {
-                    item(key = "empty-app-list", contentType = { "empty-state" }) {
+                    item(key = "empty-app-list", contentType = "empty-state") {
                         Text(
                             if (apps.isEmpty()) "Loading apps…" else "No matching apps",
                             color = secondary,
@@ -192,7 +192,7 @@ internal fun AppsScreen(
                     }
                 }
                 if (filteredBuiltIns.isNotEmpty() || (preferences.showBuiltInApps && !searching)) {
-                    item(key = "built-in-apps-row", contentType = { "built-in-apps" }) {
+                    item(key = "built-in-apps-row", contentType = "built-in-apps") {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 12.dp),
                             horizontalArrangement = Arrangement.spacedBy(18.dp),
