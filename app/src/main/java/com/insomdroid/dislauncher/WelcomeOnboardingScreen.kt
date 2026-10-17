@@ -14,6 +14,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -55,6 +56,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -129,14 +131,13 @@ internal fun WelcomeOnboardingScreen(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                    .background(Color.Black),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    "D",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold
+                Image(
+                    painter = painterResource(R.drawable.ic_launcher_foreground),
+                    contentDescription = "Dislauncher logo",
+                    modifier = Modifier.size(32.dp)
                 )
             }
             Spacer(Modifier.width(10.dp))
@@ -329,19 +330,27 @@ internal fun WelcomeOnboardingScreen(
                                     .width(208.dp)
                                     .height(112.dp)
                                     .clip(MaterialTheme.shapes.extraLarge)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                                    .background(if (currentPage == 0) Color.Black else MaterialTheme.colorScheme.surfaceVariant),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    illustration,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontSize = when (currentPage) {
-                                        2 -> 37.sp
-                                        3 -> 24.sp
-                                        else -> 62.sp
-                                    },
-                                    fontWeight = FontWeight.Bold
-                                )
+                                if (currentPage == 0) {
+                                    Image(
+                                        painter = painterResource(R.drawable.ic_launcher_foreground),
+                                        contentDescription = "Dislauncher app icon",
+                                        modifier = Modifier.size(96.dp)
+                                    )
+                                } else {
+                                    Text(
+                                        illustration,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = when (currentPage) {
+                                            2 -> 37.sp
+                                            3 -> 24.sp
+                                            else -> 62.sp
+                                        },
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                             Spacer(Modifier.height(22.dp))
                             Text(
