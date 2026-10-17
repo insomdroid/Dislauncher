@@ -374,6 +374,7 @@ internal fun DislauncherRoot() {
         }
         val packageReceiver = object : BroadcastReceiver() {
             override fun onReceive(receiverContext: Context?, intent: Intent?) {
+                clearAppIconBitmapCache()
                 refreshJob?.cancel()
                 refreshJob = scope.launch {
                     // Package installs can emit multiple related broadcasts in quick succession.

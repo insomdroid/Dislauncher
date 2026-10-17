@@ -7,6 +7,7 @@ import android.content.pm.ResolveInfo
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
+import android.util.LruCache
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -107,7 +108,7 @@ internal fun AppIcon(
             initialValue = null, context, app.packageName, app.activityName, iconPack
         ) {
             value = withContext(Dispatchers.IO) {
-                drawableToBitmap(resolveAppDrawable(context, app, iconPack))?.asImageBitmap()
+                loadCachedAppIconBitmap(context, app, iconPack)?.asImageBitmap()
             }
         }
         Box(
@@ -338,6 +339,35 @@ private fun componentKey(component: String?): String? {
 }
 
 private fun appKey(app: LauncherApp): String = app.packageName + "/" + app.activityName
+
+// Keep resolved icon bitmaps in a small memory cache so returning to the drawer
+// does not repeatedly resolve drawables and convert them to bitmaps.
+private const val APP_ICON_CACHE_BYTES = 4 * 1024 * 1024
+
+private val appIconBitmapCache = object : LruCache<String, Bitmap>(APP_ICON_CACHE_BYTES) {
+    override fun sizeOf(key: String, bitmap: Bitmap): Int = bitmap.byteCount
+}
+
+private fun loadCachedAppIconBitmap(
+    context: Context,
+    app: LauncherApp,
+    iconPack: String
+): Bitmap? {
+    val cacheKey = "${app.packageName}/${app.activityName}|$iconPack"
+    appIconBitmapCache.get(cacheKey)?.let { return it }
+
+    val bitmap = drawableToBitmap(resolveAppDrawable(context, app, iconPack)) ?: return null
+    synchronized(appIconBitmapCache) {
+        if (appIconBitmapCache.get(cacheKey) == null) {
+            appIconBitmapCache.put(cacheKey, bitmap)
+        }
+    }
+    return bitmap
+}
+
+internal fun clearAppIconBitmapCache() {
+    appIconBitmapCache.evictAll()
+}
 
 private fun drawableToBitmap(drawable: Drawable?): Bitmap? {
     drawable ?: return null
