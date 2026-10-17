@@ -3,6 +3,7 @@ package com.insomdroid.dislauncher
 import android.app.Activity
 import android.app.admin.DevicePolicyManager
 import android.app.WallpaperManager
+import android.os.Build
 import android.content.ComponentName
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -44,7 +45,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -112,7 +112,6 @@ private fun decodeWallpaperForScreen(
 @Composable
 internal fun DislauncherRoot() {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
     val view = LocalView.current
     val baseDensity = LocalDensity.current
     val prefsStore = remember {
@@ -389,7 +388,12 @@ internal fun DislauncherRoot() {
                 }
             }
         }
-        context.registerReceiver(packageReceiver, packageFilter, Context.RECEIVER_NOT_EXPORTED)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(packageReceiver, packageFilter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            context.registerReceiver(packageReceiver, packageFilter)
+        }
         onDispose {
             refreshJob?.cancel()
             context.unregisterReceiver(packageReceiver)
