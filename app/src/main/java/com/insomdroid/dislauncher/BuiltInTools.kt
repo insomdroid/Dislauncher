@@ -66,7 +66,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -169,48 +168,6 @@ private fun priorityColor(priority: Int): Color = when (priority) {
 
 private fun builtInToolScheme(base: androidx.compose.material3.ColorScheme): androidx.compose.material3.ColorScheme = base
 
-/*
-private fun builtInMonochromeScheme(base: androidx.compose.material3.ColorScheme): androidx.compose.material3.ColorScheme {
-    val dark = base.background.luminance() < 0.5f
-    return if (dark) {
-        androidx.compose.material3.darkColorScheme(
-            primary = Color(0xFFEAEAEA), onPrimary = Color(0xFF171717),
-            primaryContainer = Color(0xFF343434), onPrimaryContainer = Color.White,
-            secondary = Color(0xFFD0D0D0), onSecondary = Color(0xFF171717),
-            secondaryContainer = Color(0xFF303030), onSecondaryContainer = Color.White,
-            tertiary = Color(0xFFBDBDBD), onTertiary = Color(0xFF171717),
-            tertiaryContainer = Color(0xFF383838), onTertiaryContainer = Color.White,
-            background = if (base.background.luminance() < 0.08f) Color.Black else Color(0xFF121212),
-            surface = if (base.background.luminance() < 0.08f) Color.Black else Color(0xFF121212),
-            surfaceVariant = Color(0xFF292929), surfaceContainerLowest = Color(0xFF0D0D0D),
-            surfaceContainerLow = Color(0xFF1B1B1B), surfaceContainer = Color(0xFF242424),
-            surfaceContainerHigh = Color(0xFF2B2B2B), surfaceContainerHighest = Color(0xFF333333),
-            onBackground = Color(0xFFF2F2F2), onSurface = Color(0xFFF2F2F2),
-            onSurfaceVariant = Color(0xFFBDBDBD), outline = Color(0xFF777777),
-            outlineVariant = Color(0xFF494949), surfaceTint = Color.Transparent,
-            inversePrimary = Color(0xFF444444)
-        )
-    } else {
-        androidx.compose.material3.lightColorScheme(
-            primary = Color(0xFF292929), onPrimary = Color.White,
-            primaryContainer = Color(0xFFE5E5E5), onPrimaryContainer = Color(0xFF202020),
-            secondary = Color(0xFF4B4B4B), onSecondary = Color.White,
-            secondaryContainer = Color(0xFFEAEAEA), onSecondaryContainer = Color(0xFF202020),
-            tertiary = Color(0xFF5B5B5B), onTertiary = Color.White,
-            tertiaryContainer = Color(0xFFF0F0F0), onTertiaryContainer = Color(0xFF202020),
-            background = Color(0xFFFAFAFA), surface = Color(0xFFFAFAFA),
-            surfaceVariant = Color(0xFFE7E7E7), surfaceContainerLowest = Color.White,
-            surfaceContainerLow = Color(0xFFF2F2F2), surfaceContainer = Color(0xFFEAEAEA),
-            surfaceContainerHigh = Color(0xFFE0E0E0), surfaceContainerHighest = Color(0xFFD7D7D7),
-            onBackground = Color(0xFF191919), onSurface = Color(0xFF191919),
-            onSurfaceVariant = Color(0xFF5D5D5D), outline = Color(0xFF777777),
-            outlineVariant = Color(0xFFD0D0D0), surfaceTint = Color.Transparent,
-            inversePrimary = Color(0xFFD0D0D0)
-        )
-    }
-}
-
-*/
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -714,7 +671,7 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
     }
         FloatingActionButton(
             onClick = ::beginNewTask,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp),
+            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 24.dp),
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         ) { Icon(Icons.Outlined.Add, contentDescription = "Add task") }
