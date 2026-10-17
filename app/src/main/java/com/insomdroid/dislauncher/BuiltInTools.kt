@@ -169,15 +169,10 @@ private fun priorityColor(priority: Int): Color = when (priority) {
     else -> Color(0xFFBEBEBE)
 }
 
-private fun builtInToolScheme(base: androidx.compose.material3.ColorScheme): androidx.compose.material3.ColorScheme = base
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val baseScheme = MaterialTheme.colorScheme
-    val monoScheme = remember(baseScheme) { builtInToolScheme(baseScheme) }
     var notesEditing by remember { mutableStateOf(false) }
     var notesBackSignal by remember { mutableStateOf(0) }
     fun requestClose() = onBack()
@@ -189,8 +184,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
         BuiltInTool.CALCULATOR -> "Calculator"
         BuiltInTool.CALENDAR -> "Calendar"
     }
-    MaterialTheme(colorScheme = monoScheme) {
-        Scaffold(
+    Scaffold(
                 containerColor = MaterialTheme.colorScheme.background,
                 topBar = {
                     TopAppBar(
@@ -220,7 +214,6 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                     }
                 }
             }
-    }
 }
 
 @Composable
