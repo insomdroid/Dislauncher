@@ -15,7 +15,7 @@
 
 - Checked imports and declarations for unused references, then checked screen/root APIs and Android components across files before treating a low local reference count as dead code.
 - Checked manifest component names and resource references against the current tree.
-- Compared the adaptive icon descriptors and retained both `ic_launcher.xml` and `ic_launcher_round.xml`: their XML content is the same, but AndroidManifest.xml names both resources through `android:icon` and `android:roundIcon`. The foreground and monochrome drawable files remain separate resources.
+- Compared the adaptive icon descriptors and confirmed `ic_launcher.xml` and `ic_launcher_round.xml` were byte-for-byte identical. Both manifest attributes now reference `@mipmap/ic_launcher`, and the duplicate `ic_launcher_round.xml` resource was removed. The foreground and monochrome drawable files remain separate because their wordmark accent paths intentionally use different colors.
 - Retained Compose `getValue`/`setValue` operator imports. Their names are consumed implicitly by delegated Compose state properties (the `by` syntax), so a plain text reference-count check is not sufficient grounds to delete them.
 - Consolidated the duplicated non-system-first app ordering in onboarding and the root flow into `prioritizeNonSystemApps()` in `AppOrdering.kt`.
 - Consolidated repeated notification-to-dot state conversion in `MusicPlayer.kt` into `StatusBarNotification.toTrackedDotNotification()`, keeping the ongoing-notification exclusion logic identical in both call sites.
