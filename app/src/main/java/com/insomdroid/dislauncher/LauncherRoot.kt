@@ -152,6 +152,7 @@ internal fun DislauncherRoot() {
             }
         )
     }
+    var settingsOpenedFromApps by remember { mutableStateOf(false) }
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 2 })
     val scope = rememberCoroutineScope()
     val iconPacks = remember { findIconPacks(context) }
@@ -391,8 +392,9 @@ internal fun DislauncherRoot() {
             pagerState.settledPage == 1
     ) {
         when (screen) {
-            LauncherScreen.SETTINGS, LauncherScreen.WEATHER ->
-                screen = LauncherScreen.HOME
+            LauncherScreen.SETTINGS ->
+                screen = if (settingsOpenedFromApps) LauncherScreen.APPS else LauncherScreen.HOME
+            LauncherScreen.WEATHER -> screen = LauncherScreen.HOME
             LauncherScreen.APPS -> scope.launch { pagerState.animateScrollToPage(0) }
             else -> Unit
         }
@@ -512,7 +514,7 @@ internal fun DislauncherRoot() {
                 onDoubleTapLockChange = ::changeDoubleTapLock,
                 onToggleFavorite = ::toggleFavorite,
                 onToggleHidden = ::toggleHidden,
-                onBack = { screen = LauncherScreen.HOME }
+                onBack = { screen = if (settingsOpenedFromApps) LauncherScreen.APPS else LauncherScreen.HOME }
             )
         } else if (screen == LauncherScreen.WEATHER) {
             WeatherScreen(
@@ -604,7 +606,7 @@ internal fun DislauncherRoot() {
                             onLaunch = { launchApp(context, it) },
                             onMoveFavorite = ::moveFavorite,
                             onOpenWeather = { cached -> weatherForScreen = cached ?: solarWeather; screen = LauncherScreen.WEATHER },
-                            onOpenSettings = { screen = LauncherScreen.SETTINGS },
+                            onOpenSettings = { settingsOpenedFromApps = false; screen = LauncherScreen.SETTINGS },
                             onDoubleTapToLock = { lockDevice(context, adminComponent, devicePolicyManager) },
                             homeItemOrder = homeItemOrder,
                             onMoveHomeItem = ::moveHomeItem,
@@ -637,7 +639,7 @@ internal fun DislauncherRoot() {
                             onToggleFavorite = ::toggleFavorite,
                             onToggleHidden = ::toggleHidden,
                             onRenameApp = ::renameApp,
-                            onOpenSettings = { screen = LauncherScreen.SETTINGS }
+                            onOpenSettings = { settingsOpenedFromApps = true; screen = LauncherScreen.SETTINGS }
                         )
                     }
                 }
