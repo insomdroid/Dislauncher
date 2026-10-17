@@ -29,7 +29,7 @@
 
 ## Build workflow decision
 
-The default APK workflow intentionally remains lean and runs `gradle assembleRelease`, verifies the APK exists, then uploads it. `lintRelease` and `testReleaseUnitTest` were considered but not retained because they add CI work, and this repository does not currently have a unit-test source set. They can be added later when the project has targeted tests or a demonstrated need for lint to gate each build. A successful APK assembly does not replace manual/device testing.
+The default APK workflow intentionally remains lean and runs `gradle assembleRelease`, verifies the APK exists, then uploads it. `lintRelease` and `testReleaseUnitTest` were considered but not retained because they add CI work, and this repository has no unit-test source set (`testReleaseUnitTest` reported `NO-SOURCE`). The one-off lint run took about two minutes and failed on `app/src/main/res/values/styles.xml`: `android:windowLightNavigationBar` requires API 27 while `minSdk` is 26; it also reported 36 warnings and 6 hints. Lint was removed from the build gate rather than making unrelated theme/resource changes during this dead-code audit. The compatibility finding remains recorded for a focused follow-up. A successful APK assembly does not replace manual/device testing.
 
 ## Reference basis
 
