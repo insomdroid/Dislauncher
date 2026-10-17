@@ -311,14 +311,7 @@ internal fun SettingsScreen(
                                         onApplyWallpaperToSystem
                                     )
                                 }
-                                Text(
-                                    tr(
-                                        "Custom wallpaper images must be 10 MB or smaller. Larger files are rejected.",
-                                        "Gambar wallpaper kustom harus berukuran maksimal 10 MB. File yang lebih besar akan ditolak."
-                                    ),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+
                             }
                         }
                         SettingsGroup(tr("Font and text size", "Font dan ukuran teks")) {
@@ -335,18 +328,15 @@ internal fun SettingsScreen(
                                 // the document picker; the action below opens it explicitly.
                                 onPreferencesChange(preferences.copy(fontMode = value))
                             }
-                            SettingAction(
-                                tr("Custom font file", "File font kustom"),
-                                if (preferences.fontMode == "custom") {
+                            if (preferences.fontMode == "custom") {
+                                SettingAction(
+                                    tr("Custom font file", "File font kustom"),
                                     tr("Active: ", "Aktif: ") + (preferences.customFontName
-                                        ?: tr("Custom font", "Font kustom"))
-                                } else {
-                                    preferences.customFontName
-                                        ?: tr("No custom font selected", "Belum ada font kustom dipilih")
-                                },
-                                tr("Choose file", "Pilih file"),
-                                onChooseCustomFont
-                            )
+                                        ?: tr("Custom font", "Font kustom")),
+                                    tr("Choose file", "Pilih file"),
+                                    onChooseCustomFont
+                                )
+                            }
                             ChoiceRow(
                                 tr("Font size", "Ukuran font"),
                                 preferences.fontSize,
