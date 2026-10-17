@@ -47,6 +47,9 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -111,6 +114,7 @@ private fun decodeWallpaperForScreen(
 internal fun DislauncherRoot() {
     val context = LocalContext.current
     val view = LocalView.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val baseDensity = LocalDensity.current
     val prefsStore = remember {
         context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
@@ -154,6 +158,22 @@ internal fun DislauncherRoot() {
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 2 })
     val scope = rememberCoroutineScope()
     var iconPacks by remember { mutableStateOf<List<IconPackInfo>>(emptyList()) }
+    var launcherStarted by remember {
+        mutableStateOf(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_START -> launcherStarted = true
+                Lifecycle.Event.ON_STOP -> launcherStarted = false
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     LaunchedEffect(context) {
         iconPacks = withContext(Dispatchers.IO) { findIconPacks(context) }
     }
@@ -436,11 +456,12 @@ internal fun DislauncherRoot() {
     }
     val wallpaperImage = produceState<androidx.compose.ui.graphics.ImageBitmap?>(
         initialValue = null,
-        key1 = preferences.wallpaperUri
+        key1 = preferences.wallpaperUri,
+        key2 = launcherStarted
     ) {
         value = null
         val savedUri = preferences.wallpaperUri?.let(Uri::parse)
-        if (savedUri == null) return@produceState
+        if (!launcherStarted || savedUri == null) return@produceState
         val decoded = withContext(Dispatchers.IO) {
             runCatching { decodeWallpaperForScreen(context, savedUri) }.getOrNull()
         }
