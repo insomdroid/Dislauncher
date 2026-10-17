@@ -299,8 +299,8 @@ internal fun SettingsScreen(
                                 )
                                 Text(
                                     tr(
-                                        "Recommended: up to 10 MB. Larger images are resized to fit the screen; files over 100 MB or extremely high-resolution images are rejected.",
-                                        "Disarankan hingga 10 MB. Gambar lebih besar akan diperkecil sesuai layar; file di atas 100 MB atau resolusi yang terlalu tinggi akan ditolak."
+                                        "Custom wallpaper images must be 10 MB or smaller. Larger files are rejected.",
+                                        "Gambar wallpaper kustom harus berukuran maksimal 10 MB. File yang lebih besar akan ditolak."
                                     ),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
