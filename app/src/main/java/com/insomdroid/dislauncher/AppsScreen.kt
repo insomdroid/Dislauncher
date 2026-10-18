@@ -231,8 +231,8 @@ internal fun AppsScreen(
                                     Text(
                                         app.label,
                                         color = secondary.copy(alpha = 0.9f),
-                                        fontSize = 11.sp,
-                                        lineHeight = 13.sp,
+                                        fontSize = 10.sp,
+                                        lineHeight = 12.sp,
                                         fontFamily = fontFamily,
                                         textAlign = TextAlign.Center,
                                         maxLines = 2,
@@ -262,8 +262,8 @@ internal fun AppsScreen(
                                     Text(
                                         "Dislauncher Settings",
                                         color = secondary.copy(alpha = 0.9f),
-                                        fontSize = 11.sp,
-                                        lineHeight = 13.sp,
+                                        fontSize = 10.sp,
+                                        lineHeight = 12.sp,
                                         fontFamily = fontFamily,
                                         textAlign = TextAlign.Center,
                                         maxLines = 2,
