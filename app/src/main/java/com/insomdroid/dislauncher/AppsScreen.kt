@@ -254,13 +254,13 @@ internal fun AppsScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Filled.SettingsIcon,
-                                            contentDescription = "Dislauncher Settings",
+                                            contentDescription = "Dis/Settings",
                                             tint = if (isDark) androidx.compose.ui.graphics.Color(0xFFE6E6E6) else androidx.compose.ui.graphics.Color(0xFF444444),
                                             modifier = Modifier.size(18.dp)
                                         )
                                     }
                                     Text(
-                                        "Dislauncher Settings",
+                                        "Dis/Settings",
                                         color = secondary.copy(alpha = 0.9f),
                                         fontSize = 10.sp,
                                         lineHeight = 12.sp,
