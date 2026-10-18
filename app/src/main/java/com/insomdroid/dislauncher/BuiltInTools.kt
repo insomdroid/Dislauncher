@@ -274,10 +274,10 @@ private fun NotesTool(
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(notes, key = { it.id }) { note ->
                         Surface(
-                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
+                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp))
                                 .clickable { openNote(note) },
                             color = MaterialTheme.colorScheme.surfaceContainerLow,
-                            shape = RoundedCornerShape(18.dp)
+                            shape = RoundedCornerShape(20.dp)
                         ) {
                             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                 Text(note.title.ifBlank { "Untitled note" }, style = MaterialTheme.typography.titleMedium, maxLines = 1)
@@ -619,7 +619,7 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
             .thenBy { if (it.time.isBlank()) "99:99" else it.time })
 
     Box(modifier = modifier) {
-    Column(modifier = Modifier.fillMaxSize().padding(bottom = 72.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(modifier = Modifier.fillMaxSize().padding(bottom = 72.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             IconButton(onClick = { month = month.minusMonths(1); selectedDate = month.atDay(1) }) {
                 Text("‹", fontSize = 27.sp)
@@ -632,7 +632,7 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
         }
         Row(Modifier.fillMaxWidth()) {
             listOf("M", "T", "W", "T", "F", "S", "S").forEach { day ->
-                Text(day, Modifier.weight(1f), textAlign = TextAlign.Center,
+                Text(day, Modifier.weight(1f).padding(vertical = 4.dp), textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
             }
         }
@@ -641,7 +641,7 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
         cells.chunked(7).forEach { week ->
             Row(Modifier.fillMaxWidth()) {
                 week.forEach { day ->
-                    Box(Modifier.weight(1f).height(37.dp).padding(1.dp), contentAlignment = Alignment.Center) {
+                    Box(Modifier.weight(1f).height(41.dp).padding(1.dp), contentAlignment = Alignment.Center) {
                         if (day > 0) {
                             val dateValue = month.atDay(day)
                             val selected = dateValue == selectedDate
@@ -668,10 +668,11 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(selectedDate.format(dateFormatter), style = MaterialTheme.typography.titleMedium)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(selectedDate.format(dateFormatter), style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium)
                 Text(dayTasks.size.toString() + if (dayTasks.size == 1) " task" else " tasks",
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         if (dayTasks.isEmpty()) {
@@ -682,8 +683,8 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
             LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(dayTasks, key = { it.id }) { task ->
                     Row(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
-                            .background(MaterialTheme.colorScheme.surfaceContainerLow).padding(horizontal = 8.dp, vertical = 7.dp),
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerLow).padding(horizontal = 10.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (task.type == "todo") {
