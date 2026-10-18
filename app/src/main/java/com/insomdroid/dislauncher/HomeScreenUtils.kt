@@ -7,9 +7,22 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-internal fun readBatteryCharging(context: Context): Boolean {
-    val intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)) ?: return false
-    return intent.getIntExtra("plugged", 0) != 0
+internal data class BatteryState(
+    val percent: Int?,
+    val isCharging: Boolean
+)
+
+internal fun readBatteryState(context: Context): BatteryState {
+    val intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+    val level = intent?.getIntExtra("level", -1) ?: -1
+    val scale = intent?.getIntExtra("scale", -1) ?: -1
+    val percent = if (level >= 0 && scale > 0) {
+        (level * 100 / scale).coerceIn(0, 100)
+    } else {
+        null
+    }
+    val isCharging = intent?.getIntExtra("plugged", 0)?.let { it != 0 } ?: false
+    return BatteryState(percent, isCharging)
 }
 
 internal fun formatHomeDate(date: LocalDate): String {

@@ -121,8 +121,9 @@ internal fun HomeScreen(
 
         now = LocalTime.now()
         if (preferences.showBattery) {
-            batteryPercent = readBatteryPercent(context)
-            batteryCharging = readBatteryCharging(context)
+            val batteryState = readBatteryState(context)
+            batteryPercent = batteryState.percent
+            batteryCharging = batteryState.isCharging
         } else {
             batteryPercent = null
             batteryCharging = false
@@ -133,8 +134,9 @@ internal fun HomeScreen(
             delay(delayUntilNextMinute.coerceAtLeast(1L))
             now = LocalTime.now()
             if (preferences.showBattery) {
-                batteryPercent = readBatteryPercent(context)
-                batteryCharging = readBatteryCharging(context)
+                val batteryState = readBatteryState(context)
+                batteryPercent = batteryState.percent
+                batteryCharging = batteryState.isCharging
             }
         }
     }

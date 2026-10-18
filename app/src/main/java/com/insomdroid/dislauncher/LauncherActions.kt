@@ -4,7 +4,6 @@ import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.ApplicationInfo
 import android.graphics.Typeface
 import android.net.Uri
@@ -235,9 +234,3 @@ internal fun expandNotificationPanel(context: Context) {
     }
 }
 
-internal fun readBatteryPercent(context: Context): Int? {
-    val intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)) ?: return null
-    val level = intent.getIntExtra("level", -1)
-    val scale = intent.getIntExtra("scale", -1)
-    return if (level >= 0 && scale > 0) (level * 100 / scale).coerceIn(0, 100) else null
-}
