@@ -87,7 +87,8 @@ internal fun SettingsScreen(
     onDoubleTapLockChange: (Boolean) -> Unit,
     onToggleFavorite: (String) -> Unit,
     onToggleHidden: (String) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onRestartLauncher: () -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -96,6 +97,7 @@ internal fun SettingsScreen(
 
     var selectedCategory by remember { mutableStateOf<SettingsCategory?>(null) }
     var openDialog by remember { mutableStateOf("") }
+    var showRestartConfirmation by remember { mutableStateOf(false) }
     var detectedIconPacks by remember { mutableStateOf(iconPacks) }
     var refreshVersion by remember { mutableStateOf(0) }
 
@@ -658,6 +660,11 @@ internal fun SettingsScreen(
                                 )
                             }
                             SettingAction(
+                                tr("Restart Launcher", "Mulai ulang launcher"),
+                                tr("Reloads the launcher interface.", "Memuat ulang antarmuka launcher."),
+                                tr("Restart", "Mulai ulang")
+                            ) { showRestartConfirmation = true }
+                            SettingAction(
                                 tr("Project on GitHub", "Proyek di GitHub"),
                                 "github.com/insomdroid/dislauncher",
                                 tr("Open", "Buka")
@@ -755,6 +762,36 @@ internal fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(onClick = { openDialog = "" }) { Text(tr("Done", "Selesai")) }
+            }
+        )
+    }
+
+    if (showRestartConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showRestartConfirmation = false },
+            title = { Text(tr("Restart Launcher?", "Mulai ulang launcher?")) },
+            text = {
+                Text(
+                    tr(
+                        "Dislauncher will reload its interface. Your settings and favourites will be kept.",
+                        "Dislauncher akan memuat ulang antarmukanya. Pengaturan dan favorit tetap tersimpan."
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showRestartConfirmation = false
+                        onRestartLauncher()
+                    }
+                ) {
+                    Text(tr("Restart", "Mulai ulang"))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRestartConfirmation = false }) {
+                    Text(tr("Cancel", "Batal"))
+                }
             }
         )
     }
