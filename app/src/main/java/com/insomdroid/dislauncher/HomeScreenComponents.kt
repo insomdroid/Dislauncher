@@ -114,20 +114,26 @@ internal fun ProgressLine(
         ) {
             val stepX = 4.dp.toPx()
             val stepY = 4.dp.toPx()
-            val radius = 1.1.dp.toPx()
+            val halfLine = 1.1.dp.toPx()
+            val strokeWidth = 1.4.dp.toPx()
             val columns = (size.width / stepX).toInt().coerceAtLeast(1)
             val rows = (size.height / stepY).toInt().coerceAtLeast(1)
             for (row in 0..rows) {
                 for (column in 0..columns) {
-                    val x = column * stepX + radius
-                    val y = row * stepY + radius
-                    if (x <= size.width && y <= size.height) {
+                    val x = column * stepX + halfLine
+                    val y = row * stepY + halfLine
+                    if (x + halfLine <= size.width && y <= size.height) {
                         val color = if (x / size.width * 100f <= percent.coerceIn(0, 100)) {
                             fill
                         } else {
                             track.copy(alpha = 0.85f)
                         }
-                        drawCircle(color = color, radius = radius, center = Offset(x, y))
+                        drawLine(
+                            color = color,
+                            start = Offset(x - halfLine, y),
+                            end = Offset(x + halfLine, y),
+                            strokeWidth = strokeWidth
+                        )
                     }
                 }
             }

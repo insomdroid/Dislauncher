@@ -108,7 +108,7 @@ internal fun WelcomeOnboardingScreen(
 
     fun skipOnboarding() {
         val orderedApps = prioritizeNonSystemApps(apps).distinctBy { it.packageName }
-        onFinish(orderedApps.take(5).map { it.packageName }.toSet())
+        onFinish(orderedApps.take(6).map { it.packageName }.toSet())
     }
     fun openSystemSettings(action: String) {
         runCatching { context.startActivity(Intent(action)) }

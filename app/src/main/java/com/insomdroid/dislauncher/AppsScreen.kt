@@ -127,7 +127,7 @@ internal fun AppsScreen(
     val focusRequester = remember { FocusRequester() }
     var searchFocused by remember { mutableStateOf(false) }
     val searchColor = if (searchFocused || query.isNotEmpty()) mainText else secondary.copy(alpha = 0.65f)
-    val alphabetLetters = remember { ('A'..'Z').map(Char::toString) + "#" }
+    val allAlphabetLetters = remember { ('A'..'Z').map(Char::toString) + "#" }
     var scrubberProgress by remember { mutableStateOf<Float?>(null) }
     val firstIndexByLetter = remember(filtered, filteredBuiltIns, preferences.showBuiltInApps, searching) {
         val result = linkedMapOf<String, Int>()
@@ -135,10 +135,13 @@ internal fun AppsScreen(
         val installedAppsOffset = if (filteredBuiltIns.isNotEmpty() || (preferences.showBuiltInApps && !searching)) 1 else 0
         filtered.forEachIndexed { index, app ->
             val letter = app.label.firstOrNull()?.uppercaseChar()?.toString()
-                ?.takeIf { it in alphabetLetters } ?: "#"
+                ?.takeIf { it in allAlphabetLetters } ?: "#"
             if (letter !in result) result[letter] = installedAppsOffset + index
         }
         result
+    }
+    val alphabetLetters = remember(firstIndexByLetter) {
+        allAlphabetLetters.filter { it in firstIndexByLetter }
     }
     val scrollToLetter: (String) -> Unit = { letter ->
         firstIndexByLetter[letter]?.let { index ->
@@ -349,10 +352,10 @@ internal fun AppsScreen(
                                 ) {
                                     Text(
                                         letter,
-                                        color = when {
-                                            isActiveLetter -> MaterialTheme.colorScheme.primary
-                                            letter in firstIndexByLetter -> secondary.copy(alpha = 0.70f)
-                                            else -> secondary.copy(alpha = 0.22f)
+                                        color = if (isActiveLetter) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            secondary.copy(alpha = 0.70f)
                                         },
                                         fontSize = 11.sp,
                                         lineHeight = 12.sp,

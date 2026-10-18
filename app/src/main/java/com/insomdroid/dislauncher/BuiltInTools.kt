@@ -33,6 +33,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.NoteAdd
 import androidx.compose.material.icons.outlined.Schedule
@@ -127,6 +128,43 @@ private fun saveNotes(context: Context, notes: List<LocalNote>) {
     notesStore(context).edit().putString("notes_json", array.toString()).apply()
 }
 
+private data class CalculatorHistoryEntry(
+    val id: String,
+    val expression: String,
+    val result: String,
+    val createdAt: Long
+)
+
+private fun calculatorHistoryStore(context: Context) =
+    context.getSharedPreferences("dislauncher_calculator_history", Context.MODE_PRIVATE)
+
+private fun loadCalculatorHistory(context: Context): List<CalculatorHistoryEntry> = runCatching {
+    val array = JSONArray(calculatorHistoryStore(context).getString("history_json", "[]") ?: "[]")
+    (0 until array.length()).mapNotNull { index ->
+        val item = array.optJSONObject(index) ?: return@mapNotNull null
+        CalculatorHistoryEntry(
+            id = item.optString("id"),
+            expression = item.optString("expression"),
+            result = item.optString("result"),
+            createdAt = item.optLong("createdAt")
+        ).takeIf { it.id.isNotBlank() && it.expression.isNotBlank() && it.result.isNotBlank() }
+    }
+}.getOrDefault(emptyList()).sortedByDescending { it.createdAt }.take(100)
+
+private fun saveCalculatorHistory(context: Context, history: List<CalculatorHistoryEntry>) {
+    val array = JSONArray()
+    history.take(100).forEach { entry ->
+        array.put(
+            JSONObject()
+                .put("id", entry.id)
+                .put("expression", entry.expression)
+                .put("result", entry.result)
+                .put("createdAt", entry.createdAt)
+        )
+    }
+    calculatorHistoryStore(context).edit().putString("history_json", array.toString()).apply()
+}
+
 private fun tasksStore(context: Context) =
     context.getSharedPreferences("dislauncher_local_tasks", Context.MODE_PRIVATE)
 
@@ -201,7 +239,10 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                     )
                 }
             ) { padding ->
-                Box(Modifier.fillMaxSize().padding(padding).padding(horizontal = 18.dp, vertical = 8.dp)) {
+                Box(
+                    Modifier.fillMaxSize().padding(padding)
+                        .padding(horizontal = if (tool == BuiltInTool.CALCULATOR) 6.dp else 18.dp, vertical = 8.dp)
+                ) {
                     when (tool) {
                         BuiltInTool.NOTES -> NotesTool(
                             context = context,
@@ -279,16 +320,31 @@ private fun NotesTool(
                             color = MaterialTheme.colorScheme.surfaceContainerLow,
                             shape = RoundedCornerShape(20.dp)
                         ) {
-                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                                Text(note.title.ifBlank { "Untitled note" }, style = MaterialTheme.typography.titleMedium, maxLines = 1)
-                                Text(note.content.ifBlank { "No content" }, style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
-                                Text(
-                                    java.time.Instant.ofEpochMilli(note.updatedAt).atZone(ZoneId.systemDefault())
-                                        .format(DateTimeFormatter.ofPattern("d MMM, HH:mm", Locale.getDefault())),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(
+                                    Modifier.weight(1f).padding(end = 8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(5.dp)
+                                ) {
+                                    Text(note.title.ifBlank { "Untitled note" }, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                                    Text(note.content.ifBlank { "No content" }, style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
+                                    Text(
+                                        java.time.Instant.ofEpochMilli(note.updatedAt).atZone(ZoneId.systemDefault())
+                                            .format(DateTimeFormatter.ofPattern("d MMM, HH:mm", Locale.getDefault())),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                IconButton(onClick = { deleteTarget = note.id }) {
+                                    Icon(
+                                        Icons.Outlined.DeleteOutline,
+                                        contentDescription = "Delete note",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     }
@@ -361,8 +417,12 @@ private fun NotesTool(
 
 @Composable
 private fun CalculatorTool(modifier: Modifier = Modifier) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     var expression by remember { mutableStateOf("") }
     var result by remember { mutableStateOf("") }
+    var showHistory by remember { mutableStateOf(false) }
+    var showClearHistoryDialog by remember { mutableStateOf(false) }
+    var history by remember(context) { mutableStateOf(loadCalculatorHistory(context)) }
     val keyRows = listOf(
         listOf("C", "⌫", "%", "÷"),
         listOf("7", "8", "9", "×"),
@@ -373,99 +433,149 @@ private fun CalculatorTool(modifier: Modifier = Modifier) {
     )
 
     BoxWithConstraints(modifier = modifier) {
-        // Larger keys and compact gaps, while retaining all existing controls.
-        val keySize = minOf(
-            72.dp,
-            (maxWidth - 32.dp) / 4,
-            (maxHeight - 190.dp) / 6
-        ).coerceAtLeast(36.dp)
+        val keySize = minOf(72.dp, (maxWidth - 24.dp) / 4, (maxHeight - 190.dp) / 6)
+            .coerceAtLeast(36.dp)
 
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Column(
-                modifier = Modifier.weight(1f).fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.Bottom,
-                horizontalAlignment = Alignment.End
-            ) {
-                if (expression.isNotBlank()) {
+        if (showHistory) {
+            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { showHistory = false }) {
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back to calculator")
+                    }
+                    Text("History", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+                    IconButton(
+                        onClick = { showClearHistoryDialog = true },
+                        enabled = history.isNotEmpty()
+                    ) {
+                        Icon(Icons.Outlined.DeleteOutline, contentDescription = "Clear calculator history")
+                    }
+                }
+                if (history.isEmpty()) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("No calculations yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                } else {
+                    LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(history, key = { it.id }) { entry ->
+                            Surface(
+                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).clickable {
+                                    expression = entry.expression
+                                    result = entry.result
+                                    showHistory = false
+                                },
+                                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Column(
+                                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(entry.expression, style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
+                                    Text(entry.result, style = MaterialTheme.typography.titleLarge,
+                                        color = MaterialTheme.colorScheme.onSurface)
+                                    Text(
+                                        java.time.Instant.ofEpochMilli(entry.createdAt).atZone(ZoneId.systemDefault())
+                                            .format(DateTimeFormatter.ofPattern("d MMM, HH:mm", Locale.getDefault())),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(
+                    Modifier.weight(1f).fillMaxWidth().padding(horizontal = 2.dp, vertical = 4.dp),
+                    verticalArrangement = Arrangement.Bottom,
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Spacer(Modifier.weight(1f))
+                        IconButton(onClick = { showHistory = true }) {
+                            Icon(Icons.Outlined.History, contentDescription = "Open calculator history")
+                        }
+                    }
+                    if (expression.isNotBlank()) {
+                        Text(expression, Modifier.fillMaxWidth(), style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.End, maxLines = 2)
+                        Spacer(Modifier.height(8.dp))
+                    }
                     Text(
-                        expression,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        result.ifBlank { expression.ifBlank { "0" } },
+                        Modifier.fillMaxWidth(),
+                        style = MaterialTheme.typography.displayMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.End,
                         maxLines = 2
                     )
-                    Spacer(Modifier.height(8.dp))
                 }
-                Text(
-                    result.ifBlank { expression.ifBlank { "0" } },
-                    style = MaterialTheme.typography.displayMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.End,
-                    maxLines = 2
-                )
-            }
-
-            keyRows.forEach { rowKeys ->
-                Row(
-                    modifier = Modifier.fillMaxWidth().height(keySize),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    rowKeys.forEach { key ->
-                        if (key.isBlank()) {
-                            Spacer(Modifier.size(keySize))
-                        } else {
-                            val operator = key in listOf("÷", "×", "−", "+", "=")
-                            val action: () -> Unit = {
-                                when (key) {
-                                    "C" -> { expression = ""; result = "" }
-                                    "⌫" -> { expression = expression.dropLast(1); result = "" }
-                                    "=" -> result = runCatching {
-                                        formatCalculation(ExpressionParser(expression).parse())
-                                    }.getOrElse { "Invalid expression" }
-                                    "%" -> {
-                                        if (expression.lastOrNull()?.let { it.isDigit() || it == ')' } == true) {
-                                            expression = applyCalculatorPercentage(expression)
-                                        }
-                                        result = ""
-                                    }
-                                    "±" -> {
-                                        if (expression.isNotBlank()) expression = "-(" + expression + ")"
-                                        result = ""
-                                    }
-                                    else -> {
-                                        expression += when (key) {
-                                            "×" -> "*"
-                                            "÷" -> "/"
-                                            "−" -> "-"
-                                            else -> key
-                                        }
-                                        result = ""
-                                    }
-                                }
-                            }
-                            val labelSize = (keySize.value / 2.35f).coerceIn(18f, 28f).sp
-                            if (operator) {
-                                Button(
-                                    onClick = action,
-                                    modifier = Modifier.size(keySize),
-                                    shape = CircleShape,
-                                    contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
-                                ) {
-                                    Text(key, fontSize = labelSize, lineHeight = labelSize)
-                                }
+                keyRows.forEach { rowKeys ->
+                    Row(
+                        Modifier.fillMaxWidth().height(keySize),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        rowKeys.forEach { key ->
+                            if (key.isBlank()) {
+                                Spacer(Modifier.size(keySize))
                             } else {
-                                FilledTonalButton(
-                                    onClick = action,
-                                    modifier = Modifier.size(keySize),
-                                    shape = CircleShape,
-                                    contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
-                                ) {
-                                    Text(key, fontSize = labelSize, lineHeight = labelSize)
+                                val operator = key in listOf("÷", "×", "−", "+", "=")
+                                val action: () -> Unit = {
+                                    when (key) {
+                                        "C" -> { expression = ""; result = "" }
+                                        "⌫" -> { expression = expression.dropLast(1); result = "" }
+                                        "=" -> {
+                                            val calculated = runCatching {
+                                                formatCalculation(ExpressionParser(expression).parse())
+                                            }.getOrNull()
+                                            if (calculated == null) {
+                                                result = "Invalid expression"
+                                            } else {
+                                                result = calculated
+                                                val entry = CalculatorHistoryEntry(
+                                                    UUID.randomUUID().toString(), expression, calculated,
+                                                    System.currentTimeMillis()
+                                                )
+                                                history = (listOf(entry) + history).take(100)
+                                                saveCalculatorHistory(context, history)
+                                            }
+                                        }
+                                        "%" -> {
+                                            if (expression.lastOrNull()?.let { it.isDigit() || it == ')' } == true) {
+                                                expression = applyCalculatorPercentage(expression)
+                                            }
+                                            result = ""
+                                        }
+                                        "±" -> {
+                                            if (expression.isNotBlank()) expression = "-(" + expression + ")"
+                                            result = ""
+                                        }
+                                        else -> {
+                                            expression += when (key) {
+                                                "×" -> "*"
+                                                "÷" -> "/"
+                                                "−" -> "-"
+                                                else -> key
+                                            }
+                                            result = ""
+                                        }
+                                    }
+                                }
+                                val labelSize = (keySize.value / 2.35f).coerceIn(18f, 28f).sp
+                                if (operator) {
+                                    Button(onClick = action, modifier = Modifier.size(keySize), shape = CircleShape,
+                                        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+                                        Text(key, fontSize = labelSize, lineHeight = labelSize)
+                                    }
+                                } else {
+                                    FilledTonalButton(onClick = action, modifier = Modifier.size(keySize), shape = CircleShape,
+                                        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+                                        Text(key, fontSize = labelSize, lineHeight = labelSize)
+                                    }
                                 }
                             }
                         }
@@ -473,6 +583,22 @@ private fun CalculatorTool(modifier: Modifier = Modifier) {
                 }
             }
         }
+    }
+
+    if (showClearHistoryDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearHistoryDialog = false },
+            title = { Text("Clear calculator history?") },
+            text = { Text("Saved calculations will be removed from this device.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    history = emptyList()
+                    saveCalculatorHistory(context, history)
+                    showClearHistoryDialog = false
+                }) { Text("Clear") }
+            },
+            dismissButton = { TextButton(onClick = { showClearHistoryDialog = false }) { Text("Cancel") } }
+        )
     }
 }
 

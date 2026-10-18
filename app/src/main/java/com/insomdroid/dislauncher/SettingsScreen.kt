@@ -322,7 +322,7 @@ internal fun SettingsScreen(
                                 preferences.fontMode,
                                 listOf(
                                     "system" to tr("System", "Sistem"),
-                                    "dislauncher" to "Dislauncher",
+                                    "dislauncher" to "Plus Jakarta Sans",
                                     "custom" to tr("Custom", "Kustom")
                                 )
                             ) { value ->
