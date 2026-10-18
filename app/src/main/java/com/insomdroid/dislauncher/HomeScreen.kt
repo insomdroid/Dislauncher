@@ -232,7 +232,7 @@ internal fun HomeScreen(
 
         val showStatusWidgets = preferences.showWeather || preferences.showBattery || preferences.showCalendarShortcut
         if (showStatusWidgets) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(4.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -284,7 +284,7 @@ internal fun HomeScreen(
         }
 
         if (preferences.showMusic) {
-            if (showStatusWidgets) Spacer(Modifier.height(6.dp))
+            if (showStatusWidgets) Spacer(Modifier.height(4.dp))
             MusicPlayerWidget(
                 modifier = Modifier.fillMaxWidth(),
                 onOpenMusicApp = { openMusicPlayer(context, apps) }
