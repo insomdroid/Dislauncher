@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
@@ -212,7 +213,7 @@ internal fun HomeScreen(
                     if (preferences.doubleTapToLock) currentLockScreen()
                 }
             )
-            .padding(horizontal = 26.dp, vertical = 6.dp),
+            .padding(horizontal = 26.dp, top = 4.dp, bottom = 8.dp),
         verticalArrangement = Arrangement.Top
     ) {
         HomeHeader(
@@ -358,11 +359,19 @@ internal fun HomeScreen(
                         app.packageName in preferences.notificationDotPackages &&
                         app.packageName in activeNotificationPackages
                     ) {
+                        val notificationDotColor = when (preferences.notificationDotColor) {
+                            "red" -> androidx.compose.ui.graphics.Color(0xFFE53935)
+                            "orange" -> androidx.compose.ui.graphics.Color(0xFFFF9800)
+                            "blue" -> androidx.compose.ui.graphics.Color(0xFF2196F3)
+                            "purple" -> androidx.compose.ui.graphics.Color(0xFFAB47BC)
+                            else -> androidx.compose.ui.graphics.Color.White
+                        }
                         Box(
                             modifier = Modifier
                                 .padding(start = 6.dp)
-                                .size(5.dp)
-                                .background(primaryText, CircleShape)
+                                .size(7.dp)
+                                .background(notificationDotColor, CircleShape)
+                                .border(1.dp, androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.65f), CircleShape)
                         )
                     }
                 }

@@ -488,17 +488,20 @@ private fun CalculatorTool(modifier: Modifier = Modifier) {
             }
         } else {
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { showHistory = true }) {
+                        Icon(Icons.Outlined.History, contentDescription = "Open calculator history")
+                    }
+                }
                 Column(
                     Modifier.weight(1f).fillMaxWidth().padding(horizontal = 2.dp, vertical = 4.dp),
                     verticalArrangement = Arrangement.Bottom,
                     horizontalAlignment = Alignment.End
                 ) {
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Spacer(Modifier.weight(1f))
-                        IconButton(onClick = { showHistory = true }) {
-                            Icon(Icons.Outlined.History, contentDescription = "Open calculator history")
-                        }
-                    }
                     if (expression.isNotBlank()) {
                         Text(expression, Modifier.fillMaxWidth(), style = MaterialTheme.typography.titleLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.End, maxLines = 2)

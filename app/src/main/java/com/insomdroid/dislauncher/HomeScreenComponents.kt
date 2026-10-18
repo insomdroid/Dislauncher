@@ -110,32 +110,26 @@ internal fun ProgressLine(
             fontWeight = FontWeight.Normal
         )
         Canvas(
-            modifier = Modifier.fillMaxWidth(0.36f).height(13.dp)
+            modifier = Modifier.fillMaxWidth(0.36f).height(3.dp)
         ) {
-            val stepX = 4.dp.toPx()
-            val stepY = 4.dp.toPx()
-            val halfLine = 1.1.dp.toPx()
-            val strokeWidth = 1.4.dp.toPx()
-            val columns = (size.width / stepX).toInt().coerceAtLeast(1)
-            val rows = (size.height / stepY).toInt().coerceAtLeast(1)
-            for (row in 0..rows) {
-                for (column in 0..columns) {
-                    val x = column * stepX + halfLine
-                    val y = row * stepY + halfLine
-                    if (x + halfLine <= size.width && y <= size.height) {
-                        val color = if (x / size.width * 100f <= percent.coerceIn(0, 100)) {
-                            fill
-                        } else {
-                            track.copy(alpha = 0.85f)
-                        }
-                        drawLine(
-                            color = color,
-                            start = Offset(x - halfLine, y),
-                            end = Offset(x + halfLine, y),
-                            strokeWidth = strokeWidth
-                        )
-                    }
-                }
+            val centerY = size.height / 2f
+            val strokeWidth = size.height
+            val progressFraction = percent.coerceIn(0, 100) / 100f
+            drawLine(
+                color = track.copy(alpha = 0.85f),
+                start = Offset(0f, centerY),
+                end = Offset(size.width, centerY),
+                strokeWidth = strokeWidth,
+                cap = androidx.compose.ui.graphics.StrokeCap.Round
+            )
+            if (progressFraction > 0f) {
+                drawLine(
+                    color = fill,
+                    start = Offset(0f, centerY),
+                    end = Offset(size.width * progressFraction, centerY),
+                    strokeWidth = strokeWidth,
+                    cap = androidx.compose.ui.graphics.StrokeCap.Round
+                )
             }
         }
     }
