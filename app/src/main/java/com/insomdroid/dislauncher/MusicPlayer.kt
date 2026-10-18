@@ -3,6 +3,7 @@ package com.insomdroid.dislauncher
 import android.app.Notification
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.service.notification.StatusBarNotification
 import android.media.MediaMetadata
 import android.media.session.MediaController
@@ -161,12 +162,17 @@ internal fun MusicPlayerWidget(
     ) {
         Column(
             modifier = Modifier.weight(1f).clickable {
-                val sessionActivity = controller?.sessionActivity
-                if (sessionActivity != null && runCatching { sessionActivity.send() }.isSuccess) {
-                    Unit
-                } else {
-                    onOpenMusicApp()
-                }
+                val openedActivePlayer = controller?.packageName?.let { packageName ->
+                    val launchIntent = runCatching {
+                        context.packageManager.getLaunchIntentForPackage(packageName)
+                    }.getOrNull()
+                    launchIntent?.let { intent ->
+                        runCatching {
+                            context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        }.isSuccess
+                    } ?: false
+                } ?: false
+                if (!openedActivePlayer) onOpenMusicApp()
             },
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
