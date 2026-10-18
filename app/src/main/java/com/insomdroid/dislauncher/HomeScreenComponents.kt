@@ -110,7 +110,7 @@ internal fun ProgressLine(
             fontWeight = FontWeight.Normal
         )
         Canvas(
-            modifier = Modifier.fillMaxWidth(0.36f).height(3.dp)
+            modifier = Modifier.fillMaxWidth(0.40f).height(4.dp)
         ) {
             val centerY = size.height / 2f
             val strokeWidth = size.height

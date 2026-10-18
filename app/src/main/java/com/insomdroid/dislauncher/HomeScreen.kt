@@ -9,7 +9,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -199,15 +198,11 @@ internal fun HomeScreen(
         }
     }
 
-    BoxWithConstraints(
+    Column(
         modifier = Modifier.fillMaxSize()
             .background(background)
             .windowInsetsPadding(WindowInsets.safeDrawing)
-    ) {
-        val favoriteSpacerHeight = (maxHeight - 640.dp).coerceIn(0.dp, 120.dp)
-        Column(
-            modifier = Modifier.fillMaxSize()
-                .verticalScroll(rememberScrollState())
+            .verticalScroll(rememberScrollState())
             .combinedClickable(
                 onClick = {},
                 onLongClick = {
@@ -218,7 +213,7 @@ internal fun HomeScreen(
                     if (preferences.doubleTapToLock) currentLockScreen()
                 }
             )
-            .padding(start = 26.dp, top = 4.dp, end = 26.dp, bottom = 8.dp),
+            .padding(start = 26.dp, top = 6.dp, end = 26.dp, bottom = 8.dp),
         verticalArrangement = Arrangement.Top
     ) {
         HomeHeader(
@@ -289,7 +284,7 @@ internal fun HomeScreen(
         }
 
         if (preferences.showMusic) {
-            if (showStatusWidgets) Spacer(Modifier.height(8.dp))
+            if (showStatusWidgets) Spacer(Modifier.height(6.dp))
             MusicPlayerWidget(
                 modifier = Modifier.fillMaxWidth(),
                 onOpenMusicApp = { openMusicPlayer(context, apps) }
@@ -303,7 +298,7 @@ internal fun HomeScreen(
         }
         val latestOrderedMainItemIds = rememberUpdatedState(orderedMainItemIds)
         val latestMoveHomeItem = rememberUpdatedState(onMoveHomeItem)
-        Spacer(Modifier.height(favoriteSpacerHeight))
+        Spacer(Modifier.height(230.dp))
         orderedMainItemIds.forEach { itemId ->
             val app = favoriteAppsByPackage[itemId]
             val label = app?.label.orEmpty()
@@ -412,7 +407,5 @@ internal fun HomeScreen(
             }
         }
         Spacer(Modifier.height(14.dp))
-        }
-    }
 }
 

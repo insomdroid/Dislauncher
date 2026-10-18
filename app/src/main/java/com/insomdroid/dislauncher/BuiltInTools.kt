@@ -246,12 +246,18 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             }
                         },
                         actions = {
-                            if (tool == BuiltInTool.CALCULATOR && calculatorShowingHistory) {
-                                IconButton(
-                                    onClick = { calculatorClearHistorySignal++ },
-                                    enabled = calculatorHistoryHasItems
-                                ) {
-                                    Icon(Icons.Outlined.DeleteOutline, contentDescription = "Clear calculator history")
+                            if (tool == BuiltInTool.CALCULATOR) {
+                                if (calculatorShowingHistory) {
+                                    IconButton(
+                                        onClick = { calculatorClearHistorySignal++ },
+                                        enabled = calculatorHistoryHasItems
+                                    ) {
+                                        Icon(Icons.Outlined.DeleteOutline, contentDescription = "Clear calculator history")
+                                    }
+                                } else {
+                                    IconButton(onClick = { calculatorShowingHistory = true }) {
+                                        Icon(Icons.Outlined.History, contentDescription = "Open calculator history")
+                                    }
                                 }
                             }
                         },
@@ -508,15 +514,6 @@ private fun CalculatorTool(
             }
         } else {
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = { onShowHistoryChange(true) }) {
-                        Icon(Icons.Outlined.History, contentDescription = "Open calculator history")
-                    }
-                }
                 Column(
                     Modifier.weight(1f).fillMaxWidth().padding(horizontal = 2.dp, vertical = 4.dp),
                     verticalArrangement = Arrangement.Bottom,
