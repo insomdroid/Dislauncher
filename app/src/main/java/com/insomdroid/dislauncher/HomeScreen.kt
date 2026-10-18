@@ -213,7 +213,7 @@ internal fun HomeScreen(
                     if (preferences.doubleTapToLock) currentLockScreen()
                 }
             )
-            .padding(horizontal = 26.dp, top = 4.dp, bottom = 8.dp),
+            .padding(start = 26.dp, top = 4.dp, end = 26.dp, bottom = 8.dp),
         verticalArrangement = Arrangement.Top
     ) {
         HomeHeader(
