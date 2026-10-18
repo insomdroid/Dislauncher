@@ -52,7 +52,7 @@ internal fun HomeHeader(
         )
     }
     if (preferences.showDate) {
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(2.dp))
         Text(
             dateText,
             color = secondaryText,
@@ -64,7 +64,7 @@ internal fun HomeHeader(
         )
     }
     if (preferences.showYearProgress || preferences.showDayProgress) {
-        Spacer(Modifier.height(5.dp))
+        Spacer(Modifier.height(4.dp))
         if (preferences.showYearProgress) {
             ProgressLine(
                 label = "Year in progress",
