@@ -79,7 +79,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.UUID
 
-internal enum class BuiltInTool { NOTES, CALCULATOR, CALENDAR }
+internal enum class BuiltInTool { NOTES, CALCULATOR, CALENDAR, UNIT_CONVERTER }
 
 internal const val EXTRA_BUILT_IN_TOOL = "com.insomdroid.dislauncher.BUILT_IN_TOOL"
 
@@ -228,6 +228,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
         BuiltInTool.NOTES -> if (notesEditing) "Note" else "Notes"
         BuiltInTool.CALCULATOR -> if (calculatorShowingHistory) "History" else "Calculator"
         BuiltInTool.CALENDAR -> "Calendar"
+        BuiltInTool.UNIT_CONVERTER -> "Unit Converter"
     }
     Scaffold(
                 containerColor = MaterialTheme.colorScheme.background,
@@ -284,6 +285,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             onHistoryAvailabilityChanged = { calculatorHistoryHasItems = it }
                         )
                         BuiltInTool.CALENDAR -> CalendarTool(context, Modifier.fillMaxSize())
+                        BuiltInTool.UNIT_CONVERTER -> UnitConverterTool(Modifier.fillMaxSize())
                     }
                 }
             }

@@ -45,6 +45,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Calculate
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material.icons.filled.Search as SearchIcon
 import androidx.compose.material.icons.filled.Settings as SettingsIcon
 import androidx.compose.material3.Icon
@@ -206,6 +207,7 @@ internal fun AppsScreen(
                                 val toolIcon = when (app.packageName) {
                                     "internal:calculator" -> androidx.compose.material.icons.Icons.Outlined.Calculate
                                     "internal:calendar" -> androidx.compose.material.icons.Icons.Outlined.CalendarMonth
+                                    "internal:converter" -> androidx.compose.material.icons.Icons.Outlined.SwapHoriz
                                     else -> androidx.compose.material.icons.Icons.Outlined.Description
                                 }
                                 Column(

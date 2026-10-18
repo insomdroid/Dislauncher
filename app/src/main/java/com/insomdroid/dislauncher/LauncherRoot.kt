@@ -480,6 +480,7 @@ internal fun DislauncherRoot() {
         visibleApps + listOf(
             LauncherApp("internal:calculator", "", "Calculator", true),
             LauncherApp("internal:calendar", "", "Calendar", true),
+            LauncherApp("internal:converter", "", "Converter", true),
             LauncherApp("internal:notes", "", "Notes", true)
         )
     }
@@ -759,6 +760,7 @@ internal fun DislauncherRoot() {
                                     "internal:notes" -> launchBuiltInTool(context, BuiltInTool.NOTES)
                                     "internal:calculator" -> launchBuiltInTool(context, BuiltInTool.CALCULATOR)
                                     "internal:calendar" -> launchBuiltInTool(context, BuiltInTool.CALENDAR)
+                                    "internal:converter" -> launchBuiltInTool(context, BuiltInTool.UNIT_CONVERTER)
                                     else -> launchApp(context, app)
                                 }
                             },
