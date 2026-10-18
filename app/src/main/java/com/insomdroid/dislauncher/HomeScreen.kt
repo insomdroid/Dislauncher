@@ -407,5 +407,5 @@ internal fun HomeScreen(
             }
         }
         Spacer(Modifier.height(14.dp))
+    }
 }
-
