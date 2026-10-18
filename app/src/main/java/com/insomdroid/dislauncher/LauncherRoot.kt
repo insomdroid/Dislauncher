@@ -14,6 +14,8 @@ import android.graphics.BitmapFactory
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -36,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -201,6 +204,7 @@ internal fun DislauncherRoot() {
     var settingsOpenedFromApps by remember { mutableStateOf(false) }
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 2 })
     val scope = rememberCoroutineScope()
+    val homeBackBounce = remember { Animatable(0f) }
     var iconPacks by remember { mutableStateOf<List<IconPackInfo>>(emptyList()) }
     var launcherStarted by remember {
         mutableStateOf(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
@@ -466,6 +470,14 @@ internal fun DislauncherRoot() {
         }
     }
     BackHandler(enabled = screen == LauncherScreen.ONBOARDING) { }
+    BackHandler(enabled = screen == LauncherScreen.HOME && pagerState.settledPage == 0) {
+        scope.launch {
+            homeBackBounce.snapTo(0f)
+            homeBackBounce.animateTo(6f, animationSpec = tween(durationMillis = 70))
+            homeBackBounce.animateTo(-3f, animationSpec = tween(durationMillis = 100))
+            homeBackBounce.animateTo(0f, animationSpec = tween(durationMillis = 100))
+        }
+    }
 
     val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
     val isDark = when (preferences.themeMode) {
@@ -718,7 +730,7 @@ internal fun DislauncherRoot() {
                 }
                 HorizontalPager(
                     state = pagerState,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().offset(x = homeBackBounce.value.dp),
                     beyondViewportPageCount = 1,
                     pageSpacing = 0.dp
                 ) { page ->
