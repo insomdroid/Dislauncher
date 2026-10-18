@@ -213,13 +213,20 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     var notesEditing by remember { mutableStateOf(false) }
     var notesBackSignal by remember { mutableStateOf(0) }
+    var calculatorShowingHistory by remember { mutableStateOf(false) }
+    var calculatorHistoryHasItems by remember { mutableStateOf(false) }
+    var calculatorClearHistorySignal by remember { mutableStateOf(0) }
     fun requestClose() = onBack()
     BackHandler(enabled = tool != BuiltInTool.NOTES || !notesEditing) {
-        requestClose()
+        if (tool == BuiltInTool.CALCULATOR && calculatorShowingHistory) {
+            calculatorShowingHistory = false
+        } else {
+            requestClose()
+        }
     }
     val title = when (tool) {
         BuiltInTool.NOTES -> if (notesEditing) "Note" else "Notes"
-        BuiltInTool.CALCULATOR -> "Calculator"
+        BuiltInTool.CALCULATOR -> if (calculatorShowingHistory) "History" else "Calculator"
         BuiltInTool.CALENDAR -> "Calendar"
     }
     Scaffold(
@@ -229,10 +236,23 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                         title = { Text(title, fontWeight = FontWeight.Medium) },
                         navigationIcon = {
                             IconButton(onClick = {
-                                if (tool == BuiltInTool.NOTES && notesEditing) notesBackSignal++
-                                else requestClose()
+                                when {
+                                    tool == BuiltInTool.NOTES && notesEditing -> notesBackSignal++
+                                    tool == BuiltInTool.CALCULATOR && calculatorShowingHistory -> calculatorShowingHistory = false
+                                    else -> requestClose()
+                                }
                             }) {
                                 Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            }
+                        },
+                        actions = {
+                            if (tool == BuiltInTool.CALCULATOR && calculatorShowingHistory) {
+                                IconButton(
+                                    onClick = { calculatorClearHistorySignal++ },
+                                    enabled = calculatorHistoryHasItems
+                                ) {
+                                    Icon(Icons.Outlined.DeleteOutline, contentDescription = "Clear calculator history")
+                                }
                             }
                         },
                         colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
@@ -241,7 +261,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
             ) { padding ->
                 Box(
                     Modifier.fillMaxSize().padding(padding)
-                        .padding(horizontal = if (tool == BuiltInTool.CALCULATOR) 6.dp else 18.dp, vertical = 8.dp)
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     when (tool) {
                         BuiltInTool.NOTES -> NotesTool(
@@ -250,7 +270,13 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             onEditingChanged = { notesEditing = it },
                             modifier = Modifier.fillMaxSize()
                         )
-                        BuiltInTool.CALCULATOR -> CalculatorTool(Modifier.fillMaxSize())
+                        BuiltInTool.CALCULATOR -> CalculatorTool(
+                            modifier = Modifier.fillMaxSize(),
+                            showHistory = calculatorShowingHistory,
+                            onShowHistoryChange = { calculatorShowingHistory = it },
+                            clearHistorySignal = calculatorClearHistorySignal,
+                            onHistoryAvailabilityChanged = { calculatorHistoryHasItems = it }
+                        )
                         BuiltInTool.CALENDAR -> CalendarTool(context, Modifier.fillMaxSize())
                     }
                 }
@@ -301,12 +327,6 @@ private fun NotesTool(
     Box(modifier = modifier) {
     if (selectedId == null) {
         Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.weight(1f)) {
-                    Text("Your notes", style = MaterialTheme.typography.titleLarge)
-                    Text("Saved on this device", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
             if (notes.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("No notes yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -416,13 +436,25 @@ private fun NotesTool(
 }
 
 @Composable
-private fun CalculatorTool(modifier: Modifier = Modifier) {
+private fun CalculatorTool(
+    modifier: Modifier = Modifier,
+    showHistory: Boolean,
+    onShowHistoryChange: (Boolean) -> Unit,
+    clearHistorySignal: Int,
+    onHistoryAvailabilityChanged: (Boolean) -> Unit
+) {
     val context = androidx.compose.ui.platform.LocalContext.current
     var expression by remember { mutableStateOf("") }
     var result by remember { mutableStateOf("") }
-    var showHistory by remember { mutableStateOf(false) }
     var showClearHistoryDialog by remember { mutableStateOf(false) }
     var history by remember(context) { mutableStateOf(loadCalculatorHistory(context)) }
+
+    LaunchedEffect(history) {
+        onHistoryAvailabilityChanged(history.isNotEmpty())
+    }
+    LaunchedEffect(clearHistorySignal) {
+        if (clearHistorySignal > 0) showClearHistoryDialog = true
+    }
     val keyRows = listOf(
         listOf("C", "⌫", "%", "÷"),
         listOf("7", "8", "9", "×"),
@@ -438,30 +470,18 @@ private fun CalculatorTool(modifier: Modifier = Modifier) {
 
         if (showHistory) {
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { showHistory = false }) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back to calculator")
-                    }
-                    Text("History", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
-                    IconButton(
-                        onClick = { showClearHistoryDialog = true },
-                        enabled = history.isNotEmpty()
-                    ) {
-                        Icon(Icons.Outlined.DeleteOutline, contentDescription = "Clear calculator history")
-                    }
-                }
                 if (history.isEmpty()) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                         Text("No calculations yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 } else {
-                    LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(history, key = { it.id }) { entry ->
                             Surface(
                                 modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).clickable {
                                     expression = entry.expression
                                     result = entry.result
-                                    showHistory = false
+                                    onShowHistoryChange(false)
                                 },
                                 color = MaterialTheme.colorScheme.surfaceContainerLow,
                                 shape = RoundedCornerShape(16.dp)
@@ -493,7 +513,7 @@ private fun CalculatorTool(modifier: Modifier = Modifier) {
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = { showHistory = true }) {
+                    IconButton(onClick = { onShowHistoryChange(true) }) {
                         Icon(Icons.Outlined.History, contentDescription = "Open calculator history")
                     }
                 }

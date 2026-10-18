@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -198,11 +199,15 @@ internal fun HomeScreen(
         }
     }
 
-    Column(
+    BoxWithConstraints(
         modifier = Modifier.fillMaxSize()
             .background(background)
             .windowInsetsPadding(WindowInsets.safeDrawing)
-            .verticalScroll(rememberScrollState())
+    ) {
+        val favoriteSpacerHeight = (maxHeight - 640.dp).coerceIn(0.dp, 120.dp)
+        Column(
+            modifier = Modifier.fillMaxSize()
+                .verticalScroll(rememberScrollState())
             .combinedClickable(
                 onClick = {},
                 onLongClick = {
@@ -230,8 +235,10 @@ internal fun HomeScreen(
             onOpenCalendar = { openCalendar(context) }
         )
 
-        if (preferences.showWeather || preferences.showBattery || preferences.showCalendarShortcut) {
-                        Row(
+        val showStatusWidgets = preferences.showWeather || preferences.showBattery || preferences.showCalendarShortcut
+        if (showStatusWidgets) {
+            Spacer(Modifier.height(8.dp))
+            Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -282,7 +289,8 @@ internal fun HomeScreen(
         }
 
         if (preferences.showMusic) {
-                        MusicPlayerWidget(
+            if (showStatusWidgets) Spacer(Modifier.height(8.dp))
+            MusicPlayerWidget(
                 modifier = Modifier.fillMaxWidth(),
                 onOpenMusicApp = { openMusicPlayer(context, apps) }
             )
@@ -295,7 +303,7 @@ internal fun HomeScreen(
         }
         val latestOrderedMainItemIds = rememberUpdatedState(orderedMainItemIds)
         val latestMoveHomeItem = rememberUpdatedState(onMoveHomeItem)
-        Spacer(Modifier.height(220.dp))
+        Spacer(Modifier.height(favoriteSpacerHeight))
         orderedMainItemIds.forEach { itemId ->
             val app = favoriteAppsByPackage[itemId]
             val label = app?.label.orEmpty()
@@ -383,7 +391,7 @@ internal fun HomeScreen(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
                     .clickable(onClick = onOpenSettings)
-                    .padding(horizontal = 7.dp, vertical = 7.dp),
+                    .padding(horizontal = 7.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -404,8 +412,7 @@ internal fun HomeScreen(
             }
         }
         Spacer(Modifier.height(14.dp))
+        }
     }
-
-
 }
 
