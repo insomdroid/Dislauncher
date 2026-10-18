@@ -1,0 +1,73 @@
+name: Build APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build test APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools platforms;android-36 build-tools;36.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+
+      - name: Build release variant for testing
+        env:
+          KEYSTORE: ${{ secrets.KEYSTORE }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          KEYSTORE_FILE="$RUNNER_TEMP/dislauncher-release.jks"
+          trap 'rm -f "$KEYSTORE_FILE"' EXIT
+
+          if [[ -n "$KEYSTORE" && -n "$KEY_ALIAS" && -n "$KEYSTORE_PASSWORD" && -n "$KEY_PASSWORD" ]]; then
+            printf '%s' "$KEYSTORE" | base64 --decode > "$KEYSTORE_FILE"
+            test -s "$KEYSTORE_FILE"
+            export RELEASE_STORE_FILE="$KEYSTORE_FILE"
+            echo "Using configured production signing key for the test APK."
+          elif [[ -z "$KEYSTORE" && -z "$KEY_ALIAS" && -z "$KEYSTORE_PASSWORD" && -z "$KEY_PASSWORD" ]]; then
+            echo "Production signing secrets are not configured; this test APK will use the debug signing key."
+          else
+            echo "Signing secrets are incomplete. Configure all four secrets: KEYSTORE, KEY_ALIAS, KEYSTORE_PASSWORD, and KEY_PASSWORD."
+            exit 1
+          fi
+
+          gradle assembleRelease
+
+          APK="app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK"
+          cp "$APK" "Dislauncher-test-${GITHUB_RUN_NUMBER}.apk"
+
+      - name: Upload test APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Dislauncher-test-${{ github.run_number }}
+          path: Dislauncher-test-${{ github.run_number }}.apk
+          if-no-files-found: error
+          retention-days: 14
