@@ -347,8 +347,8 @@ internal fun HomeScreen(
                     Text(
                         text = label,
                         color = primaryText,
-                        fontSize = 26.sp,
-                        lineHeight = 34.sp,
+                        fontSize = 25.sp,
+                        lineHeight = 32.sp,
                         fontFamily = fontFamily,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
