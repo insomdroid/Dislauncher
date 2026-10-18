@@ -641,7 +641,8 @@ internal fun DislauncherRoot() {
                 onDoubleTapLockChange = ::changeDoubleTapLock,
                 onToggleFavorite = ::toggleFavorite,
                 onToggleHidden = ::toggleHidden,
-                onBack = { screen = if (settingsOpenedFromApps) LauncherScreen.APPS else LauncherScreen.HOME }
+                onBack = { screen = if (settingsOpenedFromApps) LauncherScreen.APPS else LauncherScreen.HOME },
+                onRestartLauncher = { (context as? Activity)?.recreate() }
             )
         } else if (screen == LauncherScreen.WEATHER) {
             WeatherScreen(
