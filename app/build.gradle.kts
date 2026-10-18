@@ -4,6 +4,17 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+val releaseStoreFile = System.getenv("RELEASE_STORE_FILE")
+val releaseStorePassword = System.getenv("KEYSTORE_PASSWORD")
+val releaseKeyAlias = System.getenv("KEY_ALIAS")
+val releaseKeyPassword = System.getenv("KEY_PASSWORD")
+val hasProductionSigning = listOf(
+    releaseStoreFile,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword
+).all { !it.isNullOrBlank() }
+
 android {
     namespace = "com.insomdroid.dislauncher"
     compileSdk = 36
@@ -16,12 +27,29 @@ android {
         versionName = "0.1.0"
     }
 
+    signingConfigs {
+        if (hasProductionSigning) {
+            create("production") {
+                storeFile = file(releaseStoreFile!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
-            signingConfig = signingConfigs.getByName("debug")
+            // Main-branch CI builds remain debug-signed; the tag-release workflow
+            // must supply all production signing values or it fails before building.
+            signingConfig = if (hasProductionSigning) {
+                signingConfigs.getByName("production")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 
