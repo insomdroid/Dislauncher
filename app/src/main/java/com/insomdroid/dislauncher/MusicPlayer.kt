@@ -18,6 +18,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -156,7 +160,14 @@ internal fun MusicPlayerWidget(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Column(
-            modifier = Modifier.weight(1f).clickable(onClick = onOpenMusicApp),
+            modifier = Modifier.weight(1f).clickable {
+                val sessionActivity = controller?.sessionActivity
+                if (sessionActivity != null && runCatching { sessionActivity.send() }.isSuccess) {
+                    Unit
+                } else {
+                    onOpenMusicApp()
+                }
+            },
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             Text(
@@ -207,12 +218,11 @@ internal fun MusicPlayerWidget(
                 },
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    if (playing) "Ⅱ" else "▶",
-                    color = foreground,
-                    fontSize = 18.sp,
-                    lineHeight = 22.sp,
-                    fontWeight = FontWeight.Medium
+                Icon(
+                    imageVector = if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    contentDescription = if (playing) "Pause" else "Play",
+                    tint = foreground,
+                    modifier = Modifier.size(20.dp)
                 )
             }
             Box(
