@@ -35,6 +35,7 @@ internal data class LauncherPreferences(
     val swipeDownNotifications: Boolean = true,
     val showCalendarShortcut: Boolean = true,
     val notificationDotsEnabled: Boolean = false,
+    val notificationDotColor: String = "white",
     val notificationDotPackages: Set<String> = emptySet()
 ) {
     fun save(p: SharedPreferences) {
@@ -71,6 +72,7 @@ internal data class LauncherPreferences(
             .putBoolean("swipe_down_notifications", swipeDownNotifications)
             .putBoolean("show_calendar_shortcut", showCalendarShortcut)
             .putBoolean("notification_dots_enabled", notificationDotsEnabled)
+            .putString("notification_dot_color", notificationDotColor)
             .putStringSet("notification_dot_packages", notificationDotPackages.toMutableSet())
             .apply()
     }
@@ -155,6 +157,8 @@ internal data class LauncherPreferences(
                 swipeDownNotifications = p.getBoolean("swipe_down_notifications", true),
                 showCalendarShortcut = p.getBoolean("show_calendar_shortcut", true),
                 notificationDotsEnabled = p.getBoolean("notification_dots_enabled", false),
+                notificationDotColor = (p.getString("notification_dot_color", "white") ?: "white")
+                    .takeIf { it in setOf("white", "red", "orange", "blue", "purple") } ?: "white",
                 notificationDotPackages = p.getStringSet("notification_dot_packages", emptySet()).orEmpty().toSet()
             )
         }

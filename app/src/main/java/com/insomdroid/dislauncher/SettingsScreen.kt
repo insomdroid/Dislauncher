@@ -457,6 +457,19 @@ internal fun SettingsScreen(
                                     tr("apps selected", "aplikasi dipilih"),
                                 tr("Choose", "Pilih")
                             ) { openDialog = "notificationdots" }
+                            ChoiceRow(
+                                tr("Dot color", "Warna titik"),
+                                preferences.notificationDotColor,
+                                listOf(
+                                    "white" to tr("White", "Putih"),
+                                    "red" to tr("Red", "Merah"),
+                                    "orange" to tr("Orange", "Oranye"),
+                                    "blue" to tr("Blue", "Biru"),
+                                    "purple" to tr("Purple", "Ungu")
+                                )
+                            ) { color ->
+                                onPreferencesChange(preferences.copy(notificationDotColor = color))
+                            }
                         }
                         SettingsGroup(tr("Format", "Format")) {
                             ChoiceRow(
