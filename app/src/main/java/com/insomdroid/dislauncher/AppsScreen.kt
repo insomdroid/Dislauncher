@@ -234,7 +234,8 @@ internal fun AppsScreen(
                                         fontSize = 11.sp,
                                         lineHeight = 13.sp,
                                         fontFamily = fontFamily,
-                                        maxLines = 1,
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 2,
                                         overflow = TextOverflow.Ellipsis
                                     )
                                 }
