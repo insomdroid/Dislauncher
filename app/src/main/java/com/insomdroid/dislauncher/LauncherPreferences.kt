@@ -7,6 +7,7 @@ internal data class LauncherPreferences(
     val wallpaperMode: String = "default",
     val wallpaperColor: String = "#202124",
     val accentPreset: String = "default",
+    val dynamicColor: Boolean = false,
     val wallpaperUri: String? = null,
     val wallpaperTarget: String = "both",
     val appDrawerWallpaperTransparency: Int = 0,
@@ -45,6 +46,7 @@ internal data class LauncherPreferences(
             .putString("wallpaper_mode", wallpaperMode)
             .putString("wallpaper_color", wallpaperColor)
             .putString("accent_preset", accentPreset)
+            .putBoolean("dynamic_color", dynamicColor)
             .putString("wallpaper_uri", wallpaperUri)
             .putString("wallpaper_target", wallpaperTarget)
             .putInt("app_drawer_wallpaper_transparency", appDrawerWallpaperTransparency.coerceIn(0, 100))
@@ -132,6 +134,7 @@ internal data class LauncherPreferences(
                 wallpaperColor = (p.getString("wallpaper_color", "#202124") ?: "#202124").take(9),
                 accentPreset = (p.getString("accent_preset", "default") ?: "default")
                     .takeIf { it in setOf("default", "red", "yellow", "blue", "green", "purple", "orange", "pink") } ?: "default",
+                dynamicColor = p.getBoolean("dynamic_color", false),
                 wallpaperUri = p.getString("wallpaper_uri", null)?.take(2048),
                 wallpaperTarget = (p.getString("wallpaper_target", "both") ?: "both")
                     .takeIf { it in setOf("home", "lock", "both") } ?: "both",
