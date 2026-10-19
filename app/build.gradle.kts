@@ -1,3 +1,5 @@
+import java.awt.image.BufferedImage
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -41,10 +43,10 @@ val generateLauncherForeground by tasks.registering(Copy::class) {
             .file("drawable-nodpi/dislauncher_icon_foreground.png").asFile
         val sourceImage = javax.imageio.ImageIO.read(outputFile)
             ?: throw GradleException("Unable to read generated launcher icon foreground")
-        val image = java.awt.image.BufferedImage(
+        val image = BufferedImage(
             sourceImage.width,
             sourceImage.height,
-            java.awt.image.BufferedImage.TYPE_INT_ARGB
+            BufferedImage.TYPE_INT_ARGB
         )
         for (y in 0 until sourceImage.height) {
             for (x in 0 until sourceImage.width) {
