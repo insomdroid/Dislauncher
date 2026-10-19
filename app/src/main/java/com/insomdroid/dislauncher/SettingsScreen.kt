@@ -113,47 +113,6 @@ internal fun SettingsScreen(
     var showRestartConfirmation by remember { mutableStateOf(false) }
     var detectedIconPacks by remember { mutableStateOf(iconPacks) }
     var refreshVersion by remember { mutableStateOf(0) }
-    var wallpaperPreview by remember(preferences.wallpaperUri) {
-        mutableStateOf<ImageBitmap?>(null)
-    }
-    var showWallpaperApplyDialog by remember { mutableStateOf(false) }
-    var pendingWallpaperTarget by remember { mutableStateOf(preferences.wallpaperTarget) }
-    var wallpaperApplyStatus by remember(
-        preferences.wallpaperMode, preferences.wallpaperColor, preferences.wallpaperUri
-    ) { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(context, preferences.wallpaperUri) {
-        val selectedUri = preferences.wallpaperUri?.let(Uri::parse)
-        wallpaperPreview = if (selectedUri == null) null else {
-            withContext(Dispatchers.IO) {
-                decodeWallpaperForScreen(context, selectedUri)
-            }
-        }
-    }
-
-    // Migrate the former Default state to the new OFF/solid wallpaper state.
-    // Theme selection remains independent from the selected solid color.
-    LaunchedEffect(preferences.themeMode, preferences.wallpaperMode, preferences.wallpaperColor) {
-        if (preferences.wallpaperMode == "default") {
-            val defaultSolid = if (preferences.themeMode == "light") "#FFFFFF" else "#000000"
-            onPreferencesChange(
-                preferences.copy(wallpaperMode = "solid", wallpaperColor = defaultSolid)
-            )
-        } else if (
-            preferences.wallpaperMode == "solid" &&
-            solidWallpaperColors.none { it.first == preferences.wallpaperColor }
-        ) {
-            val migratedColor = when (preferences.wallpaperColor.uppercase()) {
-                "#000000" -> "#000000"
-                "#FFFFFF" -> "#FFFFFF"
-                "#F7F7F7", "#D0D0D0" -> "#F7F7F7"
-                "#121212", "#202124", "#303030" -> "#121212"
-                else -> if (preferences.themeMode == "light") "#FFFFFF" else "#000000"
-            }
-            onPreferencesChange(preferences.copy(wallpaperColor = migratedColor))
-        }
-    }
-
     LaunchedEffect(context, refreshVersion) {
         detectedIconPacks = withContext(Dispatchers.IO) { findIconPacks(context) }
     }
@@ -313,105 +272,55 @@ internal fun SettingsScreen(
                                 preferences.dynamicColor
                             ) { onPreferencesChange(preferences.copy(dynamicColor = it)) }
                         }
-                        SettingsGroup(
-                            tr("Wallpaper", "Wallpaper"),
-                            tr(
-                                "Choose a background for Dislauncher. Apply it to your device from the button below.",
-                                "Pilih latar untuk Dislauncher. Terapkan ke perangkat melalui tombol di bawah."
-                            )
-                        ) {
+                        SettingsGroup(tr("Wallpaper", "Wallpaper")) {
                             ChoiceRow(
-                                tr("Wallpaper type", "Jenis wallpaper"),
+                                tr("Wallpaper style", "Gaya wallpaper"),
                                 preferences.wallpaperMode,
                                 listOf(
-                                    "solid" to tr("Solid color", "Warna polos"),
-                                    "image" to tr("Custom image", "Gambar sendiri")
+                                    "default" to tr("Default", "Bawaan"),
+                                    "solid" to tr("Solid color", "Warna solid"),
+                                    "image" to tr("Custom", "Kustom")
                                 )
                             ) { mode ->
+                                // Choosing Custom only switches the style. The picker belongs
+                                // to the dedicated action below, not to the mode chip.
                                 onPreferencesChange(preferences.copy(wallpaperMode = mode))
                             }
-
-                            if (preferences.wallpaperMode != "image") {
+                            if (preferences.wallpaperMode == "solid") {
                                 ChoiceRow(
-                                    tr("Color", "Warna"),
+                                    tr("Solid color", "Warna solid"),
                                     preferences.wallpaperColor,
                                     solidWallpaperColors
-                                ) {
-                                    onPreferencesChange(
-                                        preferences.copy(wallpaperMode = "solid", wallpaperColor = it)
-                                    )
-                                }
-                            } else {
-                                if (wallpaperPreview != null) {
-                                    Image(
-                                        bitmap = wallpaperPreview!!,
-                                        contentDescription = tr("Selected wallpaper preview", "Pratinjau wallpaper terpilih"),
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier.fillMaxWidth()
-                                            .height(190.dp)
-                                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
-                                    )
-                                } else {
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth()
-                                            .height(140.dp)
-                                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            tr("No image selected", "Belum ada gambar yang dipilih"),
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
+                                ) { onPreferencesChange(preferences.copy(wallpaperColor = it, wallpaperMode = "solid")) }
+                            }
+                            if (preferences.wallpaperMode == "image") {
                                 SettingAction(
-                                    tr("Custom image", "Gambar sendiri"),
-                                    if (preferences.wallpaperUri != null) {
-                                        tr("Choose a different image", "Pilih gambar lain")
-                                    } else {
-                                        tr("Select an image for your wallpaper", "Pilih gambar untuk wallpaper")
-                                    },
+                                    tr("Custom wallpaper", "Wallpaper kustom"),
+                                    if (preferences.wallpaperUri != null) tr("Custom image selected", "Gambar kustom dipilih")
+                                    else tr("Choose an image for your wallpaper", "Pilih gambar untuk wallpaper"),
                                     tr("Choose image", "Pilih gambar"),
                                     onChooseWallpaper
                                 )
-                            }
-
-                            Column(
-                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                                verticalArrangement = Arrangement.spacedBy(3.dp)
-                            ) {
-                                Text(
-                                    tr("Device wallpaper", "Wallpaper perangkat"),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Text(
-                                    when (wallpaperApplyStatus) {
-                                        "failed" -> tr("Couldn't apply wallpaper. Try again.", "Wallpaper gagal diterapkan. Coba lagi.")
-                                        null -> tr("Not applied yet", "Belum diterapkan")
-                                        else -> wallpaperApplyStatus!!
-                                    },
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = if (wallpaperApplyStatus == "failed") {
-                                        MaterialTheme.colorScheme.error
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                    }
-                                )
-                            }
-
-                            SettingAction(
-                                tr("Apply wallpaper", "Terapkan wallpaper"),
-                                tr(
-                                    "Choose whether to change the Home screen, Lock screen, or both.",
-                                    "Pilih apakah wallpaper diubah pada layar utama, layar kunci, atau keduanya."
-                                ),
-                                tr("Apply wallpaper", "Terapkan wallpaper"),
-                                {
-                                    pendingWallpaperTarget = preferences.wallpaperTarget
-                                    showWallpaperApplyDialog = true
+                                if (preferences.wallpaperUri != null) {
+                                    SettingAction(
+                                        tr("Apply to device Home and lock screen", "Terapkan ke Home dan lockscreen perangkat"),
+                                        tr(
+                                            "Apply this image to the device wallpaper. Dislauncher keeps its internal wallpaper separate.",
+                                            "Terapkan gambar ini ke wallpaper perangkat. Wallpaper internal Dislauncher tetap terpisah."
+                                        ),
+                                        tr("Apply", "Terapkan"),
+                                        { onApplyWallpaperToSystem("both") { applied ->
+                                            android.widget.Toast.makeText(
+                                                context,
+                                                if (applied) tr("Wallpaper applied", "Wallpaper diterapkan")
+                                                else tr("Couldn't apply wallpaper", "Wallpaper gagal diterapkan"),
+                                                android.widget.Toast.LENGTH_SHORT
+                                            ).show()
+                                        } }
+                                    )
                                 }
-                            )
+
+                            }
                         }
                         SettingsGroup(tr("Font and text size", "Font dan ukuran teks")) {
                             ChoiceRow(
