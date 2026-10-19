@@ -14,6 +14,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
@@ -141,14 +142,14 @@ internal fun DislauncherTheme(
         baseThemeColorScheme.copy(
             background = color,
             surface = color,
-            surfaceVariant = Color.lerp(color, foreground, 0.10f),
+            surfaceVariant = lerp(color, foreground, 0.10f),
             // Keep the chosen wallpaper as the base while retaining visible tonal
             // separation between surfaces in solid-wallpaper mode.
-            surfaceContainerLowest = Color.lerp(color, foreground, 0.02f),
-            surfaceContainerLow = Color.lerp(color, foreground, 0.05f),
-            surfaceContainer = Color.lerp(color, foreground, 0.09f),
-            surfaceContainerHigh = Color.lerp(color, foreground, 0.14f),
-            surfaceContainerHighest = Color.lerp(color, foreground, 0.20f),
+            surfaceContainerLowest = lerp(color, foreground, 0.02f),
+            surfaceContainerLow = lerp(color, foreground, 0.05f),
+            surfaceContainer = lerp(color, foreground, 0.09f),
+            surfaceContainerHigh = lerp(color, foreground, 0.14f),
+            surfaceContainerHighest = lerp(color, foreground, 0.20f),
             onBackground = foreground,
             onSurface = foreground,
             onSurfaceVariant = foreground.copy(alpha = 0.78f),
