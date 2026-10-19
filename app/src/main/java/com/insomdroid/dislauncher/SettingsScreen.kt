@@ -100,9 +100,9 @@ internal fun SettingsScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val solidWallpaperColors = listOf(
         "#000000" to settingsLocalizedText(context, "Black", "Hitam"),
-        "#808080" to settingsLocalizedText(context, "Grey", "Abu-abu"),
-        "#D8D8D8" to settingsLocalizedText(context, "Light grey", "Abu-abu muda"),
-        "#FFFFFF" to settingsLocalizedText(context, "White", "Putih")
+        "#FFFFFF" to settingsLocalizedText(context, "White", "Putih"),
+        "#F7F7F7" to settingsLocalizedText(context, "Snow", "Putih salju"),
+        "#121212" to settingsLocalizedText(context, "Pitch", "Hitam pekat")
     )
     fun tr(english: String, indonesian: String): String =
         settingsLocalizedText(context, english, indonesian)
@@ -138,10 +138,11 @@ internal fun SettingsScreen(
             solidWallpaperColors.none { it.first == preferences.wallpaperColor }
         ) {
             val migratedColor = when (preferences.wallpaperColor.uppercase()) {
-                "#121212", "#202124" -> "#000000"
-                "#303030", "#D0D0D0" -> "#808080"
-                "#F7F7F7" -> "#FFFFFF"
-                else -> "#000000"
+                "#000000" -> "#000000"
+                "#FFFFFF" -> "#FFFFFF"
+                "#F7F7F7", "#D0D0D0" -> "#F7F7F7"
+                "#121212", "#202124", "#303030" -> "#121212"
+                else -> if (preferences.themeMode == "light") "#FFFFFF" else "#000000"
             }
             onPreferencesChange(preferences.copy(wallpaperColor = migratedColor))
         }
@@ -338,6 +339,26 @@ internal fun SettingsScreen(
                                         preferences.copy(wallpaperMode = "solid", wallpaperColor = it)
                                     )
                                 }
+                                ChoiceRow(
+                                    tr("Apply to device screen", "Terapkan ke layar perangkat"),
+                                    preferences.wallpaperTarget,
+                                    listOf(
+                                        "home" to tr("Home screen", "Layar utama"),
+                                        "lock" to tr("Lock screen", "Layar kunci"),
+                                        "both" to tr("Both", "Keduanya")
+                                    )
+                                ) { target ->
+                                    onPreferencesChange(preferences.copy(wallpaperTarget = target))
+                                }
+                                SettingAction(
+                                    tr("Apply solid color to device", "Terapkan warna solid ke perangkat"),
+                                    tr(
+                                        "Apply this color to the Android Home screen, lock screen, or both.",
+                                        "Terapkan warna ini ke Home Screen, Lock Screen Android, atau keduanya."
+                                    ),
+                                    tr("Apply", "Terapkan"),
+                                    { onApplyWallpaperToSystem(preferences.wallpaperTarget) }
+                                )
                             } else {
                                 if (wallpaperPreview != null) {
                                     Image(
