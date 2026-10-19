@@ -141,12 +141,14 @@ internal fun DislauncherTheme(
         baseThemeColorScheme.copy(
             background = color,
             surface = color,
-            surfaceVariant = color,
-            surfaceContainerLowest = color,
-            surfaceContainerLow = color,
-            surfaceContainer = color,
-            surfaceContainerHigh = color,
-            surfaceContainerHighest = color,
+            surfaceVariant = Color.lerp(color, foreground, 0.10f),
+            // Keep the chosen wallpaper as the base while retaining visible tonal
+            // separation between surfaces in solid-wallpaper mode.
+            surfaceContainerLowest = Color.lerp(color, foreground, 0.02f),
+            surfaceContainerLow = Color.lerp(color, foreground, 0.05f),
+            surfaceContainer = Color.lerp(color, foreground, 0.09f),
+            surfaceContainerHigh = Color.lerp(color, foreground, 0.14f),
+            surfaceContainerHighest = Color.lerp(color, foreground, 0.20f),
             onBackground = foreground,
             onSurface = foreground,
             onSurfaceVariant = foreground.copy(alpha = 0.78f),
