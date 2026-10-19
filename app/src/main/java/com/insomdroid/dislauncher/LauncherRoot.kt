@@ -44,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -70,6 +71,27 @@ private const val MAX_PINNED_APPS = 6
 private const val MAX_CUSTOM_WALLPAPER_BYTES = 10L * 1024L * 1024L
 private const val MAX_CUSTOM_WALLPAPER_SOURCE_PIXELS = 250_000_000L
 private const val MAX_CUSTOM_WALLPAPER_DECODED_PIXELS = 3_000_000L
+
+/**
+ * Estimate the brightness at the edge covered by a transparent system bar.
+ * Sampling is deliberately bounded so large wallpapers do not add noticeable work.
+ */
+private fun wallpaperEdgeUsesDarkIcons(
+    image: androidx.compose.ui.graphics.ImageBitmap,
+    topEdge: Boolean
+): Boolean? = runCatching {
+    val bitmap = image.asAndroidBitmap()
+    if (bitmap.width <= 0 || bitmap.height <= 0) return@runCatching null
+    val y = if (topEdge) (bitmap.height * 0.03f).toInt() else (bitmap.height * 0.97f).toInt()
+    val step = (bitmap.width / 32).coerceAtLeast(1)
+    var luminanceTotal = 0.0
+    var samples = 0
+    for (x in 0 until bitmap.width step step) {
+        luminanceTotal += android.graphics.Color.luminance(bitmap.getPixel(x, y))
+        samples++
+    }
+    samples > 0 && luminanceTotal / samples > 0.45
+}.getOrNull()
 
 /**
  * Keep a private copy of a selected wallpaper so it remains readable after reboot,
@@ -597,11 +619,15 @@ internal fun DislauncherRoot() {
                     android.graphics.Color.parseColor(preferences.wallpaperColor)
                 }.getOrNull()
             } else null
-            val useDarkSystemBarIcons = solidWallpaperColor?.let {
+            val image = if (preferences.wallpaperMode == "image") wallpaperImage.value else null
+            val useDarkStatusBarIcons = solidWallpaperColor?.let {
                 android.graphics.Color.luminance(it) > 0.45f
-            } ?: !isDark
-            controller.isAppearanceLightStatusBars = useDarkSystemBarIcons
-            controller.isAppearanceLightNavigationBars = useDarkSystemBarIcons
+            } ?: image?.let { wallpaperEdgeUsesDarkIcons(it, topEdge = true) } ?: !isDark
+            val useDarkNavigationBarIcons = solidWallpaperColor?.let {
+                android.graphics.Color.luminance(it) > 0.45f
+            } ?: image?.let { wallpaperEdgeUsesDarkIcons(it, topEdge = false) } ?: !isDark
+            controller.isAppearanceLightStatusBars = useDarkStatusBarIcons
+            controller.isAppearanceLightNavigationBars = useDarkNavigationBarIcons
         }
     }
 
