@@ -136,8 +136,7 @@ internal fun SettingsScreen(
             PackageManager.PERMISSION_GRANTED
     }
     val locationPermission = remember(refreshVersion) {
-        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
-            PackageManager.PERMISSION_GRANTED
+        hasWeatherLocationPermission(context)
     }
     val appVersion = remember {
         runCatching {
