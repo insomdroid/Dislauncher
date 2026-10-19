@@ -836,7 +836,6 @@ internal fun DislauncherRoot() {
                 }
                 val pageColorScheme = wallpaperForeground?.let { foreground ->
                     MaterialTheme.colorScheme.copy(
-                        background = Color.Transparent,
                         onBackground = foreground,
                         onSurface = foreground,
                         onSurfaceVariant = foreground.copy(alpha = 0.78f)
