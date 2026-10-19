@@ -1,8 +1,6 @@
 package com.insomdroid.dislauncher
 
 import android.Manifest
-import android.app.DatePickerDialog
-import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -40,6 +38,10 @@ import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FilledTonalButton
@@ -73,6 +75,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.Instant
+import java.time.ZoneOffset
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -723,6 +727,8 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
     var month by remember { mutableStateOf(YearMonth.now()) }
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     var showEditor by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
     var title by remember { mutableStateOf("") }
     var type by remember { mutableStateOf("todo") }
     var date by remember { mutableStateOf(LocalDate.now()) }
@@ -891,19 +897,13 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
                         if (type == "reminder") Button(onClick = { type = "reminder" }, modifier = Modifier.weight(1f)) { Text("Reminder") }
                         else FilledTonalButton(onClick = { type = "reminder" }, modifier = Modifier.weight(1f)) { Text("Reminder") }
                     }
-                    TextButton(onClick = {
-                        DatePickerDialog(context, { _, y, m, d -> date = LocalDate.of(y, m + 1, d) },
-                            date.year, date.monthValue - 1, date.dayOfMonth).show()
-                    }, modifier = Modifier.fillMaxWidth()) {
+                    TextButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Outlined.Event, contentDescription = null)
                         Spacer(Modifier.size(8.dp))
                         Text(date.format(DateTimeFormatter.ofPattern("d MMM yyyy", Locale.getDefault())))
                     }
                     if (type == "reminder") {
-                        TextButton(onClick = {
-                            TimePickerDialog(context, { _, h, m -> time = LocalTime.of(h, m) },
-                                time.hour, time.minute, true).show()
-                        }, modifier = Modifier.fillMaxWidth()) {
+                        TextButton(onClick = { showTimePicker = true }, modifier = Modifier.fillMaxWidth()) {
                             Icon(Icons.Outlined.Schedule, contentDescription = null)
                             Spacer(Modifier.size(8.dp))
                             Text(time.format(DateTimeFormatter.ofPattern("HH:mm")))
@@ -951,6 +951,54 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
                 }) { Text("Save") }
             },
             dismissButton = { TextButton(onClick = { showEditor = false }) { Text("Cancel") } }
+        )
+    }
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+        )
+        AlertDialog(
+            onDismissRequest = { showDatePicker = false },
+            title = { Text(if (Locale.getDefault().language == "id") "Pilih tanggal" else "Select date") },
+            text = { DatePicker(state = datePickerState) },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        date = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+                    }
+                    showDatePicker = false
+                }) { Text(if (Locale.getDefault().language == "id") "Pilih" else "Select") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text(if (Locale.getDefault().language == "id") "Batal" else "Cancel")
+                }
+            }
+        )
+    }
+
+    if (showTimePicker) {
+        val timePickerState = rememberTimePickerState(
+            initialHour = time.hour,
+            initialMinute = time.minute,
+            is24Hour = true
+        )
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            title = { Text(if (Locale.getDefault().language == "id") "Pilih waktu" else "Select time") },
+            text = { TimePicker(state = timePickerState) },
+            confirmButton = {
+                TextButton(onClick = {
+                    time = LocalTime.of(timePickerState.hour, timePickerState.minute)
+                    showTimePicker = false
+                }) { Text(if (Locale.getDefault().language == "id") "Pilih" else "Select") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) {
+                    Text(if (Locale.getDefault().language == "id") "Batal" else "Cancel")
+                }
+            }
         )
     }
 
