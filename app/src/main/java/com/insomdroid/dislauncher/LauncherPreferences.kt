@@ -4,9 +4,9 @@ import android.content.SharedPreferences
 
 internal data class LauncherPreferences(
     val themeMode: String = "system",
-    val dynamicColor: Boolean = false,
     val wallpaperMode: String = "default",
     val wallpaperColor: String = "#202124",
+    val accentPreset: String = "default",
     val wallpaperUri: String? = null,
     val wallpaperTarget: String = "both",
     val appDrawerWallpaperTransparency: Int = 0,
@@ -42,9 +42,9 @@ internal data class LauncherPreferences(
     fun save(p: SharedPreferences) {
         p.edit()
             .putString("theme_mode", themeMode)
-            .putBoolean("dynamic_color", dynamicColor)
             .putString("wallpaper_mode", wallpaperMode)
             .putString("wallpaper_color", wallpaperColor)
+            .putString("accent_preset", accentPreset)
             .putString("wallpaper_uri", wallpaperUri)
             .putString("wallpaper_target", wallpaperTarget)
             .putInt("app_drawer_wallpaper_transparency", appDrawerWallpaperTransparency.coerceIn(0, 100))
@@ -118,14 +118,6 @@ internal data class LauncherPreferences(
                     .apply()
             }
 
-            // Start existing installs with the new monochrome palette; Dynamic Color remains opt-in.
-            if (p.getInt("monochrome_palette_version", 0) < 1) {
-                p.edit()
-                    .putBoolean("dynamic_color", false)
-                    .putInt("monochrome_palette_version", 1)
-                    .apply()
-            }
-
             // Default to both day and year progress after merging the old pin option.
             if (p.getInt("home_layout_version", 0) < 2) {
                 p.edit()
@@ -136,9 +128,10 @@ internal data class LauncherPreferences(
             }
             return LauncherPreferences(
                 themeMode = normalizeThemeMode(p.getString("theme_mode", "system") ?: "system"),
-                dynamicColor = p.getBoolean("dynamic_color", false),
-                wallpaperMode = (p.getString("wallpaper_mode", "default") ?: "default").takeIf { it in setOf("default", "solid", "image") } ?: "default",
+                wallpaperMode = (p.getString("wallpaper_mode", "default") ?: "default").let { if (it == "image") "image" else "default" },
                 wallpaperColor = (p.getString("wallpaper_color", "#202124") ?: "#202124").take(9),
+                accentPreset = (p.getString("accent_preset", "default") ?: "default")
+                    .takeIf { it in setOf("default", "red", "yellow", "blue", "green", "purple", "orange", "pink") } ?: "default",
                 wallpaperUri = p.getString("wallpaper_uri", null)?.take(2048),
                 wallpaperTarget = (p.getString("wallpaper_target", "both") ?: "both")
                     .takeIf { it in setOf("home", "lock", "both") } ?: "both",
