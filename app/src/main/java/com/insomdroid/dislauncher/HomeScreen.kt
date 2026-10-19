@@ -374,7 +374,7 @@ internal fun HomeScreen(
                                 .padding(start = 6.dp)
                                 .size(7.dp)
                                 .background(notificationDotColor, CircleShape)
-                                .border(1.dp, androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.65f), CircleShape)
+                                .border(1.dp, MaterialTheme.colorScheme.background.copy(alpha = 0.65f), CircleShape)
                         )
                     }
                 }
