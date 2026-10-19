@@ -15,19 +15,14 @@ val hasProductionSigning = listOf(
     releaseKeyPassword
 ).all { !it.isNullOrBlank() }
 
-// Prefer the release workflow's requested tag, then the pushed tag.
-// Accept both "v1.2.0" and the existing "v.1.1.0" tag style.
-val releaseTag = (
-    System.getenv("RELEASE_TAG_INPUT")?.takeIf { it.isNotBlank() }
-        ?: System.getenv("GITHUB_REF_NAME")
-    ).orEmpty().removePrefix("v").removePrefix(".")
-val parsedVersion = Regex("^(\\d+)\\.(\\d+)\\.(\\d+)$").matchEntire(releaseTag)
-val appVersionName = parsedVersion?.value ?: "1.1.0"
-val appVersionCode = parsedVersion?.let { match ->
-    val (major, minor, patch) = match.destructured
-    major.toInt() * 10_000 + minor.toInt() * 100 + patch.toInt()
-} ?: 10_100
-
+// Generate the adaptive-icon foreground from the original transparent PNG.
+// The source image remains untouched in Screenshot/dislauncher.png.
+val generatedLauncherResources = layout.buildDirectory.dir("generated/res/launcherIcon")
+val generateLauncherForeground by tasks.registering(Copy::class) {
+    from(rootProject.file("Screenshot/dislauncher.png"))
+    into(generatedLauncherResources.map { it.dir("drawable-nodpi") })
+    rename { "dislauncher_icon_foreground.png" }
+}
 android {
     namespace = "com.insomdroid.dislauncher"
     compileSdk = 36
@@ -66,6 +61,8 @@ android {
         }
     }
 
+    sourceSets.getByName("main").res.srcDir(generatedLauncherResources)
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -78,6 +75,10 @@ android {
     buildFeatures {
         compose = true
     }
+}
+
+tasks.named("preBuild").configure {
+    dependsOn(generateLauncherForeground)
 }
 
 dependencies {
