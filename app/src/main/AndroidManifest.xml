@@ -34,6 +34,9 @@
         <intent><action android:name="com.teslacoilsw.launcher.THEME" /></intent>
         <intent><action android:name="com.gau.go.launcherex.theme" /></intent>
         <intent><action android:name="com.dlto.atom.launcher.THEME" /></intent>
+        <intent><action android:name="com.smartlauncher.THEME" /></intent>
+        <intent><action android:name="com.actionlauncher.THEME" /></intent>
+        <intent><action android:name="com.dreamon.theme" /></intent>
     </queries>
 
     <application
