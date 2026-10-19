@@ -615,7 +615,7 @@ internal fun DislauncherRoot() {
                 onPreferencesChange = ::updatePreferences,
                 onChooseCustomFont = { customFontPicker.launch(arrayOf("*/*")) },
                 onChooseWallpaper = { wallpaperPicker.launch(arrayOf("image/*")) },
-                onApplyWallpaperToSystem = {
+                onApplyWallpaperToSystem = { target ->
                     val selectedWallpaper = preferences.wallpaperUri?.let(Uri::parse)
                     if (selectedWallpaper == null) {
                         android.widget.Toast.makeText(
@@ -624,6 +624,11 @@ internal fun DislauncherRoot() {
                             android.widget.Toast.LENGTH_LONG
                         ).show()
                     } else {
+                        val wallpaperFlags = when (target) {
+                            "home" -> WallpaperManager.FLAG_SYSTEM
+                            "lock" -> WallpaperManager.FLAG_LOCK
+                            else -> WallpaperManager.FLAG_SYSTEM or WallpaperManager.FLAG_LOCK
+                        }
                         scope.launch {
                             val applied = withContext(Dispatchers.IO) {
                                 runCatching {
@@ -634,15 +639,20 @@ internal fun DislauncherRoot() {
                                             it,
                                             null,
                                             true,
-                                            WallpaperManager.FLAG_SYSTEM or WallpaperManager.FLAG_LOCK
+                                            wallpaperFlags
                                         )
                                     }
                                 }.isSuccess
                             }
+                            val targetLabel = when (target) {
+                                "home" -> "Home screen"
+                                "lock" -> "lock screen"
+                                else -> "Home screen and lock screen"
+                            }
                             android.widget.Toast.makeText(
                                 context,
                                 if (applied) {
-                                    "Wallpaper applied to the device Home screen and lock screen."
+                                    "Wallpaper applied to the device $targetLabel."
                                 } else {
                                     "Unable to apply the wallpaper. Please try another image."
                                 },
