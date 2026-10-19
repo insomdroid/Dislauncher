@@ -10,7 +10,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -115,7 +118,7 @@ private fun deleteOldInternalWallpapers(context: Context, keepUri: Uri?) {
         ?.forEach { runCatching { it.delete() } }
 }
 
-private fun decodeWallpaperForScreen(
+internal fun decodeWallpaperForScreen(
     context: Context,
     uri: Uri
 ): androidx.compose.ui.graphics.ImageBitmap? {
@@ -617,7 +620,8 @@ internal fun DislauncherRoot() {
                 onChooseWallpaper = { wallpaperPicker.launch(arrayOf("image/*")) },
                 onApplyWallpaperToSystem = { target ->
                     val selectedWallpaper = preferences.wallpaperUri?.let(Uri::parse)
-                    if (selectedWallpaper == null) {
+                    val isSolidWallpaper = preferences.wallpaperMode != "image"
+                    if (!isSolidWallpaper && selectedWallpaper == null) {
                         android.widget.Toast.makeText(
                             context,
                             "Choose a custom wallpaper first.",
@@ -632,8 +636,22 @@ internal fun DislauncherRoot() {
                         scope.launch {
                             val applied = withContext(Dispatchers.IO) {
                                 runCatching {
-                                    val stream = context.contentResolver.openInputStream(selectedWallpaper)
-                                        ?: error("Unable to open the selected wallpaper.")
+                                    val solidWallpaperBytes = if (isSolidWallpaper) {
+                                        val color = android.graphics.Color.parseColor(preferences.wallpaperColor)
+                                        val bitmap = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888)
+                                        bitmap.eraseColor(color)
+                                        ByteArrayOutputStream().use { output ->
+                                            bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
+                                            bitmap.recycle()
+                                            output.toByteArray()
+                                        }
+                                    } else null
+                                    val stream = if (solidWallpaperBytes != null) {
+                                        ByteArrayInputStream(solidWallpaperBytes)
+                                    } else {
+                                        context.contentResolver.openInputStream(selectedWallpaper!!)
+                                            ?: error("Unable to open the selected wallpaper.")
+                                    }
                                     stream.use {
                                         WallpaperManager.getInstance(context).setStream(
                                             it,
@@ -649,12 +667,13 @@ internal fun DislauncherRoot() {
                                 "lock" -> "lock screen"
                                 else -> "Home screen and lock screen"
                             }
+                            val sourceLabel = if (isSolidWallpaper) "Solid color" else "Wallpaper"
                             android.widget.Toast.makeText(
                                 context,
                                 if (applied) {
-                                    "Wallpaper applied to the device $targetLabel."
+                                    "$sourceLabel applied to the device $targetLabel."
                                 } else {
-                                    "Unable to apply the wallpaper. Please try another image."
+                                    "Unable to apply the wallpaper. Please try again."
                                 },
                                 android.widget.Toast.LENGTH_LONG
                             ).show()
