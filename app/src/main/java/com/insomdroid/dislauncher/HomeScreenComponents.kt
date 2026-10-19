@@ -83,7 +83,7 @@ internal fun HomeHeader(
                 primaryText = primaryText,
                 secondaryText = secondaryText,
                 fill = primaryText,
-                track = if (isDark) Color(0xFF555555) else Color(0xFFD5D5D5),
+                track = if (isDark) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerHighest,
             )
         }
     }
