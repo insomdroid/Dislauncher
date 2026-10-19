@@ -259,8 +259,7 @@ internal fun SettingsScreen(
                             SettingToggle(
                                 tr("Dynamic color", "Warna dinamis"),
                                 tr("Use colors from your Android wallpaper", "Gunakan warna dari wallpaper Android"),
-                                preferences.dynamicColor,
-                                enabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                                preferences.dynamicColor
                             ) {
                                 onPreferencesChange(preferences.copy(dynamicColor = it))
                             }
