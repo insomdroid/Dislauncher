@@ -502,7 +502,7 @@ private fun PermissionActionRow(
     }
 }
 
-private fun hasMusicNotificationAccess(context: Context): Boolean {
+internal fun hasMusicNotificationAccess(context: Context): Boolean {
     val component = ComponentName(context, DislauncherNotificationListener::class.java)
     val enabledListeners = Settings.Secure.getString(
         context.contentResolver,
