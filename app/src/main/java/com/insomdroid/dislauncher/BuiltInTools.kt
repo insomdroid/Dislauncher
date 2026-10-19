@@ -933,10 +933,9 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
                                 shape = RoundedCornerShape(50)
                             ) {
                                 Text(
-                                    text = if (isSelected) "✓ $label" else label,
+                                    text = label,
                                     modifier = Modifier.padding(horizontal = 5.dp, vertical = 9.dp),
                                     textAlign = TextAlign.Center,
-                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                                     style = MaterialTheme.typography.labelMedium
                                 )
                             }
