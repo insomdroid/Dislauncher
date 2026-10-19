@@ -15,6 +15,19 @@ val hasProductionSigning = listOf(
     releaseKeyPassword
 ).all { !it.isNullOrBlank() }
 
+// Prefer the release workflow's requested tag, then the pushed tag.
+// Accept both "v1.2.0" and the existing "v.1.1.0" tag style.
+val releaseTag = (
+    System.getenv("RELEASE_TAG_INPUT")?.takeIf { it.isNotBlank() }
+        ?: System.getenv("GITHUB_REF_NAME")
+    ).orEmpty().removePrefix("v").removePrefix(".")
+val parsedVersion = Regex("^(\\d+)\\.(\\d+)\\.(\\d+)$").matchEntire(releaseTag)
+val appVersionName = parsedVersion?.value ?: "1.1.0"
+val appVersionCode = parsedVersion?.let { match ->
+    val (major, minor, patch) = match.destructured
+    major.toInt() * 10_000 + minor.toInt() * 100 + patch.toInt()
+} ?: 10_100
+
 android {
     namespace = "com.insomdroid.dislauncher"
     compileSdk = 36
@@ -23,8 +36,8 @@ android {
         applicationId = "com.insomdroid.dislauncher"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.0.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
     }
 
     signingConfigs {
