@@ -95,12 +95,6 @@ internal fun SettingsScreen(
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val solidWallpaperColors = listOf(
-        "#000000" to settingsLocalizedText(context, "Black", "Hitam"),
-        "#FFFFFF" to settingsLocalizedText(context, "White", "Putih"),
-        "#F7F7F7" to settingsLocalizedText(context, "Snow", "Putih salju"),
-        "#121212" to settingsLocalizedText(context, "Pitch", "Hitam pekat")
-    )
     fun tr(english: String, indonesian: String): String =
         settingsLocalizedText(context, english, indonesian)
 
@@ -253,41 +247,41 @@ internal fun SettingsScreen(
                     SettingsCategory.APPEARANCE -> {
                         SettingsGroup(tr("Theme and color", "Tema dan warna")) {
                             ChoiceRow(
-                                tr("Theme", "Tema"),
+                                tr("Theme mode", "Mode tampilan"),
                                 preferences.themeMode,
                                 listOf(
                                     "system" to tr("System", "Sistem"),
                                     "light" to tr("Light", "Terang"),
                                     "dark" to tr("Dark", "Gelap"),
-                                    "black" to tr("Black", "Hitam")
+                                    "black" to "AMOLED"
                                 )
                             ) { onPreferencesChange(preferences.copy(themeMode = it)) }
-                            SettingToggle(
-                                tr("Dynamic color", "Warna dinamis"),
-                                tr("Use Android wallpaper colors instead of the monochrome palette.", "Gunakan warna wallpaper Android sebagai pengganti palet monokrom."),
-                                preferences.dynamicColor
-                            ) { onPreferencesChange(preferences.copy(dynamicColor = it)) }
+                            ChoiceRow(
+                                tr("Accent color", "Warna aksen"),
+                                preferences.accentPreset,
+                                listOf(
+                                    "default" to tr("Default", "Bawaan"),
+                                    "red" to tr("Red", "Merah"),
+                                    "yellow" to tr("Yellow", "Kuning"),
+                                    "blue" to tr("Blue", "Biru"),
+                                    "green" to tr("Green", "Hijau"),
+                                    "purple" to tr("Purple", "Ungu"),
+                                    "orange" to tr("Orange", "Oranye"),
+                                    "pink" to tr("Pink", "Merah muda")
+                                )
+                            ) { onPreferencesChange(preferences.copy(accentPreset = it)) }
                         }
                         SettingsGroup(tr("Wallpaper", "Wallpaper")) {
                             ChoiceRow(
-                                tr("Wallpaper style", "Gaya wallpaper"),
+                                tr("Wallpaper", "Wallpaper"),
                                 preferences.wallpaperMode,
                                 listOf(
                                     "default" to tr("Default", "Bawaan"),
-                                    "solid" to tr("Solid color", "Warna solid"),
-                                    "image" to tr("Custom", "Kustom")
+                                    "image" to tr("Custom image", "Gambar kustom")
                                 )
                             ) { mode ->
-                                // Choosing Custom only switches the style. The picker belongs
-                                // to the dedicated action below, not to the mode chip.
+                                // Keep the image picker separate from selecting wallpaper mode.
                                 onPreferencesChange(preferences.copy(wallpaperMode = mode))
-                            }
-                            if (preferences.wallpaperMode == "solid") {
-                                ChoiceRow(
-                                    tr("Solid color", "Warna solid"),
-                                    preferences.wallpaperColor,
-                                    solidWallpaperColors
-                                ) { onPreferencesChange(preferences.copy(wallpaperColor = it, wallpaperMode = "solid")) }
                             }
                             if (preferences.wallpaperMode == "image") {
                                 SettingAction(
