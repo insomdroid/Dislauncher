@@ -4,7 +4,7 @@ import android.content.SharedPreferences
 
 internal data class LauncherPreferences(
     val themeMode: String = "system",
-    val dynamicColor: Boolean = true,
+    val dynamicColor: Boolean = false,
     val wallpaperMode: String = "default",
     val wallpaperColor: String = "#202124",
     val wallpaperUri: String? = null,
@@ -126,7 +126,7 @@ internal data class LauncherPreferences(
             }
             return LauncherPreferences(
                 themeMode = normalizeThemeMode(p.getString("theme_mode", "system") ?: "system"),
-                dynamicColor = p.getBoolean("dynamic_color", true),
+                dynamicColor = p.getBoolean("dynamic_color", false),
                 wallpaperMode = (p.getString("wallpaper_mode", "default") ?: "default").takeIf { it in setOf("default", "solid", "image") } ?: "default",
                 wallpaperColor = (p.getString("wallpaper_color", "#202124") ?: "#202124").take(9),
                 wallpaperUri = p.getString("wallpaper_uri", null)?.take(2048),
