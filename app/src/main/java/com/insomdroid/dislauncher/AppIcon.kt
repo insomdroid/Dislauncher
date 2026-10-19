@@ -58,7 +58,14 @@ private fun queryActivities(context: Context, intent: Intent): List<ResolveInfo>
 private fun hasAppFilter(context: Context, packageName: String): Boolean {
     return runCatching {
         val resources = context.packageManager.getResourcesForApplication(packageName)
-        resources.getIdentifier("appfilter", "xml", packageName) != 0
+        if (resources.getIdentifier("appfilter", "xml", packageName) != 0 ||
+            resources.getIdentifier("appfilter", "raw", packageName) != 0
+        ) {
+            true
+        } else {
+            val packageContext = context.createPackageContext(packageName, 0)
+            packageContext.assets.open("appfilter.xml").use { true }
+        }
     }.getOrDefault(false)
 }
 
@@ -258,29 +265,53 @@ private val iconPackMappings = object : LinkedHashMap<String, Map<String, String
     ): Boolean = size > 8
 }
 
+private fun parseIconPackMappings(parser: XmlPullParser): Map<String, String> {
+    val parsed = HashMap<String, String>()
+    var event = parser.eventType
+    while (event != XmlPullParser.END_DOCUMENT) {
+        if (event == XmlPullParser.START_TAG && parser.name == "item") {
+            val key = componentKey(parser.getAttributeValue(null, "component"))
+            val drawable = parser.getAttributeValue(null, "drawable")
+            if (key != null && !drawable.isNullOrBlank()) parsed.putIfAbsent(key, drawable)
+        }
+        event = parser.next()
+    }
+    return parsed
+}
+
 private fun loadIconPackMappings(context: Context, packageName: String): Map<String, String> {
     synchronized(iconPackMappings) {
         iconPackMappings[packageName]?.let { return it }
         val mappings = runCatching {
             val resources = context.packageManager.getResourcesForApplication(packageName)
             val xmlId = resources.getIdentifier("appfilter", "xml", packageName)
-            if (xmlId == 0) return@runCatching emptyMap()
-            val parsed = HashMap<String, String>()
-            val parser = resources.getXml(xmlId)
-            try {
-                var event = parser.eventType
-                while (event != XmlPullParser.END_DOCUMENT) {
-                    if (event == XmlPullParser.START_TAG && parser.name == "item") {
-                        val key = componentKey(parser.getAttributeValue(null, "component"))
-                        val drawable = parser.getAttributeValue(null, "drawable")
-                        if (key != null && !drawable.isNullOrBlank()) parsed.putIfAbsent(key, drawable)
+            val rawId = resources.getIdentifier("appfilter", "raw", packageName)
+
+            when {
+                xmlId != 0 -> {
+                    val parser = resources.getXml(xmlId)
+                    try {
+                        parseIconPackMappings(parser)
+                    } finally {
+                        parser.close()
                     }
-                    event = parser.next()
                 }
-            } finally {
-                parser.close()
+                rawId != 0 -> {
+                    resources.openRawResource(rawId).use { stream ->
+                        val parser = android.util.Xml.newPullParser()
+                        parser.setInput(stream, "UTF-8")
+                        parseIconPackMappings(parser)
+                    }
+                }
+                else -> {
+                    val packageContext = context.createPackageContext(packageName, 0)
+                    packageContext.assets.open("appfilter.xml").use { stream ->
+                        val parser = android.util.Xml.newPullParser()
+                        parser.setInput(stream, "UTF-8")
+                        parseIconPackMappings(parser)
+                    }
+                }
             }
-            parsed
         }.getOrDefault(emptyMap())
         iconPackMappings[packageName] = mappings
         return mappings
@@ -293,7 +324,11 @@ private fun resolveAppDrawable(context: Context, app: LauncherApp, iconPack: Str
         val packed = runCatching {
             val drawableName = loadIconPackMappings(context, iconPack)[appKey(app)]
             val resources = pm.getResourcesForApplication(iconPack)
-            val drawableId = drawableName?.let { resources.getIdentifier(it, "drawable", iconPack) } ?: 0
+            val drawableId = drawableName?.let { name ->
+                resources.getIdentifier(name, "drawable", iconPack)
+                    .takeIf { it != 0 }
+                    ?: resources.getIdentifier(name, "mipmap", iconPack).takeIf { it != 0 }
+            } ?: 0
             if (drawableId != 0) resources.getDrawable(drawableId, context.theme) else null
         }.getOrNull()
         if (packed != null) return packed
