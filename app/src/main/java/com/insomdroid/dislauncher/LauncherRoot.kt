@@ -654,15 +654,16 @@ internal fun DislauncherRoot() {
                 onPreferencesChange = ::updatePreferences,
                 onChooseCustomFont = { customFontPicker.launch(arrayOf("*/*")) },
                 onChooseWallpaper = { wallpaperPicker.launch(arrayOf("image/*")) },
-                onApplyWallpaperToSystem = { target ->
+                onApplyWallpaperToSystem = { target, onResult ->
                     val selectedWallpaper = preferences.wallpaperUri?.let(Uri::parse)
                     val isSolidWallpaper = preferences.wallpaperMode != "image"
                     if (!isSolidWallpaper && selectedWallpaper == null) {
                         android.widget.Toast.makeText(
                             context,
-                            "Choose a custom wallpaper first.",
+                            "Choose an image first.",
                             android.widget.Toast.LENGTH_LONG
                         ).show()
+                        onResult(false)
                     } else {
                         val wallpaperFlags = when (target) {
                             "home" -> WallpaperManager.FLAG_SYSTEM
@@ -700,19 +701,19 @@ internal fun DislauncherRoot() {
                             }
                             val targetLabel = when (target) {
                                 "home" -> "Home screen"
-                                "lock" -> "lock screen"
+                                "lock" -> "Lock screen"
                                 else -> "Home screen and lock screen"
                             }
-                            val sourceLabel = if (isSolidWallpaper) "Solid color" else "Wallpaper"
                             android.widget.Toast.makeText(
                                 context,
                                 if (applied) {
-                                    "$sourceLabel applied to the device $targetLabel."
+                                    "Wallpaper applied to $targetLabel."
                                 } else {
-                                    "Unable to apply the wallpaper. Please try again."
+                                    "Couldn't apply wallpaper. Try again."
                                 },
                                 android.widget.Toast.LENGTH_LONG
                             ).show()
+                            onResult(applied)
                         }
                     }
                 },
