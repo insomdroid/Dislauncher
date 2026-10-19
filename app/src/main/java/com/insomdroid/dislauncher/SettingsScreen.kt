@@ -266,7 +266,7 @@ internal fun SettingsScreen(
                             ) { onPreferencesChange(preferences.copy(themeMode = it)) }
                             SettingToggle(
                                 tr("Dynamic color", "Warna dinamis"),
-                                tr("Use Android wallpaper colors for accents.", "Gunakan warna dari wallpaper Android untuk aksen."),
+                                tr("Use Android wallpaper colors instead of the monochrome palette.", "Gunakan warna wallpaper Android sebagai pengganti palet monokrom."),
                                 preferences.dynamicColor
                             ) { onPreferencesChange(preferences.copy(dynamicColor = it)) }
                         }
