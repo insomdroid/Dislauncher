@@ -201,10 +201,11 @@ private fun priorityLabel(priority: Int): String = when (Locale.getDefault().lan
     else -> when (priority) { 1 -> "Low"; 3 -> "High"; else -> "Medium" }
 }
 
+@Composable
 private fun priorityColor(priority: Int): Color = when (priority) {
-    1 -> Color(0xFFEAEAEA)
-    2 -> Color(0xFFD5D5D5)
-    else -> Color(0xFFBEBEBE)
+    1 -> MaterialTheme.colorScheme.surfaceContainerLow
+    2 -> MaterialTheme.colorScheme.surfaceContainer
+    else -> MaterialTheme.colorScheme.surfaceContainerHigh
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -851,7 +852,7 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Surface(color = priorityColor(task.priority), shape = RoundedCornerShape(50)) {
                                     Text(priorityLabel(task.priority), modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                        style = MaterialTheme.typography.labelSmall, color = androidx.compose.ui.graphics.Color(0xFF353535))
+                                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface)
                                 }
                                 if (task.time.isNotBlank()) Text(task.time, style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
