@@ -391,7 +391,7 @@ internal fun WelcomeOnboardingScreen(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     verticalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    listOf("system" to "System", "light" to "Light", "dark" to "Dark", "black" to "Black").forEach { (value, label) ->
+                                    listOf("system" to "System", "light" to "Light", "dark" to "Dark", "black" to "AMOLED").forEach { (value, label) ->
                                         FilterChip(
                                             selected = preferences.themeMode == value,
                                             onClick = { onPreferencesChange(preferences.copy(themeMode = value)) },
@@ -399,11 +399,6 @@ internal fun WelcomeOnboardingScreen(
                                         )
                                     }
                                 }
-                                FilterChip(
-                                    selected = preferences.dynamicColor,
-                                    onClick = { onPreferencesChange(preferences.copy(dynamicColor = !preferences.dynamicColor)) },
-                                    label = { Text("Dynamic color · Android 12+") }
-                                )
                             }
                         }
                     }
