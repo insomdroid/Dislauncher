@@ -142,7 +142,7 @@ internal fun AppsScreen(
     var scrubberProgress by remember { mutableStateOf<Float?>(null) }
     val firstIndexByLetter = remember(filtered, filteredBuiltIns, preferences.showBuiltInApps, searching) {
         val result = linkedMapOf<String, Int>()
-        // Built-in tools and Settings occupy one horizontal row in the first list item.
+        // Built-in tools occupy one horizontal row in the first list item.
         val installedAppsOffset = if (filteredBuiltIns.isNotEmpty() || (preferences.showBuiltInApps && !searching)) 1 else 0
         filtered.forEachIndexed { index, app ->
             val letter = app.label.firstOrNull()?.uppercaseChar()?.toString()
@@ -213,7 +213,7 @@ internal fun AppsScreen(
                             modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 12.dp),
                             horizontalArrangement = Arrangement.spacedBy(18.dp),
                             // Align each item's fixed 36.dp icon area to the same top edge.
-                            // The two-line Settings label must not lift its icon above the others.
+                            // Keep built-in icons aligned to the same top edge.
                             verticalAlignment = Alignment.Top
                         ) {
                             filteredBuiltIns.forEach { app ->
@@ -254,7 +254,7 @@ internal fun AppsScreen(
                                     )
                                 }
                             }
-settings top row                        }
+                        }
                     }
                 }
                 items(filtered, key = { it.packageName }) { app ->
