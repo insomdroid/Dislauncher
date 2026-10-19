@@ -687,68 +687,6 @@ internal fun SettingsScreen(
         }
     }
 
-    if (showWallpaperApplyDialog) {
-        val customImageMissing = preferences.wallpaperMode == "image" && preferences.wallpaperUri == null
-        AlertDialog(
-            onDismissRequest = { showWallpaperApplyDialog = false },
-            title = { Text(tr("Apply wallpaper", "Terapkan wallpaper")) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(tr("Where would you like to apply this wallpaper?", "Di mana wallpaper ini ingin diterapkan?"))
-                    listOf(
-                        "home" to tr("Home screen", "Layar utama"),
-                        "lock" to tr("Lock screen", "Layar kunci"),
-                        "both" to tr("Both", "Keduanya")
-                    ).forEach { (value, label) ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().clickable { pendingWallpaperTarget = value },
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = pendingWallpaperTarget == value,
-                                onClick = { pendingWallpaperTarget = value }
-                            )
-                            Text(label, style = MaterialTheme.typography.bodyLarge)
-                        }
-                    }
-                    if (customImageMissing) {
-                        Text(
-                            tr("Choose an image first.", "Pilih gambar terlebih dahulu."),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    enabled = !customImageMissing,
-                    onClick = {
-                        showWallpaperApplyDialog = false
-                        wallpaperApplyStatus = null
-                        onPreferencesChange(preferences.copy(wallpaperTarget = pendingWallpaperTarget))
-                        onApplyWallpaperToSystem(pendingWallpaperTarget) { applied ->
-                            wallpaperApplyStatus = if (applied) {
-                                when (pendingWallpaperTarget) {
-                                    "home" -> tr("Applied to Home screen", "Diterapkan ke layar utama")
-                                    "lock" -> tr("Applied to Lock screen", "Diterapkan ke layar kunci")
-                                    else -> tr("Applied to both screens", "Diterapkan ke kedua layar")
-                                }
-                            } else {
-                                "failed"
-                            }
-                        }
-                    }
-                ) { Text(tr("Apply", "Terapkan")) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showWallpaperApplyDialog = false }) {
-                    Text(tr("Cancel", "Batal"))
-                }
-            }
-        )
-    }
-
     if (openDialog == "hidden") {
         AppSelectionDialog(
             title = tr("Manage hidden apps", "Kelola aplikasi tersembunyi"),
