@@ -109,12 +109,22 @@ internal fun AppsScreen(
     val searching = query.isNotBlank()
     // Keep Dislauncher's own tools in a dedicated section so they cannot get lost
     // among installed apps or be affected by the system-app visibility preference.
+    val builtInOrder = mapOf(
+        "internal:calendar" to 0,
+        "internal:notes" to 1,
+        "internal:calculator" to 2,
+        "internal:converter" to 3
+    )
     val filteredBuiltIns = remember(apps, query, preferences.showBuiltInApps) {
         if (!preferences.showBuiltInApps) emptyList() else apps.filter {
             it.packageName.startsWith("internal:") &&
                 it.label.contains(query.trim(), ignoreCase = true)
-        }.sortedBy { it.label.lowercase(Locale.getDefault()) }
+        }.sortedWith(
+            compareBy<LauncherApp> { builtInOrder[it.packageName] ?: Int.MAX_VALUE }
+                .thenBy { it.label.lowercase(Locale.getDefault()) }
+        )
     }
+    val showSettingsEntry = "Dislauncher Settings".contains(query.trim(), ignoreCase = true)
     val filtered = remember(apps, query) {
         apps.filter {
             !it.packageName.startsWith("internal:") &&
@@ -184,7 +194,10 @@ internal fun AppsScreen(
                 contentPadding = PaddingValues(bottom = 16.dp, top = 2.dp),
                 verticalArrangement = if (searching) Arrangement.Bottom else Arrangement.Top
             ) {
-                if (filtered.isEmpty() && filteredBuiltIns.isEmpty()) {
+                if (
+                    filtered.isEmpty() && filteredBuiltIns.isEmpty() &&
+                    (apps.isEmpty() || !showSettingsEntry)
+                ) {
                     item(key = "empty-app-list") {
                         Text(
                             if (apps.isEmpty()) "Loading apps…" else "No matching apps",
@@ -230,9 +243,10 @@ internal fun AppsScreen(
                                     }
                                     Text(
                                         app.label,
-                                        color = secondary.copy(alpha = 0.9f),
-                                        fontSize = 9.sp,
-                                        lineHeight = 11.sp,
+                                        color = if (isDark) androidx.compose.ui.graphics.Color(0xFFAAAAAA)
+                                            else androidx.compose.ui.graphics.Color(0xFF777777),
+                                        fontSize = 10.sp,
+                                        lineHeight = 12.sp,
                                         fontFamily = fontFamily,
                                         textAlign = TextAlign.Center,
                                         maxLines = 2,
@@ -240,38 +254,7 @@ internal fun AppsScreen(
                                     )
                                 }
                             }
-                            if (!searching && preferences.showBuiltInApps) {
-                                Column(
-                                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(14.dp))
-                                        .clickable(onClick = onOpenSettings).padding(vertical = 8.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier.size(36.dp).clip(CircleShape)
-                                            .background(if (isDark) androidx.compose.ui.graphics.Color(0xFF292929) else androidx.compose.ui.graphics.Color(0xFFEAEAEA)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Filled.SettingsIcon,
-                                            contentDescription = "Dislauncher",
-                                            tint = if (isDark) androidx.compose.ui.graphics.Color(0xFFE6E6E6) else androidx.compose.ui.graphics.Color(0xFF444444),
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                    Text(
-                                        "Dislauncher",
-                                        color = secondary.copy(alpha = 0.9f),
-                                        fontSize = 9.sp,
-                                        lineHeight = 11.sp,
-                                        fontFamily = fontFamily,
-                                        textAlign = TextAlign.Center,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
-                        }
+settings top row                        }
                     }
                 }
                 items(filtered, key = { it.packageName }) { app ->
@@ -297,6 +280,36 @@ internal fun AppsScreen(
                             modifier = Modifier.weight(1f)
                                 .padding(start = if (preferences.showAppIcons) 0.dp else 20.dp)
                         )
+                    }
+                }
+                if (showSettingsEntry) {
+                    item(key = "dislauncher-settings-entry") {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenSettings)
+                                .padding(vertical = 8.dp, horizontal = 0.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (preferences.showAppIcons) {
+                                Icon(
+                                    imageVector = Icons.Filled.SettingsIcon,
+                                    contentDescription = null,
+                                    tint = mainText,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(Modifier.width(9.dp))
+                            }
+                            Text(
+                                "Dislauncher Settings",
+                                color = mainText,
+                                fontSize = 25.sp,
+                                lineHeight = 32.sp,
+                                fontFamily = fontFamily,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                                    .padding(start = if (preferences.showAppIcons) 0.dp else 20.dp)
+                            )
+                        }
                     }
                 }
 
