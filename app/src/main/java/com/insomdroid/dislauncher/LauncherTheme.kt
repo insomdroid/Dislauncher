@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -154,9 +155,21 @@ internal fun DislauncherTheme(
     val fontFamily = remember(preferences.fontMode, preferences.customFontName) {
         when (preferences.fontMode) {
             "dislauncher" -> FontFamily(
-                Font(R.font.plus_jakarta_sans_regular, FontWeight.Normal),
-                Font(R.font.plus_jakarta_sans_medium, FontWeight.Medium),
-                Font(R.font.plus_jakarta_sans_semibold, FontWeight.SemiBold)
+                Font(
+                    R.font.inter_variable,
+                    weight = FontWeight.Normal,
+                    variationSettings = FontVariation.Settings(FontVariation.weight(400f))
+                ),
+                Font(
+                    R.font.inter_variable,
+                    weight = FontWeight.Medium,
+                    variationSettings = FontVariation.Settings(FontVariation.weight(500f))
+                ),
+                Font(
+                    R.font.inter_variable,
+                    weight = FontWeight.SemiBold,
+                    variationSettings = FontVariation.Settings(FontVariation.weight(600f))
+                )
             )
             "custom" -> {
                 val fontFile = listOf("ttf", "otf")

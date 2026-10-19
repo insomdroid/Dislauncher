@@ -1,13 +1,23 @@
 # Dislauncher
 
-A minimalist Android launcher designed to keep your Home screen focused, useful, and personal.
+A minimalist, text-first Android launcher designed to keep your Home screen focused, useful, and personal.
 
-## Key Features
+## Features
 
-- **Minimal Home screen:** Clock, date, favourites, and optional everyday widgets.
-- **Fast app drawer:** Alphabetical browsing, app search, and an A–Z index.
-- **Built-in tools:** Calculator, Calendar, and Notes.
-- **Personalization:** Themes, fonts, icon styles, wallpaper, and optional notification dots.
+- **Home screen:** Clock, date, favourites, optional weather and battery information, and reorderable Home items.
+- **App drawer:** Alphabetical app list, search, optional A–Z index, optional automatic keyboard, and controls for system and hidden apps.
+- **App launching and icons:** Built-in icon shapes, compatible third-party icon packs, and optional app icons.
+- **Built-in tools:** Calculator, Calendar with agenda, Notes, Unit Converter, Weather, and Music Player.
+- **Personalization:** Light, dark, pure-black and system themes; optional Android Dynamic Color; solid or image wallpaper; adjustable app-drawer wallpaper transparency; font family and text size.
+- **Gestures and access:** Double-tap-to-lock, swipe-down notification panel, optional notification dots, and settings for calendar, location, music/notification access, and device-admin features.
+- **Onboarding and settings:** Guided first-run setup, bilingual interface text, favourites and hidden-app management, and launcher restart.
+- **Privacy-minded controls:** Optional features can be enabled individually, with relevant Android permissions requested only when needed.
+
+## Typography and third-party assets
+
+Dislauncher uses **Inter Variable** as its built-in display font. The font is bundled locally in the app so it works offline and does not require network access. The existing System and Custom font choices remain available.
+
+Inter is designed by the Inter Project Authors and is distributed under the **SIL Open Font License 1.1 (OFL-1.1)**. The full license is included at `app/src/main/assets/licenses/INTER_OFL.txt`. Source: [Inter on GitHub](https://github.com/rsms/inter) and [Google Fonts](https://fonts.google.com/specimen/Inter).
 
 ## Tech Stack
 
@@ -49,7 +59,7 @@ A minimalist Android launcher designed to keep your Home screen focused, useful,
 1. Set Dislauncher as your default Home app when prompted.
 2. Swipe to open the app drawer.
 3. Search for apps or use the A–Z index to browse.
-4. Open Dislauncher Settings to customize the Home screen, appearance, and optional features.
+4. Open Dislauncher Settings to customize the Home screen, appearance, font, icons, gestures, and optional features.
 5. Enable Android permissions only for the features you want to use.
 
 ---
