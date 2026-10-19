@@ -3,23 +3,13 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Monochrome version of the subtly tilted segmented D. -->
-    <group
-        android:pivotX="54"
-        android:pivotY="54"
-        android:rotation="-7">
-        <path
-            android:fillColor="#00000000"
-            android:strokeColor="#FFFFFFFF"
-            android:strokeWidth="5.5"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round"
-            android:pathData="M32,34 L32,45 M32,58 L32,75 M40,27 L57,27 M68,29 C77,32 83,40 83,49 M83,59 C81,71 71,80 58,82 M40,82 L57,82" />
-        <path
-            android:fillColor="#00000000"
-            android:strokeColor="#FFFFFFFF"
-            android:strokeWidth="3"
-            android:strokeLineCap="round"
-            android:pathData="M39,20 L46,20 M63,22 L68,24 M77,34 L80,39 M77,70 L73,75 M39,89 L46,89" />
-    </group>
+    <!-- Monochrome mask: a solid D with three transparent diagonal cutouts. -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M30,22 H51 C69,22 82,35 82,54 C82,73 69,86 51,86 H30 Z
+                          M41,34 V74 H51 C62,74 70,66 70,54 C70,42 62,34 51,34 Z
+                          M31,61 L37,55 L40,58 L34,64 Z
+                          M31,70 L37,64 L40,67 L34,73 Z
+                          M31,79 L37,73 L40,76 L34,82 Z" />
 </vector>
