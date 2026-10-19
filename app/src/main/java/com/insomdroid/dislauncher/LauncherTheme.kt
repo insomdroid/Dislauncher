@@ -134,7 +134,7 @@ internal fun DislauncherTheme(
         android.graphics.Color.luminance(android.graphics.Color.parseColor(preferences.wallpaperColor)) < 0.45f
     } ?: false
     val colorScheme = wallpaperColor?.let { color ->
-        val foreground = if (wallpaperIsDark) Color.White else Color(0xFF151515)
+        val foreground = if (wallpaperIsDark) Color(0xFFF2F2F2) else Color(0xFF111111)
         baseThemeColorScheme.copy(
             background = color,
             surface = color,
