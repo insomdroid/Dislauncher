@@ -127,11 +127,12 @@ internal fun convertWeatherUnit(weather: WeatherInfo, unit: String): WeatherInfo
     )
 }
 
+internal fun hasWeatherLocationPermission(context: Context): Boolean =
+    ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+        PackageManager.PERMISSION_GRANTED
+
 internal suspend fun fetchWeather(context: Context, unit: String): WeatherInfo? {
-    val hasCoarse = ContextCompat.checkSelfPermission(
-        context, Manifest.permission.ACCESS_COARSE_LOCATION
-    ) == PackageManager.PERMISSION_GRANTED
-    if (!hasCoarse) return null
+    if (!hasWeatherLocationPermission(context)) return null
 
     val manager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return null
     val lastLocation = runCatching {
