@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.admin.DevicePolicyManager
 import android.app.role.RoleManager
 import android.content.ComponentName
+import android.content.res.Configuration
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -56,6 +57,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
@@ -91,7 +93,25 @@ internal fun SettingsScreen(
     onRestartLauncher: () -> Unit
 ) {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val isDarkWallpaperPalette = when (preferences.themeMode) {
+        "light" -> false
+        "dark", "black" -> true
+        else -> (configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
+    }
+    val solidWallpaperColors = if (isDarkWallpaperPalette) {
+        listOf(
+            "#121212" to settingsLocalizedText(context, "Pitch", "Hitam pekat"),
+            "#303030" to settingsLocalizedText(context, "Graphite", "Grafit")
+        )
+    } else {
+        listOf(
+            "#F7F7F7" to settingsLocalizedText(context, "Snow", "Putih salju"),
+            "#D0D0D0" to settingsLocalizedText(context, "Ash", "Abu muda")
+        )
+    }
     fun tr(english: String, indonesian: String): String =
         settingsLocalizedText(context, english, indonesian)
 
@@ -100,6 +120,23 @@ internal fun SettingsScreen(
     var showRestartConfirmation by remember { mutableStateOf(false) }
     var detectedIconPacks by remember { mutableStateOf(iconPacks) }
     var refreshVersion by remember { mutableStateOf(0) }
+
+    // Migrate previous solid colors, and keep the saved color valid when the theme changes.
+    LaunchedEffect(
+        preferences.themeMode,
+        preferences.wallpaperMode,
+        preferences.wallpaperColor,
+        configuration.uiMode,
+        solidWallpaperColors
+    ) {
+        if (preferences.wallpaperMode == "solid" &&
+            solidWallpaperColors.none { it.first == preferences.wallpaperColor }
+        ) {
+            onPreferencesChange(
+                preferences.copy(wallpaperColor = solidWallpaperColors.first().first)
+            )
+        }
+    }
 
     LaunchedEffect(context, refreshVersion) {
         detectedIconPacks = withContext(Dispatchers.IO) { findIconPacks(context) }
@@ -278,12 +315,7 @@ internal fun SettingsScreen(
                                 ChoiceRow(
                                     tr("Solid color", "Warna solid"),
                                     preferences.wallpaperColor,
-                                    listOf(
-                                        "#202124" to tr("Charcoal", "Arang"),
-                                        "#17324D" to tr("Navy", "Biru navy"),
-                                        "#D8D0C0" to tr("Sand", "Pasir"),
-                                        "#F2EBDD" to tr("Cream", "Krem")
-                                    )
+                                    solidWallpaperColors
                                 ) { onPreferencesChange(preferences.copy(wallpaperColor = it, wallpaperMode = "solid")) }
                             }
                             if (preferences.wallpaperMode == "image") {
