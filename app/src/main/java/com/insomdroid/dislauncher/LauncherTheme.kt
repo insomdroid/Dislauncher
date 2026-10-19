@@ -140,21 +140,43 @@ internal fun DislauncherTheme(
     val colorScheme = wallpaperColor?.let { color ->
         val foreground = if (wallpaperIsDark) Color(0xFFF2F2F2) else Color(0xFF111111)
         baseThemeColorScheme.copy(
+            // Keep the selected solid color as the foundation, but re-resolve all
+            // foreground/container roles so Light, Dark, Black and Dynamic Color
+            // remain readable against every supported solid wallpaper.
+            primary = foreground,
+            onPrimary = color,
+            primaryContainer = lerp(color, foreground, 0.16f),
+            onPrimaryContainer = foreground,
+            secondary = lerp(foreground, color, 0.12f),
+            onSecondary = color,
+            secondaryContainer = lerp(color, foreground, 0.12f),
+            onSecondaryContainer = foreground,
+            tertiary = lerp(foreground, color, 0.24f),
+            onTertiary = color,
+            tertiaryContainer = lerp(color, foreground, 0.20f),
+            onTertiaryContainer = foreground,
             background = color,
+            onBackground = foreground,
             surface = color,
+            onSurface = foreground,
             surfaceVariant = lerp(color, foreground, 0.10f),
-            // Keep the chosen wallpaper as the base while retaining visible tonal
-            // separation between surfaces in solid-wallpaper mode.
+            onSurfaceVariant = foreground.copy(alpha = 0.78f),
+            inverseSurface = foreground,
+            inverseOnSurface = color,
+            inversePrimary = lerp(color, foreground, 0.70f),
+            // Keep tonal separation visible without making surfaces compete with text.
             surfaceContainerLowest = lerp(color, foreground, 0.02f),
             surfaceContainerLow = lerp(color, foreground, 0.05f),
             surfaceContainer = lerp(color, foreground, 0.09f),
             surfaceContainerHigh = lerp(color, foreground, 0.14f),
             surfaceContainerHighest = lerp(color, foreground, 0.20f),
-            onBackground = foreground,
-            onSurface = foreground,
-            onSurfaceVariant = foreground.copy(alpha = 0.78f),
-            outline = foreground.copy(alpha = 0.48f),
-            outlineVariant = foreground.copy(alpha = 0.25f)
+            outline = lerp(color, foreground, 0.48f),
+            outlineVariant = lerp(color, foreground, 0.25f),
+            surfaceTint = Color.Transparent,
+            error = if (wallpaperIsDark) Color(0xFFFFB4AB) else Color(0xFFBA1A1A),
+            onError = if (wallpaperIsDark) Color(0xFF690005) else Color.White,
+            errorContainer = if (wallpaperIsDark) Color(0xFF93000A) else Color(0xFFFFDAD6),
+            onErrorContainer = if (wallpaperIsDark) Color(0xFFFFDAD6) else Color(0xFF410002)
         )
     } ?: baseThemeColorScheme
     val fontFamily = remember(preferences.fontMode, preferences.customFontName) {

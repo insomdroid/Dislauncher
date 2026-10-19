@@ -590,8 +590,18 @@ internal fun DislauncherRoot() {
         val activity = context as? Activity
         if (activity != null) {
             val controller = WindowCompat.getInsetsController(activity.window, view)
-            controller.isAppearanceLightStatusBars = !isDark
-            controller.isAppearanceLightNavigationBars = !isDark
+            // Solid wallpapers can intentionally differ from the selected theme.
+            // Choose system-bar icon contrast from the actual solid background when available.
+            val solidWallpaperColor = if (preferences.wallpaperMode == "solid") {
+                runCatching {
+                    android.graphics.Color.parseColor(preferences.wallpaperColor)
+                }.getOrNull()
+            } else null
+            val useDarkSystemBarIcons = solidWallpaperColor?.let {
+                android.graphics.Color.luminance(it) > 0.45f
+            } ?: !isDark
+            controller.isAppearanceLightStatusBars = useDarkSystemBarIcons
+            controller.isAppearanceLightNavigationBars = useDarkSystemBarIcons
         }
     }
 
