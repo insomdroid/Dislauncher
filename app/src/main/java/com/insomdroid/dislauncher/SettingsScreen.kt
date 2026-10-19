@@ -43,6 +43,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -88,7 +89,7 @@ internal fun SettingsScreen(
     onPreferencesChange: (LauncherPreferences) -> Unit,
     onChooseCustomFont: () -> Unit,
     onChooseWallpaper: () -> Unit,
-    onApplyWallpaperToSystem: (String) -> Unit,
+    onApplyWallpaperToSystem: (String, (Boolean) -> Unit) -> Unit,
     onDoubleTapLockChange: (Boolean) -> Unit,
     onToggleFavorite: (String) -> Unit,
     onToggleHidden: (String) -> Unit,
@@ -115,6 +116,11 @@ internal fun SettingsScreen(
     var wallpaperPreview by remember(preferences.wallpaperUri) {
         mutableStateOf<ImageBitmap?>(null)
     }
+    var showWallpaperApplyDialog by remember { mutableStateOf(false) }
+    var pendingWallpaperTarget by remember { mutableStateOf(preferences.wallpaperTarget) }
+    var wallpaperApplyStatus by remember(
+        preferences.wallpaperMode, preferences.wallpaperColor, preferences.wallpaperUri
+    ) { mutableStateOf<String?>(null) }
 
     LaunchedEffect(context, preferences.wallpaperUri) {
         val selectedUri = preferences.wallpaperUri?.let(Uri::parse)
@@ -263,7 +269,7 @@ internal fun SettingsScreen(
                 )
                 val categories = listOf(
                     Triple(SettingsCategory.APPEARANCE, Icons.Outlined.Palette, tr("Appearance", "Tampilan")) to
-                        tr("Theme, fonts and app icons", "Tema, font, dan ikon aplikasi"),
+                        tr("Theme, wallpaper, fonts and app icons", "Tema, wallpaper, font, dan ikon aplikasi"),
                     Triple(SettingsCategory.HOME, Icons.Outlined.Home, tr("Home screen", "Layar utama")) to
                         tr("Home elements, widgets and formats", "Elemen Home, widget, dan format"),
                     Triple(SettingsCategory.APPS, Icons.Outlined.Apps, tr("Apps", "Aplikasi")) to
@@ -310,28 +316,24 @@ internal fun SettingsScreen(
                         SettingsGroup(
                             tr("Wallpaper", "Wallpaper"),
                             tr(
-                                "Choose a solid background or use your own image. This setting does not change the app theme.",
-                                "Pilih latar warna solid atau gunakan gambar sendiri. Pengaturan ini tidak mengubah tema aplikasi."
+                                "Choose a background for Dislauncher. Apply it to your device from the button below.",
+                                "Pilih latar untuk Dislauncher. Terapkan ke perangkat melalui tombol di bawah."
                             )
                         ) {
-                            SettingToggle(
-                                tr("System Wallpaper", "Wallpaper Sistem"),
-                                tr(
-                                    "Off: choose a solid color. On: choose a custom image.",
-                                    "Mati: pilih warna solid. Aktif: pilih gambar kustom."
-                                ),
-                                preferences.wallpaperMode == "image"
-                            ) { enabled ->
-                                onPreferencesChange(
-                                    preferences.copy(
-                                        wallpaperMode = if (enabled) "image" else "solid"
-                                    )
+                            ChoiceRow(
+                                tr("Wallpaper type", "Jenis wallpaper"),
+                                preferences.wallpaperMode,
+                                listOf(
+                                    "solid" to tr("Solid color", "Warna polos"),
+                                    "image" to tr("Custom image", "Gambar sendiri")
                                 )
+                            ) { mode ->
+                                onPreferencesChange(preferences.copy(wallpaperMode = mode))
                             }
 
                             if (preferences.wallpaperMode != "image") {
                                 ChoiceRow(
-                                    tr("Solid theme color", "Warna tema solid"),
+                                    tr("Color", "Warna"),
                                     preferences.wallpaperColor,
                                     solidWallpaperColors
                                 ) {
@@ -339,26 +341,6 @@ internal fun SettingsScreen(
                                         preferences.copy(wallpaperMode = "solid", wallpaperColor = it)
                                     )
                                 }
-                                ChoiceRow(
-                                    tr("Apply to device screen", "Terapkan ke layar perangkat"),
-                                    preferences.wallpaperTarget,
-                                    listOf(
-                                        "home" to tr("Home screen", "Layar utama"),
-                                        "lock" to tr("Lock screen", "Layar kunci"),
-                                        "both" to tr("Both", "Keduanya")
-                                    )
-                                ) { target ->
-                                    onPreferencesChange(preferences.copy(wallpaperTarget = target))
-                                }
-                                SettingAction(
-                                    tr("Apply solid color to device", "Terapkan warna solid ke perangkat"),
-                                    tr(
-                                        "Apply this color to the Android Home screen, lock screen, or both.",
-                                        "Terapkan warna ini ke Home Screen, Lock Screen Android, atau keduanya."
-                                    ),
-                                    tr("Apply", "Terapkan"),
-                                    { onApplyWallpaperToSystem(preferences.wallpaperTarget) }
-                                )
                             } else {
                                 if (wallpaperPreview != null) {
                                     Image(
@@ -377,45 +359,59 @@ internal fun SettingsScreen(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
-                                            tr("No custom wallpaper selected", "Belum ada wallpaper kustom"),
+                                            tr("No image selected", "Belum ada gambar yang dipilih"),
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 }
                                 SettingAction(
-                                    tr("Custom wallpaper", "Wallpaper kustom"),
+                                    tr("Custom image", "Gambar sendiri"),
                                     if (preferences.wallpaperUri != null) {
-                                        tr("Tap to choose a different image", "Ketuk untuk memilih gambar lain")
+                                        tr("Choose a different image", "Pilih gambar lain")
                                     } else {
-                                        tr("Choose an image for Dislauncher", "Pilih gambar untuk Dislauncher")
+                                        tr("Select an image for your wallpaper", "Pilih gambar untuk wallpaper")
                                     },
-                                    tr("Choose wallpaper", "Pilih wallpaper"),
+                                    tr("Choose image", "Pilih gambar"),
                                     onChooseWallpaper
                                 )
-
-                                if (preferences.wallpaperUri != null) {
-                                    ChoiceRow(
-                                        tr("Apply to device screen", "Terapkan ke layar perangkat"),
-                                        preferences.wallpaperTarget,
-                                        listOf(
-                                            "home" to tr("Home screen", "Layar utama"),
-                                            "lock" to tr("Lock screen", "Layar kunci"),
-                                            "both" to tr("Both", "Keduanya")
-                                        )
-                                    ) { target ->
-                                        onPreferencesChange(preferences.copy(wallpaperTarget = target))
-                                    }
-                                    SettingAction(
-                                        tr("Apply device wallpaper", "Terapkan wallpaper perangkat"),
-                                        tr(
-                                            "Dislauncher keeps its own background separate from Android's wallpaper.",
-                                            "Latar Dislauncher tetap terpisah dari wallpaper Android."
-                                        ),
-                                        tr("Apply", "Terapkan"),
-                                        { onApplyWallpaperToSystem(preferences.wallpaperTarget) }
-                                    )
-                                }
                             }
+
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                                verticalArrangement = Arrangement.spacedBy(3.dp)
+                            ) {
+                                Text(
+                                    tr("Device wallpaper", "Wallpaper perangkat"),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    when (wallpaperApplyStatus) {
+                                        "failed" -> tr("Couldn't apply wallpaper. Try again.", "Wallpaper gagal diterapkan. Coba lagi.")
+                                        null -> tr("Not applied yet", "Belum diterapkan")
+                                        else -> wallpaperApplyStatus!!
+                                    },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (wallpaperApplyStatus == "failed") {
+                                        MaterialTheme.colorScheme.error
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    }
+                                )
+                            }
+
+                            SettingAction(
+                                tr("Apply wallpaper", "Terapkan wallpaper"),
+                                tr(
+                                    "Choose whether to change the Home screen, Lock screen, or both.",
+                                    "Pilih apakah wallpaper diubah pada layar utama, layar kunci, atau keduanya."
+                                ),
+                                tr("Apply wallpaper", "Terapkan wallpaper"),
+                                {
+                                    pendingWallpaperTarget = preferences.wallpaperTarget
+                                    showWallpaperApplyDialog = true
+                                }
+                            )
                         }
                         SettingsGroup(tr("Font and text size", "Font dan ukuran teks")) {
                             ChoiceRow(
@@ -780,6 +776,68 @@ internal fun SettingsScreen(
             }
             Spacer(Modifier.height(16.dp))
         }
+    }
+
+    if (showWallpaperApplyDialog) {
+        val customImageMissing = preferences.wallpaperMode == "image" && preferences.wallpaperUri == null
+        AlertDialog(
+            onDismissRequest = { showWallpaperApplyDialog = false },
+            title = { Text(tr("Apply wallpaper", "Terapkan wallpaper")) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(tr("Where would you like to apply this wallpaper?", "Di mana wallpaper ini ingin diterapkan?"))
+                    listOf(
+                        "home" to tr("Home screen", "Layar utama"),
+                        "lock" to tr("Lock screen", "Layar kunci"),
+                        "both" to tr("Both", "Keduanya")
+                    ).forEach { (value, label) ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clickable { pendingWallpaperTarget = value },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = pendingWallpaperTarget == value,
+                                onClick = { pendingWallpaperTarget = value }
+                            )
+                            Text(label, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+                    if (customImageMissing) {
+                        Text(
+                            tr("Choose an image first.", "Pilih gambar terlebih dahulu."),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !customImageMissing,
+                    onClick = {
+                        showWallpaperApplyDialog = false
+                        wallpaperApplyStatus = null
+                        onPreferencesChange(preferences.copy(wallpaperTarget = pendingWallpaperTarget))
+                        onApplyWallpaperToSystem(pendingWallpaperTarget) { applied ->
+                            wallpaperApplyStatus = if (applied) {
+                                when (pendingWallpaperTarget) {
+                                    "home" -> tr("Applied to Home screen", "Diterapkan ke layar utama")
+                                    "lock" -> tr("Applied to Lock screen", "Diterapkan ke layar kunci")
+                                    else -> tr("Applied to both screens", "Diterapkan ke kedua layar")
+                                }
+                            } else {
+                                "failed"
+                            }
+                        }
+                    }
+                ) { Text(tr("Apply", "Terapkan")) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWallpaperApplyDialog = false }) {
+                    Text(tr("Cancel", "Batal"))
+                }
+            }
+        )
     }
 
     if (openDialog == "hidden") {
