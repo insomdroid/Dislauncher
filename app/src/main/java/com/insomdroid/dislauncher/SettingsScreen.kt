@@ -12,6 +12,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -59,7 +60,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -85,7 +88,7 @@ internal fun SettingsScreen(
     onPreferencesChange: (LauncherPreferences) -> Unit,
     onChooseCustomFont: () -> Unit,
     onChooseWallpaper: () -> Unit,
-    onApplyWallpaperToSystem: () -> Unit,
+    onApplyWallpaperToSystem: (String) -> Unit,
     onDoubleTapLockChange: (Boolean) -> Unit,
     onToggleFavorite: (String) -> Unit,
     onToggleHidden: (String) -> Unit,
@@ -95,23 +98,12 @@ internal fun SettingsScreen(
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val isDarkWallpaperPalette = when (preferences.themeMode) {
-        "light" -> false
-        "dark", "black" -> true
-        else -> (configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-            Configuration.UI_MODE_NIGHT_YES
-    }
-    val solidWallpaperColors = if (isDarkWallpaperPalette) {
-        listOf(
-            "#121212" to settingsLocalizedText(context, "Pitch", "Hitam pekat"),
-            "#303030" to settingsLocalizedText(context, "Graphite", "Grafit")
-        )
-    } else {
-        listOf(
-            "#F7F7F7" to settingsLocalizedText(context, "Snow", "Putih salju"),
-            "#D0D0D0" to settingsLocalizedText(context, "Ash", "Abu muda")
-        )
-    }
+    val solidWallpaperColors = listOf(
+        "#000000" to settingsLocalizedText(context, "Black", "Hitam"),
+        "#808080" to settingsLocalizedText(context, "Grey", "Abu-abu"),
+        "#D8D8D8" to settingsLocalizedText(context, "Light grey", "Abu-abu muda"),
+        "#FFFFFF" to settingsLocalizedText(context, "White", "Putih")
+    )
     fun tr(english: String, indonesian: String): String =
         settingsLocalizedText(context, english, indonesian)
 
@@ -120,21 +112,38 @@ internal fun SettingsScreen(
     var showRestartConfirmation by remember { mutableStateOf(false) }
     var detectedIconPacks by remember { mutableStateOf(iconPacks) }
     var refreshVersion by remember { mutableStateOf(0) }
+    var wallpaperPreview by remember(preferences.wallpaperUri) {
+        mutableStateOf<ImageBitmap?>(null)
+    }
 
-    // Migrate previous solid colors, and keep the saved color valid when the theme changes.
-    LaunchedEffect(
-        preferences.themeMode,
-        preferences.wallpaperMode,
-        preferences.wallpaperColor,
-        configuration.uiMode,
-        solidWallpaperColors
-    ) {
-        if (preferences.wallpaperMode == "solid" &&
+    LaunchedEffect(context, preferences.wallpaperUri) {
+        val selectedUri = preferences.wallpaperUri?.let(Uri::parse)
+        wallpaperPreview = if (selectedUri == null) null else {
+            withContext(Dispatchers.IO) {
+                decodeWallpaperForScreen(context, selectedUri)
+            }
+        }
+    }
+
+    // Migrate the former Default state to the new OFF/solid wallpaper state.
+    // Theme selection remains independent from the selected solid color.
+    LaunchedEffect(preferences.themeMode, preferences.wallpaperMode, preferences.wallpaperColor) {
+        if (preferences.wallpaperMode == "default") {
+            val defaultSolid = if (preferences.themeMode == "light") "#FFFFFF" else "#000000"
+            onPreferencesChange(
+                preferences.copy(wallpaperMode = "solid", wallpaperColor = defaultSolid)
+            )
+        } else if (
+            preferences.wallpaperMode == "solid" &&
             solidWallpaperColors.none { it.first == preferences.wallpaperColor }
         ) {
-            onPreferencesChange(
-                preferences.copy(wallpaperColor = solidWallpaperColors.first().first)
-            )
+            val migratedColor = when (preferences.wallpaperColor.uppercase()) {
+                "#121212", "#202124" -> "#000000"
+                "#303030", "#D0D0D0" -> "#808080"
+                "#F7F7F7" -> "#FFFFFF"
+                else -> "#000000"
+            }
+            onPreferencesChange(preferences.copy(wallpaperColor = migratedColor))
         }
     }
 
@@ -297,47 +306,94 @@ internal fun SettingsScreen(
                                 preferences.dynamicColor
                             ) { onPreferencesChange(preferences.copy(dynamicColor = it)) }
                         }
-                        SettingsGroup(tr("Wallpaper", "Wallpaper")) {
-                            ChoiceRow(
-                                tr("Wallpaper style", "Gaya wallpaper"),
-                                preferences.wallpaperMode,
-                                listOf(
-                                    "default" to tr("Default", "Bawaan"),
-                                    "solid" to tr("Solid color", "Warna solid"),
-                                    "image" to tr("Custom", "Kustom")
+                        SettingsGroup(
+                            tr("Wallpaper", "Wallpaper"),
+                            tr(
+                                "Choose a solid background or use your own image. This setting does not change the app theme.",
+                                "Pilih latar warna solid atau gunakan gambar sendiri. Pengaturan ini tidak mengubah tema aplikasi."
+                            )
+                        ) {
+                            SettingToggle(
+                                tr("System Wallpaper", "Wallpaper Sistem"),
+                                tr(
+                                    "Off: choose a solid color. On: choose a custom image.",
+                                    "Mati: pilih warna solid. Aktif: pilih gambar kustom."
+                                ),
+                                preferences.wallpaperMode == "image"
+                            ) { enabled ->
+                                onPreferencesChange(
+                                    preferences.copy(
+                                        wallpaperMode = if (enabled) "image" else "solid"
+                                    )
                                 )
-                            ) { mode ->
-                                // Choosing Custom only switches the style. The picker belongs
-                                // to the dedicated action below, not to the mode chip.
-                                onPreferencesChange(preferences.copy(wallpaperMode = mode))
                             }
-                            if (preferences.wallpaperMode == "solid") {
+
+                            if (preferences.wallpaperMode != "image") {
                                 ChoiceRow(
-                                    tr("Solid color", "Warna solid"),
+                                    tr("Solid theme color", "Warna tema solid"),
                                     preferences.wallpaperColor,
                                     solidWallpaperColors
-                                ) { onPreferencesChange(preferences.copy(wallpaperColor = it, wallpaperMode = "solid")) }
-                            }
-                            if (preferences.wallpaperMode == "image") {
-                                SettingAction(
-                                    tr("Custom wallpaper", "Wallpaper kustom"),
-                                    if (preferences.wallpaperUri != null) tr("Custom image selected", "Gambar kustom dipilih")
-                                    else tr("Choose an image for your wallpaper", "Pilih gambar untuk wallpaper"),
-                                    tr("Choose image", "Pilih gambar"),
-                                    onChooseWallpaper
-                                )
-                                if (preferences.wallpaperUri != null) {
-                                    SettingAction(
-                                        tr("Apply to device Home and lock screen", "Terapkan ke Home dan lockscreen perangkat"),
-                                        tr(
-                                            "Apply this image to the device wallpaper. Dislauncher keeps its internal wallpaper separate.",
-                                            "Terapkan gambar ini ke wallpaper perangkat. Wallpaper internal Dislauncher tetap terpisah."
-                                        ),
-                                        tr("Apply", "Terapkan"),
-                                        onApplyWallpaperToSystem
+                                ) {
+                                    onPreferencesChange(
+                                        preferences.copy(wallpaperMode = "solid", wallpaperColor = it)
                                     )
                                 }
+                            } else {
+                                if (wallpaperPreview != null) {
+                                    Image(
+                                        bitmap = wallpaperPreview!!,
+                                        contentDescription = tr("Selected wallpaper preview", "Pratinjau wallpaper terpilih"),
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxWidth()
+                                            .height(190.dp)
+                                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
+                                    )
+                                } else {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth()
+                                            .height(140.dp)
+                                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            tr("No custom wallpaper selected", "Belum ada wallpaper kustom"),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                                SettingAction(
+                                    tr("Custom wallpaper", "Wallpaper kustom"),
+                                    if (preferences.wallpaperUri != null) {
+                                        tr("Tap to choose a different image", "Ketuk untuk memilih gambar lain")
+                                    } else {
+                                        tr("Choose an image for Dislauncher", "Pilih gambar untuk Dislauncher")
+                                    },
+                                    tr("Choose wallpaper", "Pilih wallpaper"),
+                                    onChooseWallpaper
+                                )
 
+                                if (preferences.wallpaperUri != null) {
+                                    ChoiceRow(
+                                        tr("Apply to device screen", "Terapkan ke layar perangkat"),
+                                        preferences.wallpaperTarget,
+                                        listOf(
+                                            "home" to tr("Home screen", "Layar utama"),
+                                            "lock" to tr("Lock screen", "Layar kunci"),
+                                            "both" to tr("Both", "Keduanya")
+                                        )
+                                    ) { target ->
+                                        onPreferencesChange(preferences.copy(wallpaperTarget = target))
+                                    }
+                                    SettingAction(
+                                        tr("Apply device wallpaper", "Terapkan wallpaper perangkat"),
+                                        tr(
+                                            "Dislauncher keeps its own background separate from Android's wallpaper.",
+                                            "Latar Dislauncher tetap terpisah dari wallpaper Android."
+                                        ),
+                                        tr("Apply", "Terapkan"),
+                                        { onApplyWallpaperToSystem(preferences.wallpaperTarget) }
+                                    )
+                                }
                             }
                         }
                         SettingsGroup(tr("Font and text size", "Font dan ukuran teks")) {
