@@ -35,10 +35,8 @@ internal fun DislauncherTheme(
     content: @Composable (FontFamily) -> Unit
 ) {
     val context = LocalContext.current
-    // Dynamic Color is automatic in System mode unless a custom accent preset is selected.
-    val useDynamicColor = preferences.themeMode == "system" &&
-        preferences.accentPreset == "default" &&
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    // Dynamic Color is an explicit preference, independent from theme mode and accent presets.
+    val useDynamicColor = preferences.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val monochromeScheme = if (isDark) {
         val pureBlack = preferences.themeMode == "black"
         darkColorScheme().copy(
@@ -141,7 +139,7 @@ internal fun DislauncherTheme(
         "pink" -> if (isDark) listOf(Color(0xFFFF80AB), Color(0xFFF8BBD0), Color(0xFF801447)) else listOf(Color(0xFFAD1457), Color(0xFF3E001D), Color(0xFFF8BBD0))
         else -> null
     }
-    val colorScheme = accentColors?.let { colors ->
+    val colorScheme = if (useDynamicColor) baseThemeColorScheme else accentColors?.let { colors ->
         val primary = colors[0]
         val onPrimary = if (isDark) Color(0xFF24131A) else Color.White
         baseThemeColorScheme.copy(
