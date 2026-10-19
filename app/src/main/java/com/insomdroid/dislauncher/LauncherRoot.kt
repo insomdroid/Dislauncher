@@ -94,6 +94,27 @@ private fun wallpaperEdgeUsesDarkIcons(
 }.getOrNull()
 
 /**
+ * Estimate overall wallpaper brightness with a bounded sample for automatic foreground contrast.
+ * Returns true for a generally light image, so the launcher can use dark text.
+ */
+private fun wallpaperAverageIsLight(
+    image: androidx.compose.ui.graphics.ImageBitmap
+): Boolean? = runCatching {
+    val bitmap = image.asAndroidBitmap()
+    if (bitmap.width <= 0 || bitmap.height <= 0) return@runCatching null
+    val step = maxOf((bitmap.width / 32).coerceAtLeast(1), (bitmap.height / 32).coerceAtLeast(1))
+    var luminanceTotal = 0.0
+    var samples = 0
+    for (y in 0 until bitmap.height step step) {
+        for (x in 0 until bitmap.width step step) {
+            luminanceTotal += android.graphics.Color.luminance(bitmap.getPixel(x, y))
+            samples++
+        }
+    }
+    if (samples > 0) luminanceTotal / samples > 0.45 else null
+}.getOrNull()
+
+/**
  * Keep a private copy of a selected wallpaper so it remains readable after reboot,
  * even when the document provider does not retain its URI permission.
  */
@@ -595,6 +616,12 @@ internal fun DislauncherRoot() {
         }
     }
 
+    val wallpaperIsLight = remember(wallpaperImage.value, preferences.wallpaperMode) {
+        if (preferences.wallpaperMode == "image") {
+            wallpaperImage.value?.let(::wallpaperAverageIsLight)
+        } else null
+    }
+
     LaunchedEffect(preferences.hideStatusBar) {
         val activity = context as? Activity ?: return@LaunchedEffect
         val controller = WindowCompat.getInsetsController(activity.window, view)
@@ -793,7 +820,29 @@ internal fun DislauncherRoot() {
                             modifier = Modifier.fillMaxSize()
                         )
                     }
+                    wallpaperIsLight?.let { isLight ->
+                        Box(
+                            Modifier.fillMaxSize().background(
+                                if (isLight) Color.White.copy(alpha = 0.14f)
+                                else Color.Black.copy(alpha = 0.18f)
+                            )
+                        )
+                    }
                 }
+                val wallpaperForeground = when (wallpaperIsLight) {
+                    true -> Color(0xFF111111)
+                    false -> Color(0xFFF2F2F2)
+                    null -> null
+                }
+                val pageColorScheme = wallpaperForeground?.let { foreground ->
+                    MaterialTheme.colorScheme.copy(
+                        background = Color.Transparent,
+                        onBackground = foreground,
+                        onSurface = foreground,
+                        onSurfaceVariant = foreground.copy(alpha = 0.78f)
+                    )
+                } ?: MaterialTheme.colorScheme
+                MaterialTheme(colorScheme = pageColorScheme) {
                 HorizontalPager(
                     state = pagerState,
                     modifier = Modifier.fillMaxSize().offset(x = homeBackBounce.value.dp),
@@ -848,6 +897,7 @@ internal fun DislauncherRoot() {
                             onOpenSettings = { settingsOpenedFromApps = true; screen = LauncherScreen.SETTINGS }
                         )
                     }
+                }
                 }
             }
         }
