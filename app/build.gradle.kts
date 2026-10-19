@@ -39,11 +39,16 @@ val generateLauncherForeground by tasks.registering(Copy::class) {
         // Preserve the uploaded source PNG and brighten only the generated adaptive foreground.
         val outputFile = generatedLauncherResources.get()
             .file("drawable-nodpi/dislauncher_icon_foreground.png").asFile
-        val image = javax.imageio.ImageIO.read(outputFile)
+        val sourceImage = javax.imageio.ImageIO.read(outputFile)
             ?: throw GradleException("Unable to read generated launcher icon foreground")
-        for (y in 0 until image.height) {
-            for (x in 0 until image.width) {
-                val argb = image.getRGB(x, y)
+        val image = java.awt.image.BufferedImage(
+            sourceImage.width,
+            sourceImage.height,
+            java.awt.image.BufferedImage.TYPE_INT_ARGB
+        )
+        for (y in 0 until sourceImage.height) {
+            for (x in 0 until sourceImage.width) {
+                val argb = sourceImage.getRGB(x, y)
                 val alpha = (argb ushr 24) and 0xFF
                 if (alpha == 0) continue
                 fun brighten(channel: Int): Int =
