@@ -195,12 +195,16 @@ internal fun AppIcon(
 
 private val fallbackIconColor = androidx.compose.ui.graphics.Color(0xFF6488B8)
 
-// Bound the cache so installed apps or icon packs changing over time cannot grow it indefinitely.
-private val dominantColorCache = object : LinkedHashMap<String, androidx.compose.ui.graphics.Color>(256, 0.75f, true) {
-    override fun removeEldestEntry(
-        eldest: MutableMap.MutableEntry<String, androidx.compose.ui.graphics.Color>?
-    ): Boolean = size > 256
+// Shared bounded LRU map for caches with different data and capacity.
+private class BoundedLruCache<K, V>(private val maxSize: Int) :
+    LinkedHashMap<K, V>(maxSize, 0.75f, true) {
+    override fun removeEldestEntry(eldest: MutableMap.MutableEntry<K, V>?): Boolean =
+        size > maxSize
 }
+
+// Bound the cache so installed apps or icon packs changing over time cannot grow it indefinitely.
+private val dominantColorCache =
+    BoundedLruCache<String, androidx.compose.ui.graphics.Color>(256)
 
 private fun dominantAppIconColor(context: Context, packageName: String): androidx.compose.ui.graphics.Color {
     synchronized(dominantColorCache) {
@@ -259,11 +263,7 @@ private fun dominantAppIconColor(context: Context, packageName: String): android
 }
 
 // appfilter.xml can contain thousands of entries. Keep only a small LRU of parsed packs.
-private val iconPackMappings = object : LinkedHashMap<String, Map<String, String>>(8, 0.75f, true) {
-    override fun removeEldestEntry(
-        eldest: MutableMap.MutableEntry<String, Map<String, String>>?
-    ): Boolean = size > 8
-}
+private val iconPackMappings = BoundedLruCache<String, Map<String, String>>(8)
 
 private fun parseIconPackMappings(parser: XmlPullParser): Map<String, String> {
     val parsed = HashMap<String, String>()
