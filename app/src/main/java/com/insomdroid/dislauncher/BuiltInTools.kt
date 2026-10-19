@@ -914,13 +914,31 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         (1..3).forEach { level ->
                             val label = priorityLabel(level)
+                            val isSelected = priority == level
                             Surface(
-                                modifier = Modifier.weight(1f).clip(RoundedCornerShape(50)).clickable { priority = level },
-                                color = if (priority == level) priorityColor(level) else MaterialTheme.colorScheme.surfaceContainer,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(50))
+                                    .clickable { priority = level },
+                                color = if (isSelected) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.surfaceContainerLow
+                                },
+                                contentColor = if (isSelected) {
+                                    MaterialTheme.colorScheme.onPrimary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                },
                                 shape = RoundedCornerShape(50)
                             ) {
-                                Text(label, modifier = Modifier.padding(horizontal = 5.dp, vertical = 9.dp),
-                                    textAlign = TextAlign.Center, style = MaterialTheme.typography.labelMedium)
+                                Text(
+                                    text = if (isSelected) "✓ $label" else label,
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 9.dp),
+                                    textAlign = TextAlign.Center,
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                    style = MaterialTheme.typography.labelMedium
+                                )
                             }
                         }
                     }

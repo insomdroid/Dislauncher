@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import java.io.File
 
+@OptIn(ExperimentalTextApi::class)
 @Composable
 internal fun DislauncherTheme(
     preferences: LauncherPreferences,
@@ -158,17 +160,17 @@ internal fun DislauncherTheme(
                 Font(
                     R.font.inter_variable,
                     weight = FontWeight.Normal,
-                    variationSettings = FontVariation.Settings(FontVariation.weight(400f))
+                    variationSettings = FontVariation.Settings(FontVariation.weight(400))
                 ),
                 Font(
                     R.font.inter_variable,
                     weight = FontWeight.Medium,
-                    variationSettings = FontVariation.Settings(FontVariation.weight(500f))
+                    variationSettings = FontVariation.Settings(FontVariation.weight(500))
                 ),
                 Font(
                     R.font.inter_variable,
                     weight = FontWeight.SemiBold,
-                    variationSettings = FontVariation.Settings(FontVariation.weight(600f))
+                    variationSettings = FontVariation.Settings(FontVariation.weight(600))
                 )
             )
             "custom" -> {
