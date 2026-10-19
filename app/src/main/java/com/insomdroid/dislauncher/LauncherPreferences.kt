@@ -116,6 +116,14 @@ internal data class LauncherPreferences(
                     .apply()
             }
 
+            // Start existing installs with the new monochrome palette; Dynamic Color remains opt-in.
+            if (p.getInt("monochrome_palette_version", 0) < 1) {
+                p.edit()
+                    .putBoolean("dynamic_color", false)
+                    .putInt("monochrome_palette_version", 1)
+                    .apply()
+            }
+
             // Default to both day and year progress after merging the old pin option.
             if (p.getInt("home_layout_version", 0) < 2) {
                 p.edit()
