@@ -32,62 +32,100 @@ internal fun DislauncherTheme(
     content: @Composable (FontFamily) -> Unit
 ) {
     val context = LocalContext.current
+    // Monochrome is the default palette. Android Dynamic Color remains an explicit opt-in.
     val useDynamicColor = preferences.dynamicColor &&
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-    val fallbackPrimary = if (isDark) Color(0xFF8AB4F8) else Color(0xFF1967D2)
+    val monochromeScheme = if (isDark) {
+        val pureBlack = preferences.themeMode == "black"
+        darkColorScheme().copy(
+            primary = Color(0xFFF2F2F2),
+            onPrimary = Color(0xFF111111),
+            primaryContainer = Color(0xFF262626),
+            onPrimaryContainer = Color(0xFFF2F2F2),
+            secondary = Color(0xFFD9D9D9),
+            onSecondary = Color(0xFF111111),
+            secondaryContainer = Color(0xFF262626),
+            onSecondaryContainer = Color(0xFFF2F2F2),
+            tertiary = Color(0xFFA6A6A6),
+            onTertiary = Color(0xFF111111),
+            tertiaryContainer = Color(0xFF333333),
+            onTertiaryContainer = Color(0xFFF2F2F2),
+            background = if (pureBlack) Color.Black else Color(0xFF111111),
+            onBackground = Color(0xFFF2F2F2),
+            surface = if (pureBlack) Color.Black else Color(0xFF111111),
+            onSurface = Color(0xFFF2F2F2),
+            surfaceVariant = Color(0xFF262626),
+            onSurfaceVariant = Color(0xFFD9D9D9),
+            inverseSurface = Color(0xFFF2F2F2),
+            inverseOnSurface = Color(0xFF111111),
+            inversePrimary = Color(0xFF404040),
+            outline = Color(0xFF737373),
+            outlineVariant = Color(0xFF404040),
+            surfaceTint = Color.Transparent,
+            surfaceContainerLowest = if (pureBlack) Color.Black else Color(0xFF0A0A0A),
+            surfaceContainerLow = if (pureBlack) Color.Black else Color(0xFF111111),
+            surfaceContainer = Color(0xFF1B1B1B),
+            surfaceContainerHigh = Color(0xFF262626),
+            surfaceContainerHighest = Color(0xFF333333)
+        )
+    } else {
+        lightColorScheme().copy(
+            primary = Color(0xFF111111),
+            onPrimary = Color.White,
+            primaryContainer = Color(0xFFE6E6E6),
+            onPrimaryContainer = Color(0xFF111111),
+            secondary = Color(0xFF404040),
+            onSecondary = Color.White,
+            secondaryContainer = Color(0xFFF2F2F2),
+            onSecondaryContainer = Color(0xFF111111),
+            tertiary = Color(0xFF737373),
+            onTertiary = Color.White,
+            tertiaryContainer = Color(0xFFE6E6E6),
+            onTertiaryContainer = Color(0xFF111111),
+            background = Color(0xFFF2F2F2),
+            onBackground = Color(0xFF111111),
+            surface = Color.White,
+            onSurface = Color(0xFF111111),
+            surfaceVariant = Color(0xFFE6E6E6),
+            onSurfaceVariant = Color(0xFF404040),
+            inverseSurface = Color(0xFF262626),
+            inverseOnSurface = Color(0xFFF2F2F2),
+            inversePrimary = Color(0xFFD9D9D9),
+            outline = Color(0xFF737373),
+            outlineVariant = Color(0xFFD9D9D9),
+            surfaceTint = Color.Transparent,
+            surfaceContainerLowest = Color.White,
+            surfaceContainerLow = Color(0xFFF7F7F7),
+            surfaceContainer = Color(0xFFF2F2F2),
+            surfaceContainerHigh = Color(0xFFE6E6E6),
+            surfaceContainerHighest = Color(0xFFD9D9D9)
+        )
+    }
     val baseColorScheme = when {
         useDynamicColor && isDark -> dynamicDarkColorScheme(context)
         useDynamicColor -> dynamicLightColorScheme(context)
-        isDark -> darkColorScheme().copy(
-            primary = fallbackPrimary,
-            onPrimary = Color(0xFF101010)
-        )
-        else -> lightColorScheme().copy(
-            primary = fallbackPrimary,
-            onPrimary = Color.White
-        )
+        else -> monochromeScheme
     }
-    val textSafeDarkScheme = if (isDark) {
+    val baseThemeColorScheme = if (preferences.themeMode == "black") {
         baseColorScheme.copy(
-            secondary = Color.White,
-            tertiary = Color.White,
-            onPrimary = baseColorScheme.onPrimary,
-            onSecondary = Color(0xFF101010),
-            onTertiary = Color(0xFF101010),
-            onBackground = Color.White,
-            onSurface = Color.White,
-            onSurfaceVariant = Color.White,
-            onPrimaryContainer = Color.White,
-            onSecondaryContainer = Color.White,
-            onTertiaryContainer = Color.White,
-            inverseOnSurface = Color.White,
-            error = Color.White,
-            onError = Color.White,
-            onErrorContainer = Color.White
+            background = Color.Black,
+            surface = Color.Black,
+            surfaceVariant = Color(0xFF111111),
+            surfaceContainerLowest = Color.Black,
+            surfaceContainerLow = Color.Black,
+            surfaceContainer = Color(0xFF111111),
+            surfaceContainerHigh = Color(0xFF1B1B1B),
+            surfaceContainerHighest = Color(0xFF262626),
+            surfaceTint = Color.Transparent,
+            secondary = Color(0xFFD9D9D9),
+            tertiary = Color(0xFFA6A6A6),
+            onSecondary = Color(0xFF111111),
+            onTertiary = Color(0xFF111111),
+            outline = Color(0xFF737373),
+            outlineVariant = Color(0xFF404040)
         )
     } else {
         baseColorScheme
-    }
-    val baseThemeColorScheme = if (preferences.themeMode == "black") {
-        textSafeDarkScheme.copy(
-            background = Color.Black,
-            surface = Color.Black,
-            surfaceVariant = Color.Black,
-            surfaceContainerLowest = Color.Black,
-            surfaceContainerLow = Color.Black,
-            surfaceContainer = Color.Black,
-            surfaceContainerHigh = Color.Black,
-            surfaceContainerHighest = Color.Black,
-            surfaceTint = Color.Transparent,
-            secondary = Color.White,
-            tertiary = Color.White,
-            onSecondary = Color(0xFF101010),
-            onTertiary = Color(0xFF101010),
-            outline = Color(0xFFBDBDBD),
-            outlineVariant = Color(0xFF757575)
-        )
-    } else {
-        textSafeDarkScheme
     }
     val wallpaperColor = if (preferences.wallpaperMode == "solid") {
         runCatching { Color(android.graphics.Color.parseColor(preferences.wallpaperColor)) }.getOrNull()
