@@ -90,10 +90,7 @@ internal fun WelcomeOnboardingScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    val locationGranted = permissionRefresh >= 0 && (
-        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
-            PackageManager.PERMISSION_GRANTED
-    )
+    val locationGranted = permissionRefresh >= 0 && hasWeatherLocationPermission(context)
     val calendarGranted = permissionRefresh >= 0 &&
         ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) ==
             PackageManager.PERMISSION_GRANTED
