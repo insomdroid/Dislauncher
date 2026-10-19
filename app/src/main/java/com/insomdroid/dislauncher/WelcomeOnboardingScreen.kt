@@ -329,7 +329,7 @@ internal fun WelcomeOnboardingScreen(
                                     .width(208.dp)
                                     .height(112.dp)
                                     .clip(MaterialTheme.shapes.extraLarge)
-                                    .background(if (currentPage == 0) Color.Black else MaterialTheme.colorScheme.surfaceVariant),
+                                    .background(if (currentPage == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant),
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (currentPage == 0) {
@@ -457,14 +457,7 @@ internal fun WelcomeOnboardingScreen(
                         }
                     },
                     shape = MaterialTheme.shapes.extraLarge,
-                    colors = if (MaterialTheme.colorScheme.onBackground == Color.White) {
-                        ButtonDefaults.buttonColors(
-                            containerColor = Color.DarkGray,
-                            contentColor = Color.White
-                        )
-                    } else {
-                        ButtonDefaults.buttonColors()
-                    },
+                    colors = ButtonDefaults.buttonColors(),
                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp)
                 ) {
                     Text(if (page == pageCount - 1) "Finish setup" else "Continue")
