@@ -14,7 +14,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
@@ -36,8 +35,9 @@ internal fun DislauncherTheme(
     content: @Composable (FontFamily) -> Unit
 ) {
     val context = LocalContext.current
-    // Monochrome is the default palette. Android Dynamic Color remains an explicit opt-in.
-    val useDynamicColor = preferences.dynamicColor &&
+    // Dynamic Color is automatic in System mode unless a custom accent preset is selected.
+    val useDynamicColor = preferences.themeMode == "system" &&
+        preferences.accentPreset == "default" &&
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val monochromeScheme = if (isDark) {
         val pureBlack = preferences.themeMode == "black"
@@ -131,30 +131,34 @@ internal fun DislauncherTheme(
     } else {
         baseColorScheme
     }
-    val wallpaperColor = if (preferences.wallpaperMode == "solid") {
-        runCatching { Color(android.graphics.Color.parseColor(preferences.wallpaperColor)) }.getOrNull()
-    } else null
-    val wallpaperIsDark = wallpaperColor?.let {
-        android.graphics.Color.luminance(android.graphics.Color.parseColor(preferences.wallpaperColor)) < 0.45f
-    } ?: false
-    val colorScheme = wallpaperColor?.let { color ->
-        val foreground = if (wallpaperIsDark) Color(0xFFF2F2F2) else Color(0xFF111111)
+    val accentColors = when (preferences.accentPreset) {
+        "red" -> if (isDark) listOf(Color(0xFFFF6B6B), Color(0xFFFFDAD6), Color(0xFF5B2024)) else listOf(Color(0xFFC62828), Color(0xFF410005), Color(0xFFFFCDD2))
+        "yellow" -> if (isDark) listOf(Color(0xFFFFD54F), Color(0xFF211B00), Color(0xFF554500)) else listOf(Color(0xFF805B00), Color(0xFF261900), Color(0xFFFFE082))
+        "blue" -> if (isDark) listOf(Color(0xFF82B1FF), Color(0xFFD1E4FF), Color(0xFF174A82)) else listOf(Color(0xFF1565C0), Color(0xFF001B3D), Color(0xFFD1E4FF))
+        "green" -> if (isDark) listOf(Color(0xFF81C784), Color(0xFFC8E6C9), Color(0xFF1B5E20)) else listOf(Color(0xFF2E7D32), Color(0xFF002204), Color(0xFFC8E6C9))
+        "purple" -> if (isDark) listOf(Color(0xFFCE93D8), Color(0xFFE1BEE7), Color(0xFF5A1765)) else listOf(Color(0xFF7B1FA2), Color(0xFF2B0036), Color(0xFFE1BEE7))
+        "orange" -> if (isDark) listOf(Color(0xFFFFB74D), Color(0xFFFFE0B2), Color(0xFF663C00)) else listOf(Color(0xFFB45309), Color(0xFF2D1600), Color(0xFFFFE0B2))
+        "pink" -> if (isDark) listOf(Color(0xFFFF80AB), Color(0xFFF8BBD0), Color(0xFF801447)) else listOf(Color(0xFFAD1457), Color(0xFF3E001D), Color(0xFFF8BBD0))
+        else -> null
+    }
+    val colorScheme = accentColors?.let { colors ->
+        val primary = colors[0]
+        val onPrimary = if (isDark) Color(0xFF24131A) else Color.White
         baseThemeColorScheme.copy(
-            // The wallpaper controls the background only. Keep theme and Dynamic Color
-            // accents intact so changing Theme remains visible with a solid wallpaper.
-            background = color,
-            surface = color,
-            surfaceVariant = lerp(color, foreground, 0.10f),
-            surfaceContainerLowest = lerp(color, foreground, 0.02f),
-            surfaceContainerLow = lerp(color, foreground, 0.05f),
-            surfaceContainer = lerp(color, foreground, 0.09f),
-            surfaceContainerHigh = lerp(color, foreground, 0.14f),
-            surfaceContainerHighest = lerp(color, foreground, 0.20f),
-            onBackground = foreground,
-            onSurface = foreground,
-            onSurfaceVariant = foreground.copy(alpha = 0.78f),
-            outline = foreground.copy(alpha = 0.48f),
-            outlineVariant = foreground.copy(alpha = 0.25f)
+            primary = primary,
+            onPrimary = onPrimary,
+            primaryContainer = colors[2],
+            onPrimaryContainer = colors[1],
+            secondary = primary,
+            onSecondary = onPrimary,
+            secondaryContainer = colors[2],
+            onSecondaryContainer = colors[1],
+            tertiary = primary,
+            onTertiary = onPrimary,
+            tertiaryContainer = colors[2],
+            onTertiaryContainer = colors[1],
+            inversePrimary = primary,
+            surfaceTint = primary
         )
     } ?: baseThemeColorScheme
     val fontFamily = remember(preferences.fontMode, preferences.customFontName) {
