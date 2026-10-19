@@ -721,6 +721,7 @@ private class ExpressionParser(raw: String) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
     var tasks by remember(context) { mutableStateOf(loadTasks(context)) }
