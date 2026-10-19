@@ -1,0 +1,61 @@
+name: Temporary Cleanup Workflow Runs
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type DELETE_OLD_RUNS to confirm
+        required: true
+        type: string
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cleanup:
+    if: inputs.confirm == 'DELETE_OLD_RUNS'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Keep latest two successful Build APK runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          CURRENT_RUN_ID: ${{ github.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          api="repos/$GH_REPO/actions/runs"
+          runs="$(gh api --paginate "$api?per_page=100" \
+            --jq '.workflow_runs[] | [.id, .name, .created_at, .status, (.conclusion // "")] | @tsv')"
+
+          keep_ids="$(printf '%s\n' "$runs" |
+            awk -F '\t' '$2 == "Build APK" && $4 == "completed" && $5 == "success"' |
+            sort -t $'\t' -k3,3r |
+            head -n 2 |
+            cut -f1)"
+
+          if [ "$(printf '%s\n' "$keep_ids" | grep -c . || true)" -lt 2 ]; then
+            echo "Safety stop: fewer than two successful Build APK runs were found."
+            exit 1
+          fi
+
+          echo "Successful Build APK runs to preserve:"
+          printf '%s\n' "$keep_ids"
+
+          while IFS=$'\t' read -r id name created status conclusion; do
+            [ -n "${id:-}" ] || continue
+
+            # The active cleanup run cannot be deleted before it finishes.
+            [ "$id" = "$CURRENT_RUN_ID" ] && continue
+
+            if printf '%s\n' "$keep_ids" | grep -qx "$id"; then
+              echo "Keeping successful Build APK run $id"
+              continue
+            fi
+
+            echo "Deleting run $id ($name; $status/$conclusion)"
+            gh api --method DELETE "$api/$id"
+          done <<< "$runs"
