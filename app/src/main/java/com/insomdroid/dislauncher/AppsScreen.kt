@@ -231,20 +231,19 @@ internal fun AppsScreen(
                                 ) {
                                     Box(
                                         modifier = Modifier.size(36.dp).clip(CircleShape)
-                                            .background(if (isDark) androidx.compose.ui.graphics.Color(0xFF292929) else androidx.compose.ui.graphics.Color(0xFFEAEAEA)),
+                                            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
                                             imageVector = toolIcon,
                                             contentDescription = app.label,
-                                            tint = if (isDark) androidx.compose.ui.graphics.Color(0xFFE6E6E6) else androidx.compose.ui.graphics.Color(0xFF444444),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.size(18.dp)
                                         )
                                     }
                                     Text(
                                         app.label,
-                                        color = if (isDark) androidx.compose.ui.graphics.Color(0xFFAAAAAA)
-                                            else androidx.compose.ui.graphics.Color(0xFF777777),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 10.sp,
                                         lineHeight = 12.sp,
                                         fontFamily = fontFamily,
