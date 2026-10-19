@@ -26,6 +26,62 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import java.io.File
 
+
+/**
+ * Build a complete set of Material 3 accent roles from a tonal ramp.
+ * The neutral background/surface roles are retained from the selected theme.
+ */
+private fun createTonalAccentScheme(
+    neutral: androidx.compose.material3.ColorScheme,
+    seed: Color,
+    isDark: Boolean
+): androidx.compose.material3.ColorScheme {
+    fun tone(lightTone: Int, darkTone: Int) = tonalColor(seed, if (isDark) darkTone else lightTone)
+    val primary = tone(40, 80)
+    val onPrimary = tone(100, 20)
+    val primaryContainer = tone(90, 30)
+    val onPrimaryContainer = tone(10, 90)
+    val secondary = tone(35, 80)
+    val onSecondary = tone(100, 20)
+    val secondaryContainer = tone(92, 30)
+    val onSecondaryContainer = tone(10, 90)
+    val tertiary = tone(30, 70)
+    val onTertiary = tone(100, 10)
+    val tertiaryContainer = tone(88, 25)
+    val onTertiaryContainer = tone(10, 90)
+    return neutral.copy(
+        primary = primary,
+        onPrimary = onPrimary,
+        primaryContainer = primaryContainer,
+        onPrimaryContainer = onPrimaryContainer,
+        inversePrimary = tone(80, 40),
+        secondary = secondary,
+        onSecondary = onSecondary,
+        secondaryContainer = secondaryContainer,
+        onSecondaryContainer = onSecondaryContainer,
+        tertiary = tertiary,
+        onTertiary = onTertiary,
+        tertiaryContainer = tertiaryContainer,
+        onTertiaryContainer = onTertiaryContainer,
+        surfaceTint = primary
+    )
+}
+
+private fun tonalColor(seed: Color, tone: Int): Color {
+    val t = tone.coerceIn(0, 100) / 100f
+    fun channel(value: Float): Float = if (t < 0.5f) {
+        value * (t * 2f)
+    } else {
+        value + (1f - value) * ((t - 0.5f) * 2f)
+    }
+    return Color(
+        red = channel(seed.red),
+        green = channel(seed.green),
+        blue = channel(seed.blue),
+        alpha = 1f
+    )
+}
+
 @OptIn(ExperimentalTextApi::class)
 @Composable
 internal fun DislauncherTheme(
@@ -103,62 +159,60 @@ internal fun DislauncherTheme(
             surfaceContainerHighest = Color(0xFFD9D9D9)
         )
     }
-    val baseColorScheme = when {
+    val neutralScheme = monochromeScheme
+    val dynamicScheme = when {
         useDynamicColor && isDark -> dynamicDarkColorScheme(context)
         useDynamicColor -> dynamicLightColorScheme(context)
-        else -> monochromeScheme
+        else -> neutralScheme
     }
-    val baseThemeColorScheme = if (preferences.themeMode == "black") {
-        baseColorScheme.copy(
+    // Dynamic Color controls accent roles only. Keep the launcher background and
+    // neutral surfaces independent so wallpaper/theme behavior remains predictable.
+    val dynamicAccentScheme = dynamicScheme.copy(
+        background = neutralScheme.background,
+        onBackground = neutralScheme.onBackground,
+        surface = neutralScheme.surface,
+        onSurface = neutralScheme.onSurface,
+        surfaceVariant = neutralScheme.surfaceVariant,
+        onSurfaceVariant = neutralScheme.onSurfaceVariant,
+        inverseSurface = neutralScheme.inverseSurface,
+        inverseOnSurface = neutralScheme.inverseOnSurface,
+        outline = neutralScheme.outline,
+        outlineVariant = neutralScheme.outlineVariant,
+        surfaceContainerLowest = neutralScheme.surfaceContainerLowest,
+        surfaceContainerLow = neutralScheme.surfaceContainerLow,
+        surfaceContainer = neutralScheme.surfaceContainer,
+        surfaceContainerHigh = neutralScheme.surfaceContainerHigh,
+        surfaceContainerHighest = neutralScheme.surfaceContainerHighest
+    )
+    val accentSeed = when (preferences.accentPreset) {
+        "red" -> Color(0xFFBA1A1A)
+        "yellow" -> Color(0xFF795900)
+        "blue" -> Color(0xFF005AC1)
+        "green" -> Color(0xFF386A20)
+        "purple" -> Color(0xFF6750A4)
+        "orange" -> Color(0xFF8B5000)
+        "pink" -> Color(0xFF9C4168)
+        else -> null
+    }
+    val manualAccentScheme = accentSeed?.let { createTonalAccentScheme(neutralScheme, it, isDark) }
+    val colorScheme = when {
+        useDynamicColor -> dynamicAccentScheme
+        manualAccentScheme != null -> manualAccentScheme
+        else -> neutralScheme
+    }
+    val themedColorScheme = if (preferences.themeMode == "black") {
+        colorScheme.copy(
             background = Color.Black,
             surface = Color.Black,
             surfaceVariant = Color(0xFF111111),
             surfaceContainerLowest = Color.Black,
             surfaceContainerLow = Color.Black,
-            surfaceContainer = Color(0xFF111111),
-            surfaceContainerHigh = Color(0xFF1B1B1B),
-            surfaceContainerHighest = Color(0xFF262626),
-            surfaceTint = Color.Transparent,
-            secondary = Color(0xFFD9D9D9),
-            tertiary = Color(0xFFA6A6A6),
-            onSecondary = Color(0xFF111111),
-            onTertiary = Color(0xFF111111),
-            outline = Color(0xFF737373),
-            outlineVariant = Color(0xFF404040)
+            surfaceContainer = Color(0xFF080808),
+            surfaceContainerHigh = Color(0xFF111111),
+            surfaceContainerHighest = Color(0xFF1B1B1B),
+            surfaceTint = Color.Transparent
         )
-    } else {
-        baseColorScheme
-    }
-    val accentColors = when (preferences.accentPreset) {
-        "red" -> if (isDark) listOf(Color(0xFFFF6B6B), Color(0xFFFFDAD6), Color(0xFF5B2024)) else listOf(Color(0xFFC62828), Color(0xFF410005), Color(0xFFFFCDD2))
-        "yellow" -> if (isDark) listOf(Color(0xFFFFD54F), Color(0xFF211B00), Color(0xFF554500)) else listOf(Color(0xFF805B00), Color(0xFF261900), Color(0xFFFFE082))
-        "blue" -> if (isDark) listOf(Color(0xFF82B1FF), Color(0xFFD1E4FF), Color(0xFF174A82)) else listOf(Color(0xFF1565C0), Color(0xFF001B3D), Color(0xFFD1E4FF))
-        "green" -> if (isDark) listOf(Color(0xFF81C784), Color(0xFFC8E6C9), Color(0xFF1B5E20)) else listOf(Color(0xFF2E7D32), Color(0xFF002204), Color(0xFFC8E6C9))
-        "purple" -> if (isDark) listOf(Color(0xFFCE93D8), Color(0xFFE1BEE7), Color(0xFF5A1765)) else listOf(Color(0xFF7B1FA2), Color(0xFF2B0036), Color(0xFFE1BEE7))
-        "orange" -> if (isDark) listOf(Color(0xFFFFB74D), Color(0xFFFFE0B2), Color(0xFF663C00)) else listOf(Color(0xFFB45309), Color(0xFF2D1600), Color(0xFFFFE0B2))
-        "pink" -> if (isDark) listOf(Color(0xFFFF80AB), Color(0xFFF8BBD0), Color(0xFF801447)) else listOf(Color(0xFFAD1457), Color(0xFF3E001D), Color(0xFFF8BBD0))
-        else -> null
-    }
-    val colorScheme = if (useDynamicColor) baseThemeColorScheme else accentColors?.let { colors ->
-        val primary = colors[0]
-        val onPrimary = if (isDark) Color(0xFF24131A) else Color.White
-        baseThemeColorScheme.copy(
-            primary = primary,
-            onPrimary = onPrimary,
-            primaryContainer = colors[2],
-            onPrimaryContainer = colors[1],
-            secondary = primary,
-            onSecondary = onPrimary,
-            secondaryContainer = colors[2],
-            onSecondaryContainer = colors[1],
-            tertiary = primary,
-            onTertiary = onPrimary,
-            tertiaryContainer = colors[2],
-            onTertiaryContainer = colors[1],
-            inversePrimary = primary,
-            surfaceTint = primary
-        )
-    } ?: baseThemeColorScheme
+    } else colorScheme
     val fontFamily = remember(preferences.fontMode, preferences.customFontName) {
         when (preferences.fontMode) {
             "dislauncher" -> FontFamily(
@@ -214,7 +268,7 @@ internal fun DislauncherTheme(
         labelSmall = scaled(baseTypography.labelSmall)
     )
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = themedColorScheme,
         typography = typography,
         shapes = androidx.compose.material3.Shapes(
             extraSmall = RoundedCornerShape(4.dp),

@@ -701,7 +701,17 @@ internal fun DislauncherRoot() {
                             val applied = withContext(Dispatchers.IO) {
                                 runCatching {
                                     val solidWallpaperBytes = if (isSolidWallpaper) {
-                                        val color = android.graphics.Color.parseColor(preferences.wallpaperColor)
+                                        // Default wallpaper mirrors Dislauncher's neutral theme background.
+                                        // Dynamic Color and accent presets never tint this solid wallpaper.
+                                        val color = when {
+                                            preferences.wallpaperMode == "default" && preferences.themeMode == "black" ->
+                                                android.graphics.Color.BLACK
+                                            preferences.wallpaperMode == "default" && isDark ->
+                                                android.graphics.Color.rgb(17, 17, 17)
+                                            preferences.wallpaperMode == "default" ->
+                                                android.graphics.Color.rgb(242, 242, 242)
+                                            else -> android.graphics.Color.parseColor(preferences.wallpaperColor)
+                                        }
                                         val bitmap = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888)
                                         bitmap.eraseColor(color)
                                         ByteArrayOutputStream().use { output ->

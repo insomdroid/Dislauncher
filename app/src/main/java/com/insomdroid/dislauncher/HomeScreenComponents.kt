@@ -72,7 +72,7 @@ internal fun HomeHeader(
                 percent = (today.dayOfYear * 100f / today.lengthOfYear()).toInt(),
                 primaryText = primaryText,
                 secondaryText = secondaryText,
-                fill = primaryText,
+                fill = MaterialTheme.colorScheme.primary,
                 track = if (isDark) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerHighest,
             )
         }
@@ -83,7 +83,7 @@ internal fun HomeHeader(
                 percent = (now.toSecondOfDay() * 100f / 86400f).toInt(),
                 primaryText = primaryText,
                 secondaryText = secondaryText,
-                fill = primaryText,
+                fill = MaterialTheme.colorScheme.primary,
                 track = if (isDark) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerHighest,
             )
         }
