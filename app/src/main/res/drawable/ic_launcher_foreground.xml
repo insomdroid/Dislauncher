@@ -3,12 +3,24 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- A segmented geometric D, using only white strokes over the black icon background. -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="5.5"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M31,31 L31,45 M31,56 L31,77 M38,25 L59,25 M68,27 C77,30 83,39 83,48 M84,56 L84,61 M81,69 C77,78 69,83 59,84 M50,85 L38,85" />
+    <!-- Minimal segmented D with a slight tilt and small corner accents. -->
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:rotation="-7">
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="5.5"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M32,34 L32,45 M32,58 L32,75 M40,27 L57,27 M68,29 C77,32 83,40 83,49 M83,59 C81,71 71,80 58,82 M40,82 L57,82" />
+        <!-- Short parallel corner strokes give the mark its distinctive technical feel. -->
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="3"
+            android:strokeLineCap="round"
+            android:pathData="M39,20 L46,20 M63,22 L68,24 M77,34 L80,39 M77,70 L73,75 M39,89 L46,89" />
+    </group>
 </vector>
