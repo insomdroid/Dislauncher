@@ -8,6 +8,7 @@ internal data class LauncherPreferences(
     val wallpaperMode: String = "default",
     val wallpaperColor: String = "#202124",
     val wallpaperUri: String? = null,
+    val wallpaperTarget: String = "both",
     val appDrawerWallpaperTransparency: Int = 0,
     val fontMode: String = "system",
     val customFontName: String? = null,
@@ -45,6 +46,7 @@ internal data class LauncherPreferences(
             .putString("wallpaper_mode", wallpaperMode)
             .putString("wallpaper_color", wallpaperColor)
             .putString("wallpaper_uri", wallpaperUri)
+            .putString("wallpaper_target", wallpaperTarget)
             .putInt("app_drawer_wallpaper_transparency", appDrawerWallpaperTransparency.coerceIn(0, 100))
             .putString("font_mode", fontMode)
             .putString("custom_font_name", customFontName)
@@ -138,6 +140,8 @@ internal data class LauncherPreferences(
                 wallpaperMode = (p.getString("wallpaper_mode", "default") ?: "default").takeIf { it in setOf("default", "solid", "image") } ?: "default",
                 wallpaperColor = (p.getString("wallpaper_color", "#202124") ?: "#202124").take(9),
                 wallpaperUri = p.getString("wallpaper_uri", null)?.take(2048),
+                wallpaperTarget = (p.getString("wallpaper_target", "both") ?: "both")
+                    .takeIf { it in setOf("home", "lock", "both") } ?: "both",
                 appDrawerWallpaperTransparency = p.getInt("app_drawer_wallpaper_transparency", 0).coerceIn(0, 100),
                 fontMode = normalizeFontMode(p.getString("font_mode", "system") ?: "system"),
                 customFontName = p.getString("custom_font_name", null)?.take(80),
