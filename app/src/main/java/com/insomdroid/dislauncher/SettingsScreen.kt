@@ -125,16 +125,7 @@ internal fun SettingsScreen(
         context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
     }
     val notificationAccessEnabled = remember(refreshVersion) {
-        val enabled = Settings.Secure.getString(
-            context.contentResolver,
-            "enabled_notification_listeners"
-        ).orEmpty()
-        enabled.split(':').any { entry ->
-            ComponentName.unflattenFromString(entry)?.let {
-                it.packageName == context.packageName &&
-                    it.className == DislauncherNotificationListener::class.java.name
-            } == true
-        }
+        hasMusicNotificationAccess(context)
     }
     val adminActive = remember(refreshVersion) {
         runCatching { devicePolicyManager.isAdminActive(adminComponent) }.getOrDefault(false)
