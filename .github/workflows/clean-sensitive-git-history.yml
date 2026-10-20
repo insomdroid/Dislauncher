@@ -61,7 +61,24 @@ jobs:
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           git filter-repo --force \
-            --path-glob '**/output.js' \
+            --path-regex '(^|/)output\\.js
+
+      - name: Push rewritten branches and tags
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push --force origin --all
+          git push --force origin --tags
+
+      - name: Verify flagged paths are absent from current history
+        run: |
+          if git log --all --format= --name-only | grep -E '(^|/)output\.js$|^Screenshot/aShellYou__20261017172957\.txt$'; then
+            echo "::error::A flagged file path remains in reachable history."
+            exit 1
+          fi
+          echo "Flagged files are no longer reachable from rewritten branches and tags."
+ \
             --path 'Screenshot/aShellYou__20261017172957.txt' \
             --invert-paths
 
