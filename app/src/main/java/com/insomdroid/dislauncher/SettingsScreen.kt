@@ -300,7 +300,7 @@ internal fun SettingsScreen(
                                 )
                                 if (preferences.wallpaperUri != null) {
                                     SettingAction(
-                                        tr("Apply to device Home and lock screen", "Terapkan ke Home dan lockscreen perangkat"),
+                                        tr("Apply image to Home and lock screen", "Terapkan gambar ke Home dan lockscreen"),
                                         tr(
                                             "Apply this image to the device wallpaper. Dislauncher keeps its internal wallpaper separate.",
                                             "Terapkan gambar ini ke wallpaper perangkat. Wallpaper internal Dislauncher tetap terpisah."
@@ -316,7 +316,23 @@ internal fun SettingsScreen(
                                         } }
                                     )
                                 }
-
+                            } else {
+                                SettingAction(
+                                    tr("Apply default color to Home and lock screen", "Terapkan warna bawaan ke Home dan lockscreen"),
+                                    tr(
+                                        "Apply the current Light, Dark, System, or AMOLED background color to both device wallpaper screens.",
+                                        "Terapkan warna latar Light, Dark, System, atau AMOLED saat ini ke wallpaper Home dan lockscreen perangkat."
+                                    ),
+                                    tr("Apply color", "Terapkan warna"),
+                                    { onApplyWallpaperToSystem("both") { applied ->
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            if (applied) tr("Wallpaper color applied", "Warna wallpaper diterapkan")
+                                            else tr("Couldn't apply wallpaper color", "Warna wallpaper gagal diterapkan"),
+                                            android.widget.Toast.LENGTH_SHORT
+                                        ).show()
+                                    } }
+                                )
                             }
                         }
                         SettingsGroup(tr("Font and text size", "Font dan ukuran teks")) {
