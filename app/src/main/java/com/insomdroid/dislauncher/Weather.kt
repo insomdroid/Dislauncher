@@ -136,7 +136,13 @@ internal suspend fun fetchWeather(context: Context, unit: String): WeatherInfo? 
 
     val manager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return null
     val lastLocation = runCatching {
-        if (manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+        if (
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED &&
+            manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+        ) {
             manager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
         } else {
             null
