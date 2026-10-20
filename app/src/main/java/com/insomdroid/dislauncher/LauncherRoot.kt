@@ -685,20 +685,10 @@ internal fun DislauncherRoot() {
                     val selectedWallpaper = preferences.wallpaperUri?.let(Uri::parse)
                     val isSolidWallpaper = preferences.wallpaperMode != "image"
                     if (!isSolidWallpaper && selectedWallpaper == null) {
-                        android.widget.Toast.makeText(
-                            context,
-                            "Choose an image first.",
-                            android.widget.Toast.LENGTH_LONG
-                        ).show()
-                        onResult(false)
+                        onResult("failure")
                     } else {
-                        val wallpaperFlags = when (target) {
-                            "home" -> WallpaperManager.FLAG_SYSTEM
-                            "lock" -> WallpaperManager.FLAG_LOCK
-                            else -> WallpaperManager.FLAG_SYSTEM or WallpaperManager.FLAG_LOCK
-                        }
                         scope.launch {
-                            val applied = withContext(Dispatchers.IO) {
+                            val result = withContext(Dispatchers.IO) {
                                 runCatching {
                                     val solidWallpaperBytes = if (isSolidWallpaper) {
                                         // Default wallpaper mirrors Dislauncher's neutral theme background.
@@ -720,37 +710,40 @@ internal fun DislauncherRoot() {
                                             output.toByteArray()
                                         }
                                     } else null
-                                    val stream = if (solidWallpaperBytes != null) {
-                                        ByteArrayInputStream(solidWallpaperBytes)
-                                    } else {
-                                        context.contentResolver.openInputStream(selectedWallpaper!!)
-                                            ?: error("Unable to open the selected wallpaper.")
+
+                                    val wallpaperManager = WallpaperManager.getInstance(context)
+                                    fun applyToScreen(flag: Int): Boolean = runCatching {
+                                        val stream = if (solidWallpaperBytes != null) {
+                                            ByteArrayInputStream(solidWallpaperBytes)
+                                        } else {
+                                            context.contentResolver.openInputStream(selectedWallpaper!!)
+                                                ?: error("Unable to open the selected wallpaper.")
+                                        }
+                                        stream.use {
+                                            wallpaperManager.setStream(it, null, true, flag)
+                                        }
+                                        true
+                                    }.getOrDefault(false)
+
+                                    when (target) {
+                                        "home" -> if (applyToScreen(WallpaperManager.FLAG_SYSTEM)) "success" else "failure"
+                                        "lock" -> if (applyToScreen(WallpaperManager.FLAG_LOCK)) "success" else "failure"
+                                        else -> {
+                                            // Apply separately so a failure on one screen does not hide
+                                            // a successful update on the other screen.
+                                            val homeApplied = applyToScreen(WallpaperManager.FLAG_SYSTEM)
+                                            val lockApplied = applyToScreen(WallpaperManager.FLAG_LOCK)
+                                            when {
+                                                homeApplied && lockApplied -> "success"
+                                                homeApplied -> "home_success_lock_failure"
+                                                lockApplied -> "home_failure_lock_success"
+                                                else -> "failure"
+                                            }
+                                        }
                                     }
-                                    stream.use {
-                                        WallpaperManager.getInstance(context).setStream(
-                                            it,
-                                            null,
-                                            true,
-                                            wallpaperFlags
-                                        )
-                                    }
-                                }.isSuccess
+                                }.getOrDefault("failure")
                             }
-                            val targetLabel = when (target) {
-                                "home" -> "Home screen"
-                                "lock" -> "Lock screen"
-                                else -> "Home screen and lock screen"
-                            }
-                            android.widget.Toast.makeText(
-                                context,
-                                if (applied) {
-                                    "Wallpaper applied to $targetLabel."
-                                } else {
-                                    "Couldn't apply wallpaper. Try again."
-                                },
-                                android.widget.Toast.LENGTH_LONG
-                            ).show()
-                            onResult(applied)
+                            onResult(result)
                         }
                     }
                 },
