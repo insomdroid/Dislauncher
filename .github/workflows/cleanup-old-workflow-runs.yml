@@ -1,0 +1,74 @@
+name: Clean Old Workflow Runs
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type DELETE_OLD_RUNS to keep only the two newest Build APK runs and remove older completed runs'
+        required: true
+        type: string
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cleanup:
+    name: Remove old completed workflow runs
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Require explicit confirmation
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          if [ "$CONFIRMATION" != "DELETE_OLD_RUNS" ]; then
+            echo "::error::Confirmation did not match DELETE_OLD_RUNS. No workflow runs were deleted."
+            exit 1
+          fi
+
+      - name: Identify the two newest Build APK runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs?per_page=100" \
+            --jq '.workflow_runs[] | {id, name, created_at}' |
+            jq -s '[.[] | select(.name == "Build APK")] | sort_by(.created_at) | reverse | .[:2] | map(.id)' \
+            > "$RUNNER_TEMP/keep-run-ids.json"
+
+          echo "These two newest Build APK run IDs will be retained:"
+          cat "$RUNNER_TEMP/keep-run-ids.json"
+
+          if [ "$(jq 'length' "$RUNNER_TEMP/keep-run-ids.json")" -lt 2 ]; then
+            echo "::error::Fewer than two Build APK runs were found; stopping to avoid unintended deletion."
+            exit 1
+          fi
+
+      - name: Delete older completed runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs?per_page=100" \
+            --jq '.workflow_runs[] | [.id, .status] | @tsv' \
+            > "$RUNNER_TEMP/all-runs.tsv"
+
+          deleted=0
+          skipped=0
+          while IFS="$(printf '\t')" read -r run_id status; do
+            # Never delete this cleanup run or any run that is not completed.
+            if [ "$run_id" = "$GITHUB_RUN_ID" ] || [ "$status" != "completed" ]; then
+              skipped=$((skipped + 1))
+              continue
+            fi
+
+            if jq -e --argjson id "$run_id" 'index($id) != null' "$RUNNER_TEMP/keep-run-ids.json" >/dev/null; then
+              skipped=$((skipped + 1))
+              continue
+            fi
+
+            echo "Deleting completed workflow run ID $run_id"
+            gh api --method DELETE "repos/${GITHUB_REPOSITORY}/actions/runs/$run_id"
+            deleted=$((deleted + 1))
+          done < "$RUNNER_TEMP/all-runs.tsv"
+
+          echo "Deletion complete. Deleted: $deleted; skipped: $skipped."
