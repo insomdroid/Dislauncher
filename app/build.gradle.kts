@@ -29,10 +29,10 @@ val appVersionCode = parsedVersion?.let { match ->
 } ?: 10_100
 
 // Generate the adaptive-icon foreground from the original transparent PNG.
-// The source image remains untouched in Screenshot/dislauncher.png.
+// The source image remains untouched in Screenshot/Minimalist Dislauncher Logo on Black.png.
 val generatedLauncherResources = layout.buildDirectory.dir("generated/res/launcherIcon")
 val generateLauncherForeground by tasks.registering(Copy::class) {
-    from(rootProject.file("Screenshot/dislauncher.png"))
+    from(rootProject.file("Screenshot/Minimalist Dislauncher Logo on Black.png"))
     into(generatedLauncherResources.map { it.dir("drawable-nodpi") })
     rename { "dislauncher_icon_foreground.png" }
 }

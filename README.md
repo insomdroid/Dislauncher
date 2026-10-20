@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Screenshot/dislauncher.png" alt="Dislauncher app icon" width="112">
+  <img src="Screenshot/Minimalist%20Dislauncher%20Logo%20on%20Black.png" alt="Dislauncher app icon" width="112">
 </p>
 
 <h1 align="center">Dislauncher</h1>
