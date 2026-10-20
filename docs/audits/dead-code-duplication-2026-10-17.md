@@ -29,6 +29,6 @@ The public-readiness CI workflow now runs Android lint and release-variant assem
 
 ## Remaining decisions
 
-- No project-wide software license has been chosen. Public visibility alone does not grant reuse rights; select a license before inviting outside contributions or reuse.
-- The Ko-fi support URL in the README should be verified against the owner's actual Ko-fi page.
-- Full Git history secret scanning and a manual end-to-end device test should be completed before switching repository visibility to public.
+- Added the MIT License and updated README licensing guidance. Confirm that the copyright holder has authority to license all project-owned code and assets before publishing.
+- Updated the README Ko-fi link to the owner-provided profile: https://ko-fi.com/insomdroid.
+- Full Git history secret scanning remains incomplete through the available GitHub connector; do not treat current-branch code search as a complete history scan. Run a local history-aware scanner (for example, gitleaks on a full clone) before switching repository visibility to public. A manual end-to-end device test is also still recommended.
