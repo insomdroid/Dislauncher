@@ -64,6 +64,7 @@ jobs:
 
       - name: Build and verify production-signed APK
         env:
+          RELEASE_TAG_INPUT: ${{ env.RELEASE_TAG }}
           KEYSTORE: ${{ secrets.KEYSTORE }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
