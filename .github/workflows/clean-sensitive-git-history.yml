@@ -61,7 +61,9 @@ jobs:
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           git filter-repo --force \
-            --path-regex '(^|/)output\\.js
+            --path-regex '(^|/)output\.js$' \
+            --path 'Screenshot/aShellYou__20261017172957.txt' \
+            --invert-paths
 
       - name: Push rewritten branches and tags
         env:
