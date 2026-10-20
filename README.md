@@ -8,7 +8,7 @@
 <p align="center">
   <a href="https://github.com/insomdroid/dislauncher/releases/latest"><strong>Download the latest APK</strong></a>
   · <a href="https://github.com/insomdroid/dislauncher/issues">Report a bug</a>
-  · <a href="https://ko-fi.com/insomdroid">Buy me a coffee ☕</a>
+  · <a href="https://ko-fi.com/YOUR_KOFI_USERNAME">Buy me a coffee ☕</a>
 </p>
 <p align="center">
   <a href="https://github.com/insomdroid/dislauncher/actions/workflows/build-apk.yml"><img alt="Build APK" src="https://github.com/insomdroid/dislauncher/actions/workflows/build-apk.yml/badge.svg?branch=main"></a>
@@ -154,7 +154,7 @@ Dislauncher bundles **Inter Variable** as its display font so it works offline. 
 
 I made Dislauncher with AI assistance as a way to learn, experiment and build something useful for my own phone. I'm still learning, so bugs and rough edges are possible. If you find it useful, feedback through [GitHub Issues](https://github.com/insomdroid/dislauncher/issues) is welcome.
 
-If this project makes your day a little easier and you'd like to support its continued development, you can [buy me a coffee on Ko-fi](https://ko-fi.com/insomdroid). There is no obligation — using, testing or sharing feedback is already appreciated.
+If this project makes your day a little easier and you'd like to support its continued development, you can buy me a coffee on Ko-fi. Replace the placeholder link above with your actual Ko-fi profile URL before making the repository public. There is no obligation — using, testing or sharing feedback is already appreciated.
 
 ## License
 
