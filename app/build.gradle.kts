@@ -22,11 +22,31 @@ val releaseTag = (
         ?: System.getenv("GITHUB_REF_NAME")
     ).orEmpty().removePrefix("v").removePrefix(".")
 val parsedVersion = Regex("^(\\d+)\\.(\\d+)\\.(\\d+)$").matchEntire(releaseTag)
-val appVersionName = parsedVersion?.value ?: "1.1.0"
-val appVersionCode = parsedVersion?.let { match ->
-    val (major, minor, patch) = match.destructured
-    major.toInt() * 10_000 + minor.toInt() * 100 + patch.toInt()
-} ?: 10_100
+// Reserve 10,000 versionCode values per patch version. Development builds
+// use the GitHub Actions run number; production releases use the final slot.
+// This keeps every development APK newer than v1.1.1 and lets later releases
+// (for example v1.1.2) upgrade it normally.
+val developmentVersionName = System.getenv("APP_VERSION_NAME")?.takeIf { it.isNotBlank() }
+    ?: "1.1.1-dev.0"
+val developmentBuildNumber = System.getenv("APP_BUILD_NUMBER")?.toIntOrNull() ?: 0
+val appVersionName = parsedVersion?.value ?: developmentVersionName
+val appVersionCode = (parsedVersion?.value ?: developmentVersionName)
+    .let { versionName ->
+        val version = Regex("^(\\d+)\\.(\\d+)\\.(\\d+)(?:-.*)?$").matchEntire(versionName)
+            ?: error("Invalid app version name: $versionName")
+        val (major, minor, patch) = version.destructured
+        val baseCode = major.toInt() * 100_000_000 +
+            minor.toInt() * 1_000_000 +
+            patch.toInt() * 10_000
+        if (parsedVersion != null) {
+            baseCode + 9_999
+        } else {
+            require(developmentBuildNumber in 0..9_998) {
+                "Development build number must be between 0 and 9998"
+            }
+            baseCode + developmentBuildNumber
+        }
+    }
 
 // Generate the adaptive-icon foreground from the original transparent PNG.
 // The source image remains untouched in Screenshot/Minimalist Dislauncher Logo on Black.png.
