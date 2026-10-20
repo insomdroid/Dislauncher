@@ -316,12 +316,8 @@ internal fun SettingsScreen(
                                     ),
                                     tr("Apply to screen…", "Terapkan ke layar…"),
                                     {
-                                        if (preferences.wallpaperUri != null) {
-                                            wallpaperTarget = "both"
-                                            openDialog = "wallpaperTarget"
-                                        } else {
-                                            onChooseWallpaper()
-                                        }
+                                        wallpaperTarget = "both"
+                                        openDialog = "wallpaperTarget"
                                     }
                                 )
                             } else {
@@ -748,7 +744,14 @@ internal fun SettingsScreen(
                     onClick = {
                         val target = wallpaperTarget
                         openDialog = ""
-                        onApplyWallpaperToSystem(target) { result ->
+                        if (preferences.wallpaperMode == "image" && preferences.wallpaperUri == null) {
+                            android.widget.Toast.makeText(
+                                context,
+                                tr("Choose an image first.", "Pilih gambar terlebih dahulu."),
+                                android.widget.Toast.LENGTH_LONG
+                            ).show()
+                            onChooseWallpaper()
+                        } else onApplyWallpaperToSystem(target) { result ->
                             val message = when (result) {
                                 "success" -> when (target) {
                                     "home" -> tr("Wallpaper applied to the Home screen.", "Wallpaper berhasil diterapkan ke layar utama.")
