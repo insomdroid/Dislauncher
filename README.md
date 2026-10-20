@@ -6,7 +6,8 @@
 <p align="center"><strong>A calmer Android Home screen, built around text instead of clutter.</strong></p>
 <p align="center">A lightweight, text-first launcher for people who want their apps close at hand without turning the Home screen into another feed.</p>
 <p align="center">
-  <a href="https://github.com/insomdroid/dislauncher/releases/latest"><strong>Download the latest APK</strong></a>
+  <a href="https://insomdroid.github.io/dislauncher/"><strong>Visit the website</strong></a>
+  · <a href="https://github.com/insomdroid/dislauncher/releases/latest"><strong>Download the latest APK</strong></a>
   · <a href="https://github.com/insomdroid/dislauncher/issues">Report a bug</a>
   · <a href="https://ko-fi.com/insomdroid">Buy me a coffee ☕</a>
 </p>
@@ -162,4 +163,4 @@ Dislauncher is licensed under the [MIT License](LICENSE). You may use, modify an
 
 ---
 
-**Source:** [github.com/insomdroid/dislauncher](https://github.com/insomdroid/dislauncher) · **Issues and feedback:** [GitHub Issues](https://github.com/insomdroid/dislauncher/issues)
+**Website:** [insomdroid.github.io/dislauncher](https://insomdroid.github.io/dislauncher/) · **Source:** [github.com/insomdroid/dislauncher](https://github.com/insomdroid/dislauncher) · **Issues and feedback:** [GitHub Issues](https://github.com/insomdroid/dislauncher/issues)
