@@ -86,40 +86,21 @@ The latest stable APK is published on the [GitHub Releases page](https://github.
 
 The wording and location of Android settings vary by manufacturer. Common paths include **Settings → Apps → Special app access → Install unknown apps** and **Settings → Apps → Default apps → Home app**. You can turn off the browser/file-manager install permission again after installing.
 
-### A note about APK safety
+### APK safety
 
-Dislauncher is distributed directly from GitHub, **not through Google Play**. The APK has not gone through Google Play's app review and distribution process. Installing any APK from outside the Play Store carries risk: a modified or impersonated file could contain harmful code, and Android may show an unknown-source or Play Protect warning.
+Dislauncher is distributed through GitHub, not Google Play. Install only from the [official Releases page](https://github.com/insomdroid/dislauncher/releases/latest), review Android security warnings, and verify the release's SHA-256 checksum when available. Never bypass a warning automatically or download APKs from unofficial sources. See [APK_SAFETY.md](APK_SAFETY.md) for details.
+## Permissions at a glance
 
-To reduce that risk:
-- Download only from the official [Dislauncher Releases page](https://github.com/insomdroid/dislauncher/releases/latest).
-- Review the release notes and source code, and compare the APK's SHA-256 checksum with the matching **.sha256** release asset when one is provided. New releases made by the updated workflow are intended to include this checksum; older releases may not.
-- Do **not** disable Play Protect globally just to install an APK. If Android warns that the file is unsafe or blocks it, stop and investigate rather than bypassing the warning automatically.
-- Do not install APKs from unofficial mirrors or unknown people.
-- An APK signed with a different key cannot normally update the installed app. Avoid uninstalling an existing copy if you need to preserve its local data.
+Dislauncher keeps permissions optional wherever possible. The core launcher works without granting every permission.
 
-A public source repository improves transparency, but it is not a guarantee that every build is bug-free or that every downloaded file is authentic. Use the app at your own discretion.
+- **Location and Internet:** used for weather; approximate coordinates are sent to Open-Meteo over HTTPS.
+- **Calendar and notifications:** support the agenda and local reminders.
+- **Notification access:** supports notification dots and active media information for music controls.
+- **Device Administrator:** optional double-tap-to-lock; the app requests force-lock only, not device wipe.
+- **Wallpaper and system gestures:** apply your chosen wallpaper and open the notification shade.
+- **System file picker:** selects custom wallpapers and fonts without broad storage access.
 
-## Android permissions and special access
-
-Dislauncher asks for access only for features that need it. Android may display runtime permission prompts or separate special-access screens. You can decline optional access and still use the core launcher.
-
-| Permission or access | Why it is used | Optional? |
-|---|---|---|
-| Approximate location | Gets an approximate location for Weather. When weather is used, coordinates are sent over HTTPS to Open-Meteo to retrieve forecast data. | Yes |
-| Calendar read access | Reads calendar events for the Home agenda and Calendar screen. Dislauncher does not request permission to write to your calendar. | Yes |
-| Notifications | Allows Android 13+ to show local reminder notifications. | Yes |
-| Notification access (special access) | Enables selected notification dots and reads active media-session information for the music widget. Android's notification-access screen describes the broad access this grants. | Yes |
-| Device Administrator (special access) | Enables optional double-tap-to-lock. The app declares the force-lock policy only; it does not request device wipe. | Yes |
-| Wallpaper | Applies the selected image or colour to Android's Home and/or Lock screen wallpaper. | Yes |
-| Expand status bar | Lets the swipe-down gesture open the notification shade. | Yes |
-| Receive boot completed | Restores scheduled local reminders after the device restarts. | Used by reminders |
-| Request package deletion | Lets Android show its system confirmation when you request an app uninstall from a supported app-management action. Android controls the final confirmation. | Only for that action |
-| Internet | Fetches weather data when Weather is used. The app does not include an account sign-in or an app-operated server. | Weather needs it |
-
-The system file picker is used for custom wallpaper and font selection, so Dislauncher does not request broad storage access. Android may show different prompts or setting names depending on the OS version and device manufacturer.
-
-For more detail about local storage and network behaviour, see [PRIVACY.md](PRIVACY.md).
-
+You can deny optional access or revoke it in Android settings. See [PRIVACY.md](PRIVACY.md) for the full permission list and data-handling details.
 ## Build from source
 
 Dislauncher uses Kotlin, Jetpack Compose, Material 3 and the Android SDK. It targets Android SDK 36 and supports Android 8.0 (API 26) and later.
