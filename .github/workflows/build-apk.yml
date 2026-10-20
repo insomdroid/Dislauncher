@@ -49,11 +49,30 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Run Android lint and build release variant for testing
+      - name: Run Android lint and build upgrade-compatible APK
         env:
           APP_VERSION_NAME: "1.1.1-dev.${{ github.run_number }}"
           APP_BUILD_NUMBER: "${{ github.run_number }}"
-        run: ./gradlew lintRelease assembleRelease --stacktrace
+          KEYSTORE: ${{ secrets.KEYSTORE }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          : "${KEYSTORE:?Missing GitHub secret KEYSTORE}"
+          : "${KEY_ALIAS:?Missing GitHub secret KEY_ALIAS}"
+          : "${KEYSTORE_PASSWORD:?Missing GitHub secret KEYSTORE_PASSWORD}"
+          : "${KEY_PASSWORD:?Missing GitHub secret KEY_PASSWORD}"
+
+          KEYSTORE_FILE="$RUNNER_TEMP/dislauncher-release.jks"
+          trap 'rm -f "$KEYSTORE_FILE"' EXIT
+          printf '%s' "$KEYSTORE" | base64 --decode > "$KEYSTORE_FILE"
+          test -s "$KEYSTORE_FILE"
+          export RELEASE_STORE_FILE="$KEYSTORE_FILE"
+
+          ./gradlew lintRelease assembleRelease --stacktrace
 
       - name: Upload test APK artifact
         uses: actions/upload-artifact@v4
