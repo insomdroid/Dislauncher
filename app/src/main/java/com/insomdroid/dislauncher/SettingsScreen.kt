@@ -42,6 +42,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -85,7 +86,7 @@ internal fun SettingsScreen(
     onPreferencesChange: (LauncherPreferences) -> Unit,
     onChooseCustomFont: () -> Unit,
     onChooseWallpaper: () -> Unit,
-    onApplyWallpaperToSystem: (String, (Boolean) -> Unit) -> Unit,
+    onApplyWallpaperToSystem: (String, (String) -> Unit) -> Unit,
     onDoubleTapLockChange: (Boolean) -> Unit,
     onToggleFavorite: (String) -> Unit,
     onToggleHidden: (String) -> Unit,
@@ -100,6 +101,7 @@ internal fun SettingsScreen(
 
     var selectedCategory by remember { mutableStateOf<SettingsCategory?>(null) }
     var openDialog by remember { mutableStateOf("") }
+    var wallpaperTarget by remember { mutableStateOf("both") }
     var showRestartConfirmation by remember { mutableStateOf(false) }
     var detectedIconPacks by remember { mutableStateOf(iconPacks) }
     var refreshVersion by remember { mutableStateOf(0) }
@@ -298,40 +300,42 @@ internal fun SettingsScreen(
                                     tr("Choose image", "Pilih gambar"),
                                     onChooseWallpaper
                                 )
-                                if (preferences.wallpaperUri != null) {
-                                    SettingAction(
-                                        tr("Apply image to Home and lock screen", "Terapkan gambar ke Home dan lockscreen"),
-                                        tr(
-                                            "Apply this image to the device wallpaper. Dislauncher keeps its internal wallpaper separate.",
-                                            "Terapkan gambar ini ke wallpaper perangkat. Wallpaper internal Dislauncher tetap terpisah."
-                                        ),
-                                        tr("Apply", "Terapkan"),
-                                        { onApplyWallpaperToSystem("both") { applied ->
-                                            android.widget.Toast.makeText(
-                                                context,
-                                                if (applied) tr("Wallpaper applied", "Wallpaper diterapkan")
-                                                else tr("Couldn't apply wallpaper", "Wallpaper gagal diterapkan"),
-                                                android.widget.Toast.LENGTH_SHORT
-                                            ).show()
-                                        } }
-                                    )
-                                }
+                                SettingAction(
+                                    tr("Apply wallpaper", "Terapkan wallpaper"),
+                                    tr(
+                                        if (preferences.wallpaperUri != null) {
+                                            "Apply the selected image to the Home screen, lock screen, or both."
+                                        } else {
+                                            "Choose an image before applying it to your device wallpaper."
+                                        },
+                                        if (preferences.wallpaperUri != null) {
+                                            "Terapkan gambar pilihan ke layar utama, layar kunci, atau keduanya."
+                                        } else {
+                                            "Pilih gambar terlebih dahulu sebelum menerapkannya ke wallpaper perangkat."
+                                        }
+                                    ),
+                                    tr("Apply to screen…", "Terapkan ke layar…"),
+                                    {
+                                        if (preferences.wallpaperUri != null) {
+                                            wallpaperTarget = "both"
+                                            openDialog = "wallpaperTarget"
+                                        } else {
+                                            onChooseWallpaper()
+                                        }
+                                    }
+                                )
                             } else {
                                 SettingAction(
-                                    tr("Apply default color to Home and lock screen", "Terapkan warna bawaan ke Home dan lockscreen"),
+                                    tr("Default wallpaper color", "Warna wallpaper bawaan"),
                                     tr(
-                                        "Apply the current Light, Dark, System, or AMOLED background color to both device wallpaper screens.",
-                                        "Terapkan warna latar Light, Dark, System, atau AMOLED saat ini ke wallpaper Home dan lockscreen perangkat."
+                                        "Use the current Light, Dark, System, or AMOLED background color for the selected device screen(s). Dislauncher’s internal background stays separate.",
+                                        "Gunakan warna latar Light, Dark, Sistem, atau AMOLED saat ini untuk layar perangkat yang dipilih. Latar internal Dislauncher tetap terpisah."
                                     ),
-                                    tr("Apply color", "Terapkan warna"),
-                                    { onApplyWallpaperToSystem("both") { applied ->
-                                        android.widget.Toast.makeText(
-                                            context,
-                                            if (applied) tr("Wallpaper color applied", "Warna wallpaper diterapkan")
-                                            else tr("Couldn't apply wallpaper color", "Warna wallpaper gagal diterapkan"),
-                                            android.widget.Toast.LENGTH_SHORT
-                                        ).show()
-                                    } }
+                                    tr("Apply to screen…", "Terapkan ke layar…"),
+                                    {
+                                        wallpaperTarget = "both"
+                                        openDialog = "wallpaperTarget"
+                                    }
                                 )
                             }
                         }
@@ -700,7 +704,80 @@ internal fun SettingsScreen(
         }
     }
 
-    if (openDialog == "hidden") {
+    if (openDialog == "wallpaperTarget") {
+        AlertDialog(
+            onDismissRequest = { openDialog = "" },
+            title = { Text(tr("Apply wallpaper", "Terapkan wallpaper")) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        tr(
+                            "Choose where to apply this wallpaper.",
+                            "Pilih layar tempat wallpaper ini akan diterapkan."
+                        ),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    listOf(
+                        "home" to tr("Home screen", "Layar utama"),
+                        "lock" to tr("Lock screen", "Layar kunci"),
+                        "both" to tr("Both screens", "Keduanya")
+                    ).forEach { (value, label) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { wallpaperTarget = value }
+                                .padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = wallpaperTarget == value,
+                                onClick = { wallpaperTarget = value }
+                            )
+                            Text(label, modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { openDialog = "" }) {
+                    Text(tr("Cancel", "Batal"))
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val target = wallpaperTarget
+                        openDialog = ""
+                        onApplyWallpaperToSystem(target) { result ->
+                            val message = when (result) {
+                                "success" -> when (target) {
+                                    "home" -> tr("Wallpaper applied to the Home screen.", "Wallpaper berhasil diterapkan ke layar utama.")
+                                    "lock" -> tr("Wallpaper applied to the lock screen.", "Wallpaper berhasil diterapkan ke layar kunci.")
+                                    else -> tr("Wallpaper applied to both screens.", "Wallpaper berhasil diterapkan ke layar utama dan layar kunci.")
+                                }
+                                "home_success_lock_failure" -> tr(
+                                    "Home screen updated; lock screen wallpaper failed.",
+                                    "Layar utama berhasil diperbarui. Wallpaper layar kunci gagal diterapkan."
+                                )
+                                "home_failure_lock_success" -> tr(
+                                    "Lock screen updated; Home screen wallpaper failed.",
+                                    "Layar kunci berhasil diperbarui. Wallpaper layar utama gagal diterapkan."
+                                )
+                                else -> tr("Wallpaper could not be applied. Please try again.", "Wallpaper gagal diterapkan. Silakan coba lagi.")
+                            }
+                            android.widget.Toast.makeText(
+                                context,
+                                message,
+                                android.widget.Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
+                ) {
+                    Text(tr("Apply", "Terapkan"))
+                }
+            }
+        )
+    } else if (openDialog == "hidden") {
         AppSelectionDialog(
             title = tr("Manage hidden apps", "Kelola aplikasi tersembunyi"),
             subtitle = tr(
