@@ -50,6 +50,9 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Run Android lint and build release variant for testing
+        env:
+          APP_VERSION_NAME: "1.1.1-dev.${{ github.run_number }}"
+          APP_BUILD_NUMBER: "${{ github.run_number }}"
         run: ./gradlew lintRelease assembleRelease --stacktrace
 
       - name: Upload test APK artifact
