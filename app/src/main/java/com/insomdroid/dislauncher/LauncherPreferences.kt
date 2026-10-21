@@ -39,7 +39,9 @@ internal data class LauncherPreferences(
     val showCalendarShortcut: Boolean = true,
     val notificationDotsEnabled: Boolean = false,
     val notificationDotColor: String = "white",
-    val notificationDotPackages: Set<String> = emptySet()
+    val notificationDotPackages: Set<String> = emptySet(),
+    val appFolders: Set<String> = emptySet(),
+    val folderAssignments: Set<String> = emptySet()
 ) {
     fun save(p: SharedPreferences) {
         p.edit()
@@ -80,6 +82,8 @@ internal data class LauncherPreferences(
             .putBoolean("notification_dots_enabled", notificationDotsEnabled)
             .putString("notification_dot_color", notificationDotColor)
             .putStringSet("notification_dot_packages", notificationDotPackages.toMutableSet())
+            .putStringSet("app_folders", appFolders.toMutableSet())
+            .putStringSet("folder_assignments", folderAssignments.toMutableSet())
             .apply()
     }
 
@@ -170,7 +174,9 @@ internal data class LauncherPreferences(
                 notificationDotsEnabled = p.getBoolean("notification_dots_enabled", false),
                 notificationDotColor = (p.getString("notification_dot_color", "white") ?: "white")
                     .takeIf { it in setOf("white", "red", "orange", "blue", "purple") } ?: "white",
-                notificationDotPackages = p.getStringSet("notification_dot_packages", emptySet()).orEmpty().toSet()
+                notificationDotPackages = p.getStringSet("notification_dot_packages", emptySet()).orEmpty().toSet(),
+                appFolders = p.getStringSet("app_folders", emptySet()).orEmpty().toSet(),
+                folderAssignments = p.getStringSet("folder_assignments", emptySet()).orEmpty().toSet()
             )
         }
     }
