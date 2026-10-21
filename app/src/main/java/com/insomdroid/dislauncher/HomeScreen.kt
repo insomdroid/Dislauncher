@@ -9,6 +9,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -65,7 +67,7 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 internal fun HomeScreen(
     apps: List<LauncherApp>,
@@ -235,10 +237,11 @@ internal fun HomeScreen(
         val showStatusWidgets = preferences.showWeather || preferences.showBattery || preferences.showCalendarShortcut
         if (showStatusWidgets) {
             Spacer(Modifier.height(2.dp))
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                itemVerticalAlignment = Alignment.CenterVertically
             ) {
                 if (preferences.showBattery) {
                     Text(
@@ -248,39 +251,31 @@ internal fun HomeScreen(
                         maxLines = 1
                     )
                 }
-                if (preferences.showWeather || preferences.showCalendarShortcut) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (preferences.showWeather) {
-                            val hasLocation = ContextCompat.checkSelfPermission(
-                                context, Manifest.permission.ACCESS_COARSE_LOCATION
-                            ) == PackageManager.PERMISSION_GRANTED
-                            val weatherText = weatherInfo?.let {
-                                "${it.temperature} ${it.condition.lowercase(Locale.getDefault())}"
-                            } ?: weatherStatus.ifBlank {
-                                if (!hasLocation) "Tap to allow location" else ""
-                            }
-                            Text(
-                                weatherText,
-                                color = primaryText,
-                                fontSize = 12.sp,
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.widthIn(max = if (preferences.showCalendarShortcut) 116.dp else 210.dp)
-                                    .clickable { onOpenWeather(weatherInfo ?: cachedWeather) }
-                            )
-                        }
-                        if (preferences.showCalendarShortcut) {
-                            CalendarAgenda(
-                                preferences.timeFormat,
-                                modifier = Modifier.widthIn(max = 148.dp)
-                            )
-                        }
+                if (preferences.showWeather) {
+                    val hasLocation = ContextCompat.checkSelfPermission(
+                        context, Manifest.permission.ACCESS_COARSE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED
+                    val weatherText = weatherInfo?.let {
+                        "${it.temperature} ${it.condition.lowercase(Locale.getDefault())}"
+                    } ?: weatherStatus.ifBlank {
+                        if (!hasLocation) "Tap to allow location" else ""
                     }
+                    Text(
+                        weatherText,
+                        color = primaryText,
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.widthIn(max = 210.dp)
+                            .clickable { onOpenWeather(weatherInfo ?: cachedWeather) }
+                    )
+                }
+                if (preferences.showCalendarShortcut) {
+                    CalendarAgenda(
+                        preferences.timeFormat,
+                        modifier = Modifier.widthIn(max = 148.dp)
+                    )
                 }
             }
         }
