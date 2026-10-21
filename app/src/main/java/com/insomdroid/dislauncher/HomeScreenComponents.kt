@@ -127,7 +127,7 @@ internal fun ProgressLine(
             )
         }
         Canvas(
-            modifier = Modifier.fillMaxWidth().height(4.dp)
+            modifier = Modifier.fillMaxWidth(0.40f).height(4.dp)
         ) {
             val centerY = size.height / 2f
             val strokeWidth = size.height
