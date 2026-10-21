@@ -41,8 +41,8 @@ internal fun HomeHeader(
         Text(
             timeText,
             color = primaryText,
-            fontSize = 30.sp,
-            lineHeight = 36.sp,
+            fontSize = 34.sp,
+            lineHeight = 40.sp,
             letterSpacing = (-0.6).sp,
             fontWeight = FontWeight.Light,
             fontFamily = fontFamily,
@@ -57,7 +57,8 @@ internal fun HomeHeader(
         Text(
             dateText,
             color = secondaryText,
-            fontSize = 13.sp,
+            fontSize = 14.sp,
+            lineHeight = 18.sp,
             fontFamily = fontFamily,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -106,8 +107,8 @@ internal fun ProgressLine(
         Text(
             "$label $percent%",
             color = primaryText,
-            fontSize = 12.sp,
-            lineHeight = 16.sp,
+            fontSize = 14.sp,
+            lineHeight = 18.sp,
             fontWeight = FontWeight.Normal
         )
         Canvas(
