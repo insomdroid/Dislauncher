@@ -811,18 +811,25 @@ internal fun SettingsScreen(
     } else if (openDialog == "folders") {
         AlertDialog(
             onDismissRequest = { openDialog = "" },
-            title = { Text(tr("Manage folders", "Kelola folder")) },
-            text = {
-                Column(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+            title = {
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(tr("Manage folders", "Kelola folder"))
                     Text(
-                        tr("Folders appear in the app drawer above the app list.", "Folder tampil di app drawer, di atas daftar aplikasi."),
+                        tr(
+                            "Folders appear in the app drawer above the app list.",
+                            "Folder tampil di app drawer, di atas daftar aplikasi."
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 450.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     OutlinedTextField(
                         value = newFolderName,
                         onValueChange = { newFolderName = it.filterNot { ch -> ch == '\t' || ch == '\n' }.take(32) },
@@ -844,10 +851,10 @@ internal fun SettingsScreen(
                     ) { Text(tr("Create folder", "Buat folder")) }
                     preferences.appFolders.sortedBy { it.lowercase() }.forEach { folder ->
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(folder, modifier = Modifier.weight(1f))
+                            Text(folder, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                             TextButton(onClick = {
                                 onPreferencesChange(
                                     preferences.copy(
