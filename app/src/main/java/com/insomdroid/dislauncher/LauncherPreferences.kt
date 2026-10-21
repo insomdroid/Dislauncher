@@ -34,6 +34,7 @@ internal data class LauncherPreferences(
     val showMusic: Boolean = true,
     val hideSystemApps: Boolean = false,
     val doubleTapToLock: Boolean = false,
+    val longPressHomeOpensSettings: Boolean = true,
     val swipeDownNotifications: Boolean = true,
     val showCalendarShortcut: Boolean = true,
     val notificationDotsEnabled: Boolean = false,
@@ -73,6 +74,7 @@ internal data class LauncherPreferences(
             .putBoolean("show_music", showMusic)
             .putBoolean("hide_system_apps", hideSystemApps)
             .putBoolean("double_tap_to_lock", doubleTapToLock)
+            .putBoolean("long_press_home_opens_settings", longPressHomeOpensSettings)
             .putBoolean("swipe_down_notifications", swipeDownNotifications)
             .putBoolean("show_calendar_shortcut", showCalendarShortcut)
             .putBoolean("notification_dots_enabled", notificationDotsEnabled)
@@ -162,6 +164,7 @@ internal data class LauncherPreferences(
                 showMusic = p.getBoolean("show_music", true),
                 hideSystemApps = p.getBoolean("hide_system_apps", false),
                 doubleTapToLock = p.getBoolean("double_tap_to_lock", false),
+                longPressHomeOpensSettings = p.getBoolean("long_press_home_opens_settings", true),
                 swipeDownNotifications = p.getBoolean("swipe_down_notifications", true),
                 showCalendarShortcut = p.getBoolean("show_calendar_shortcut", true),
                 notificationDotsEnabled = p.getBoolean("notification_dots_enabled", false),
