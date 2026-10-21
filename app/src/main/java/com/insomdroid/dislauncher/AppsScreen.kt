@@ -571,6 +571,11 @@ internal fun AppsScreen(
                         .verticalScroll(androidx.compose.foundation.rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
+                    androidx.compose.material3.HorizontalDivider(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                        thickness = 1.dp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                     if (folderApps.isEmpty()) {
                         Text("This folder is empty.", color = secondary, modifier = Modifier.padding(vertical = 12.dp))
                     }
