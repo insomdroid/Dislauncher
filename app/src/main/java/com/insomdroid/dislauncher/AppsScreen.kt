@@ -45,6 +45,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Calculate
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material.icons.filled.Search as SearchIcon
 import androidx.compose.material.icons.filled.Settings as SettingsIcon
@@ -97,6 +98,7 @@ internal fun AppsScreen(
     onToggleFavorite: (String) -> Unit,
     onToggleHidden: (String) -> Unit,
     onRenameApp: (String, String) -> Unit,
+    onPreferencesChange: (LauncherPreferences) -> Unit,
     onOpenSettings: () -> Unit
 ) {
     val background = if (preferences.wallpaperMode == "image") {
@@ -171,6 +173,8 @@ internal fun AppsScreen(
     var selectedApp by remember { mutableStateOf<LauncherApp?>(null) }
     var renamingApp by remember { mutableStateOf<LauncherApp?>(null) }
     var renameValue by remember { mutableStateOf("") }
+    var selectedFolder by remember { mutableStateOf<String?>(null) }
+    var selectedFolderApp by remember { mutableStateOf<LauncherApp?>(null) }
     val context = androidx.compose.ui.platform.LocalContext.current
     LaunchedEffect(isActive, preferences.autoLaunchKeyboard, preferences.showSearchBar) {
         if (isActive && preferences.autoLaunchKeyboard && preferences.showSearchBar) {
@@ -253,6 +257,35 @@ internal fun AppsScreen(
                                     )
                                 }
                             }
+                        }
+                    }
+                }
+                if (!searching && preferences.appFolders.isNotEmpty()) {
+                    items(preferences.appFolders.sortedBy { it.lowercase(Locale.getDefault()) }, key = { "folder-$it" }) { folder ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clickable { selectedFolder = folder }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (preferences.showAppIcons) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Folder,
+                                    contentDescription = null,
+                                    tint = mainText,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(Modifier.width(9.dp))
+                            }
+                            Text(
+                                folder,
+                                color = mainText,
+                                fontSize = 25.sp,
+                                lineHeight = 32.sp,
+                                fontFamily = fontFamily,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f).padding(start = if (preferences.showAppIcons) 0.dp else 20.dp)
+                            )
                         }
                     }
                 }
@@ -522,6 +555,81 @@ internal fun AppsScreen(
             }
         }
     }
+    selectedFolder?.let { folder ->
+        val folderApps = apps.filter { app ->
+            preferences.folderAssignments.any { assignment ->
+                assignment.startsWith(app.packageName + "\t") && assignment.substringAfter("\t", "") == folder
+            } && !app.packageName.startsWith("internal:")
+        }.sortedBy { it.label.lowercase(Locale.getDefault()) }
+        AlertDialog(
+            onDismissRequest = { selectedFolder = null },
+            title = { Text(folder) },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp)
+                        .verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    if (folderApps.isEmpty()) {
+                        Text("This folder is empty.", color = secondary, modifier = Modifier.padding(vertical = 12.dp))
+                    }
+                    folderApps.forEach { folderApp ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clickable {
+                                selectedFolder = null
+                                onLaunch(folderApp)
+                            }.padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (preferences.showAppIcons) {
+                                AppIcon(folderApp, preferences.iconPack, size = 18.dp, iconShape = preferences.iconShape)
+                                Spacer(Modifier.width(9.dp))
+                            }
+                            Text(folderApp.label, color = mainText, fontSize = 25.sp, lineHeight = 32.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { selectedFolder = null }) { Text("Done") } }
+        )
+    }
+    selectedFolderApp?.let { app ->
+        AlertDialog(
+            onDismissRequest = { selectedFolderApp = null },
+            title = { Text("Add to Folders") },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp)
+                        .verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    if (preferences.appFolders.isEmpty()) {
+                        Text("Create a folder in Settings → Apps → Manage folders first.")
+                    } else {
+                        preferences.appFolders.sortedBy { it.lowercase(Locale.getDefault()) }.forEach { folder ->
+                            val isAssigned = preferences.folderAssignments.any {
+                                it.startsWith(app.packageName + "\t") && it.substringAfter("\t", "") == folder
+                            }
+                            TextButton(
+                                onClick = {
+                                    val remaining = preferences.folderAssignments.filterNot {
+                                        it.startsWith(app.packageName + "\t")
+                                    }.toMutableSet()
+                                    if (!isAssigned) remaining.add(app.packageName + "\t" + folder)
+                                    onPreferencesChange(preferences.copy(folderAssignments = remaining))
+                                    selectedFolderApp = null
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text((if (isAssigned) "✓ " else "") + folder, modifier = Modifier.fillMaxWidth())
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { selectedFolderApp = null }) { Text("Done") } }
+        )
+    }
     selectedApp?.let { app ->
         AlertDialog(
             onDismissRequest = { selectedApp = null },
@@ -533,6 +641,14 @@ internal fun AppsScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) { Text("Open", modifier = Modifier.fillMaxWidth()) }
                     TextButton(
+                        onClick = {
+                            renameValue = app.label
+                            renamingApp = app
+                            selectedApp = null
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Rename", modifier = Modifier.fillMaxWidth()) }
+                    TextButton(
                         onClick = { selectedApp = null; onToggleFavorite(app.packageName) },
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -542,13 +658,9 @@ internal fun AppsScreen(
                         )
                     }
                     TextButton(
-                        onClick = {
-                            renameValue = app.label
-                            renamingApp = app
-                            selectedApp = null
-                        },
+                        onClick = { selectedFolderApp = app; selectedApp = null },
                         modifier = Modifier.fillMaxWidth()
-                    ) { Text("Rename", modifier = Modifier.fillMaxWidth()) }
+                    ) { Text("Add to Folders", modifier = Modifier.fillMaxWidth()) }
                     TextButton(
                         onClick = { selectedApp = null; onToggleHidden(app.packageName) },
                         modifier = Modifier.fillMaxWidth()
