@@ -106,26 +106,13 @@ internal fun ProgressLine(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                label,
-                color = primaryText,
-                fontSize = 14.sp,
-                lineHeight = 18.sp,
-                fontWeight = FontWeight.Normal
-            )
-            Text(
-                "$percent%",
-                color = secondaryText,
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
-                fontWeight = FontWeight.Normal
-            )
-        }
+        Text(
+            "$label $percent%",
+            color = primaryText,
+            fontSize = 14.sp,
+            lineHeight = 18.sp,
+            fontWeight = FontWeight.Normal
+        )
         Canvas(
             modifier = Modifier.fillMaxWidth(0.40f).height(4.dp)
         ) {
