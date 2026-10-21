@@ -338,6 +338,17 @@ internal fun DislauncherRoot() {
         }
     }
 
+    fun syncAvailableFavorites(availableApps: List<LauncherApp>) {
+        val availablePackages = availableApps.map { it.packageName }.toSet()
+        val validFavorites = favorites.intersect(availablePackages)
+        if (validFavorites != favorites) {
+            favorites = validFavorites
+            prefsStore.edit()
+                .putStringSet("favorite_packages", validFavorites.toMutableSet())
+                .apply()
+        }
+    }
+
     fun toggleFavorite(packageName: String) {
         if (packageName !in favorites && favorites.size >= MAX_PINNED_APPS) {
             android.widget.Toast.makeText(
@@ -443,9 +454,11 @@ internal fun DislauncherRoot() {
     }
 
     LaunchedEffect(Unit) {
-        apps = withContext(Dispatchers.IO) { loadLauncherApps(context) }.map { app ->
+        val loadedApps = withContext(Dispatchers.IO) { loadLauncherApps(context) }.map { app ->
             appNameOverrides[app.packageName]?.let { app.copy(label = it) } ?: app
         }
+        apps = loadedApps
+        syncAvailableFavorites(loadedApps)
     }
 
     DisposableEffect(context, appNameOverrides) {
@@ -473,6 +486,8 @@ internal fun DislauncherRoot() {
                     }.map { app ->
                         appNameOverrides[app.packageName]?.let { app.copy(label = it) } ?: app
                     }
+                    // Remove stale favourites for apps that are no longer launchable.
+                    syncAvailableFavorites(refreshed)
                     // Preserve the current list instance when the visible app data is unchanged.
                     if (apps != refreshed) apps = refreshed
                     iconPacks = withContext(Dispatchers.IO) { findIconPacks(context) }
