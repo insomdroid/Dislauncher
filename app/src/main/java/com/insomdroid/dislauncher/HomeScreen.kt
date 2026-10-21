@@ -102,7 +102,7 @@ internal fun HomeScreen(
     val timePattern = when (preferences.timeFormat) {
         "12" -> "h:mm a"
         "24" -> "HH:mm"
-        else -> if (systemTimeFormat) "HH:mm" else "h:mm a"
+        else -> if (systemTimeFormat) "HH:mm" else "h:mm"
     }
     val timeText = now.format(DateTimeFormatter.ofPattern(timePattern, Locale.getDefault()))
     val dateText = formatHomeDate(today)
