@@ -25,4 +25,4 @@ The APK is created at `app/build/outputs/apk/debug/app-debug.apk`. On Windows, u
 - CI runs Android lint and creates a temporary test APK artifact. It is not an official release.
 - Official releases are built from version tags such as `v1.1.1`. The release workflow requires production-signing secrets, verifies the APK signature, and publishes the APK with a SHA-256 checksum.
 
-Download releases from the [official Releases page](https://github.com/insomdroid/dislauncher/releases/latest).
+Download releases from the [official Releases page](https://github.com/insomdroid/Dislauncher/releases/latest).
