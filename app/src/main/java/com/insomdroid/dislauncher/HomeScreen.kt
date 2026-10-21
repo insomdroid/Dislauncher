@@ -206,8 +206,10 @@ internal fun HomeScreen(
             .combinedClickable(
                 onClick = {},
                 onLongClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    currentOpenSettings()
+                    if (preferences.longPressHomeOpensSettings) {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        currentOpenSettings()
+                    }
                 },
                 onDoubleClick = {
                     if (preferences.doubleTapToLock) currentLockScreen()
