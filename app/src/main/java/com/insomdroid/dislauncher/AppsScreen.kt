@@ -142,7 +142,7 @@ internal fun AppsScreen(
     val searchColor = if (searchFocused || query.isNotEmpty()) mainText else secondary.copy(alpha = 0.65f)
     val allAlphabetLetters = remember { ('A'..'Z').map(Char::toString) + "#" }
     var scrubberProgress by remember { mutableStateOf<Float?>(null) }
-    val firstIndexByLetter = remember(filtered, filteredBuiltIns, preferences.showBuiltInApps, searching) {
+    val firstIndexByLetter = remember(filtered, filteredBuiltIns, preferences.showBuiltInApps, preferences.appFolders, searching) {
         val result = linkedMapOf<String, Int>()
         // Built-in tools occupy one horizontal row in the first list item.
         val installedAppsOffset = (if (filteredBuiltIns.isNotEmpty() || (preferences.showBuiltInApps && !searching)) 1 else 0) +
