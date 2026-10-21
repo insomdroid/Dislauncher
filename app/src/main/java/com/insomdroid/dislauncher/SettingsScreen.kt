@@ -526,7 +526,7 @@ internal fun SettingsScreen(
                         SettingsGroup(tr("Built-in apps", "Aplikasi bawaan")) {
                             SettingToggle(
                                 tr("Show built-in apps", "Tampilkan aplikasi bawaan"),
-                                tr("Show Calculator, Calendar and Notes in the app drawer.", "Tampilkan Kalkulator, Kalender, dan Catatan di app drawer."),
+                                tr("Show Calculator, Calendar, Notes and Unit Converter in a dedicated row above the app list.", "Tampilkan Kalkulator, Kalender, Catatan, dan Konverter Satuan dalam baris khusus di atas daftar aplikasi."),
                                 preferences.showBuiltInApps
                             ) { onPreferencesChange(preferences.copy(showBuiltInApps = it)) }
                         }
@@ -595,6 +595,13 @@ internal fun SettingsScreen(
                                 tr("Requires device-admin activation.", "Memerlukan aktivasi admin perangkat."),
                                 preferences.doubleTapToLock
                             ) { onDoubleTapLockChange(it) }
+                            SettingToggle(
+                                tr("Long press Home to open settings", "Tekan lama Home untuk membuka setelan"),
+                                tr("Open Dislauncher Settings when you press and hold an empty area of Home.", "Buka Setelan Dislauncher saat menekan lama area kosong di Home."),
+                                preferences.longPressHomeOpensSettings
+                            ) { enabled ->
+                                onPreferencesChange(preferences.copy(longPressHomeOpensSettings = enabled))
+                            }
                             SettingToggle(
                                 tr("Swipe down for notifications", "Usap ke bawah untuk notifikasi"),
                                 tr("Opens the Android notification panel.", "Membuka panel notifikasi Android."),
