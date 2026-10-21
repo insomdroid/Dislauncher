@@ -66,7 +66,7 @@ internal fun HomeHeader(
         )
     }
     if (preferences.showYearProgress || preferences.showDayProgress) {
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(2.dp))
         if (preferences.showYearProgress) {
             ProgressLine(
                 label = "Year in progress",
@@ -78,7 +78,7 @@ internal fun HomeHeader(
             )
         }
         if (preferences.showDayProgress) {
-            if (preferences.showYearProgress) Spacer(Modifier.height(4.dp))
+            if (preferences.showYearProgress) Spacer(Modifier.height(2.dp))
             ProgressLine(
                 label = "Day in progress",
                 percent = (now.toSecondOfDay() * 100f / 86400f).toInt(),
