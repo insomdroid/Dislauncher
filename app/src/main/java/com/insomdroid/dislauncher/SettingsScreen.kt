@@ -41,6 +41,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
@@ -101,6 +102,7 @@ internal fun SettingsScreen(
 
     var selectedCategory by remember { mutableStateOf<SettingsCategory?>(null) }
     var openDialog by remember { mutableStateOf("") }
+    var newFolderName by remember { mutableStateOf("") }
     var wallpaperTarget by remember { mutableStateOf("both") }
     var showRestartConfirmation by remember { mutableStateOf(false) }
     var detectedIconPacks by remember { mutableStateOf(iconPacks) }
@@ -509,6 +511,13 @@ internal fun SettingsScreen(
                     }
 
                     SettingsCategory.APPS -> {
+                        SettingsGroup(tr("Folders", "Folder")) {
+                            SettingAction(
+                                tr("Manage folders", "Kelola folder"),
+                                preferences.appFolders.size.toString() + " " + tr("folders", "folder"),
+                                tr("Manage", "Kelola")
+                            ) { newFolderName = ""; openDialog = "folders" }
+                        }
                         SettingsGroup(tr("Favourites", "Favorit")) {
                             SettingAction(
                                 tr("Manage favourites", "Kelola favorit"),
@@ -798,6 +807,64 @@ internal fun SettingsScreen(
             checkedPackages = hiddenApps,
             onToggle = onToggleHidden,
             onDismiss = { openDialog = "" }
+        )
+    } else if (openDialog == "folders") {
+        AlertDialog(
+            onDismissRequest = { openDialog = "" },
+            title = { Text(tr("Manage folders", "Kelola folder")) },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        tr("Folders appear in the app drawer above the app list.", "Folder tampil di app drawer, di atas daftar aplikasi."),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    OutlinedTextField(
+                        value = newFolderName,
+                        onValueChange = { newFolderName = it.filterNot { ch -> ch == '\t' || ch == '\n' }.take(32) },
+                        singleLine = true,
+                        label = { Text(tr("New folder name", "Nama folder baru")) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    TextButton(
+                        enabled = newFolderName.isNotBlank() &&
+                            preferences.appFolders.none { it.equals(newFolderName.trim(), ignoreCase = true) },
+                        onClick = {
+                            val name = newFolderName.trim()
+                            if (name.isNotEmpty()) {
+                                onPreferencesChange(preferences.copy(appFolders = preferences.appFolders + name))
+                                newFolderName = ""
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text(tr("Create folder", "Buat folder")) }
+                    preferences.appFolders.sortedBy { it.lowercase() }.forEach { folder ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(folder, modifier = Modifier.weight(1f))
+                            TextButton(onClick = {
+                                onPreferencesChange(
+                                    preferences.copy(
+                                        appFolders = preferences.appFolders - folder,
+                                        folderAssignments = preferences.folderAssignments.filterNot {
+                                            it.substringAfter('\t', "") == folder
+                                        }.toSet()
+                                    )
+                                )
+                            }) { Text(tr("Delete", "Hapus")) }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { openDialog = "" }) { Text(tr("Done", "Selesai")) }
+            }
         )
     } else if (openDialog == "favorites") {
         AppSelectionDialog(
