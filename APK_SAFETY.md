@@ -1,6 +1,6 @@
 # APK Safety
 
-Download Dislauncher only from the [official GitHub Releases page](https://github.com/insomdroid/dislauncher/releases/latest). The app is distributed as a direct APK, not through Google Play.
+Download Dislauncher only from the [official GitHub Releases page](https://github.com/insomdroid/Dislauncher/releases/latest). The app is distributed as a direct APK, not through Google Play.
 
 - Review Android's installation and security warnings; do not bypass them automatically.
 - Compare the release's `.sha256` file with the APK when a checksum is provided.
