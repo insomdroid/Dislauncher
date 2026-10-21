@@ -135,6 +135,13 @@ internal fun AppsScreen(
                 it.label.contains(query.trim(), ignoreCase = true)
         }.sortedBy { it.label.lowercase(Locale.getDefault()) }
     }
+    // Folders participate in app-drawer search by their names, just like apps.
+    // With an empty query, show every folder; while searching, show matching folders.
+    val filteredFolders = remember(preferences.appFolders, query) {
+        preferences.appFolders
+            .filter { it.contains(query.trim(), ignoreCase = true) }
+            .sortedBy { it.lowercase(Locale.getDefault()) }
+    }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val keyboard = LocalSoftwareKeyboardController.current
@@ -148,7 +155,7 @@ internal fun AppsScreen(
         val result = linkedMapOf<String, Int>()
         // Built-in tools occupy one horizontal row in the first list item.
         val installedAppsOffset = (if (filteredBuiltIns.isNotEmpty() || (preferences.showBuiltInApps && !searching)) 1 else 0) +
-            if (!searching) preferences.appFolders.size else 0
+            filteredFolders.size
         filtered.forEachIndexed { index, app ->
             val letter = app.label.firstOrNull()?.uppercaseChar()?.toString()
                 ?.takeIf { it in allAlphabetLetters } ?: "#"
@@ -263,8 +270,8 @@ internal fun AppsScreen(
                         }
                     }
                 }
-                if (!searching && preferences.appFolders.isNotEmpty()) {
-                    items(preferences.appFolders.sortedBy { it.lowercase(Locale.getDefault()) }, key = { "folder-$it" }) { folder ->
+                if (filteredFolders.isNotEmpty()) {
+                    items(filteredFolders, key = { "folder-$it" }) { folder ->
                         Row(
                             modifier = Modifier.fillMaxWidth().clickable { selectedFolder = folder }
                                 .padding(vertical = 8.dp),
