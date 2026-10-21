@@ -37,8 +37,8 @@ Custom wallpapers and fonts use Android's system file picker; Dislauncher does n
 
 ## APK distribution
 
-APKs are distributed through [GitHub Releases](https://github.com/insomdroid/dislauncher/releases/latest). Review Android's warnings and the release checksum when available. A public source repository does not guarantee an APK is authentic or bug-free; install at your own discretion.
+APKs are distributed through [GitHub Releases](https://github.com/insomdroid/Dislauncher/releases/latest). Review Android's warnings and the release checksum when available. A public source repository does not guarantee an APK is authentic or bug-free; install at your own discretion.
 
 ## Contact
 
-For questions or privacy concerns, open a [GitHub issue](https://github.com/insomdroid/dislauncher/issues) or email [insomdroid3@gmail.com](mailto:insomdroid3@gmail.com).
+For questions or privacy concerns, open a [GitHub issue](https://github.com/insomdroid/Dislauncher/issues) or email [insomdroid3@gmail.com](mailto:insomdroid3@gmail.com).
