@@ -145,7 +145,8 @@ internal fun AppsScreen(
     val firstIndexByLetter = remember(filtered, filteredBuiltIns, preferences.showBuiltInApps, searching) {
         val result = linkedMapOf<String, Int>()
         // Built-in tools occupy one horizontal row in the first list item.
-        val installedAppsOffset = if (filteredBuiltIns.isNotEmpty() || (preferences.showBuiltInApps && !searching)) 1 else 0
+        val installedAppsOffset = (if (filteredBuiltIns.isNotEmpty() || (preferences.showBuiltInApps && !searching)) 1 else 0) +
+            if (!searching) preferences.appFolders.size else 0
         filtered.forEachIndexed { index, app ->
             val letter = app.label.firstOrNull()?.uppercaseChar()?.toString()
                 ?.takeIf { it in allAlphabetLetters } ?: "#"
@@ -267,15 +268,13 @@ internal fun AppsScreen(
                                 .padding(vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            if (preferences.showAppIcons) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Folder,
-                                    contentDescription = null,
-                                    tint = mainText,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(Modifier.width(9.dp))
-                            }
+                            Icon(
+                                imageVector = Icons.Outlined.Folder,
+                                contentDescription = null,
+                                tint = mainText,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(Modifier.width(9.dp))
                             Text(
                                 folder,
                                 color = mainText,
@@ -284,7 +283,7 @@ internal fun AppsScreen(
                                 fontFamily = fontFamily,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f).padding(start = if (preferences.showAppIcons) 0.dp else 20.dp)
+                                modifier = Modifier.weight(1f)
                             )
                         }
                     }
