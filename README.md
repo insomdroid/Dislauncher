@@ -3,13 +3,13 @@
 </p>
 
 <h1 align="center">Dislauncher</h1>
-<p align="center"><strong>A calmer Android Home screen, built around text instead of clutter.</strong></p>
-<p align="center">A lightweight, text-first launcher for people who want their apps close at hand without turning the Home screen into another feed.</p>
+<p align="center"><strong>Your phone. Your space.</strong></p>
+<p align="center">A lightweight, text-first Android launcher designed to keep your Home screen calm and your apps close at hand.</p>
 <p align="center">
-  <a href="https://insomdroid.github.io/dislauncher/"><strong>Visit the website</strong></a>
-  · <a href="https://github.com/insomdroid/dislauncher/releases/latest"><strong>Download the latest APK</strong></a>
+  <a href="https://insomdroid.github.io/dislauncher/"><strong>Website</strong></a>
+  · <a href="https://github.com/insomdroid/dislauncher/releases/latest"><strong>Download APK</strong></a>
   · <a href="https://github.com/insomdroid/dislauncher/issues">Report a bug</a>
-  · <a href="https://ko-fi.com/insomdroid">Buy me a coffee ☕</a>
+  · <a href="https://ko-fi.com/insomdroid">Support the project</a>
 </p>
 <p align="center">
   <a href="https://github.com/insomdroid/dislauncher/actions/workflows/build-apk.yml"><img alt="Build APK" src="https://github.com/insomdroid/dislauncher/actions/workflows/build-apk.yml/badge.svg?branch=main"></a>
@@ -18,7 +18,7 @@
   <img alt="Built with Kotlin" src="https://img.shields.io/badge/Kotlin-Jetpack%20Compose-7F52FF">
 </p>
 
-Dislauncher started as a personal project: a way to make my own phone feel simpler and more intentional. I build it with help from AI as a learning exercise and for everyday personal use. I'm sharing the source and APK publicly in case someone else finds the idea useful. It is an independent project, not a commercial product or an official Android app.
+Dislauncher is an independent, open-source personal project built with AI assistance. It is shared freely for anyone who finds it useful.
 
 ## A quick look
 
@@ -29,119 +29,51 @@ Dislauncher started as a personal project: a way to make my own phone feel simpl
   &nbsp;&nbsp;
   <img src="screenshots/app-drawer.png" width="230" alt="Dislauncher searchable app drawer">
 </p>
-<p align="center"><em>Keep the Home screen quiet. Find what you need when you need it.</em></p>
 
-<details>
-  <summary><strong>More screenshots — appearance, calendar and weather</strong></summary>
-  <p align="center">
-    <img src="screenshots/appearance.png" width="230" alt="Appearance settings with theme and font options">
-    &nbsp;&nbsp;
-    <img src="screenshots/calendar.png" width="230" alt="Built-in calendar and local reminder">
-    &nbsp;&nbsp;
-    <img src="screenshots/weather.png" width="230" alt="Weather screen with current conditions">
-  </p>
-</details>
+## Features
 
-## What you can do with Dislauncher
+- **Minimal Home screen:** clock, date, progress indicators and favourite apps.
+- **App drawer:** search, alphabetical browsing, favourites, hidden apps and compatible icon packs.
+- **Personalisation:** System, Light, Dark and Black modes, Dynamic Color, accent colours, wallpapers, fonts and text sizing.
+- **Everyday tools:** calendar and local reminders, notes, calculator, unit converter, optional weather and music controls.
+- **Optional system access:** use core launcher features without enabling every permission.
 
-### A Home screen that stays out of the way
-- A clean, text-first layout with clock, date, day/year progress and favourite apps.
-- Choose which Home elements appear and reorder supported items.
-- Optional weather, battery percentage, calendar agenda, music controls and notification dots.
-- Double-tap to lock the screen (optional Device Administrator access) and swipe down to open the notification shade.
-- Keep the launcher's own background independent from the wallpaper you apply to Android.
+See the [website](https://insomdroid.github.io/dislauncher/) for screenshots and a visual overview.
 
-### An app drawer built for finding things
-- Search installed launcher apps and browse alphabetically with an optional A–Z index.
-- Manage favourites and hide apps you do not want in the drawer.
-- Choose whether to show app icons, pick a built-in icon shape, or use a compatible third-party icon pack.
-- Quick access to built-in tools such as Calendar, Notes, Calculator and Unit Converter.
+## Install
 
-### Personalise the look without losing the simplicity
-- **System, Light, Dark and AMOLED** appearance modes.
-- Optional Android Dynamic Color plus manual accent-colour presets.
-- Use a solid-colour wallpaper or choose a custom image.
-- Apply a wallpaper to Android's Home screen, Lock screen, or both from one clear dialog.
-- Adjust app-drawer wallpaper transparency and contrast.
-- Choose System, bundled Inter Variable, or a custom TTF/OTF font (up to 5 MB), and adjust text size.
+1. Open the [latest GitHub Release](https://github.com/insomdroid/dislauncher/releases/latest).
+2. Download the APK listed under **Assets**.
+3. Open it and follow Android's installation prompts. Choose Dislauncher as your default Home app to use it as your launcher.
 
-### Small tools for everyday use
-- **Calendar and agenda** for viewing events, with local reminders.
-- **Notes** for quick personal notes.
-- **Calculator** and **Unit Converter** for quick calculations.
-- **Weather** with current conditions and daily high/low when you enable location access.
-- **Music controls** for supported active media sessions from the Home screen.
+Download only from the official release page. See [APK safety](APK_SAFETY.md) if you need more detail.
 
-Features that depend on Android access remain optional. You can use Dislauncher as a basic launcher without granting location, calendar, notification-listener or device-admin access.
+## Privacy, permissions and safety
 
-## Install Dislauncher from GitHub
+Dislauncher has no account system, advertising SDK or analytics SDK in the reviewed source. Weather is optional and sends approximate coordinates to Open-Meteo when you enable it. Other optional access supports features such as calendar, reminders, notification dots, music controls and double-tap-to-lock.
 
-The latest stable APK is published on the [GitHub Releases page](https://github.com/insomdroid/dislauncher/releases/latest).
+- [Privacy and permissions](PRIVACY.md)
+- [APK safety and updates](APK_SAFETY.md)
 
-1. Open the [latest release](https://github.com/insomdroid/dislauncher/releases/latest) on your Android phone.
-2. Under **Assets**, download the file named **Dislauncher-vX.Y.Z.apk** (use the exact version shown on the release page). Do not download a workflow artifact or an APK re-uploaded by someone else.
-3. Open the downloaded APK. Android may ask you to allow your browser or file manager to **Install unknown apps**. If you choose to continue, allow that source for this installation.
-4. Review the installer and tap **Install**.
-5. Open Dislauncher and follow setup. To use it as your launcher, select **Dislauncher** in Android's default Home app setting.
+## Build
 
-The wording and location of Android settings vary by manufacturer. Common paths include **Settings → Apps → Special app access → Install unknown apps** and **Settings → Apps → Default apps → Home app**. You can turn off the browser/file-manager install permission again after installing.
+Dislauncher uses Kotlin, Jetpack Compose, Material 3 and Android SDK 36. It supports Android 8.0 (API 26) and later.
 
-### APK safety
+For a quick local debug build:
 
-Dislauncher is distributed through GitHub, not Google Play. Install only from the [official Releases page](https://github.com/insomdroid/dislauncher/releases/latest), review Android security warnings, and verify the release's SHA-256 checksum when available. Never bypass a warning automatically or download APKs from unofficial sources. See [APK_SAFETY.md](APK_SAFETY.md) for details.
-## Permissions at a glance
-
-Dislauncher keeps permissions optional wherever possible. The core launcher works without granting every permission.
-
-- **Location and Internet:** used for weather; approximate coordinates are sent to Open-Meteo over HTTPS.
-- **Calendar and notifications:** support the agenda and local reminders.
-- **Notification access:** supports notification dots and active media information for music controls.
-- **Device Administrator:** optional double-tap-to-lock; the app requests force-lock only, not device wipe.
-- **Wallpaper and system gestures:** apply your chosen wallpaper and open the notification shade.
-- **System file picker:** selects custom wallpapers and fonts without broad storage access.
-
-You can deny optional access or revoke it in Android settings. See [PRIVACY.md](PRIVACY.md) for the full permission list and data-handling details.
-## Build from source
-
-Dislauncher uses Kotlin, Jetpack Compose, Material 3 and the Android SDK. It targets Android SDK 36 and supports Android 8.0 (API 26) and later.
-
-### Requirements
-- JDK 17
-- Android SDK Platform 36 and Build Tools 36.0.0
-- A network connection on the first build so Gradle can download its pinned distribution and dependencies
-
-### Build a debug APK
-
-~~~sh
-git clone https://github.com/insomdroid/dislauncher.git
-cd dislauncher
+```sh
 ./gradlew assembleDebug
-~~~
+```
 
-On Windows, run **gradlew.bat assembleDebug**.
+See [BUILDING.md](BUILDING.md) for requirements and CI/release details. Official release APKs are published on [GitHub Releases](https://github.com/insomdroid/dislauncher/releases/latest).
 
-The debug APK is created at **app/build/outputs/apk/debug/app-debug.apk**. For a release-style local build, run **./gradlew assembleRelease**; unless production signing credentials are configured in the environment, it uses the debug signing key and is **not** the official release APK.
+## Project links
 
-### CI and releases
-- Changes to app code, Gradle files, the launcher-icon source image or build workflows trigger the build workflow.
-- Screenshot-only and documentation-only changes do not trigger an APK build.
-- CI runs Android lint and assembles a test APK. Test APKs are temporary CI artifacts, not official releases.
-- Official release APKs are built from version tags and signed with the production signing key configured as GitHub Actions secrets. The release workflow verifies the APK signature and publishes a SHA-256 checksum.
-
-## Typography and third-party assets
-
-Dislauncher bundles **Inter Variable** as its display font so it works offline. Inter is designed by the Inter Project Authors and is distributed under the **SIL Open Font License 1.1 (OFL-1.1)**. The full font license is included at **app/src/main/assets/licenses/INTER_OFL.txt**. See [Inter on GitHub](https://github.com/rsms/inter) and [Google Fonts](https://fonts.google.com/specimen/Inter).
-
-## A personal note
-
-I made Dislauncher with AI assistance as a way to learn, experiment and build something useful for my own phone. I'm still learning, so bugs and rough edges are possible. If you find it useful, feedback through [GitHub Issues](https://github.com/insomdroid/dislauncher/issues) is welcome.
-
-If this project makes your day a little easier and you'd like to support its continued development, you can [buy me a coffee on Ko-fi](https://ko-fi.com/insomdroid). There is no obligation — using, testing or sharing feedback is already appreciated.
+- [Website](https://insomdroid.github.io/dislauncher/)
+- [Source code](https://github.com/insomdroid/dislauncher)
+- [Issues and feedback](https://github.com/insomdroid/dislauncher/issues)
+- [Support on Ko-fi](https://ko-fi.com/insomdroid)
 
 ## License
 
-Dislauncher is licensed under the [MIT License](LICENSE). You may use, modify and redistribute the project, including commercially, provided the copyright and license notice are retained. This license applies to the project code; third-party assets and dependencies remain subject to their own licenses. The bundled Inter font is under the SIL Open Font License 1.1; see `app/src/main/assets/licenses/INTER_OFL.txt`.
-
----
-
-**Website:** [insomdroid.github.io/dislauncher](https://insomdroid.github.io/dislauncher/) · **Source:** [github.com/insomdroid/dislauncher](https://github.com/insomdroid/dislauncher) · **Issues and feedback:** [GitHub Issues](https://github.com/insomdroid/dislauncher/issues)
+The project code is licensed under the [MIT License](LICENSE). Third-party assets and dependencies may have their own licenses; the bundled Inter font is covered by SIL Open Font License 1.1, included at `app/src/main/assets/licenses/INTER_OFL.txt`.
