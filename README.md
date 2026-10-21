@@ -6,14 +6,14 @@
 <p align="center"><strong>Your phone. Your space.</strong></p>
 <p align="center">A lightweight, text-first Android launcher designed to keep your Home screen calm and your apps close at hand.</p>
 <p align="center">
-  <a href="https://insomdroid.github.io/dislauncher/"><strong>Website</strong></a>
-  · <a href="https://github.com/insomdroid/dislauncher/releases/latest"><strong>Download APK</strong></a>
-  · <a href="https://github.com/insomdroid/dislauncher/issues">Report a bug</a>
+  <a href="https://insomdroid.github.io/Dislauncher/"><strong>Website</strong></a>
+  · <a href="https://github.com/insomdroid/Dislauncher/releases/latest"><strong>Download APK</strong></a>
+  · <a href="https://github.com/insomdroid/Dislauncher/issues">Report a bug</a>
   · <a href="https://ko-fi.com/insomdroid">Support the project</a>
 </p>
 <p align="center">
-  <a href="https://github.com/insomdroid/dislauncher/actions/workflows/build-apk.yml"><img alt="Build APK" src="https://github.com/insomdroid/dislauncher/actions/workflows/build-apk.yml/badge.svg?branch=main"></a>
-  <a href="https://github.com/insomdroid/dislauncher/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/insomdroid/dislauncher"></a>
+  <a href="https://github.com/insomdroid/Dislauncher/actions/workflows/build-apk.yml"><img alt="Build APK" src="https://github.com/insomdroid/Dislauncher/actions/workflows/build-apk.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/insomdroid/Dislauncher/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/insomdroid/Dislauncher"></a>
   <img alt="Minimum Android version" src="https://img.shields.io/badge/Android-8.0%2B-3DDC84">
   <img alt="Built with Kotlin" src="https://img.shields.io/badge/Kotlin-Jetpack%20Compose-7F52FF">
 </p>
@@ -38,11 +38,11 @@ Dislauncher is an independent, open-source personal project built with AI assist
 - **Everyday tools:** calendar and local reminders, notes, calculator, unit converter, optional weather and music controls.
 - **Optional system access:** use core launcher features without enabling every permission.
 
-See the [website](https://insomdroid.github.io/dislauncher/) for screenshots and a visual overview.
+See the [website](https://insomdroid.github.io/Dislauncher/) for screenshots and a visual overview.
 
 ## Install
 
-1. Open the [latest GitHub Release](https://github.com/insomdroid/dislauncher/releases/latest).
+1. Open the [latest GitHub Release](https://github.com/insomdroid/Dislauncher/releases/latest).
 2. Download the APK listed under **Assets**.
 3. Open it and follow Android's installation prompts. Choose Dislauncher as your default Home app to use it as your launcher.
 
@@ -65,13 +65,13 @@ For a quick local debug build:
 ./gradlew assembleDebug
 ```
 
-See [BUILDING.md](BUILDING.md) for requirements and CI/release details. Official release APKs are published on [GitHub Releases](https://github.com/insomdroid/dislauncher/releases/latest).
+See [BUILDING.md](BUILDING.md) for requirements and CI/release details. Official release APKs are published on [GitHub Releases](https://github.com/insomdroid/Dislauncher/releases/latest).
 
 ## Project links
 
-- [Website](https://insomdroid.github.io/dislauncher/)
-- [Source code](https://github.com/insomdroid/dislauncher)
-- [Issues and feedback](https://github.com/insomdroid/dislauncher/issues)
+- [Website](https://insomdroid.github.io/Dislauncher/)
+- [Source code](https://github.com/insomdroid/Dislauncher)
+- [Issues and feedback](https://github.com/insomdroid/Dislauncher/issues)
 - [Support on Ko-fi](https://ko-fi.com/insomdroid)
 
 ## License
