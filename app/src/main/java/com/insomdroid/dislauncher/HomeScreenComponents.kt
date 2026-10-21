@@ -102,7 +102,7 @@ internal fun ProgressLine(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(3.dp)
+        verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
         Text(
             "$label $percent%",
@@ -122,7 +122,7 @@ internal fun ProgressLine(
                 start = Offset(0f, centerY),
                 end = Offset(size.width, centerY),
                 strokeWidth = strokeWidth,
-                cap = androidx.compose.ui.graphics.StrokeCap.Round
+                cap = androidx.compose.ui.graphics.StrokeCap.Butt
             )
             if (progressFraction > 0f) {
                 drawLine(
@@ -130,7 +130,7 @@ internal fun ProgressLine(
                     start = Offset(0f, centerY),
                     end = Offset(size.width * progressFraction, centerY),
                     strokeWidth = strokeWidth,
-                    cap = androidx.compose.ui.graphics.StrokeCap.Round
+                    cap = androidx.compose.ui.graphics.StrokeCap.Butt
                 )
             }
         }
