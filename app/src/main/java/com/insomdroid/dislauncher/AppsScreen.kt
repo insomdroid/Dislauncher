@@ -286,7 +286,7 @@ internal fun AppsScreen(
                                 imageVector = Icons.Outlined.Folder,
                                 contentDescription = null,
                                 tint = mainText,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                             Spacer(Modifier.width(9.dp))
                             Text(
