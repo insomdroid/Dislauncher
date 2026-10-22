@@ -253,6 +253,9 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     var notesEditing by remember { mutableStateOf(false) }
     var notesBackSignal by remember { mutableStateOf(0) }
+    var notesPreviewSignal by remember { mutableStateOf(0) }
+    var notesExportSignal by remember { mutableStateOf(0) }
+    var notesMenuSignal by remember { mutableStateOf(0) }
     var calculatorShowingHistory by remember { mutableStateOf(false) }
     var calculatorHistoryHasItems by remember { mutableStateOf(false) }
     var calculatorClearHistorySignal by remember { mutableStateOf(0) }
@@ -274,7 +277,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                 containerColor = MaterialTheme.colorScheme.background,
                 topBar = {
                     TopAppBar(
-                        title = { Text(title, fontWeight = FontWeight.Medium) },
+                        title = { if (!(tool == BuiltInTool.NOTES && notesEditing) && tool != BuiltInTool.CALENDAR) Text(title, fontWeight = FontWeight.Medium) },
                         navigationIcon = {
                             IconButton(onClick = {
                                 when {
@@ -287,6 +290,11 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             }
                         },
                         actions = {
+                            if (tool == BuiltInTool.NOTES && notesEditing) {
+                                IconButton(onClick = { notesPreviewSignal++ }) { Icon(Icons.Outlined.Visibility, contentDescription = "Preview note") }
+                                IconButton(onClick = { notesExportSignal++ }) { Icon(Icons.Outlined.FileDownload, contentDescription = "Export Markdown file") }
+                                IconButton(onClick = { notesMenuSignal++ }) { Icon(Icons.Outlined.MoreVert, contentDescription = "More note actions") }
+                            }
                             if (tool == BuiltInTool.CALCULATOR) {
                                 if (calculatorShowingHistory) {
                                     IconButton(
@@ -315,6 +323,9 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             context = context,
                             backSignal = notesBackSignal,
                             onEditingChanged = { notesEditing = it },
+                            previewSignal = notesPreviewSignal,
+                            exportSignal = notesExportSignal,
+                            menuSignal = notesMenuSignal,
                             modifier = Modifier.fillMaxSize()
                         )
                         BuiltInTool.CALCULATOR -> CalculatorTool(
@@ -324,7 +335,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             clearHistorySignal = calculatorClearHistorySignal,
                             onHistoryAvailabilityChanged = { calculatorHistoryHasItems = it }
                         )
-                        BuiltInTool.CALENDAR -> CalendarTool(context, Modifier.fillMaxSize())
+                        BuiltInTool.CALENDAR -> CalendarTool(context, Modifier.fillMaxSize(), onBack = onBack)
                         BuiltInTool.UNIT_CONVERTER -> UnitConverterTool(Modifier.fillMaxSize())
                     }
                 }
@@ -336,6 +347,9 @@ private fun NotesTool(
     context: Context,
     backSignal: Int,
     onEditingChanged: (Boolean) -> Unit,
+    previewSignal: Int,
+    exportSignal: Int,
+    menuSignal: Int,
     modifier: Modifier = Modifier
 ) {
     var notes by remember(context) { mutableStateOf(loadNotes(context)) }
@@ -347,6 +361,7 @@ private fun NotesTool(
     var deleteTarget by remember { mutableStateOf<String?>(null) }
     var noteMenuTarget by remember { mutableStateOf<String?>(null) }
     var exportContent by remember { mutableStateOf("") }
+    var editorMenuExpanded by remember { mutableStateOf(false) }
 
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) runCatching {
@@ -416,6 +431,9 @@ private fun NotesTool(
     }
 
     LaunchedEffect(backSignal) { if (backSignal > 0 && selectedId != null) closeEditor() }
+    LaunchedEffect(previewSignal) { if (previewSignal > 0 && selectedId != null) previewMode = !previewMode }
+    LaunchedEffect(exportSignal) { if (exportSignal > 0 && selectedId != null) exportNote(title, body) }
+    LaunchedEffect(menuSignal) { if (menuSignal > 0 && selectedId != null) editorMenuExpanded = true }
     BackHandler(enabled = selectedId != null) { closeEditor() }
 
     Box(modifier = modifier) {
@@ -542,7 +560,6 @@ private fun NotesTool(
                         Icon(Icons.Outlined.FileDownload, contentDescription = "Export Markdown file")
                     }
                     Box {
-                        var editorMenuExpanded by remember { mutableStateOf(false) }
                         IconButton(onClick = { editorMenuExpanded = true }) {
                             Icon(Icons.Outlined.MoreVert, contentDescription = "More note actions")
                         }
@@ -1032,7 +1049,7 @@ private fun openDeviceCalendarEvent(context: Context, event: DeviceCalendarEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
+private fun CalendarTool(context: Context, modifier: Modifier = Modifier, onBack: () -> Unit) {
     var tasks by remember(context) { mutableStateOf(loadTasks(context)) }
     var month by remember { mutableStateOf(YearMonth.now()) }
     var calendarPermission by remember { mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED) }
@@ -1102,6 +1119,7 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
     Column(modifier = Modifier.fillMaxSize().padding(bottom = 64.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(0.dp), modifier = Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Back") }
                 Text(month.format(monthFormatter), modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Medium,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
