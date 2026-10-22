@@ -44,21 +44,21 @@ private data class ConverterCategory(
 
 private val converterCategories = listOf(
     ConverterCategory(builtInToolText("Length", "Panjang"), listOf(
-        ConverterUnit("Millimeter", "mm", 0.001),
-        ConverterUnit("Centimeter", "cm", 0.01),
+        ConverterUnit(builtInToolText("Millimeter", "Milimeter"), "mm", 0.001),
+        ConverterUnit(builtInToolText("Centimeter", "Sentimeter"), "cm", 0.01),
         ConverterUnit("Meter", "m", 1.0),
         ConverterUnit("Kilometer", "km", 1000.0),
-        ConverterUnit("Inch", "in", 0.0254),
-        ConverterUnit("Foot", "ft", 0.3048),
-        ConverterUnit("Mile", "mi", 1609.344)
+        ConverterUnit(builtInToolText("Inch", "Inci"), "in", 0.0254),
+        ConverterUnit(builtInToolText("Foot", "Kaki"), "ft", 0.3048),
+        ConverterUnit(builtInToolText("Mile", "Mil"), "mi", 1609.344)
     )),
     ConverterCategory(builtInToolText("Mass", "Massa"), listOf(
-        ConverterUnit("Milligram", "mg", 0.001),
+        ConverterUnit(builtInToolText("Milligram", "Miligram"), "mg", 0.001),
         ConverterUnit("Gram", "g", 1.0),
         ConverterUnit("Kilogram", "kg", 1000.0),
-        ConverterUnit("Metric ton", "t", 1_000_000.0),
-        ConverterUnit("Pound", "lb", 453.59237),
-        ConverterUnit("Ounce", "oz", 28.349523125)
+        ConverterUnit(builtInToolText("Metric ton", "Ton metrik"), "t", 1_000_000.0),
+        ConverterUnit(builtInToolText("Pound", "Pon"), "lb", 453.59237),
+        ConverterUnit(builtInToolText("Ounce", "Ons"), "oz", 28.349523125)
     )),
     ConverterCategory(builtInToolText("Temperature", "Suhu"), listOf(
         ConverterUnit("Celsius", "°C", 1.0, 273.15),
@@ -66,31 +66,31 @@ private val converterCategories = listOf(
         ConverterUnit("Kelvin", "K", 1.0)
     )),
     ConverterCategory(builtInToolText("Speed", "Kecepatan"), listOf(
-        ConverterUnit("Meter per second", "m/s", 1.0),
-        ConverterUnit("Kilometer per hour", "km/h", 1.0 / 3.6),
-        ConverterUnit("Mile per hour", "mph", 0.44704),
+        ConverterUnit(builtInToolText("Meter per second", "Meter per detik"), "m/s", 1.0),
+        ConverterUnit(builtInToolText("Kilometer per hour", "Kilometer per jam"), "km/h", 1.0 / 3.6),
+        ConverterUnit(builtInToolText("Mile per hour", "Mil per jam"), "mph", 0.44704),
         ConverterUnit("Knot", "kn", 0.514444444444)
     )),
     ConverterCategory(builtInToolText("Area", "Luas"), listOf(
-        ConverterUnit("Square centimeter", "cm²", 0.0001),
-        ConverterUnit("Square meter", "m²", 1.0),
-        ConverterUnit("Square kilometer", "km²", 1_000_000.0),
-        ConverterUnit("Hectare", "ha", 10_000.0),
-        ConverterUnit("Acre", "ac", 4046.8564224)
+        ConverterUnit(builtInToolText("Square centimeter", "Sentimeter persegi"), "cm²", 0.0001),
+        ConverterUnit(builtInToolText("Square meter", "Meter persegi"), "m²", 1.0),
+        ConverterUnit(builtInToolText("Square kilometer", "Kilometer persegi"), "km²", 1_000_000.0),
+        ConverterUnit(builtInToolText("Hectare", "Hektare"), "ha", 10_000.0),
+        ConverterUnit(builtInToolText("Acre", "Ekar"), "ac", 4046.8564224)
     )),
     ConverterCategory(builtInToolText("Volume", "Volume"), listOf(
         ConverterUnit("Milliliter", "mL", 0.001),
         ConverterUnit("Liter", "L", 1.0),
-        ConverterUnit("Cubic meter", "m³", 1000.0),
-        ConverterUnit("US gallon", "gal", 3.785411784),
-        ConverterUnit("US cup", "cup", 0.2365882365)
+        ConverterUnit(builtInToolText("Cubic meter", "Meter kubik"), "m³", 1000.0),
+        ConverterUnit(builtInToolText("US gallon", "Galon AS"), "gal", 3.785411784),
+        ConverterUnit(builtInToolText("US cup", "Cangkir AS"), "cup", 0.2365882365)
     )),
     ConverterCategory(builtInToolText("Time", "Waktu"), listOf(
-        ConverterUnit("Millisecond", "ms", 0.001),
-        ConverterUnit("Second", "s", 1.0),
-        ConverterUnit("Minute", "min", 60.0),
-        ConverterUnit("Hour", "h", 3600.0),
-        ConverterUnit("Day", "d", 86400.0)
+        ConverterUnit(builtInToolText("Millisecond", "Milidetik"), "ms", 0.001),
+        ConverterUnit(builtInToolText("Second", "Detik"), "s", 1.0),
+        ConverterUnit(builtInToolText("Minute", "Menit"), "min", 60.0),
+        ConverterUnit(builtInToolText("Hour", "Jam"), "h", 3600.0),
+        ConverterUnit(builtInToolText("Day", "Hari"), "d", 86400.0)
     ))
 )
 
