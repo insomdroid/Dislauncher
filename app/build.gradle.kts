@@ -128,6 +128,9 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("io.noties.markwon:core:4.6.2")
     implementation("io.noties.markwon:image:4.6.2")
+    // Optional image decoders referenced by Markwon and required by R8.
+    implementation("com.caverock:androidsvg-aar:1.4")
+    implementation("pl.droidsonroids.gif:android-gif-drawable:1.2.29")
     implementation("io.noties.markwon:ext-tables:4.6.2")
     implementation("io.noties.markwon:ext-strikethrough:4.6.2")
     implementation("io.noties.markwon:ext-tasklist:4.6.2")
