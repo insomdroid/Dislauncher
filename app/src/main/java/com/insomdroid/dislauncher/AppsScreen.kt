@@ -159,7 +159,7 @@ internal fun AppsScreen(
         val result = linkedMapOf<String, Int>()
         // Built-in tools occupy one horizontal row in the first list item.
         val installedAppsOffset = (if (filteredBuiltIns.isNotEmpty() || (preferences.showBuiltInApps && !searching)) 1 else 0) +
-            filteredFolders.size
+            filteredFolders.size + (if (!searching) 1 else 0)
         filtered.forEachIndexed { index, app ->
             val letter = app.label.firstOrNull()?.uppercaseChar()?.toString()
                 ?.takeIf { it in allAlphabetLetters } ?: "#"
@@ -303,7 +303,7 @@ internal fun AppsScreen(
                         }
                     }
                 }
-                item(key = "create-folder-entry") {
+                if (!searching) item(key = "create-folder-entry") {
                     Row(
                         modifier = Modifier.fillMaxWidth().clickable { newFolderName = ""; showCreateFolder = true }
                             .padding(vertical = 8.dp),
