@@ -809,7 +809,6 @@ private class ExpressionParser(raw: String) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 private data class DeviceCalendarEvent(
     val id: Long, val title: String, val begin: Long, val end: Long, val allDay: Boolean
 )
