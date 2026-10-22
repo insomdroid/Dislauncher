@@ -892,7 +892,7 @@ internal fun SettingsScreen(
                                 Text(app.label, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 TextButton(onClick = {
                                     onPreferencesChange(preferences.copy(
-                                        folderAssignments = preferences.folderAssignments.filterNot { it.startsWith(app.packageName + "\t") }
+                                        folderAssignments = preferences.folderAssignments.filterNot { it.startsWith(app.packageName + "\t") }.toSet()
                                     ))
                                 }) { Text(tr("Remove", "Keluarkan")) }
                             }
@@ -918,7 +918,7 @@ internal fun SettingsScreen(
                 TextButton(onClick = { openDialog = ""; manageFolderName = null }) { Text(tr("Done", "Selesai")) }
             }
         )
-    }    } else if (openDialog == "favorites") {
+    } else if (openDialog == "favorites") {
         AppSelectionDialog(
             title = tr("Manage favourites", "Kelola favorit"),
             subtitle = tr(
