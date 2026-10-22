@@ -189,6 +189,8 @@ internal fun AppsScreen(
     var renameValue by remember { mutableStateOf("") }
     var selectedFolder by remember { mutableStateOf<String?>(null) }
     var selectedFolderApp by remember { mutableStateOf<LauncherApp?>(null) }
+    var showCreateFolder by remember { mutableStateOf(false) }
+    var newFolderName by remember { mutableStateOf("") }
     val context = androidx.compose.ui.platform.LocalContext.current
     LaunchedEffect(isActive, preferences.autoLaunchKeyboard, preferences.showSearchBar) {
         if (isActive && preferences.autoLaunchKeyboard && preferences.showSearchBar) {
@@ -299,6 +301,23 @@ internal fun AppsScreen(
                                 modifier = Modifier.weight(1f)
                             )
                         }
+                    }
+                }
+                item(key = "create-folder-entry") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().clickable { newFolderName = ""; showCreateFolder = true }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Outlined.Folder, contentDescription = null, tint = secondary, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(9.dp))
+                        Text(
+                            "＋ Create folder",
+                            color = secondary,
+                            fontSize = 15.sp,
+                            fontFamily = fontFamily,
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
                 items(filtered, key = { it.packageName }) { app ->
@@ -676,6 +695,34 @@ internal fun AppsScreen(
         }
     }
     
+    if (showCreateFolder) {
+        AlertDialog(
+            onDismissRequest = { showCreateFolder = false },
+            title = { Text("Create folder") },
+            text = {
+                OutlinedTextField(
+                    value = newFolderName,
+                    onValueChange = { newFolderName = it.filterNot { ch -> ch == '\\t' || ch == '\\n' }.take(32) },
+                    singleLine = true,
+                    label = { Text("Folder name") }
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = newFolderName.isNotBlank() &&
+                        preferences.appFolders.none { it.equals(newFolderName.trim(), ignoreCase = true) },
+                    onClick = {
+                        val name = newFolderName.trim()
+                        if (name.isNotEmpty()) {
+                            onPreferencesChange(preferences.copy(appFolders = preferences.appFolders + name))
+                            showCreateFolder = false
+                        }
+                    }
+                ) { Text("Create") }
+            },
+            dismissButton = { TextButton(onClick = { showCreateFolder = false }) { Text("Cancel") } }
+        )
+    }
     selectedFolderApp?.let { app ->
         AlertDialog(
             onDismissRequest = { selectedFolderApp = null },
