@@ -653,10 +653,13 @@ internal fun AppsScreen(
                 }
                 folderApps.forEach { folderApp ->
                     Row(
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(vertical = 6.dp).clickable {
-                            selectedFolder = null
-                            onLaunch(folderApp)
-                        },
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable {
+                                selectedFolder = null
+                                onLaunch(folderApp)
+                            }
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (preferences.showAppIcons) {
@@ -674,6 +677,90 @@ internal fun AppsScreen(
                 }
             }
         }
+
+    }
+
+    renamingApp?.let { app ->
+        AlertDialog(
+            onDismissRequest = { renamingApp = null },
+            title = { Text("Rename app") },
+            text = {
+                OutlinedTextField(
+                    value = renameValue,
+                    onValueChange = { renameValue = it },
+                    singleLine = true,
+                    label = { Text("App name") }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val newName = renameValue.trim()
+                    if (newName.isNotEmpty()) onRenameApp(app.packageName, newName)
+                    renamingApp = null
+                }) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { renamingApp = null }) { Text("Cancel") }
+            }
+        )
+    }
+
+    selectedFolderApp?.let { app ->
+        var newFolderName by remember(app.packageName) { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { selectedFolderApp = null },
+            title = { Text("Add to folder") },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp)
+                        .verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    if (preferences.appFolders.isEmpty()) {
+                        Text("No folders yet. Create one below.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    } else {
+                        preferences.appFolders.sortedBy { it.lowercase(Locale.getDefault()) }.forEach { folder ->
+                            TextButton(
+                                onClick = {
+                                    val assignment = app.packageName + "\t" + folder
+                                    onPreferencesChange(preferences.copy(folderAssignments = preferences.folderAssignments + assignment))
+                                    selectedFolderApp = null
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Outlined.Folder, contentDescription = null)
+                                Spacer(Modifier.width(10.dp))
+                                Text(folder, modifier = Modifier.weight(1f), textAlign = TextAlign.Start)
+                            }
+                        }
+                    }
+                    OutlinedTextField(
+                        value = newFolderName,
+                        onValueChange = { newFolderName = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("New folder") },
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val folder = newFolderName.trim()
+                    if (folder.isNotEmpty()) {
+                        onPreferencesChange(
+                            preferences.copy(
+                                appFolders = preferences.appFolders + folder,
+                                folderAssignments = preferences.folderAssignments + (app.packageName + "\t" + folder)
+                            )
+                        )
+                        selectedFolderApp = null
+                    }
+                }) { Text("Create and add") }
+            },
+            dismissButton = {
+                TextButton(onClick = { selectedFolderApp = null }) { Text("Cancel") }
+            }
+        )
     }
 }
 
