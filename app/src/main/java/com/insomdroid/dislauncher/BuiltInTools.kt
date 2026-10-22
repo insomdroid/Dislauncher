@@ -657,7 +657,6 @@ private fun MarkdownPreviewLine(line: String) {
         else -> trimmed
     }
     val visibleText = displayText
-        .replace(Regex("!?\\[([^]]+)\\]\\([^)]+\\)")) { it.groupValues[1] }
         .replace(Regex("\\*\\*([^*]+)\\*\\*")) { it.groupValues[1] }
         .replace(Regex("\\*([^*]+)\\*")) { it.groupValues[1] }
     val styled = buildAnnotatedString {
