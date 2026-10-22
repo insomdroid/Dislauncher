@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -89,6 +90,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import org.json.JSONArray
 import org.json.JSONObject
@@ -414,7 +417,7 @@ private fun NotesTool(
                         placeholder = { Text("Search notes") },
                         leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
                         singleLine = true,
-                        shape = RoundedCornerShape(28.dp)
+                        shape = RoundedCornerShape(16.dp)
                     )
                     IconButton(
                         onClick = { importLauncher.launch(arrayOf("text/markdown", "text/plain", "application/octet-stream")) },
@@ -428,8 +431,29 @@ private fun NotesTool(
                 }
                 if (visibleNotes.isEmpty()) {
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text(if (searchQuery.isBlank()) "No notes yet" else "No matching notes",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(horizontal = 24.dp)
+                        ) {
+                            Icon(
+                                Icons.Outlined.NoteAdd,
+                                contentDescription = null,
+                                modifier = Modifier.size(36.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                if (searchQuery.isBlank()) "No notes yet" else "No matching notes",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                if (searchQuery.isBlank()) "Create a note to keep your thoughts in one place." else "Try a different search term.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 } else {
                     LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -973,7 +997,7 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
             .thenBy { if (it.time.isBlank()) "99:99" else it.time })
 
     Box(modifier = modifier) {
-    Column(modifier = Modifier.fillMaxSize().padding(bottom = 72.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(modifier = Modifier.fillMaxSize().padding(bottom = 72.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(month.format(monthFormatter), style = MaterialTheme.typography.headlineSmall,
@@ -995,15 +1019,15 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
         }
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(20.dp),
             color = MaterialTheme.colorScheme.surfaceContainerLow
         ) {
-            Column(Modifier.padding(horizontal = 8.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(Modifier.padding(horizontal = 8.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Row(Modifier.fillMaxWidth()) {
                     weekDays.forEach { weekDay ->
                         Text(
                             weekDay.getDisplayName(java.time.format.TextStyle.NARROW, Locale.getDefault()),
-                            Modifier.weight(1f).padding(vertical = 7.dp), textAlign = TextAlign.Center,
+                            Modifier.weight(1f).padding(vertical = 4.dp), textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             style = MaterialTheme.typography.labelMedium
                         )
@@ -1014,7 +1038,7 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
                 cells.chunked(7).forEach { week ->
                     Row(Modifier.fillMaxWidth()) {
                         week.forEach { day ->
-                            Box(Modifier.weight(1f).height(44.dp).padding(2.dp), contentAlignment = Alignment.Center) {
+                            Box(Modifier.weight(1f).height(40.dp).padding(1.dp), contentAlignment = Alignment.Center) {
                                 if (day > 0) {
                                     val dateValue = month.atDay(day)
                                     val selected = dateValue == selectedDate
@@ -1072,10 +1096,10 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
                 Text("Nothing planned", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
-            LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 items(dayEvents, key = { "device-${it.id}-${it.begin}" }) { event ->
                     Row(Modifier.fillMaxWidth().clickable { openDeviceCalendarEvent(context, event) }
-                        .padding(horizontal = 4.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        .padding(horizontal = 4.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(if (event.allDay) "All day" else SimpleDateFormat(
                             if (android.text.format.DateFormat.is24HourFormat(context)) "HH:mm" else "h:mm a",
                             Locale.getDefault()).format(Date(event.begin)),
@@ -1090,7 +1114,7 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
                 }
                 items(dayTasks, key = { "task-${it.id}" }) { task ->
                     Row(
-                        Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 4.dp),
+                        Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (task.type == "todo") {
@@ -1102,7 +1126,7 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
                             Icon(Icons.Outlined.Notifications, contentDescription = "Reminder",
                                 tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 10.dp))
                         }
-                        Column(Modifier.weight(1f).padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Column(Modifier.weight(1f).padding(vertical = 2.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                             Text(task.title, style = MaterialTheme.typography.bodyLarge,
                                 textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None,
                                 color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface)
@@ -1143,10 +1167,32 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
                     OutlinedTextField(value = title, onValueChange = { title = it },
                         modifier = Modifier.fillMaxWidth(), label = { Text("Title") }, singleLine = true)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (type == "todo") Button(onClick = { type = "todo" }, modifier = Modifier.weight(1f)) { Text("To-do") }
-                        else FilledTonalButton(onClick = { type = "todo" }, modifier = Modifier.weight(1f)) { Text("To-do") }
-                        if (type == "reminder") Button(onClick = { type = "reminder" }, modifier = Modifier.weight(1f)) { Text("Reminder") }
-                        else FilledTonalButton(onClick = { type = "reminder" }, modifier = Modifier.weight(1f)) { Text("Reminder") }
+                        if (type == "todo") {
+                            Button(
+                                onClick = { type = "todo" },
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp)
+                            ) { Text("To-do", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge) }
+                        } else {
+                            FilledTonalButton(
+                                onClick = { type = "todo" },
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp)
+                            ) { Text("To-do", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge) }
+                        }
+                        if (type == "reminder") {
+                            Button(
+                                onClick = { type = "reminder" },
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp)
+                            ) { Text("Reminder", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge) }
+                        } else {
+                            FilledTonalButton(
+                                onClick = { type = "reminder" },
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp)
+                            ) { Text("Reminder", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge) }
+                        }
                     }
                     TextButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Outlined.Event, contentDescription = null)
@@ -1226,24 +1272,42 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
         )
-        AlertDialog(
+        Dialog(
             onDismissRequest = { showDatePicker = false },
-            title = { Text(if (Locale.getDefault().language == "id") "Pilih tanggal" else "Select date") },
-            text = { DatePicker(state = datePickerState) },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        date = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                shape = RoundedCornerShape(28.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh
+            ) {
+                Column {
+                    Text(
+                        if (Locale.getDefault().language == "id") "Pilih tanggal" else "Select date",
+                        modifier = Modifier.padding(start = 24.dp, top = 20.dp, end = 24.dp, bottom = 4.dp),
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                    DatePicker(state = datePickerState)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(onClick = { showDatePicker = false }) {
+                            Text(if (Locale.getDefault().language == "id") "Batal" else "Cancel")
+                        }
+                        TextButton(onClick = {
+                            datePickerState.selectedDateMillis?.let { millis ->
+                                date = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+                            }
+                            showDatePicker = false
+                        }) {
+                            Text(if (Locale.getDefault().language == "id") "Pilih" else "Select")
+                        }
                     }
-                    showDatePicker = false
-                }) { Text(if (Locale.getDefault().language == "id") "Pilih" else "Select") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text(if (Locale.getDefault().language == "id") "Batal" else "Cancel")
                 }
             }
-        )
+        }
     }
 
     if (showTimePicker) {
