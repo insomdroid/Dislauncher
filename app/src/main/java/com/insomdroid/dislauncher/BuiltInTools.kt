@@ -267,7 +267,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     val title = when (tool) {
         BuiltInTool.NOTES -> if (notesEditing) "Note" else "Notes"
         BuiltInTool.CALCULATOR -> if (calculatorShowingHistory) "History" else "Calculator"
-        BuiltInTool.CALENDAR -> "Calendar"
+        BuiltInTool.CALENDAR -> ""
         BuiltInTool.UNIT_CONVERTER -> "Unit Converter"
     }
     Scaffold(
@@ -1088,8 +1088,8 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
             .thenBy { if (it.time.isBlank()) "99:99" else it.time })
 
     Box(modifier = modifier) {
-    Column(modifier = Modifier.fillMaxSize().padding(bottom = 72.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxSize().padding(bottom = 64.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(0.dp), modifier = Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Text(month.format(monthFormatter), modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Medium,
@@ -1119,7 +1119,7 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
             shape = RoundedCornerShape(20.dp),
             color = MaterialTheme.colorScheme.surfaceContainerLow
         ) {
-            Column(Modifier.padding(horizontal = 8.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(Modifier.padding(horizontal = 8.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
                 Row(Modifier.fillMaxWidth()) {
                     weekDays.forEach { weekDay ->
                         Text(
@@ -1135,7 +1135,7 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
                 cells.chunked(7).forEach { week ->
                     Row(Modifier.fillMaxWidth()) {
                         week.forEach { day ->
-                            Box(Modifier.weight(1f).height(40.dp).padding(1.dp), contentAlignment = Alignment.Center) {
+                            Box(Modifier.weight(1f).height(38.dp).padding(1.dp), contentAlignment = Alignment.Center) {
                                 if (day > 0) {
                                     val dateValue = month.atDay(day)
                                     val selected = dateValue == selectedDate
@@ -1174,8 +1174,8 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
         }
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(if (selectedDate == LocalDate.now()) "Today" else selectedDate.format(dateFormatter),
-                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
+                Text(if (selectedDate == LocalDate.now()) (if (Locale.getDefault().language == "id") "Hari ini" else "Today") else selectedDate.format(dateFormatter),
+                    style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
                 Text(buildString {
                     if (dayEvents.isNotEmpty()) append(dayEvents.size).append(if (dayEvents.size == 1) " event" else " events")
                     if (dayEvents.isNotEmpty() && dayTasks.isNotEmpty()) append(" · ")
@@ -1379,12 +1379,17 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
                 color = MaterialTheme.colorScheme.surfaceContainerHigh
             ) {
                 Column {
-                    Text(
-                        if (Locale.getDefault().language == "id") "Pilih tanggal" else "Select date",
-                        modifier = Modifier.padding(start = 24.dp, top = 20.dp, end = 24.dp, bottom = 4.dp),
-                        style = MaterialTheme.typography.headlineSmall
+                    DatePicker(
+                        state = datePickerState,
+                        title = null,
+                        headline = {
+                            Text(
+                                if (Locale.getDefault().language == "id") "Pilih tanggal" else "Select date",
+                                style = MaterialTheme.typography.titleLarge,
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+                            )
+                        }
                     )
-                    DatePicker(state = datePickerState)
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
                         horizontalArrangement = Arrangement.End,
