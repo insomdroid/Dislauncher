@@ -193,12 +193,17 @@ private fun saveNotes(context: Context, notes: List<LocalNote>) {
     notesStore(context).edit().putString("notes_json", array.toString()).apply()
 }
 
-/** Release persisted image grants when no remaining note references the selected URI. */
-private fun releaseUnusedNoteImagePermissions(context: Context, remainingNotes: List<LocalNote>) {
+/** Release only image grants referenced by the deleted note and by no remaining note. */
+private fun releaseUnusedNoteImagePermissions(
+    context: Context,
+    removedNote: LocalNote,
+    remainingNotes: List<LocalNote>
+) {
     runCatching {
         context.contentResolver.persistedUriPermissions
             .filter { permission ->
                 permission.isReadPermission &&
+                    removedNote.content.contains(permission.uri.toString()) &&
                     remainingNotes.none { note -> note.content.contains(permission.uri.toString()) }
             }
             .forEach { permission ->
@@ -458,9 +463,10 @@ private fun NotesTool(
     fun saveCurrent() {
         val id = selectedId ?: return
         if (title.isBlank() && body.isBlank()) {
+            val removedNote = notes.firstOrNull { it.id == id }
             notes = notes.filterNot { it.id == id }
             saveNotes(context, notes)
-            releaseUnusedNoteImagePermissions(context, notes)
+            removedNote?.let { releaseUnusedNoteImagePermissions(context, it, notes) }
             return
         }
         val pinned = notes.firstOrNull { it.id == id }?.pinned ?: false
@@ -784,9 +790,10 @@ private fun NotesTool(
             text = { Text(builtInToolText("This note will be permanently deleted from this device.", "Catatan ini akan dihapus permanen dari perangkat.")) },
             confirmButton = {
                 TextButton(onClick = {
+                    val removedNote = notes.firstOrNull { it.id == deleteTarget }
                     notes = notes.filterNot { it.id == deleteTarget }
                     saveNotes(context, notes)
-                    releaseUnusedNoteImagePermissions(context, notes)
+                    removedNote?.let { releaseUnusedNoteImagePermissions(context, it, notes) }
                     deleteTarget = null
                     selectedId = null
                     title = ""
