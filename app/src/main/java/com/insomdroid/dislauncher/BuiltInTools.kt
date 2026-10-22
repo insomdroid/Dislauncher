@@ -5,8 +5,6 @@ import android.content.Context
 import android.content.ContentUris
 import android.provider.CalendarContract
 import android.content.Intent
-import android.net.Uri
-import android.widget.ImageView
 import android.widget.TextView
 import android.content.pm.PackageManager
 import android.os.Build
@@ -16,7 +14,6 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -107,11 +104,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -843,76 +836,6 @@ private fun markdownEdit(field: TextFieldValue, body: String, prefix: String, su
     val selection = if (selected.isEmpty()) TextRange(start + prefix.length + inner.length)
         else TextRange(start + prefix.length, start + prefix.length + selected.length)
     return TextFieldValue(updated, selection)
-}
-
-@Composable
-private fun MarkdownPreviewLine(line: String) {
-    val trimmed = line.trimStart()
-    val imageMatch = Regex("^!\\[[^]]*]\\((?:<)?([^)>]+)(?:>)?\\)$").matchEntire(trimmed)
-    if (imageMatch != null) {
-        val imageUri = runCatching { Uri.parse(imageMatch.groupValues[1]) }.getOrNull()
-        if (imageUri != null) {
-            AndroidView(
-                factory = { context -> ImageView(context).apply { adjustViewBounds = true; scaleType = ImageView.ScaleType.FIT_CENTER } },
-                update = { view -> runCatching { view.setImageURI(imageUri) } },
-                modifier = Modifier.fillMaxWidth().height(220.dp)
-            )
-        }
-        return
-    }
-    val headingLevel = trimmed.takeWhile { it == '#' }.length.coerceIn(0, 6)
-        .takeIf { trimmed.startsWith("#") && trimmed.getOrNull(it) == ' ' } ?: 0
-    val displayText = when {
-        headingLevel > 0 -> trimmed.drop(headingLevel).trimStart()
-        trimmed.startsWith("- [ ] ") -> "☐ " + trimmed.removePrefix("- [ ] ")
-        trimmed.startsWith("- [x] ", true) -> "☑ " + trimmed.substring(6)
-        trimmed.startsWith("- ") || trimmed.startsWith("* ") -> "• " + trimmed.drop(2)
-        trimmed.startsWith("> ") -> "│ " + trimmed.drop(2)
-        trimmed.startsWith("---") -> "────────"
-        else -> trimmed
-    }
-    val visibleText = displayText
-        .replace(Regex("\\*\\*([^*]+)\\*\\*")) { it.groupValues[1] }
-        .replace(Regex("\\*([^*]+)\\*")) { it.groupValues[1] }
-    val styled = buildAnnotatedString {
-        append(visibleText)
-        if (headingLevel > 0) addStyle(SpanStyle(fontWeight = FontWeight.SemiBold), 0, length)
-        if (trimmed.startsWith(">")) addStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant, fontStyle = FontStyle.Italic), 0, length)
-    }
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val linkRegex = Regex("\\[([^]]+)]\\((https?://[^)]+)\\)")
-    val linkedText = buildAnnotatedString {
-        var cursor = 0
-        linkRegex.findAll(visibleText).forEach { match ->
-            append(visibleText.substring(cursor, match.range.first))
-            pushStringAnnotation(tag = "URL", annotation = match.groupValues[2])
-            pushStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline))
-            append(match.groupValues[1])
-            pop()
-            pop()
-            cursor = match.range.last + 1
-        }
-        append(visibleText.substring(cursor))
-    }
-    ClickableText(
-        text = linkedText,
-        style = when {
-            headingLevel == 1 -> MaterialTheme.typography.headlineSmall
-            headingLevel == 2 -> MaterialTheme.typography.titleLarge
-            headingLevel in 3..6 -> MaterialTheme.typography.titleMedium
-            else -> MaterialTheme.typography.bodyLarge
-        }.copy(color = MaterialTheme.colorScheme.onSurface),
-        modifier = Modifier.fillMaxWidth(),
-        onClick = { offset ->
-            linkedText.getStringAnnotations("URL", offset, offset).firstOrNull()?.let { annotation ->
-                runCatching {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(annotation.item)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    if (intent.resolveActivity(context.packageManager) != null) context.startActivity(intent)
-                    else Toast.makeText(context, "No app can open this link", Toast.LENGTH_SHORT).show()
-                }.onFailure { Toast.makeText(context, "Could not open link", Toast.LENGTH_SHORT).show() }
-            }
-        }
-    )
 }
 
 @Composable
