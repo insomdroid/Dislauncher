@@ -338,13 +338,13 @@ internal class DislauncherNotificationListener : android.service.notification.No
 
         val prefs = getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
         if (!prefs.getBoolean("notification_dots_enabled", false)) {
-            NotificationDotState.update(emptySet())
+            NotificationDotState.update(emptyMap())
             return
         }
 
         val selectedPackages = prefs.getStringSet("notification_dot_packages", emptySet()).orEmpty()
         if (selectedPackages.isEmpty()) {
-            NotificationDotState.update(emptySet())
+            NotificationDotState.update(emptyMap())
             return
         }
 
