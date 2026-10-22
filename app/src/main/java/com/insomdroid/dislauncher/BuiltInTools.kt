@@ -265,7 +265,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
         }
     }
     val title = when (tool) {
-        BuiltInTool.NOTES -> if (notesEditing) "Note" else "Notes"
+        BuiltInTool.NOTES -> "Notes"
         BuiltInTool.CALCULATOR -> if (calculatorShowingHistory) "History" else "Calculator"
         BuiltInTool.CALENDAR -> "Calendar"
         BuiltInTool.UNIT_CONVERTER -> "Unit Converter"
@@ -273,7 +273,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     Scaffold(
                 containerColor = MaterialTheme.colorScheme.background,
                 topBar = {
-                    TopAppBar(
+                    if (tool != BuiltInTool.CALENDAR && !(tool == BuiltInTool.NOTES && notesEditing)) TopAppBar(
                         title = { Text(title, fontWeight = FontWeight.Medium) },
                         navigationIcon = {
                             IconButton(onClick = {
@@ -315,6 +315,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             context = context,
                             backSignal = notesBackSignal,
                             onEditingChanged = { notesEditing = it },
+                            onBackRequested = { notesBackSignal++ },
                             modifier = Modifier.fillMaxSize()
                         )
                         BuiltInTool.CALCULATOR -> CalculatorTool(
@@ -324,7 +325,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             clearHistorySignal = calculatorClearHistorySignal,
                             onHistoryAvailabilityChanged = { calculatorHistoryHasItems = it }
                         )
-                        BuiltInTool.CALENDAR -> CalendarTool(context, Modifier.fillMaxSize())
+                        BuiltInTool.CALENDAR -> CalendarTool(context, onBackRequested = onBack, modifier = Modifier.fillMaxSize())
                         BuiltInTool.UNIT_CONVERTER -> UnitConverterTool(Modifier.fillMaxSize())
                     }
                 }
@@ -336,6 +337,7 @@ private fun NotesTool(
     context: Context,
     backSignal: Int,
     onEditingChanged: (Boolean) -> Unit,
+    onBackRequested: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var notes by remember(context) { mutableStateOf(loadNotes(context)) }
@@ -526,12 +528,10 @@ private fun NotesTool(
         } else {
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        if (previewMode) "Preview" else if (title.isBlank()) "New note" else title,
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis
-                    )
+                    IconButton(onClick = onBackRequested) {
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back to notes")
+                    }
+                    Spacer(Modifier.weight(1f))
                     IconButton(onClick = { previewMode = !previewMode }) {
                         Icon(
                             if (previewMode) Icons.Outlined.Edit else Icons.Outlined.Visibility,
@@ -547,30 +547,9 @@ private fun NotesTool(
                             Icon(Icons.Outlined.MoreVert, contentDescription = "More note actions")
                         }
                         DropdownMenu(expanded = editorMenuExpanded, onDismissRequest = { editorMenuExpanded = false }) {
-                            DropdownMenuItem(text = { Text("Heading") }, onClick = {
+                            DropdownMenuItem(text = { Text("Import Markdown") }, leadingIcon = { Icon(Icons.Outlined.FileOpen, contentDescription = null) }, onClick = {
                                 editorMenuExpanded = false
-                                body += if (body.isBlank()) "# " else "\n# "
-                                saveCurrent()
-                            })
-                            DropdownMenuItem(text = { Text("Bold") }, onClick = {
-                                editorMenuExpanded = false
-                                body += if (body.isBlank()) "**bold**" else "\n**bold**"
-                                saveCurrent()
-                            })
-                            DropdownMenuItem(text = { Text("Bullet list") }, onClick = {
-                                editorMenuExpanded = false
-                                body += if (body.isBlank()) "- " else "\n- "
-                                saveCurrent()
-                            })
-                            DropdownMenuItem(text = { Text("Checklist") }, onClick = {
-                                editorMenuExpanded = false
-                                body += if (body.isBlank()) "- [ ] " else "\n- [ ] "
-                                saveCurrent()
-                            })
-                            DropdownMenuItem(text = { Text("Link") }, onClick = {
-                                editorMenuExpanded = false
-                                body += if (body.isBlank()) "[link](https://)" else "\n[link](https://)"
-                                saveCurrent()
+                                importLauncher.launch(arrayOf("text/markdown", "text/plain", "application/octet-stream"))
                             })
                             DropdownMenuItem(
                                 text = { Text("Insert image") },
@@ -592,6 +571,19 @@ private fun NotesTool(
                     placeholder = { Text("Title (optional)") }, singleLine = true,
                     textStyle = MaterialTheme.typography.titleLarge, readOnly = previewMode
                 )
+                if (!previewMode) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        TextButton(onClick = { body += if (body.isBlank()) "# " else "\n# "; saveCurrent() }) { Text("Heading") }
+                        TextButton(onClick = { body += if (body.isBlank()) "**bold**" else "\n**bold**"; saveCurrent() }) { Text("Bold") }
+                        TextButton(onClick = { body += if (body.isBlank()) "- " else "\n- "; saveCurrent() }) { Text("• List") }
+                        TextButton(onClick = { body += if (body.isBlank()) "- [ ] " else "\n- [ ] "; saveCurrent() }) { Text("Checklist") }
+                        TextButton(onClick = { body += if (body.isBlank()) "[link](https://)" else "\n[link](https://)"; saveCurrent() }) { Text("Link") }
+                    }
+                }
                 if (previewMode) {
                     LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1032,7 +1024,7 @@ private fun openDeviceCalendarEvent(context: Context, event: DeviceCalendarEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
+private fun CalendarTool(context: Context, onBackRequested: () -> Unit, modifier: Modifier = Modifier) {
     var tasks by remember(context) { mutableStateOf(loadTasks(context)) }
     var month by remember { mutableStateOf(YearMonth.now()) }
     var calendarPermission by remember { mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED) }
@@ -1102,6 +1094,9 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
     Column(modifier = Modifier.fillMaxSize().padding(bottom = 64.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(0.dp), modifier = Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                IconButton(onClick = onBackRequested) {
+                    Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                }
                 Text(month.format(monthFormatter), modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Medium,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
