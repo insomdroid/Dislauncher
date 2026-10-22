@@ -76,6 +76,16 @@ internal fun WeatherScreen(
             weather = cachedWeather
             loading = false
             status = if (cachedWeather == null) "Allow location access to get local weather." else ""
+        } else if (shouldBackoffWeatherFetch(context)) {
+            // Respect the same persisted retry schedule as the home-screen weather widget.
+            // This prevents repeated network requests whenever the weather screen is reopened.
+            weather = cachedWeather?.let { convertWeatherUnit(it, weatherUnit) }
+            loading = false
+            status = if (weather == null) {
+                "Weather is temporarily unavailable. Try again later."
+            } else {
+                "Showing saved weather while waiting to retry."
+            }
         } else {
             loading = true
             status = "Getting weather…"
