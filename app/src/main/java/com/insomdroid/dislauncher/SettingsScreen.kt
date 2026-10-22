@@ -105,6 +105,7 @@ internal fun SettingsScreen(
     var selectedCategory by remember { mutableStateOf<SettingsCategory?>(null) }
     var openDialog by remember { mutableStateOf("") }
     var newFolderName by remember { mutableStateOf("") }
+    var manageFolderName by remember { mutableStateOf<String?>(null) }
     var wallpaperTarget by remember { mutableStateOf("both") }
     var showRestartConfirmation by remember { mutableStateOf(false) }
     var detectedIconPacks by remember { mutableStateOf(iconPacks) }
@@ -816,15 +817,13 @@ internal fun SettingsScreen(
         )
     } else if (openDialog == "folders") {
         AlertDialog(
-            onDismissRequest = { openDialog = "" },
+            onDismissRequest = { openDialog = ""; manageFolderName = null },
             title = {
                 Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(tr("Manage folders", "Kelola folder"))
                     Text(
-                        tr(
-                            "Folders appear in the app drawer above the app list.",
-                            "Folder tampil di app drawer, di atas daftar aplikasi."
-                        ),
+                        tr("Create folders, manage their apps, or delete a folder without uninstalling its apps.",
+                           "Buat folder, kelola aplikasinya, atau hapus folder tanpa menghapus aplikasi."),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -861,6 +860,7 @@ internal fun SettingsScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(folder, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            TextButton(onClick = { manageFolderName = folder }) { Text(tr("Manage", "Kelola")) }
                             TextButton(onClick = {
                                 onPreferencesChange(
                                     preferences.copy(
@@ -873,13 +873,52 @@ internal fun SettingsScreen(
                             }) { Text(tr("Delete", "Hapus")) }
                         }
                     }
+                    manageFolderName?.takeIf { it in preferences.appFolders }?.let { folder ->
+                        HorizontalDivider()
+                        Text(folder, style = MaterialTheme.typography.titleMedium)
+                        val assigned = preferences.folderAssignments.mapNotNull { assignment ->
+                            val parts = assignment.split('\t', limit = 2)
+                            if (parts.size == 2 && parts[1] == folder) parts[0] else null
+                        }.toSet()
+                        Text(tr("Apps in this folder", "Aplikasi dalam folder"), style = MaterialTheme.typography.bodyMedium)
+                        val folderApps = apps.filter { it.packageName in assigned && !it.packageName.startsWith("internal:") }
+                            .sortedBy { it.label.lowercase() }
+                        if (folderApps.isEmpty()) Text(
+                            tr("No apps in this folder yet.", "Belum ada aplikasi di folder ini."),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        folderApps.forEach { app ->
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                Text(app.label, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                TextButton(onClick = {
+                                    onPreferencesChange(preferences.copy(
+                                        folderAssignments = preferences.folderAssignments.filterNot { it.startsWith(app.packageName + "\t") }
+                                    ))
+                                }) { Text(tr("Remove", "Keluarkan")) }
+                            }
+                        }
+                        Text(tr("Add apps", "Tambah aplikasi"), style = MaterialTheme.typography.bodyMedium)
+                        apps.filter { app ->
+                            !app.packageName.startsWith("internal:") && app.packageName !in assigned &&
+                                preferences.folderAssignments.none { it.startsWith(app.packageName + "\t") }
+                        }.sortedBy { it.label.lowercase() }.forEach { app ->
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                Text(app.label, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                TextButton(onClick = {
+                                    onPreferencesChange(preferences.copy(
+                                        folderAssignments = preferences.folderAssignments + (app.packageName + "\t" + folder)
+                                    ))
+                                }) { Text(tr("Add", "Tambah")) }
+                            }
+                        }
+                    }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { openDialog = "" }) { Text(tr("Done", "Selesai")) }
+                TextButton(onClick = { openDialog = ""; manageFolderName = null }) { Text(tr("Done", "Selesai")) }
             }
         )
-    } else if (openDialog == "favorites") {
+    }    } else if (openDialog == "favorites") {
         AppSelectionDialog(
             title = tr("Manage favourites", "Kelola favorit"),
             subtitle = tr(
