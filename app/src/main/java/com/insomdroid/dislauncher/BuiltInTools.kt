@@ -217,22 +217,22 @@ private fun releaseUnusedNoteImagePermissions(
     }
 }
 
-private const val MAX_MARKDOWN_IMPORT_CHARS = 1_048_576
+private const val MAX_MARKDOWN_IMPORT_BYTES = 1_048_576
 
-/** Read user-selected Markdown with a hard limit so a huge file cannot exhaust app memory. */
-private fun readMarkdownBounded(input: java.io.InputStream, maxChars: Int): String {
-    input.reader().use { reader ->
-        val result = StringBuilder()
-        val buffer = CharArray(8192)
+/** Read user-selected Markdown with a byte limit before decoding it into a String. */
+private fun readMarkdownBounded(input: java.io.InputStream, maxBytes: Int): String {
+    input.use { stream ->
+        val result = java.io.ByteArrayOutputStream()
+        val buffer = ByteArray(8192)
         while (true) {
-            val count = reader.read(buffer)
+            val count = stream.read(buffer)
             if (count < 0) break
-            if (result.length + count > maxChars) {
+            if (result.size() + count > maxBytes) {
                 error("Markdown file exceeds the 1 MiB import limit")
             }
-            result.append(buffer, 0, count)
+            result.write(buffer, 0, count)
         }
-        return result.toString()
+        return result.toByteArray().toString(Charsets.UTF_8)
     }
 }
 
@@ -453,7 +453,7 @@ private fun NotesTool(
         if (uri != null) runCatching {
             val input = context.contentResolver.openInputStream(uri)
                 ?: error("Unable to read this file")
-            val imported = readMarkdownBounded(input, MAX_MARKDOWN_IMPORT_CHARS)
+            val imported = readMarkdownBounded(input, MAX_MARKDOWN_IMPORT_BYTES)
             val firstLine = imported.lineSequence().firstOrNull().orEmpty()
             val importedTitle = if (firstLine.startsWith("# ")) firstLine.removePrefix("# ").trim() else ""
             val importedBody = if (importedTitle.isNotEmpty()) imported.substringAfter('\n', "") else imported
