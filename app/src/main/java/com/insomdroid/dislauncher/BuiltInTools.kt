@@ -10,6 +10,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.TypedValue
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -105,6 +106,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -190,6 +192,33 @@ private fun saveNotes(context: Context, notes: List<LocalNote>) {
     }
     notesStore(context).edit().putString("notes_json", array.toString()).apply()
 }
+
+private const val MAX_MARKDOWN_IMPORT_CHARS = 1_048_576
+
+/** Read user-selected Markdown with a hard limit so a huge file cannot exhaust app memory. */
+private fun readMarkdownBounded(input: java.io.InputStream, maxChars: Int): String {
+    input.reader().use { reader ->
+        val result = StringBuilder()
+        val buffer = CharArray(8192)
+        while (true) {
+            val count = reader.read(buffer)
+            if (count < 0) break
+            if (result.length + count > maxChars) {
+                error("Markdown file exceeds the 1 MiB import limit")
+            }
+            result.append(buffer, 0, count)
+        }
+        return result.toString()
+    }
+}
+
+/** Remote image embeds are hidden in preview to avoid contacting third-party hosts from a note. */
+private fun markdownForSafePreview(markdown: String): String =
+    Regex("!\\[([^]]*)]\\(<?https?://[^)\\s>]+>?\\)", RegexOption.IGNORE_CASE)
+        .replace(markdown) { match ->
+            val description = match.groupValues[1].ifBlank { "External image" }
+            "[$description — external image hidden for privacy]"
+        }
 
 private data class CalculatorHistoryEntry(
     val id: String,
@@ -383,8 +412,9 @@ private fun NotesTool(
 
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) runCatching {
-            val imported = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+            val input = context.contentResolver.openInputStream(uri)
                 ?: error("Unable to read this file")
+            val imported = readMarkdownBounded(input, MAX_MARKDOWN_IMPORT_CHARS)
             val firstLine = imported.lineSequence().firstOrNull().orEmpty()
             val importedTitle = if (firstLine.startsWith("# ")) firstLine.removePrefix("# ").trim() else ""
             val importedBody = if (importedTitle.isNotEmpty()) imported.substringAfter('\n', "") else imported
@@ -419,6 +449,16 @@ private fun NotesTool(
             .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
         saveNotes(context, notes)
     }
+
+    // Coalesce rapid keystrokes into one local preference write instead of serializing the
+    // complete note on every character. Explicit actions still save immediately.
+    LaunchedEffect(selectedId, title, body) {
+        if (selectedId != null) {
+            kotlinx.coroutines.delay(350)
+            saveCurrent()
+        }
+    }
+
     val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null && selectedId != null) runCatching {
             context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -605,7 +645,7 @@ private fun NotesTool(
                     }
                 }
                 OutlinedTextField(
-                    value = title, onValueChange = { title = it; saveCurrent() }, modifier = Modifier.fillMaxWidth(),
+                    value = title, onValueChange = { title = it }, modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("Title (optional)") }, singleLine = true,
                     textStyle = MaterialTheme.typography.titleLarge, readOnly = previewMode
                 )
@@ -617,15 +657,24 @@ private fun NotesTool(
                         .usePlugin(TaskListPlugin.create(context))
                         .build() }
                     val previewTextColor = MaterialTheme.colorScheme.onSurface
+                    val previewTextSizePx = with(LocalDensity.current) {
+                        MaterialTheme.typography.bodyMedium.fontSize.toPx()
+                    }
                     AndroidView(
-                        factory = { viewContext -> TextView(viewContext).apply { setPadding(8, 8, 8, 8); textSize = 16f } },
+                        factory = { viewContext ->
+                            TextView(viewContext).apply {
+                                setPadding(8, 8, 8, 8)
+                                setTextSize(TypedValue.COMPLEX_UNIT_PX, previewTextSizePx)
+                            }
+                        },
                         update = { textView ->
+                            textView.setTextSize(TypedValue.COMPLEX_UNIT_PX, previewTextSizePx)
                             textView.setTextColor(android.graphics.Color.rgb(
                                 (previewTextColor.red * 255).toInt(),
                                 (previewTextColor.green * 255).toInt(),
                                 (previewTextColor.blue * 255).toInt()
                             ))
-                            markdownRenderer.setMarkdown(textView, body)
+                            markdownRenderer.setMarkdown(textView, markdownForSafePreview(body))
                         },
                         modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp)
                     )
@@ -633,7 +682,7 @@ private fun NotesTool(
                     Box(Modifier.weight(1f).fillMaxWidth()) {
                         OutlinedTextField(
                             value = bodyField,
-                            onValueChange = { bodyField = it; body = it.text; saveCurrent() },
+                            onValueChange = { bodyField = it; body = it.text },
                             modifier = Modifier.fillMaxSize(),
                             placeholder = { Text("Write Markdown here…") },
                             minLines = 8, maxLines = Int.MAX_VALUE
