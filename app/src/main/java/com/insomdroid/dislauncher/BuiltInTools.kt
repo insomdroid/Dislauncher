@@ -306,10 +306,15 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                     )
                 }
             ) { padding ->
-                Box(
-                    Modifier.fillMaxSize().padding(padding)
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
+                BoxWithConstraints(Modifier.fillMaxSize()) {
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .widthIn(max = 840.dp)
+                            .align(Alignment.TopCenter)
+                            .padding(padding)
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
                     when (tool) {
                         BuiltInTool.NOTES -> NotesTool(
                             context = context,
@@ -327,6 +332,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                         )
                         BuiltInTool.CALENDAR -> CalendarTool(context, onBackRequested = onBack, modifier = Modifier.fillMaxSize())
                         BuiltInTool.UNIT_CONVERTER -> UnitConverterTool(Modifier.fillMaxSize())
+                    }
                     }
                 }
             }
