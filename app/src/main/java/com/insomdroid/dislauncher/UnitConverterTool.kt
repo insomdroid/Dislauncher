@@ -43,7 +43,7 @@ private data class ConverterCategory(
 )
 
 private val converterCategories = listOf(
-    ConverterCategory("Length", listOf(
+    ConverterCategory(builtInToolText("Length", "Panjang"), listOf(
         ConverterUnit("Millimeter", "mm", 0.001),
         ConverterUnit("Centimeter", "cm", 0.01),
         ConverterUnit("Meter", "m", 1.0),
@@ -52,7 +52,7 @@ private val converterCategories = listOf(
         ConverterUnit("Foot", "ft", 0.3048),
         ConverterUnit("Mile", "mi", 1609.344)
     )),
-    ConverterCategory("Mass", listOf(
+    ConverterCategory(builtInToolText("Mass", "Massa"), listOf(
         ConverterUnit("Milligram", "mg", 0.001),
         ConverterUnit("Gram", "g", 1.0),
         ConverterUnit("Kilogram", "kg", 1000.0),
@@ -60,32 +60,32 @@ private val converterCategories = listOf(
         ConverterUnit("Pound", "lb", 453.59237),
         ConverterUnit("Ounce", "oz", 28.349523125)
     )),
-    ConverterCategory("Temperature", listOf(
+    ConverterCategory(builtInToolText("Temperature", "Suhu"), listOf(
         ConverterUnit("Celsius", "°C", 1.0, 273.15),
         ConverterUnit("Fahrenheit", "°F", 5.0 / 9.0, 459.67),
         ConverterUnit("Kelvin", "K", 1.0)
     )),
-    ConverterCategory("Speed", listOf(
+    ConverterCategory(builtInToolText("Speed", "Kecepatan"), listOf(
         ConverterUnit("Meter per second", "m/s", 1.0),
         ConverterUnit("Kilometer per hour", "km/h", 1.0 / 3.6),
         ConverterUnit("Mile per hour", "mph", 0.44704),
         ConverterUnit("Knot", "kn", 0.514444444444)
     )),
-    ConverterCategory("Area", listOf(
+    ConverterCategory(builtInToolText("Area", "Luas"), listOf(
         ConverterUnit("Square centimeter", "cm²", 0.0001),
         ConverterUnit("Square meter", "m²", 1.0),
         ConverterUnit("Square kilometer", "km²", 1_000_000.0),
         ConverterUnit("Hectare", "ha", 10_000.0),
         ConverterUnit("Acre", "ac", 4046.8564224)
     )),
-    ConverterCategory("Volume", listOf(
+    ConverterCategory(builtInToolText("Volume", "Volume"), listOf(
         ConverterUnit("Milliliter", "mL", 0.001),
         ConverterUnit("Liter", "L", 1.0),
         ConverterUnit("Cubic meter", "m³", 1000.0),
         ConverterUnit("US gallon", "gal", 3.785411784),
         ConverterUnit("US cup", "cup", 0.2365882365)
     )),
-    ConverterCategory("Time", listOf(
+    ConverterCategory(builtInToolText("Time", "Waktu"), listOf(
         ConverterUnit("Millisecond", "ms", 0.001),
         ConverterUnit("Second", "s", 1.0),
         ConverterUnit("Minute", "min", 60.0),
@@ -120,11 +120,11 @@ internal fun UnitConverterTool(modifier: Modifier = Modifier) {
 
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(18.dp)
+        verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
-                "Category",
+                builtInToolText("Category", "Kategori"),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -142,7 +142,7 @@ internal fun UnitConverterTool(modifier: Modifier = Modifier) {
 
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
-                "From",
+                builtInToolText("From", "Dari"),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -182,7 +182,7 @@ internal fun UnitConverterTool(modifier: Modifier = Modifier) {
                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer
             ) {
                 Text(
-                    "Swap units",
+                    builtInToolText("Swap units", "Tukar satuan"),
                     modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
                     style = MaterialTheme.typography.labelLarge
                 )
@@ -191,7 +191,7 @@ internal fun UnitConverterTool(modifier: Modifier = Modifier) {
 
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
-                "Result",
+                builtInToolText("Result", "Hasil"),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
