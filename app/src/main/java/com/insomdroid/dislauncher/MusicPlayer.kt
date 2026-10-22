@@ -248,8 +248,11 @@ internal fun MusicPlayerWidget(
 }
 
 internal object NotificationDotState {
-    var activePackages by mutableStateOf<Set<String>>(emptySet())
+    var notificationCounts by mutableStateOf<Map<String, Int>>(emptyMap())
         private set
+
+    val activePackages: Set<String>
+        get() = notificationCounts.keys
 
     @Volatile
     private var listener: DislauncherNotificationListener? = null
@@ -262,7 +265,7 @@ internal object NotificationDotState {
     fun detach(service: DislauncherNotificationListener) {
         if (listener === service) {
             listener = null
-            activePackages = emptySet()
+            notificationCounts = emptyMap()
         }
     }
 
@@ -270,10 +273,10 @@ internal object NotificationDotState {
         listener?.refreshDotPackages()
     }
 
-    fun countFor(packageName: String): Int = if (packageName in activePackages) 1 else 0
+    fun countFor(packageName: String): Int = notificationCounts[packageName] ?: 0
 
-    internal fun update(packages: Set<String>) {
-        activePackages = packages
+    internal fun update(counts: Map<String, Int>) {
+        notificationCounts = counts
     }
 }
 
@@ -335,23 +338,24 @@ internal class DislauncherNotificationListener : android.service.notification.No
 
         val prefs = getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
         if (!prefs.getBoolean("notification_dots_enabled", false)) {
-            NotificationDotState.update(emptySet())
+            NotificationDotState.update(emptyMap())
             return
         }
 
         val selectedPackages = prefs.getStringSet("notification_dot_packages", emptySet()).orEmpty()
         if (selectedPackages.isEmpty()) {
-            NotificationDotState.update(emptySet())
+            NotificationDotState.update(emptyMap())
             return
         }
 
-        val active = synchronized(trackedNotifications) {
+        val activeCounts = synchronized(trackedNotifications) {
             trackedNotifications.values.asSequence()
                 .filterNot { it.ongoing }
                 .map { it.packageName }
                 .filter { it in selectedPackages }
-                .toSet()
+                .groupingBy { it }
+                .eachCount()
         }
-        NotificationDotState.update(active)
+        NotificationDotState.update(activeCounts)
     }
 }
