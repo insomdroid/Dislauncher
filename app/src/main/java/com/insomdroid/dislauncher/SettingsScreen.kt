@@ -990,8 +990,8 @@ private fun SettingsCategoryRow(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().heightIn(min = 76.dp)
-            .padding(vertical = 12.dp)
-            .clickable(role = Role.Button, onClick = onClick),
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
