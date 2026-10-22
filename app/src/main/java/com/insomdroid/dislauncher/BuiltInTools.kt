@@ -92,12 +92,14 @@ import androidx.core.content.ContextCompat
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.LocalDate
+import java.time.DayOfWeek
 import java.time.LocalTime
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.temporal.WeekFields
 import java.util.Locale
 import java.util.Date
 import java.text.SimpleDateFormat
@@ -960,6 +962,9 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
     }
 
     val dateFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", Locale.getDefault())
+    val monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())
+    val firstDayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
+    val weekDays = (0..6).map { firstDayOfWeek.plus(it.toLong()) }
     val taskDate = selectedDate.toString()
     val dayEvents = deviceEvents.filter { Instant.ofEpochMilli(it.begin).atZone(ZoneId.systemDefault()).toLocalDate() == selectedDate }.sortedBy { it.begin }
     val dayTasks = tasks.filter { it.date == taskDate }
@@ -967,64 +972,93 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
             .thenBy { if (it.time.isBlank()) "99:99" else it.time })
 
     Box(modifier = modifier) {
-    Column(modifier = Modifier.fillMaxSize().padding(bottom = 72.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(modifier = Modifier.fillMaxSize().padding(bottom = 72.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(month.format(monthFormatter), style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Medium)
+                if (month == YearMonth.now()) {
+                    Text("Calendar", style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            TextButton(onClick = { month = YearMonth.now(); selectedDate = LocalDate.now() }) {
+                Text("Today")
+            }
             IconButton(onClick = { month = month.minusMonths(1); selectedDate = month.atDay(1) }) {
-                Text("‹", fontSize = 27.sp)
+                Icon(Icons.Outlined.ArrowBack, contentDescription = "Previous month")
             }
-            Text(month.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())),
-                modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleLarge)
             IconButton(onClick = { month = month.plusMonths(1); selectedDate = month.atDay(1) }) {
-                Text("›", fontSize = 27.sp)
+                Icon(Icons.Outlined.Event, contentDescription = "Next month")
             }
         }
-        Row(Modifier.fillMaxWidth()) {
-            listOf("M", "T", "W", "T", "F", "S", "S").forEach { day ->
-                Text(day, Modifier.weight(1f).padding(vertical = 4.dp), textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
-            }
-        }
-        val firstOffset = month.atDay(1).dayOfWeek.value - 1
-        val cells = List(firstOffset) { 0 } + (1..month.lengthOfMonth()).toList()
-        cells.chunked(7).forEach { week ->
-            Row(Modifier.fillMaxWidth()) {
-                week.forEach { day ->
-                    Box(Modifier.weight(1f).height(41.dp).padding(1.dp), contentAlignment = Alignment.Center) {
-                        if (day > 0) {
-                            val dateValue = month.atDay(day)
-                            val selected = dateValue == selectedDate
-                            val hasTasks = tasks.any { it.date == dateValue.toString() } ||
-                                deviceEvents.any { Instant.ofEpochMilli(it.begin).atZone(ZoneId.systemDefault()).toLocalDate() == dateValue }
-                            Column(
-                                modifier = Modifier.fillMaxSize().clip(CircleShape)
-                                    .background(if (selected) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Transparent)
-                                    .clickable { selectedDate = dateValue },
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Text(day.toString(), color = when {
-                                    selected -> MaterialTheme.colorScheme.onPrimary
-                                    dateValue == LocalDate.now() -> MaterialTheme.colorScheme.primary
-                                    else -> MaterialTheme.colorScheme.onSurface
-                                }, style = MaterialTheme.typography.bodyMedium)
-                                if (hasTasks && !selected) Box(Modifier.padding(top = 1.dp).size(3.dp)
-                                    .clip(CircleShape).background(MaterialTheme.colorScheme.primary))
-                            }
-                        }
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLow
+        ) {
+            Column(Modifier.padding(horizontal = 8.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(Modifier.fillMaxWidth()) {
+                    weekDays.forEach { weekDay ->
+                        Text(
+                            weekDay.getDisplayName(java.time.format.TextStyle.NARROW, Locale.getDefault()),
+                            Modifier.weight(1f).padding(vertical = 7.dp), textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.labelMedium
+                        )
                     }
                 }
-                repeat(7 - week.size) { Spacer(Modifier.weight(1f)) }
+                val firstOffset = (month.atDay(1).dayOfWeek.value - firstDayOfWeek.value + 7) % 7
+                val cells = List(firstOffset) { 0 } + (1..month.lengthOfMonth()).toList()
+                cells.chunked(7).forEach { week ->
+                    Row(Modifier.fillMaxWidth()) {
+                        week.forEach { day ->
+                            Box(Modifier.weight(1f).height(44.dp).padding(2.dp), contentAlignment = Alignment.Center) {
+                                if (day > 0) {
+                                    val dateValue = month.atDay(day)
+                                    val selected = dateValue == selectedDate
+                                    val today = dateValue == LocalDate.now()
+                                    val hasTasks = tasks.any { it.date == dateValue.toString() } ||
+                                        deviceEvents.any { Instant.ofEpochMilli(it.begin).atZone(ZoneId.systemDefault()).toLocalDate() == dateValue }
+                                    Column(
+                                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp))
+                                            .background(when {
+                                                selected -> MaterialTheme.colorScheme.primary
+                                                today -> MaterialTheme.colorScheme.secondaryContainer
+                                                else -> Color.Transparent
+                                            })
+                                            .clickable { selectedDate = dateValue },
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Text(day.toString(), color = when {
+                                            selected -> MaterialTheme.colorScheme.onPrimary
+                                            today -> MaterialTheme.colorScheme.onSecondaryContainer
+                                            else -> MaterialTheme.colorScheme.onSurface
+                                        }, style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = if (selected || today) FontWeight.SemiBold else FontWeight.Normal)
+                                        Box(Modifier.padding(top = 2.dp).size(4.dp).clip(CircleShape)
+                                            .background(if (hasTasks) {
+                                                if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
+                                            } else Color.Transparent))
+                                    }
+                                }
+                            }
+                        }
+                        repeat(7 - week.size) { Spacer(Modifier.weight(1f)) }
+                    }
+                }
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(selectedDate.format(dateFormatter), style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium)
+                Text(if (selectedDate == LocalDate.now()) "Today" else selectedDate.format(dateFormatter),
+                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
                 Text(buildString {
                     if (dayEvents.isNotEmpty()) append(dayEvents.size).append(if (dayEvents.size == 1) " event" else " events")
                     if (dayEvents.isNotEmpty() && dayTasks.isNotEmpty()) append(" · ")
                     if (dayTasks.isNotEmpty() || dayEvents.isEmpty()) append(dayTasks.size).append(if (dayTasks.size == 1) " task" else " tasks")
-                }, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         if (!calendarPermission) {
@@ -1039,23 +1073,23 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
         } else {
             LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 items(dayEvents, key = { "device-${it.id}-${it.begin}" }) { event ->
-                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                        .clickable { openDeviceCalendarEvent(context, event) }
-                        .padding(horizontal = 12.dp, vertical = 11.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.fillMaxWidth().clickable { openDeviceCalendarEvent(context, event) }
+                        .padding(horizontal = 4.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(if (event.allDay) "All day" else SimpleDateFormat(
                             if (android.text.format.DateFormat.is24HourFormat(context)) "HH:mm" else "h:mm a",
                             Locale.getDefault()).format(Date(event.begin)),
-                            modifier = Modifier.width(68.dp), style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.width(72.dp), style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary)
-                        Text(event.title, modifier = Modifier.weight(1f).padding(start = 8.dp), style = MaterialTheme.typography.bodyLarge,
+                        Box(Modifier.width(3.dp).height(34.dp).clip(RoundedCornerShape(2.dp))
+                            .background(MaterialTheme.colorScheme.tertiary))
+                        Text(event.title, modifier = Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.bodyLarge,
                             maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
                 }
                 items(dayTasks, key = { "task-${it.id}" }) { task ->
                     Row(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surfaceContainerLow).padding(horizontal = 10.dp, vertical = 8.dp),
+                        Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (task.type == "todo") {
