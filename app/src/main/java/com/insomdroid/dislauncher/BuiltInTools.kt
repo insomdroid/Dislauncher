@@ -1187,6 +1187,7 @@ private fun openDeviceCalendarEvent(context: Context, event: DeviceCalendarEvent
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CalendarTool(context: Context, onBackRequested: () -> Unit, modifier: Modifier = Modifier) {
     var tasks by remember(context) { mutableStateOf(loadTasks(context)) }
@@ -1257,20 +1258,33 @@ private fun CalendarTool(context: Context, onBackRequested: () -> Unit, modifier
     Box(modifier = modifier) {
     Column(modifier = Modifier.fillMaxSize().padding(bottom = 64.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(0.dp), modifier = Modifier.fillMaxWidth()) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                IconButton(onClick = onBackRequested) {
-                    Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
-                }
-                Text(month.format(monthFormatter), modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis)
-                IconButton(onClick = { month = month.minusMonths(1); selectedDate = month.atDay(1) }) {
-                    Icon(Icons.Outlined.ArrowBack, contentDescription = builtInToolText("Previous month", "Bulan sebelumnya"))
-                }
-                IconButton(onClick = { month = month.plusMonths(1); selectedDate = month.atDay(1) }) {
-                    Icon(Icons.Outlined.ArrowForward, contentDescription = builtInToolText("Next month", "Bulan berikutnya"))
-                }
-            }
+            TopAppBar(
+                title = {
+                    Text(
+                        month.format(monthFormatter),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBackRequested) {
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = builtInToolText("Back", "Kembali"))
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { month = month.minusMonths(1); selectedDate = month.atDay(1) }) {
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = builtInToolText("Previous month", "Bulan sebelumnya"))
+                    }
+                    IconButton(onClick = { month = month.plusMonths(1); selectedDate = month.atDay(1) }) {
+                        Icon(Icons.Outlined.ArrowForward, contentDescription = builtInToolText("Next month", "Bulan berikutnya"))
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     selectedDate.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.getDefault())),
