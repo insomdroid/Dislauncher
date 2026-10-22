@@ -270,6 +270,8 @@ internal object NotificationDotState {
         listener?.refreshDotPackages()
     }
 
+    fun countFor(packageName: String): Int = if (packageName in activePackages) 1 else 0
+
     internal fun update(packages: Set<String>) {
         activePackages = packages
     }
