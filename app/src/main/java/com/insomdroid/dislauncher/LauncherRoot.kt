@@ -881,6 +881,8 @@ internal fun DislauncherRoot() {
                             onDoubleTapToLock = { lockDevice(context, adminComponent, devicePolicyManager) },
                             homeItemOrder = homeItemOrder,
                             onMoveHomeItem = ::moveHomeItem,
+                            onToggleFavorite = ::toggleFavorite,
+                            onRenameApp = ::renameApp,
                             onSolarInfoChange = { updated ->
                                 if (updated != null) {
                                     val normalized = convertWeatherUnit(updated, preferences.weatherUnit)
