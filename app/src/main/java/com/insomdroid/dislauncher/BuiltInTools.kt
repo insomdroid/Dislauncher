@@ -193,6 +193,25 @@ private fun saveNotes(context: Context, notes: List<LocalNote>) {
     notesStore(context).edit().putString("notes_json", array.toString()).apply()
 }
 
+/** Release persisted image grants when no remaining note references the selected URI. */
+private fun releaseUnusedNoteImagePermissions(context: Context, remainingNotes: List<LocalNote>) {
+    runCatching {
+        context.contentResolver.persistedUriPermissions
+            .filter { permission ->
+                permission.isReadPermission &&
+                    remainingNotes.none { note -> note.content.contains(permission.uri.toString()) }
+            }
+            .forEach { permission ->
+                runCatching {
+                    context.contentResolver.releasePersistableUriPermission(
+                        permission.uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                }
+            }
+    }
+}
+
 private const val MAX_MARKDOWN_IMPORT_CHARS = 1_048_576
 
 /** Read user-selected Markdown with a hard limit so a huge file cannot exhaust app memory. */
@@ -441,6 +460,7 @@ private fun NotesTool(
         if (title.isBlank() && body.isBlank()) {
             notes = notes.filterNot { it.id == id }
             saveNotes(context, notes)
+            releaseUnusedNoteImagePermissions(context, notes)
             return
         }
         val pinned = notes.firstOrNull { it.id == id }?.pinned ?: false
@@ -766,6 +786,7 @@ private fun NotesTool(
                 TextButton(onClick = {
                     notes = notes.filterNot { it.id == deleteTarget }
                     saveNotes(context, notes)
+                    releaseUnusedNoteImagePermissions(context, notes)
                     deleteTarget = null
                     selectedId = null
                     title = ""
