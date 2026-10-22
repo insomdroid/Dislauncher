@@ -242,7 +242,7 @@ internal fun AppsScreen(
                                     else -> androidx.compose.material.icons.Icons.Outlined.Description
                                 }
                                 Column(
-                                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(14.dp))
+                                    modifier = Modifier.weight(1f).heightIn(min = 56.dp).clip(RoundedCornerShape(10.dp))
                                         .clickable { onLaunch(app) }.padding(vertical = 8.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -277,8 +277,9 @@ internal fun AppsScreen(
                 if (filteredFolders.isNotEmpty()) {
                     items(filteredFolders, key = { "folder-$it" }) { folder ->
                         Row(
-                            modifier = Modifier.fillMaxWidth().clickable { selectedFolder = folder }
-                                .padding(vertical = 8.dp),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+                                .clip(RoundedCornerShape(8.dp)).clickable { selectedFolder = folder }
+                                .padding(horizontal = 8.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
@@ -304,10 +305,11 @@ internal fun AppsScreen(
                 items(filtered, key = { it.packageName }) { app ->
                     Box(modifier = Modifier.fillMaxWidth()) {
                         Row(
-                            modifier = Modifier.fillMaxWidth().combinedClickable(
-                                onClick = { onLaunch(app) },
-                                onLongClick = { if (!app.packageName.startsWith("internal:")) selectedApp = app }
-                            ).padding(vertical = 8.dp, horizontal = 0.dp),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+                                .clip(RoundedCornerShape(8.dp)).combinedClickable(
+                                    onClick = { onLaunch(app) },
+                                    onLongClick = { if (!app.packageName.startsWith("internal:")) selectedApp = app }
+                                ).padding(horizontal = 8.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             if (preferences.showAppIcons) {
