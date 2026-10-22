@@ -320,6 +320,7 @@ internal fun HomeScreen(
                             onLongClick = {
                                 if (app != null) {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    movingFavoriteId = null
                                     selectedFavoriteMenu = itemId
                                 }
                             }
