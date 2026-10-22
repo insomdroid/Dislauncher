@@ -585,51 +585,52 @@ private fun NotesTool(
                     placeholder = { Text("Title (optional)") }, singleLine = true,
                     textStyle = MaterialTheme.typography.titleLarge, readOnly = previewMode
                 )
-                if (!previewMode) {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth().shadow(8.dp, RoundedCornerShape(28.dp)),
-                        shape = RoundedCornerShape(28.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        tonalElevation = 3.dp
-                    ) {
-                        Row(
-                            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
-                                .padding(horizontal = 6.dp, vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp)
-                        ) {
-                            IconButton(onClick = { body += if (body.isBlank()) "# " else "\n# "; saveCurrent() }) {
-                                Icon(Icons.Outlined.Title, contentDescription = "Heading")
-                            }
-                            IconButton(onClick = { body += if (body.isBlank()) "**bold**" else "\n**bold**"; saveCurrent() }) {
-                                Icon(Icons.Outlined.FormatBold, contentDescription = "Bold")
-                            }
-                            IconButton(onClick = { body += if (body.isBlank()) "- " else "\n- "; saveCurrent() }) {
-                                Icon(Icons.Outlined.FormatListBulleted, contentDescription = "List")
-                            }
-                            IconButton(onClick = { body += if (body.isBlank()) "- [ ] " else "\n- [ ] "; saveCurrent() }) {
-                                Icon(Icons.Outlined.Checklist, contentDescription = "Checklist")
-                            }
-                            IconButton(onClick = { body += if (body.isBlank()) "[link](https://)" else "\n[link](https://)"; saveCurrent() }) {
-                                Icon(Icons.Outlined.InsertLink, contentDescription = "Insert link")
-                            }
-                            IconButton(onClick = { imageLauncher.launch(arrayOf("image/*")) }) {
-                                Icon(Icons.Outlined.Image, contentDescription = "Insert image")
-                            }
-                        }
-                    }
-                }
                 if (previewMode) {
                     LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(body.lines().ifEmpty { listOf("") }) { line -> MarkdownPreviewLine(line) }
                     }
                 } else {
-                    OutlinedTextField(
-                        value = body, onValueChange = { body = it; saveCurrent() },
-                        modifier = Modifier.weight(1f).fillMaxWidth(), placeholder = { Text("Write Markdown here…") },
-                        minLines = 8, maxLines = Int.MAX_VALUE
-                    )
+                    Box(Modifier.weight(1f).fillMaxWidth()) {
+                        OutlinedTextField(
+                            value = body, onValueChange = { body = it; saveCurrent() },
+                            modifier = Modifier.fillMaxSize(),
+                            placeholder = { Text("Write Markdown here…") },
+                            minLines = 8, maxLines = Int.MAX_VALUE
+                        )
+                        Surface(
+                            modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = 8.dp, vertical = 12.dp)
+                                .shadow(8.dp, RoundedCornerShape(28.dp)),
+                            shape = RoundedCornerShape(28.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            tonalElevation = 3.dp
+                        ) {
+                            Row(
+                                Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 6.dp, vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                IconButton(onClick = { body += if (body.isBlank()) "# " else "\n# "; saveCurrent() }) {
+                                    Icon(Icons.Outlined.Title, contentDescription = "Heading")
+                                }
+                                IconButton(onClick = { body += if (body.isBlank()) "**bold**" else "\n**bold**"; saveCurrent() }) {
+                                    Icon(Icons.Outlined.FormatBold, contentDescription = "Bold")
+                                }
+                                IconButton(onClick = { body += if (body.isBlank()) "- " else "\n- "; saveCurrent() }) {
+                                    Icon(Icons.Outlined.FormatListBulleted, contentDescription = "List")
+                                }
+                                IconButton(onClick = { body += if (body.isBlank()) "- [ ] " else "\n- [ ] "; saveCurrent() }) {
+                                    Icon(Icons.Outlined.Checklist, contentDescription = "Checklist")
+                                }
+                                IconButton(onClick = { body += if (body.isBlank()) "[link](https://)" else "\n[link](https://)"; saveCurrent() }) {
+                                    Icon(Icons.Outlined.InsertLink, contentDescription = "Insert link")
+                                }
+                                IconButton(onClick = { imageLauncher.launch(arrayOf("image/*")) }) {
+                                    Icon(Icons.Outlined.Image, contentDescription = "Insert image")
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
