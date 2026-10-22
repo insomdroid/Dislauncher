@@ -572,16 +572,37 @@ private fun NotesTool(
                     textStyle = MaterialTheme.typography.titleLarge, readOnly = previewMode
                 )
                 if (!previewMode) {
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerLow
                     ) {
-                        TextButton(onClick = { body += if (body.isBlank()) "# " else "\n# "; saveCurrent() }) { Text("Heading") }
-                        TextButton(onClick = { body += if (body.isBlank()) "**bold**" else "\n**bold**"; saveCurrent() }) { Text("Bold") }
-                        TextButton(onClick = { body += if (body.isBlank()) "- " else "\n- "; saveCurrent() }) { Text("• List") }
-                        TextButton(onClick = { body += if (body.isBlank()) "- [ ] " else "\n- [ ] "; saveCurrent() }) { Text("Checklist") }
-                        TextButton(onClick = { body += if (body.isBlank()) "[link](https://)" else "\n[link](https://)"; saveCurrent() }) { Text("Link") }
+                        Row(
+                            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            TextButton(
+                                onClick = { body += if (body.isBlank()) "# " else "\n# "; saveCurrent() },
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                            ) { Text("Heading", maxLines = 1, softWrap = false) }
+                            TextButton(
+                                onClick = { body += if (body.isBlank()) "**bold**" else "\n**bold**"; saveCurrent() },
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                            ) { Text("Bold", maxLines = 1, softWrap = false) }
+                            TextButton(
+                                onClick = { body += if (body.isBlank()) "- " else "\n- "; saveCurrent() },
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                            ) { Text("• List", maxLines = 1, softWrap = false) }
+                            TextButton(
+                                onClick = { body += if (body.isBlank()) "- [ ] " else "\n- [ ] "; saveCurrent() },
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                            ) { Text("Checklist", maxLines = 1, softWrap = false) }
+                            TextButton(
+                                onClick = { body += if (body.isBlank()) "[link](https://)" else "\n[link](https://)"; saveCurrent() },
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                            ) { Text("Link", maxLines = 1, softWrap = false) }
+                        }
                     }
                 }
                 if (previewMode) {
@@ -1098,7 +1119,7 @@ private fun CalendarTool(context: Context, onBackRequested: () -> Unit, modifier
                     Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
                 }
                 Text(month.format(monthFormatter), modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Medium,
+                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                 IconButton(onClick = { month = month.minusMonths(1); selectedDate = month.atDay(1) }) {
                     Icon(Icons.Outlined.ArrowBack, contentDescription = "Previous month")
