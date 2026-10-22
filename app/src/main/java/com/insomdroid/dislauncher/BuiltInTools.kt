@@ -597,14 +597,6 @@ private fun NotesTool(
                                 importLauncher.launch(arrayOf("text/markdown", "text/plain", "application/octet-stream"))
                             })
                             DropdownMenuItem(
-                                text = { Text("Insert image") },
-                                leadingIcon = { Icon(Icons.Outlined.Image, contentDescription = null) },
-                                onClick = {
-                                    editorMenuExpanded = false
-                                    imageLauncher.launch(arrayOf("image/*"))
-                                }
-                            )
-                            DropdownMenuItem(
                                 text = { Text("Delete note") },
                                 leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null) },
                                 onClick = { editorMenuExpanded = false; deleteTarget = selectedId }
