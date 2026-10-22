@@ -357,8 +357,9 @@ internal fun HomeScreen(
                         if (notificationCount > 1) {
                             Box(
                                 modifier = Modifier.padding(start = 6.dp)
-                                    .widthIn(min = 18.dp).height(18.dp).padding(horizontal = 4.dp)
-                                    .background(notificationDotColor, RoundedCornerShape(9.dp)),
+                                    .widthIn(min = 18.dp).height(18.dp)
+                                    .background(notificationDotColor, RoundedCornerShape(9.dp))
+                                    .padding(horizontal = 4.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
