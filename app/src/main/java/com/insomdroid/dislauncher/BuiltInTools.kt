@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
@@ -560,20 +561,26 @@ private fun NotesTool(
                 }
             }
         } else {
-            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.fillMaxSize().imePadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onBackRequested) {
                         Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
                     }
                     Spacer(Modifier.weight(1f))
+                    val selectedNotePinned = notes.firstOrNull { it.id == selectedId }?.pinned == true
+                    IconButton(onClick = {
+                        notes = notes.map { if (it.id == selectedId) it.copy(pinned = !selectedNotePinned, updatedAt = System.currentTimeMillis()) else it }
+                            .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
+                        saveNotes(context, notes)
+                    }) {
+                        Icon(Icons.Outlined.PushPin, contentDescription = if (selectedNotePinned) "Unpin note" else "Pin note",
+                            tint = if (selectedNotePinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                     IconButton(onClick = { previewMode = !previewMode }) {
                         Icon(
                             if (previewMode) Icons.Outlined.Edit else Icons.Outlined.Visibility,
                             contentDescription = if (previewMode) "Edit note" else "Preview note"
                         )
-                    }
-                    IconButton(onClick = { exportNote(title, body) }) {
-                        Icon(Icons.Outlined.FileDownload, contentDescription = "Export Markdown file")
                     }
                     Box {
                         var editorMenuExpanded by remember { mutableStateOf(false) }
@@ -581,12 +588,17 @@ private fun NotesTool(
                             Icon(Icons.Outlined.MoreVert, contentDescription = "More note actions")
                         }
                         DropdownMenu(expanded = editorMenuExpanded, onDismissRequest = { editorMenuExpanded = false }) {
+                            DropdownMenuItem(text = { Text("Export Markdown") }, leadingIcon = { Icon(Icons.Outlined.FileDownload, contentDescription = null) }, onClick = {
+                                editorMenuExpanded = false
+                                exportNote(title, body)
+                            })
                             DropdownMenuItem(text = { Text("Import Markdown") }, leadingIcon = { Icon(Icons.Outlined.FileOpen, contentDescription = null) }, onClick = {
                                 editorMenuExpanded = false
                                 importLauncher.launch(arrayOf("text/markdown", "text/plain", "application/octet-stream"))
                             })
                             DropdownMenuItem(
                                 text = { Text("Insert image") },
+                                leadingIcon = { Icon(Icons.Outlined.Image, contentDescription = null) },
                                 onClick = {
                                     editorMenuExpanded = false
                                     imageLauncher.launch(arrayOf("image/*"))
