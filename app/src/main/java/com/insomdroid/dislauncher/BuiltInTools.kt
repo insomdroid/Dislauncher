@@ -57,6 +57,12 @@ import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Title
 import androidx.compose.material.icons.outlined.FormatBold
+import androidx.compose.material.icons.outlined.FormatItalic
+import androidx.compose.material.icons.outlined.FormatStrikethrough
+import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.FormatListNumbered
+import androidx.compose.material.icons.outlined.FormatQuote
+import androidx.compose.material.icons.outlined.HorizontalRule
 import androidx.compose.material.icons.outlined.FormatListBulleted
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.InsertLink
@@ -643,8 +649,26 @@ private fun NotesTool(
                                 IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "**", "**"); body = bodyField.text; saveCurrent() }) {
                                     Icon(Icons.Outlined.FormatBold, contentDescription = "Bold")
                                 }
+                                IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "*", "*"); body = bodyField.text; saveCurrent() }) {
+                                    Icon(Icons.Outlined.FormatItalic, contentDescription = "Italic")
+                                }
+                                IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "~~", "~~"); body = bodyField.text; saveCurrent() }) {
+                                    Icon(Icons.Outlined.FormatStrikethrough, contentDescription = "Strikethrough")
+                                }
+                                IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "`", "`"); body = bodyField.text; saveCurrent() }) {
+                                    Icon(Icons.Outlined.Code, contentDescription = "Inline code")
+                                }
                                 IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "- ", ""); body = bodyField.text; saveCurrent() }) {
                                     Icon(Icons.Outlined.FormatListBulleted, contentDescription = "List")
+                                }
+                                IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "1. ", ""); body = bodyField.text; saveCurrent() }) {
+                                    Icon(Icons.Outlined.FormatListNumbered, contentDescription = "Numbered list")
+                                }
+                                IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "> ", ""); body = bodyField.text; saveCurrent() }) {
+                                    Icon(Icons.Outlined.FormatQuote, contentDescription = "Block quote")
+                                }
+                                IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "---", ""); body = bodyField.text; saveCurrent() }) {
+                                    Icon(Icons.Outlined.HorizontalRule, contentDescription = "Horizontal divider")
                                 }
                                 IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "- [ ] ", ""); body = bodyField.text; saveCurrent() }) {
                                     Icon(Icons.Outlined.Checklist, contentDescription = "Checklist")
