@@ -535,7 +535,7 @@ private fun NotesTool(
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onBackRequested) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back to notes")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
                     }
                     Spacer(Modifier.weight(1f))
                     IconButton(onClick = { previewMode = !previewMode }) {
