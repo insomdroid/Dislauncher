@@ -30,13 +30,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.DragIndicator
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -87,6 +89,8 @@ internal fun HomeScreen(
     onDoubleTapToLock: () -> Unit,
     homeItemOrder: List<String>,
     onMoveHomeItem: (String, String) -> Unit,
+    onToggleFavorite: (String) -> Unit,
+    onRenameApp: (String, String) -> Unit,
     onSolarInfoChange: (WeatherInfo?) -> Unit
 ) {
     val context = LocalContext.current
@@ -123,6 +127,9 @@ internal fun HomeScreen(
     var draggingMainItem by remember { mutableStateOf<String?>(null) }
     var dragDistance by remember { mutableFloatStateOf(0f) }
     var selectedFavoriteMenu by remember { mutableStateOf<String?>(null) }
+    var movingFavoriteId by remember { mutableStateOf<String?>(null) }
+    var renamingFavorite by remember { mutableStateOf<LauncherApp?>(null) }
+    var favoriteRenameValue by remember { mutableStateOf("") }
 
     LaunchedEffect(isActive, hostResumed, preferences.showBattery) {
         if (!isActive || !hostResumed) return@LaunchedEffect
@@ -353,12 +360,12 @@ internal fun HomeScreen(
                                 .border(1.dp, MaterialTheme.colorScheme.background.copy(alpha = 0.65f), CircleShape)
                         )
                     }
-                    Box {
+                    if (movingFavoriteId == itemId) {
                         Icon(
                             imageVector = Icons.Filled.DragIndicator,
                             contentDescription = "Reorder favourite",
-                            tint = secondaryText.copy(alpha = 0.72f),
-                            modifier = Modifier.size(24.dp)
+                            tint = secondaryText.copy(alpha = 0.82f),
+                            modifier = Modifier.padding(start = 8.dp).size(24.dp)
                                 .pointerInput(itemId) {
                                     detectDragGestures(
                                         onDragStart = {
@@ -369,10 +376,12 @@ internal fun HomeScreen(
                                         onDragEnd = {
                                             draggingMainItem = null
                                             dragDistance = 0f
+                                            movingFavoriteId = null
                                         },
                                         onDragCancel = {
                                             draggingMainItem = null
                                             dragDistance = 0f
+                                            movingFavoriteId = null
                                         },
                                         onDrag = { change, dragAmount ->
                                             change.consume()
@@ -394,6 +403,8 @@ internal fun HomeScreen(
                                     )
                                 }
                         )
+                    }
+                    Box {
                         DropdownMenu(
                             expanded = selectedFavoriteMenu == itemId,
                             onDismissRequest = { selectedFavoriteMenu = null }
@@ -404,9 +415,33 @@ internal fun HomeScreen(
                             )
                             if (app != null) {
                                 DropdownMenuItem(
+                                    text = { Text("Rename") },
+                                    onClick = {
+                                        favoriteRenameValue = app.label
+                                        renamingFavorite = app
+                                        selectedFavoriteMenu = null
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Remove from Favourites") },
+                                    onClick = {
+                                        selectedFavoriteMenu = null
+                                        movingFavoriteId = null
+                                        onToggleFavorite(app.packageName)
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Move") },
+                                    onClick = {
+                                        selectedFavoriteMenu = null
+                                        movingFavoriteId = itemId
+                                    }
+                                )
+                                DropdownMenuItem(
                                     text = { Text("App info") },
                                     onClick = {
                                         selectedFavoriteMenu = null
+                                        movingFavoriteId = null
                                         openApplicationInfo(context, app)
                                     }
                                 )
@@ -415,6 +450,7 @@ internal fun HomeScreen(
                                         text = { Text("Uninstall") },
                                         onClick = {
                                             selectedFavoriteMenu = null
+                                            movingFavoriteId = null
                                             requestUninstall(context, app)
                                         }
                                     )
@@ -424,6 +460,32 @@ internal fun HomeScreen(
                     }
                 }
             }
+        }
+
+        renamingFavorite?.let { appToRename ->
+            AlertDialog(
+                onDismissRequest = { renamingFavorite = null },
+                title = { Text("Rename app") },
+                text = {
+                    OutlinedTextField(
+                        value = favoriteRenameValue,
+                        onValueChange = { favoriteRenameValue = it },
+                        singleLine = true,
+                        label = { Text("App name") }
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            onRenameApp(appToRename.packageName, favoriteRenameValue)
+                            renamingFavorite = null
+                        }
+                    ) { Text("Save") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { renamingFavorite = null }) { Text("Cancel") }
+                }
+            )
         }
 
         if (preferences.showSettingsButton) {
