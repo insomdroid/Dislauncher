@@ -38,6 +38,7 @@ import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -186,7 +187,7 @@ internal fun SettingsScreen(
                     )
                 },
                 navigationIcon = {
-                    TextButton(
+                    IconButton(
                         onClick = {
                             if (selectedCategory != null) {
                                 selectedCategory = null
@@ -210,7 +211,11 @@ internal fun SettingsScreen(
             modifier = Modifier.fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp),
+                .padding(horizontal = when {
+                    configuration.screenWidthDp > 888 -> ((configuration.screenWidthDp - 840) / 2).dp
+                    configuration.screenWidthDp >= 600 -> 24.dp
+                    else -> 20.dp
+                }),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             if (selectedCategory == null) {
