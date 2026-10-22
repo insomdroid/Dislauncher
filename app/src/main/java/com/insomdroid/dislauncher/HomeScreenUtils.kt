@@ -41,3 +41,14 @@ internal fun formatHomeDate(date: LocalDate): String {
     return date.format(DateTimeFormatter.ofPattern("EEEE, ", locale)) +
         day + suffix + date.format(DateTimeFormatter.ofPattern(" MMMM", locale))
 }
+
+
+internal object NotificationDotState {
+    private val counts = androidx.compose.runtime.mutableStateMapOf<String, Int>()
+    val activePackages: Set<String> get() = counts.filterValues { it > 0 }.keys.toSet()
+    fun countFor(packageName: String): Int = counts[packageName] ?: 0
+    internal fun setCounts(next: Map<String, Int>) {
+        counts.clear()
+        counts.putAll(next)
+    }
+}
