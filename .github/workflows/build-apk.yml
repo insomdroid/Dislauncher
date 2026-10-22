@@ -15,6 +15,9 @@ on:
       - 'Screenshot/dislauncher.png'
       - '.github/workflows/build-apk.yml'
       - '.github/workflows/release.yml'
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
