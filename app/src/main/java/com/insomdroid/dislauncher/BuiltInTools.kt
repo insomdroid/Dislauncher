@@ -604,7 +604,7 @@ private fun NotesTool(
                                     }
                                     Box {
                                         IconButton(onClick = { noteMenuTarget = note.id }) {
-                                            Icon(Icons.Outlined.MoreVert, contentDescription = "Note actions")
+                                            Icon(Icons.Outlined.MoreVert, contentDescription = builtInToolText("Note actions", "Aksi catatan"))
                                         }
                                         DropdownMenu(
                                             expanded = noteMenuTarget == note.id,
@@ -638,7 +638,7 @@ private fun NotesTool(
             Column(Modifier.fillMaxSize().imePadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onBackRequested) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = builtInToolText("Back", "Kembali"))
                     }
                     Spacer(Modifier.weight(1f))
                     val selectedNotePinned = notes.firstOrNull { it.id == selectedId }?.pinned == true
@@ -659,7 +659,7 @@ private fun NotesTool(
                     Box {
                         var editorMenuExpanded by remember { mutableStateOf(false) }
                         IconButton(onClick = { editorMenuExpanded = true }) {
-                            Icon(Icons.Outlined.MoreVert, contentDescription = "More note actions")
+                            Icon(Icons.Outlined.MoreVert, contentDescription = builtInToolText("More note actions", "Aksi catatan lainnya"))
                         }
                         DropdownMenu(expanded = editorMenuExpanded, onDismissRequest = { editorMenuExpanded = false }) {
                             DropdownMenuItem(text = { Text(builtInToolText("Export Markdown", "Ekspor Markdown")) }, leadingIcon = { Icon(Icons.Outlined.FileDownload, contentDescription = null) }, onClick = {
@@ -737,40 +737,40 @@ private fun NotesTool(
                                 horizontalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
                                 IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "# ", ""); body = bodyField.text; saveCurrent() }) {
-                                    Icon(Icons.Outlined.Title, contentDescription = "Heading")
+                                    Icon(Icons.Outlined.Title, contentDescription = builtInToolText("Heading", "Judul bagian"))
                                 }
                                 IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "**", "**"); body = bodyField.text; saveCurrent() }) {
-                                    Icon(Icons.Outlined.FormatBold, contentDescription = "Bold")
+                                    Icon(Icons.Outlined.FormatBold, contentDescription = builtInToolText("Bold", "Tebal"))
                                 }
                                 IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "*", "*"); body = bodyField.text; saveCurrent() }) {
-                                    Icon(Icons.Outlined.FormatItalic, contentDescription = "Italic")
+                                    Icon(Icons.Outlined.FormatItalic, contentDescription = builtInToolText("Italic", "Miring"))
                                 }
                                 IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "~~", "~~"); body = bodyField.text; saveCurrent() }) {
-                                    Icon(Icons.Outlined.FormatStrikethrough, contentDescription = "Strikethrough")
+                                    Icon(Icons.Outlined.FormatStrikethrough, contentDescription = builtInToolText("Strikethrough", "Coret"))
                                 }
                                 IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "`", "`"); body = bodyField.text; saveCurrent() }) {
-                                    Icon(Icons.Outlined.Code, contentDescription = "Inline code")
+                                    Icon(Icons.Outlined.Code, contentDescription = builtInToolText("Inline code", "Kode sebaris"))
                                 }
                                 IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "- ", ""); body = bodyField.text; saveCurrent() }) {
-                                    Icon(Icons.Outlined.FormatListBulleted, contentDescription = "List")
+                                    Icon(Icons.Outlined.FormatListBulleted, contentDescription = builtInToolText("List", "Daftar"))
                                 }
                                 IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "1. ", ""); body = bodyField.text; saveCurrent() }) {
-                                    Icon(Icons.Outlined.FormatListNumbered, contentDescription = "Numbered list")
+                                    Icon(Icons.Outlined.FormatListNumbered, contentDescription = builtInToolText("Numbered list", "Daftar bernomor"))
                                 }
                                 IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "> ", ""); body = bodyField.text; saveCurrent() }) {
-                                    Icon(Icons.Outlined.FormatQuote, contentDescription = "Block quote")
+                                    Icon(Icons.Outlined.FormatQuote, contentDescription = builtInToolText("Block quote", "Kutipan blok"))
                                 }
                                 IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "---", ""); body = bodyField.text; saveCurrent() }) {
-                                    Icon(Icons.Outlined.HorizontalRule, contentDescription = "Horizontal divider")
+                                    Icon(Icons.Outlined.HorizontalRule, contentDescription = builtInToolText("Horizontal divider", "Garis pemisah"))
                                 }
                                 IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "- [ ] ", ""); body = bodyField.text; saveCurrent() }) {
-                                    Icon(Icons.Outlined.Checklist, contentDescription = "Checklist")
+                                    Icon(Icons.Outlined.Checklist, contentDescription = builtInToolText("Checklist", "Daftar centang"))
                                 }
                                 IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "[", "](https://)"); body = bodyField.text; saveCurrent() }) {
-                                    Icon(Icons.Outlined.InsertLink, contentDescription = "Insert link")
+                                    Icon(Icons.Outlined.InsertLink, contentDescription = builtInToolText("Insert link", "Sisipkan tautan"))
                                 }
                                 IconButton(onClick = { imageLauncher.launch(arrayOf("image/*")) }) {
-                                    Icon(Icons.Outlined.Image, contentDescription = "Insert image")
+                                    Icon(Icons.Outlined.Image, contentDescription = builtInToolText("Insert image", "Sisipkan gambar"))
                                 }
                             }
                         }
@@ -789,7 +789,7 @@ private fun NotesTool(
             }, modifier = Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 24.dp),
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer) {
-                Icon(Icons.Outlined.NoteAdd, contentDescription = "New note")
+                Icon(Icons.Outlined.NoteAdd, contentDescription = builtInToolText("New note", "Catatan baru"))
             }
         }
     }
@@ -812,7 +812,7 @@ private fun NotesTool(
                     bodyField = TextFieldValue("")
                     previewMode = false
                     onEditingChanged(false)
-                }) { Text("Delete") }
+                }) { Text(builtInToolText("Delete", "Hapus")) }
             },
             dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text(builtInToolText("Cancel", "Batal")) } }
         )
@@ -950,7 +950,7 @@ private fun CalculatorTool(
                                                 formatCalculation(ExpressionParser(expression).parse())
                                             }.getOrNull()
                                             if (calculated == null) {
-                                                result = "Invalid expression"
+                                                result = builtInToolText("Invalid expression", "Ekspresi tidak valid")
                                             } else {
                                                 result = calculated
                                                 val entry = CalculatorHistoryEntry(
@@ -1014,7 +1014,7 @@ private fun CalculatorTool(
                     showClearHistoryDialog = false
                 }) { Text(builtInToolText("Clear", "Bersihkan")) }
             },
-            dismissButton = { TextButton(onClick = { showClearHistoryDialog = false }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { showClearHistoryDialog = false }) { Text(builtInToolText("Cancel", "Batal")) } }
         )
     }
 }
@@ -1377,7 +1377,7 @@ private fun CalendarTool(context: Context, onBackRequested: () -> Unit, modifier
                     }
                 }) { Text(builtInToolText("Save", "Simpan")) }
             },
-            dismissButton = { TextButton(onClick = { showEditor = false }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { showEditor = false }) { Text(builtInToolText("Cancel", "Batal")) } }
         )
     }
 
@@ -1466,9 +1466,9 @@ private fun CalendarTool(context: Context, onBackRequested: () -> Unit, modifier
                         saveTasks(context, tasks)
                     }
                     deleteTarget = null
-                }) { Text("Delete") }
+                }) { Text(builtInToolText("Delete", "Hapus")) }
             },
-            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text(builtInToolText("Cancel", "Batal")) } }
         )
     }
 }
