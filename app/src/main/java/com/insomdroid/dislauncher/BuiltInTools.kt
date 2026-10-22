@@ -236,9 +236,9 @@ private fun markdownForSafePreview(markdown: String): String =
 
 /** Match the Markdown preview's Android TextView to Dislauncher's selected font family. */
 private fun markdownPreviewTypeface(context: Context): android.graphics.Typeface {
-    val preferences = LauncherPreferences.load(context)
+    val preferences = LauncherPreferences.load(context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE))
     return when (preferences.fontMode) {
-        "dislauncher" -> androidx.core.content.ContextCompat.getFont(context, R.font.inter_variable)
+        "dislauncher" -> androidx.core.content.res.ResourcesCompat.getFont(context, R.font.inter_variable)
             ?: android.graphics.Typeface.DEFAULT
         "custom" -> listOf("ttf", "otf")
             .map { java.io.File(context.filesDir, "fonts/custom-font.$it") }
