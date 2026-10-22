@@ -412,6 +412,7 @@ private fun NotesTool(
             context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
             val markdownImage = "![](<" + uri.toString() + ">)"
             body = if (body.isBlank()) markdownImage else body + "\n\n" + markdownImage
+            bodyField = TextFieldValue(body, TextRange(body.length))
             saveCurrent()
         }.onFailure {
             Toast.makeText(context, "Could not add image", Toast.LENGTH_LONG).show()
