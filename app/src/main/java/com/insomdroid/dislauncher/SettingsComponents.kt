@@ -94,7 +94,9 @@ internal fun IconPackChoice(
     onClick: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 5.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+            .clip(RoundedCornerShape(8.dp)).clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         RadioButton(selected = selected == value, onClick = onClick)
@@ -163,9 +165,10 @@ internal fun SettingToggle(
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+        modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)
+            .clip(RoundedCornerShape(8.dp))
             .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
-            .padding(vertical = 6.dp),
+            .padding(horizontal = 8.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(
@@ -195,7 +198,10 @@ internal fun SettingAction(
     onClick: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(
