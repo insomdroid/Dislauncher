@@ -612,13 +612,14 @@ private fun NotesTool(
                         .usePlugin(StrikethroughPlugin.create())
                         .usePlugin(TaskListPlugin.create(context))
                         .build() }
+                    val previewTextColor = MaterialTheme.colorScheme.onSurface
                     AndroidView(
                         factory = { viewContext -> TextView(viewContext).apply { setPadding(8, 8, 8, 8); textSize = 16f } },
                         update = { textView ->
                             textView.setTextColor(android.graphics.Color.rgb(
-                                (MaterialTheme.colorScheme.onSurface.red * 255).toInt(),
-                                (MaterialTheme.colorScheme.onSurface.green * 255).toInt(),
-                                (MaterialTheme.colorScheme.onSurface.blue * 255).toInt()
+                                (previewTextColor.red * 255).toInt(),
+                                (previewTextColor.green * 255).toInt(),
+                                (previewTextColor.blue * 255).toInt()
                             ))
                             markdownRenderer.setMarkdown(textView, body)
                         },
