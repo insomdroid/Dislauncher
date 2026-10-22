@@ -7,6 +7,7 @@ import android.provider.CalendarContract
 import android.content.Intent
 import android.net.Uri
 import android.widget.ImageView
+import android.widget.TextView
 import android.content.pm.PackageManager
 import android.os.Build
 import android.widget.Toast
@@ -94,6 +95,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -107,6 +110,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
+import io.noties.markwon.Markwon
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.LocalDate
@@ -358,6 +362,7 @@ private fun NotesTool(
     var selectedId by remember { mutableStateOf<String?>(null) }
     var title by remember { mutableStateOf("") }
     var body by remember { mutableStateOf("") }
+    var bodyField by remember { mutableStateOf(TextFieldValue("")) }
     var searchQuery by remember { mutableStateOf("") }
     var previewMode by remember { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<String?>(null) }
@@ -377,6 +382,7 @@ private fun NotesTool(
             selectedId = note.id
             title = note.title
             body = note.content
+            bodyField = TextFieldValue(note.content)
             previewMode = false
             onEditingChanged(true)
         }.onFailure { Toast.makeText(context, "Could not import Markdown file", Toast.LENGTH_LONG).show() }
@@ -416,6 +422,7 @@ private fun NotesTool(
         selectedId = note.id
         title = note.title
         body = note.content
+        bodyField = TextFieldValue(note.content)
         previewMode = false
         onEditingChanged(true)
     }
@@ -586,22 +593,32 @@ private fun NotesTool(
                     textStyle = MaterialTheme.typography.titleLarge, readOnly = previewMode
                 )
                 if (previewMode) {
-                    LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(body.lines().ifEmpty { listOf("") }) { line -> MarkdownPreviewLine(line) }
-                    }
+                    val markdownRenderer = remember(context) { Markwon.create(context) }
+                    AndroidView(
+                        factory = { viewContext -> TextView(viewContext).apply { setPadding(8, 8, 8, 8); textSize = 16f } },
+                        update = { textView ->
+                            textView.setTextColor(android.graphics.Color.rgb(
+                                (MaterialTheme.colorScheme.onSurface.red * 255).toInt(),
+                                (MaterialTheme.colorScheme.onSurface.green * 255).toInt(),
+                                (MaterialTheme.colorScheme.onSurface.blue * 255).toInt()
+                            ))
+                            markdownRenderer.setMarkdown(textView, body)
+                        },
+                        modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp)
+                    )
                 } else {
                     Box(Modifier.weight(1f).fillMaxWidth()) {
                         OutlinedTextField(
-                            value = body, onValueChange = { body = it; saveCurrent() },
+                            value = bodyField,
+                            onValueChange = { bodyField = it; body = it.text; saveCurrent() },
                             modifier = Modifier.fillMaxSize(),
                             placeholder = { Text("Write Markdown here…") },
                             minLines = 8, maxLines = Int.MAX_VALUE
                         )
                         Surface(
                             modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = 8.dp, vertical = 12.dp)
-                                .shadow(8.dp, RoundedCornerShape(28.dp)),
-                            shape = RoundedCornerShape(28.dp),
+                                .shadow(4.dp, RoundedCornerShape(12.dp)),
+                            shape = RoundedCornerShape(12.dp),
                             color = MaterialTheme.colorScheme.surfaceContainerHigh,
                             tonalElevation = 3.dp
                         ) {
@@ -639,6 +656,7 @@ private fun NotesTool(
                 selectedId = UUID.randomUUID().toString()
                 title = ""
                 body = ""
+                bodyField = TextFieldValue("")
                 previewMode = false
                 onEditingChanged(true)
             }, modifier = Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 24.dp),
