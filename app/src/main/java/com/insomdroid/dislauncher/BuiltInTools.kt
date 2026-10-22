@@ -2,8 +2,6 @@ package com.insomdroid.dislauncher
 
 import android.Manifest
 import android.content.Context
-import android.content.ContentUris
-import android.provider.CalendarContract
 import android.content.Intent
 import android.widget.TextView
 import android.content.pm.PackageManager
@@ -91,11 +89,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -121,7 +117,6 @@ import io.noties.markwon.ext.tasklist.TaskListPlugin
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.LocalDate
-import java.time.DayOfWeek
 import java.time.LocalTime
 import java.time.Instant
 import java.time.ZoneOffset
