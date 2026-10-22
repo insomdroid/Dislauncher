@@ -13,11 +13,20 @@ on:
       - 'settings.gradle.kts'
       - 'gradle.properties'
       - 'Screenshot/dislauncher.png'
-      - '.github/workflows/build-apk.yml'
       - '.github/workflows/release.yml'
   pull_request:
     branches:
       - main
+    paths:
+      - 'app/**'
+      - 'gradle/**'
+      - 'gradlew'
+      - 'gradlew.bat'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - 'Screenshot/dislauncher.png'
+      - '.github/workflows/release.yml'
   workflow_dispatch:
 
 permissions:
