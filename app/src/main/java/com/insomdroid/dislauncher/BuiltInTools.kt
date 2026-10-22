@@ -34,14 +34,23 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.FileDownload
+import androidx.compose.material.icons.outlined.FileOpen
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.NoteAdd
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
@@ -324,6 +333,7 @@ private fun NotesTool(
     var searchQuery by remember { mutableStateOf("") }
     var previewMode by remember { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<String?>(null) }
+    var noteMenuTarget by remember { mutableStateOf<String?>(null) }
     var exportContent by remember { mutableStateOf("") }
 
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -389,15 +399,27 @@ private fun NotesTool(
     Box(modifier = modifier) {
         if (selectedId == null) {
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = { importLauncher.launch(arrayOf("text/markdown", "text/plain", "application/octet-stream")) }) {
-                        Text("Import .md")
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text("Search notes") },
+                        leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+                        singleLine = true,
+                        shape = RoundedCornerShape(28.dp)
+                    )
+                    IconButton(
+                        onClick = { importLauncher.launch(arrayOf("text/markdown", "text/plain", "application/octet-stream")) },
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(Icons.Outlined.FileOpen, contentDescription = "Import Markdown file")
                     }
                 }
-                OutlinedTextField(
-                    value = searchQuery, onValueChange = { searchQuery = it }, modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Search notes") }, singleLine = true
-                )
                 val visibleNotes = notes.filter {
                     searchQuery.isBlank() || it.title.contains(searchQuery, true) || it.content.contains(searchQuery, true)
                 }
@@ -426,13 +448,30 @@ private fun NotesTool(
                                             .format(DateTimeFormatter.ofPattern("d MMM, HH:mm", Locale.getDefault())),
                                             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        TextButton(onClick = {
-                                            notes = notes.map { if (it.id == note.id) it.copy(pinned = !it.pinned) else it }
-                                                .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
-                                            saveNotes(context, notes)
-                                        }) { Text(if (note.pinned) "Unpin" else "Pin") }
-                                        TextButton(onClick = { deleteTarget = note.id }) { Text("Delete") }
+                                    Box {
+                                        IconButton(onClick = { noteMenuTarget = note.id }) {
+                                            Icon(Icons.Outlined.MoreVert, contentDescription = "Note actions")
+                                        }
+                                        DropdownMenu(
+                                            expanded = noteMenuTarget == note.id,
+                                            onDismissRequest = { noteMenuTarget = null }
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = { Text(if (note.pinned) "Unpin note" else "Pin note") },
+                                                leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null) },
+                                                onClick = {
+                                                    notes = notes.map { if (it.id == note.id) it.copy(pinned = !it.pinned) else it }
+                                                        .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
+                                                    saveNotes(context, notes)
+                                                    noteMenuTarget = null
+                                                }
+                                            )
+                                            DropdownMenuItem(
+                                                text = { Text("Delete") },
+                                                leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null) },
+                                                onClick = { deleteTarget = note.id; noteMenuTarget = null }
+                                            )
+                                        }
                                     }
                                 }
                                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
@@ -444,10 +483,19 @@ private fun NotesTool(
         } else {
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = { previewMode = !previewMode }) { Text(if (previewMode) "Edit" else "Preview") }
+                    IconButton(onClick = { previewMode = !previewMode }) {
+                        Icon(
+                            if (previewMode) Icons.Outlined.Edit else Icons.Outlined.Visibility,
+                            contentDescription = if (previewMode) "Edit note" else "Preview note"
+                        )
+                    }
                     Spacer(Modifier.weight(1f))
-                    TextButton(onClick = { exportNote(title, body) }) { Text("Export .md") }
-                    TextButton(onClick = { deleteTarget = selectedId }) { Text("Delete") }
+                    IconButton(onClick = { exportNote(title, body) }) {
+                        Icon(Icons.Outlined.FileDownload, contentDescription = "Export Markdown file")
+                    }
+                    IconButton(onClick = { deleteTarget = selectedId }) {
+                        Icon(Icons.Outlined.DeleteOutline, contentDescription = "Delete note")
+                    }
                 }
                 OutlinedTextField(
                     value = title, onValueChange = { title = it; saveCurrent() }, modifier = Modifier.fillMaxWidth(),
