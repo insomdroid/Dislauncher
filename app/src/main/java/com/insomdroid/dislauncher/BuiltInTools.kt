@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -274,7 +275,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                 containerColor = MaterialTheme.colorScheme.background,
                 topBar = {
                     if (tool != BuiltInTool.CALENDAR && !(tool == BuiltInTool.NOTES && notesEditing)) TopAppBar(
-                        title = { Text(title, fontWeight = FontWeight.Medium) },
+                        title = { Text(title, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                         navigationIcon = {
                             IconButton(onClick = {
                                 when {
@@ -309,11 +310,11 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                 BoxWithConstraints(Modifier.fillMaxSize()) {
                     Box(
                         Modifier
-                            .fillMaxSize()
                             .widthIn(max = 840.dp)
+                            .fillMaxSize()
                             .align(Alignment.TopCenter)
                             .padding(padding)
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .padding(horizontal = if (maxWidth >= 600.dp) 24.dp else 16.dp, vertical = 8.dp)
                     ) {
                     when (tool) {
                         BuiltInTool.NOTES -> NotesTool(
