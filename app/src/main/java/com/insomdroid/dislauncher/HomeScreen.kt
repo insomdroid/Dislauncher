@@ -7,7 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -30,9 +30,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.DragIndicator
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -83,6 +89,8 @@ internal fun HomeScreen(
     onDoubleTapToLock: () -> Unit,
     homeItemOrder: List<String>,
     onMoveHomeItem: (String, String) -> Unit,
+    onToggleFavorite: (String) -> Unit,
+    onRenameApp: (String, String) -> Unit,
     onSolarInfoChange: (WeatherInfo?) -> Unit
 ) {
     val context = LocalContext.current
@@ -118,6 +126,10 @@ internal fun HomeScreen(
     val favoriteAppsByPackage = remember(visibleFavorites) { visibleFavorites.associateBy { it.packageName } }
     var draggingMainItem by remember { mutableStateOf<String?>(null) }
     var dragDistance by remember { mutableFloatStateOf(0f) }
+    var selectedFavoriteMenu by remember { mutableStateOf<String?>(null) }
+    var movingFavoriteId by remember { mutableStateOf<String?>(null) }
+    var renamingFavorite by remember { mutableStateOf<LauncherApp?>(null) }
+    var favoriteRenameValue by remember { mutableStateOf("") }
 
     LaunchedEffect(isActive, hostResumed, preferences.showBattery) {
         if (!isActive || !hostResumed) return@LaunchedEffect
@@ -303,41 +315,16 @@ internal fun HomeScreen(
                 Row(
                     modifier = Modifier.fillMaxWidth()
                         .alpha(if (draggingMainItem == itemId) 0.62f else 1f)
-                        .pointerInput(itemId) {
-                            detectDragGesturesAfterLongPress(
-                                onDragStart = {
-                                    draggingMainItem = itemId
-                                    dragDistance = 0f
+                        .combinedClickable(
+                            onClick = { app?.let(onLaunch) },
+                            onLongClick = {
+                                if (app != null) {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                },
-                                onDragEnd = {
-                                    draggingMainItem = null
-                                    dragDistance = 0f
-                                },
-                                onDragCancel = {
-                                    draggingMainItem = null
-                                    dragDistance = 0f
-                                },
-                                onDrag = { change, dragAmount ->
-                                    change.consume()
-                                    dragDistance += dragAmount.y
-                                    val threshold = 28.dp.toPx()
-                                    if (kotlin.math.abs(dragDistance) >= threshold) {
-                                        val order = latestOrderedMainItemIds.value
-                                        val current = order.indexOf(itemId)
-                                        val direction = if (dragDistance > 0f) 1 else -1
-                                        val target = order.getOrNull(current + direction)
-                                        if (target != null) {
-                                            latestMoveHomeItem.value(itemId, target)
-                                            dragDistance -= direction * threshold
-                                        } else {
-                                            dragDistance = 0f
-                                        }
-                                    }
+                                    movingFavoriteId = null
+                                    selectedFavoriteMenu = itemId
                                 }
-                            )
-                        }
-                        .clickable { app?.let(onLaunch) }
+                            }
+                        )
                         .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -366,16 +353,157 @@ internal fun HomeScreen(
                             "purple" -> androidx.compose.ui.graphics.Color(0xFFAB47BC)
                             else -> androidx.compose.ui.graphics.Color.White
                         }
-                        Box(
-                            modifier = Modifier
-                                .padding(start = 6.dp)
-                                .size(7.dp)
-                                .background(notificationDotColor, CircleShape)
-                                .border(1.dp, MaterialTheme.colorScheme.background.copy(alpha = 0.65f), CircleShape)
+                        val notificationCount = NotificationDotState.countFor(app.packageName)
+                        if (notificationCount > 1) {
+                            Box(
+                                modifier = Modifier.padding(start = 6.dp)
+                                    .widthIn(min = 18.dp).height(18.dp)
+                                    .background(notificationDotColor, RoundedCornerShape(9.dp))
+                                    .padding(horizontal = 4.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (notificationCount > 99) "99+" else notificationCount.toString(),
+                                    color = if (preferences.notificationDotColor == "white") androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.White,
+                                    fontSize = 10.sp,
+                                    lineHeight = 12.sp,
+                                    maxLines = 1
+                                )
+                            }
+                        } else {
+                            Box(
+                                modifier = Modifier.padding(start = 6.dp)
+                                    .size(6.dp)
+                                    .background(notificationDotColor, CircleShape)
+                            )
+                        }
+                    }
+                    if (movingFavoriteId == itemId) {
+                        Icon(
+                            imageVector = Icons.Filled.DragIndicator,
+                            contentDescription = "Reorder favourite",
+                            tint = secondaryText.copy(alpha = 0.82f),
+                            modifier = Modifier.padding(start = 8.dp).size(24.dp)
+                                .pointerInput(itemId) {
+                                    detectDragGestures(
+                                        onDragStart = {
+                                            draggingMainItem = itemId
+                                            dragDistance = 0f
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        },
+                                        onDragEnd = {
+                                            draggingMainItem = null
+                                            dragDistance = 0f
+                                            movingFavoriteId = null
+                                        },
+                                        onDragCancel = {
+                                            draggingMainItem = null
+                                            dragDistance = 0f
+                                            movingFavoriteId = null
+                                        },
+                                        onDrag = { change, dragAmount ->
+                                            change.consume()
+                                            dragDistance += dragAmount.y
+                                            val threshold = 28.dp.toPx()
+                                            if (kotlin.math.abs(dragDistance) >= threshold) {
+                                                val order = latestOrderedMainItemIds.value
+                                                val current = order.indexOf(itemId)
+                                                val direction = if (dragDistance > 0f) 1 else -1
+                                                val target = order.getOrNull(current + direction)
+                                                if (target != null) {
+                                                    latestMoveHomeItem.value(itemId, target)
+                                                    dragDistance -= direction * threshold
+                                                } else {
+                                                    dragDistance = 0f
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
                         )
+                    }
+                    Box {
+                        DropdownMenu(
+                            expanded = selectedFavoriteMenu == itemId,
+                            onDismissRequest = { selectedFavoriteMenu = null }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Open") },
+                                onClick = { selectedFavoriteMenu = null; app?.let(onLaunch) }
+                            )
+                            if (app != null) {
+                                DropdownMenuItem(
+                                    text = { Text("Rename") },
+                                    onClick = {
+                                        favoriteRenameValue = app.label
+                                        renamingFavorite = app
+                                        selectedFavoriteMenu = null
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Remove from Favourites") },
+                                    onClick = {
+                                        selectedFavoriteMenu = null
+                                        movingFavoriteId = null
+                                        onToggleFavorite(app.packageName)
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Move") },
+                                    onClick = {
+                                        selectedFavoriteMenu = null
+                                        movingFavoriteId = itemId
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("App info") },
+                                    onClick = {
+                                        selectedFavoriteMenu = null
+                                        movingFavoriteId = null
+                                        openApplicationInfo(context, app)
+                                    }
+                                )
+                                if (!app.isSystem) {
+                                    DropdownMenuItem(
+                                        text = { Text("Uninstall") },
+                                        onClick = {
+                                            selectedFavoriteMenu = null
+                                            movingFavoriteId = null
+                                            requestUninstall(context, app)
+                                        }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
+        }
+
+        renamingFavorite?.let { appToRename ->
+            AlertDialog(
+                onDismissRequest = { renamingFavorite = null },
+                title = { Text("Rename app") },
+                text = {
+                    OutlinedTextField(
+                        value = favoriteRenameValue,
+                        onValueChange = { favoriteRenameValue = it },
+                        singleLine = true,
+                        label = { Text("App name") }
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            onRenameApp(appToRename.packageName, favoriteRenameValue)
+                            renamingFavorite = null
+                        }
+                    ) { Text("Save") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { renamingFavorite = null }) { Text("Cancel") }
+                }
+            )
         }
 
         if (preferences.showSettingsButton) {

@@ -2,6 +2,8 @@ package com.insomdroid.dislauncher
 
 import android.content.Context
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -92,7 +94,9 @@ internal fun IconPackChoice(
     onClick: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 5.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+            .clip(RoundedCornerShape(8.dp)).clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         RadioButton(selected = selected == value, onClick = onClick)
@@ -111,8 +115,7 @@ internal fun ChoiceRow(
         Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-            maxItemsInEachRow = 3
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             options.forEach { (value, label) ->
                 FilterChip(
@@ -132,8 +135,8 @@ internal fun SettingsGroup(
     content: @Composable ColumnScope.() -> Unit
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Text(
             title,
@@ -162,14 +165,14 @@ internal fun SettingToggle(
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
+            .padding(horizontal = 8.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(
-            modifier = Modifier.weight(1f)
-                .clip(RoundedCornerShape(18.dp))
-                .clickable { onCheckedChange(!checked) }
-                .padding(start = 0.dp, top = 9.dp, end = 14.dp, bottom = 9.dp),
+            modifier = Modifier.weight(1f).padding(end = 14.dp),
             verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
             Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
@@ -183,7 +186,7 @@ internal fun SettingToggle(
                 )
             }
         }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 
@@ -195,8 +198,10 @@ internal fun SettingAction(
     onClick: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(
