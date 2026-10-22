@@ -56,6 +56,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
@@ -94,6 +95,8 @@ internal fun HomeScreen(
     onSolarInfoChange: (WeatherInfo?) -> Unit
 ) {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val homeVerticalGap = (configuration.screenHeightDp.dp * 0.28f).coerceIn(120.dp, 225.dp)
     val lifecycleOwner = LocalLifecycleOwner.current
     val haptic = LocalHapticFeedback.current
     val currentOpenSettings by rememberUpdatedState(onOpenSettings)
@@ -229,7 +232,7 @@ internal fun HomeScreen(
                     if (preferences.doubleTapToLock) currentLockScreen()
                 }
             )
-            .padding(start = 26.dp, top = 6.dp, end = 26.dp, bottom = 8.dp),
+            .padding(start = HomeDesign.horizontalInset, top = HomeDesign.topInset, end = HomeDesign.horizontalInset, bottom = HomeDesign.bottomInset),
         verticalArrangement = Arrangement.Top
     ) {
         HomeHeader(
@@ -248,11 +251,11 @@ internal fun HomeScreen(
 
         val showStatusWidgets = preferences.showWeather || preferences.showBattery || preferences.showCalendarShortcut
         if (showStatusWidgets) {
-            Spacer(Modifier.height(2.dp))
+            Spacer(Modifier.height(HomeDesign.headerToStatus))
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(HomeDesign.statusRowGap),
                 itemVerticalAlignment = Alignment.CenterVertically
             ) {
                 if (preferences.showBattery) {
@@ -293,7 +296,7 @@ internal fun HomeScreen(
         }
 
         if (preferences.showMusic) {
-            if (showStatusWidgets) Spacer(Modifier.height(2.dp))
+            if (showStatusWidgets) Spacer(Modifier.height(HomeDesign.statusToMusic))
             MusicPlayerWidget(
                 modifier = Modifier.fillMaxWidth(),
                 onOpenMusicApp = { openMusicPlayer(context, apps) }
@@ -307,7 +310,7 @@ internal fun HomeScreen(
         }
         val latestOrderedMainItemIds = rememberUpdatedState(orderedMainItemIds)
         val latestMoveHomeItem = rememberUpdatedState(onMoveHomeItem)
-        Spacer(Modifier.height(225.dp))
+        Spacer(Modifier.height(homeVerticalGap))
         orderedMainItemIds.forEach { itemId ->
             val app = favoriteAppsByPackage[itemId]
             val label = app?.label.orEmpty()
@@ -325,22 +328,22 @@ internal fun HomeScreen(
                                 }
                             }
                         )
-                        .padding(vertical = 8.dp),
+                        .padding(vertical = HomeDesign.favoriteVerticalPadding),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (app != null && preferences.showAppIcons) {
-                        AppIcon(app, preferences.iconPack, size = 19.dp, iconShape = preferences.iconShape)
+                        AppIcon(app, preferences.iconPack, size = HomeDesign.appIconSize, iconShape = preferences.iconShape)
                     }
                     Text(
                         text = label,
                         color = primaryText,
-                        fontSize = 25.sp,
-                        lineHeight = 32.sp,
+                        fontSize = HomeDesign.favoriteSize,
+                        lineHeight = HomeDesign.favoriteLineHeight,
                         fontFamily = fontFamily,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
-                            .padding(start = if (app != null && preferences.showAppIcons) 9.dp else 0.dp)
+                            .padding(start = if (app != null && preferences.showAppIcons) HomeDesign.appIconLabelGap else 0.dp)
                     )
                     if (app != null && preferences.notificationDotsEnabled &&
                         app.packageName in preferences.notificationDotPackages &&
@@ -357,7 +360,7 @@ internal fun HomeScreen(
                         if (notificationCount > 1) {
                             Box(
                                 modifier = Modifier.padding(start = 6.dp)
-                                    .widthIn(min = 18.dp).height(18.dp)
+                                    .widthIn(min = HomeDesign.notificationBadgeHeight).height(HomeDesign.notificationBadgeHeight)
                                     .background(notificationDotColor, RoundedCornerShape(9.dp))
                                     .padding(horizontal = 4.dp),
                                 contentAlignment = Alignment.Center
@@ -373,7 +376,7 @@ internal fun HomeScreen(
                         } else {
                             Box(
                                 modifier = Modifier.padding(start = 6.dp)
-                                    .size(6.dp)
+                                    .size(HomeDesign.notificationDotSize)
                                     .background(notificationDotColor, CircleShape)
                             )
                         }
