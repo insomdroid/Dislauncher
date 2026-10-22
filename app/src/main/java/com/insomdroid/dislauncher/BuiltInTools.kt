@@ -336,7 +336,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                                     else -> requestClose()
                                 }
                             }) {
-                                Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                                Icon(Icons.Outlined.ArrowBack, contentDescription = builtInToolText("Back", "Kembali"))
                             }
                         },
                         actions = {
@@ -346,11 +346,11 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                                         onClick = { calculatorClearHistorySignal++ },
                                         enabled = calculatorHistoryHasItems
                                     ) {
-                                        Icon(Icons.Outlined.DeleteOutline, contentDescription = "Clear calculator history")
+                                        Icon(Icons.Outlined.DeleteOutline, contentDescription = builtInToolText("Clear calculator history", "Hapus riwayat kalkulator"))
                                     }
                                 } else {
                                     IconButton(onClick = { calculatorShowingHistory = true }) {
-                                        Icon(Icons.Outlined.History, contentDescription = "Open calculator history")
+                                        Icon(Icons.Outlined.History, contentDescription = builtInToolText("Open calculator history", "Buka riwayat kalkulator"))
                                     }
                                 }
                             }
@@ -506,7 +506,7 @@ private fun NotesTool(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
                         modifier = Modifier.weight(1f),
-                        placeholder = { Text("Search notes") },
+                        placeholder = { Text(builtInToolText("Search notes", "Cari catatan")) },
                         leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
                         singleLine = true,
                         shape = RoundedCornerShape(16.dp)
@@ -515,7 +515,7 @@ private fun NotesTool(
                         onClick = { importLauncher.launch(arrayOf("text/markdown", "text/plain", "application/octet-stream")) },
                         modifier = Modifier.size(48.dp)
                     ) {
-                        Icon(Icons.Outlined.FileOpen, contentDescription = "Import Markdown file")
+                        Icon(Icons.Outlined.FileOpen, contentDescription = builtInToolText("Import Markdown file", "Impor berkas Markdown"))
                     }
                 }
                 val visibleNotes = notes.filter {
@@ -587,7 +587,7 @@ private fun NotesTool(
                                                 }
                                             )
                                             DropdownMenuItem(
-                                                text = { Text("Delete") },
+                                                text = { Text(builtInToolText("Delete", "Hapus")) },
                                                 leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null) },
                                                 onClick = { deleteTarget = note.id; noteMenuTarget = null }
                                             )
@@ -628,16 +628,16 @@ private fun NotesTool(
                             Icon(Icons.Outlined.MoreVert, contentDescription = "More note actions")
                         }
                         DropdownMenu(expanded = editorMenuExpanded, onDismissRequest = { editorMenuExpanded = false }) {
-                            DropdownMenuItem(text = { Text("Export Markdown") }, leadingIcon = { Icon(Icons.Outlined.FileDownload, contentDescription = null) }, onClick = {
+                            DropdownMenuItem(text = { Text(builtInToolText("Export Markdown", "Ekspor Markdown")) }, leadingIcon = { Icon(Icons.Outlined.FileDownload, contentDescription = null) }, onClick = {
                                 editorMenuExpanded = false
                                 exportNote(title, body)
                             })
-                            DropdownMenuItem(text = { Text("Import Markdown") }, leadingIcon = { Icon(Icons.Outlined.FileOpen, contentDescription = null) }, onClick = {
+                            DropdownMenuItem(text = { Text(builtInToolText("Import Markdown", "Impor Markdown")) }, leadingIcon = { Icon(Icons.Outlined.FileOpen, contentDescription = null) }, onClick = {
                                 editorMenuExpanded = false
                                 importLauncher.launch(arrayOf("text/markdown", "text/plain", "application/octet-stream"))
                             })
                             DropdownMenuItem(
-                                text = { Text("Delete note") },
+                                text = { Text(builtInToolText("Delete note", "Hapus catatan")) },
                                 leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null) },
                                 onClick = { editorMenuExpanded = false; deleteTarget = selectedId }
                             )
@@ -646,7 +646,7 @@ private fun NotesTool(
                 }
                 OutlinedTextField(
                     value = title, onValueChange = { title = it }, modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Title (optional)") }, singleLine = true,
+                    placeholder = { Text(builtInToolText("Title (optional)", "Judul (opsional)")) }, singleLine = true,
                     textStyle = MaterialTheme.typography.titleLarge, readOnly = previewMode
                 )
                 if (previewMode) {
@@ -684,7 +684,7 @@ private fun NotesTool(
                             value = bodyField,
                             onValueChange = { bodyField = it; body = it.text },
                             modifier = Modifier.fillMaxSize(),
-                            placeholder = { Text("Write Markdown here…") },
+                            placeholder = { Text(builtInToolText("Write Markdown here…", "Tulis Markdown di sini…")) },
                             minLines = 8, maxLines = Int.MAX_VALUE
                         )
                         Surface(
@@ -760,8 +760,8 @@ private fun NotesTool(
     if (deleteTarget != null) {
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text("Delete note?") },
-            text = { Text("This note will be permanently deleted from this device.") },
+            title = { Text(builtInToolText("Delete note?", "Hapus catatan?")) },
+            text = { Text(builtInToolText("This note will be permanently deleted from this device.", "Catatan ini akan dihapus permanen dari perangkat.")) },
             confirmButton = {
                 TextButton(onClick = {
                     notes = notes.filterNot { it.id == deleteTarget }
@@ -775,7 +775,7 @@ private fun NotesTool(
                     onEditingChanged(false)
                 }) { Text("Delete") }
             },
-            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text(builtInToolText("Cancel", "Batal")) } }
         )
     }
 }
@@ -1036,14 +1036,14 @@ private fun CalculatorTool(
     if (showClearHistoryDialog) {
         AlertDialog(
             onDismissRequest = { showClearHistoryDialog = false },
-            title = { Text("Clear calculator history?") },
-            text = { Text("Saved calculations will be removed from this device.") },
+            title = { Text(builtInToolText("Clear calculator history?", "Hapus riwayat kalkulator?")) },
+            text = { Text(builtInToolText("Saved calculations will be removed from this device.", "Perhitungan tersimpan akan dihapus dari perangkat ini.")) },
             confirmButton = {
                 TextButton(onClick = {
                     history = emptyList()
                     saveCalculatorHistory(context, history)
                     showClearHistoryDialog = false
-                }) { Text("Clear") }
+                }) { Text(builtInToolText("Clear", "Bersihkan")) }
             },
             dismissButton = { TextButton(onClick = { showClearHistoryDialog = false }) { Text("Cancel") } }
         )
@@ -1265,10 +1265,10 @@ private fun CalendarTool(context: Context, onBackRequested: () -> Unit, modifier
                     style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                 IconButton(onClick = { month = month.minusMonths(1); selectedDate = month.atDay(1) }) {
-                    Icon(Icons.Outlined.ArrowBack, contentDescription = "Previous month")
+                    Icon(Icons.Outlined.ArrowBack, contentDescription = builtInToolText("Previous month", "Bulan sebelumnya"))
                 }
                 IconButton(onClick = { month = month.plusMonths(1); selectedDate = month.atDay(1) }) {
-                    Icon(Icons.Outlined.ArrowForward, contentDescription = "Next month")
+                    Icon(Icons.Outlined.ArrowForward, contentDescription = builtInToolText("Next month", "Bulan berikutnya"))
                 }
             }
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -1355,7 +1355,7 @@ private fun CalendarTool(context: Context, onBackRequested: () -> Unit, modifier
         }
         if (!calendarPermission) {
             TextButton(onClick = { calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR) }) {
-                Text("Allow calendar access to show device events")
+                Text(builtInToolText("Allow calendar access to show device events", "Izinkan akses kalender untuk menampilkan acara perangkat"))
             }
         }
         if (dayTasks.isEmpty() && dayEvents.isEmpty()) {
@@ -1390,7 +1390,7 @@ private fun CalendarTool(context: Context, onBackRequested: () -> Unit, modifier
                                 saveTasks(context, tasks)
                             })
                         } else {
-                            Icon(Icons.Outlined.Notifications, contentDescription = "Reminder",
+                            Icon(Icons.Outlined.Notifications, contentDescription = builtInToolText("Reminder", "Pengingat"),
                                 tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 10.dp))
                         }
                         Column(Modifier.weight(1f).padding(vertical = 2.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -1409,7 +1409,7 @@ private fun CalendarTool(context: Context, onBackRequested: () -> Unit, modifier
                             }
                         }
                         IconButton(onClick = { deleteTarget = task }) {
-                            Icon(Icons.Outlined.DeleteOutline, contentDescription = "Delete task",
+                            Icon(Icons.Outlined.DeleteOutline, contentDescription = builtInToolText("Delete task", "Hapus tugas"),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
@@ -1422,17 +1422,17 @@ private fun CalendarTool(context: Context, onBackRequested: () -> Unit, modifier
             modifier = Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 24.dp),
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        ) { Icon(Icons.Outlined.Add, contentDescription = "Add task") }
+        ) { Icon(Icons.Outlined.Add, contentDescription = builtInToolText("Add task", "Tambah tugas")) }
     }
 
     if (showEditor) {
         AlertDialog(
             onDismissRequest = { showEditor = false },
-            title = { Text("New task") },
+            title = { Text(builtInToolText("New task", "Tugas baru")) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedTextField(value = title, onValueChange = { title = it },
-                        modifier = Modifier.fillMaxWidth(), label = { Text("Title") }, singleLine = true)
+                        modifier = Modifier.fillMaxWidth(), label = { Text(builtInToolText("Title", "Judul")) }, singleLine = true)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         if (type == "todo") {
                             Button(
@@ -1529,7 +1529,7 @@ private fun CalendarTool(context: Context, onBackRequested: () -> Unit, modifier
                             }
                         }
                     }
-                }) { Text("Save") }
+                }) { Text(builtInToolText("Save", "Simpan")) }
             },
             dismissButton = { TextButton(onClick = { showEditor = false }) { Text("Cancel") } }
         )
@@ -1609,8 +1609,8 @@ private fun CalendarTool(context: Context, onBackRequested: () -> Unit, modifier
     if (deleteTarget != null) {
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text("Delete task?") },
-            text = { Text("This task will be removed from your local calendar.") },
+            title = { Text(builtInToolText("Delete task?", "Hapus tugas?")) },
+            text = { Text(builtInToolText("This task will be removed from your local calendar.", "Tugas ini akan dihapus dari kalender lokal Anda.")) },
             confirmButton = {
                 TextButton(onClick = {
                     val task = deleteTarget
