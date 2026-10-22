@@ -34,6 +34,7 @@ internal object NotificationDotState {
     internal fun onListenerDisconnected(service: DislauncherNotificationListener) {
         if (listener === service) {
             listener = null
+            notificationCounts.clear()
         }
     }
 
@@ -41,7 +42,7 @@ internal object NotificationDotState {
         val nextCounts = notifications
             .orEmpty()
             .asSequence()
-            .map(StatusBarNotification::getPackageName)
+            .map { it.packageName }
             .groupingBy { it }
             .eachCount()
 
