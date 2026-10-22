@@ -702,7 +702,7 @@ internal fun AppsScreen(
             text = {
                 OutlinedTextField(
                     value = newFolderName,
-                    onValueChange = { newFolderName = it.filterNot { ch -> ch == '\t' || ch == '\n' }.take(32) }
+                    onValueChange = { newFolderName = it.filterNot { ch -> ch == '\t' || ch == '\n' }.take(32) },
                     singleLine = true,
                     label = { Text("Folder name") }
                 )
