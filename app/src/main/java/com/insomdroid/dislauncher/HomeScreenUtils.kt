@@ -3,6 +3,8 @@ package com.insomdroid.dislauncher
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.service.notification.NotificationListenerService
+import android.service.notification.StatusBarNotification
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -45,10 +47,38 @@ internal fun formatHomeDate(date: LocalDate): String {
 
 internal object NotificationDotState {
     private val counts = androidx.compose.runtime.mutableStateMapOf<String, Int>()
+    @Volatile internal var listener: DislauncherNotificationListener? = null
     val activePackages: Set<String> get() = counts.filterValues { it > 0 }.keys.toSet()
     fun countFor(packageName: String): Int = counts[packageName] ?: 0
+    fun refresh() { listener?.refreshNow() }
     internal fun setCounts(next: Map<String, Int>) {
         counts.clear()
         counts.putAll(next)
+    }
+}
+
+
+internal class DislauncherNotificationListener : NotificationListenerService() {
+    override fun onListenerConnected() {
+        super.onListenerConnected()
+        NotificationDotState.listener = this
+        refreshNow()
+    }
+
+    override fun onListenerDisconnected() {
+        NotificationDotState.setCounts(emptyMap())
+        NotificationDotState.listener = null
+        super.onListenerDisconnected()
+    }
+
+    override fun onNotificationPosted(sbn: StatusBarNotification?) = refreshNow()
+    override fun onNotificationRemoved(sbn: StatusBarNotification?) = refreshNow()
+
+    internal fun refreshNow() {
+        val counts = activeNotifications.orEmpty()
+            .filterNot { it.isOngoing || !it.isClearable }
+            .groupingBy { it.packageName }
+            .eachCount()
+        NotificationDotState.setCounts(counts)
     }
 }
