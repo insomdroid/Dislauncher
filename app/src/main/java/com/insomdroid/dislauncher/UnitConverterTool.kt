@@ -122,7 +122,7 @@ internal fun UnitConverterTool(modifier: Modifier = Modifier) {
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.compact)) {
             Text(
                 builtInToolText("Category", "Kategori"),
                 style = MaterialTheme.typography.labelLarge,
@@ -140,7 +140,7 @@ internal fun UnitConverterTool(modifier: Modifier = Modifier) {
             )
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.compact)) {
             Text(
                 builtInToolText("From", "Dari"),
                 style = MaterialTheme.typography.labelLarge,
@@ -189,7 +189,7 @@ internal fun UnitConverterTool(modifier: Modifier = Modifier) {
             }
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.compact)) {
             Text(
                 builtInToolText("Result", "Hasil"),
                 style = MaterialTheme.typography.labelLarge,
