@@ -547,6 +547,31 @@ private fun NotesTool(
                             Icon(Icons.Outlined.MoreVert, contentDescription = "More note actions")
                         }
                         DropdownMenu(expanded = editorMenuExpanded, onDismissRequest = { editorMenuExpanded = false }) {
+                            DropdownMenuItem(text = { Text("Heading") }, onClick = {
+                                editorMenuExpanded = false
+                                body += if (body.isBlank()) "# " else "\n# "
+                                saveCurrent()
+                            })
+                            DropdownMenuItem(text = { Text("Bold") }, onClick = {
+                                editorMenuExpanded = false
+                                body += if (body.isBlank()) "**bold**" else "\n**bold**"
+                                saveCurrent()
+                            })
+                            DropdownMenuItem(text = { Text("Bullet list") }, onClick = {
+                                editorMenuExpanded = false
+                                body += if (body.isBlank()) "- " else "\n- "
+                                saveCurrent()
+                            })
+                            DropdownMenuItem(text = { Text("Checklist") }, onClick = {
+                                editorMenuExpanded = false
+                                body += if (body.isBlank()) "- [ ] " else "\n- [ ] "
+                                saveCurrent()
+                            })
+                            DropdownMenuItem(text = { Text("Link") }, onClick = {
+                                editorMenuExpanded = false
+                                body += if (body.isBlank()) "[link](https://)" else "\n[link](https://)"
+                                saveCurrent()
+                            })
                             DropdownMenuItem(
                                 text = { Text("Insert image") },
                                 onClick = {
@@ -573,20 +598,6 @@ private fun NotesTool(
                         items(body.lines().ifEmpty { listOf("") }) { line -> MarkdownPreviewLine(line) }
                     }
                 } else {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        TextButton(onClick = { body += if (body.isBlank()) "# " else "\n# " }) { Text("H") }
-                        TextButton(onClick = { body += if (body.isBlank()) "**bold**" else "\n**bold**" }) { Text("B") }
-                        TextButton(onClick = { body += if (body.isBlank()) "- " else "\n- " }) { Text("List") }
-                        TextButton(onClick = { body += if (body.isBlank()) "- [ ] " else "\n- [ ] " }) { Text("Checklist") }
-                        TextButton(onClick = { body += if (body.isBlank()) "[link](https://)" else "\n[link](https://)" }) { Text("Link") }
-                        IconButton(onClick = { imageLauncher.launch(arrayOf("image/*")) }) {
-                            Icon(Icons.Outlined.Add, contentDescription = "Insert image")
-                        }
-                    }
                     OutlinedTextField(
                         value = body, onValueChange = { body = it; saveCurrent() },
                         modifier = Modifier.weight(1f).fillMaxWidth(), placeholder = { Text("Write Markdown here…") },
