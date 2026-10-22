@@ -607,7 +607,7 @@ private fun NotesTool(
                 )
                 if (previewMode) {
                     val markdownRenderer = remember(context) { Markwon.builder(context)
-                        .usePlugin(ImagesPlugin.create(context))
+                        .usePlugin(ImagesPlugin.create())
                         .usePlugin(TablePlugin.create(context))
                         .usePlugin(StrikethroughPlugin.create())
                         .usePlugin(TaskListPlugin.create(context))
