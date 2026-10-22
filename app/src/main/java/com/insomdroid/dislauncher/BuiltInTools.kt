@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
@@ -502,7 +503,8 @@ private fun NotesTool(
                     LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         items(visibleNotes, key = { it.id }) { note ->
                             Column(Modifier.fillMaxWidth()) {
-                                Row(Modifier.fillMaxWidth().clickable { openNote(note) }.padding(horizontal = 4.dp, vertical = 10.dp),
+                                Row(Modifier.fillMaxWidth().heightIn(min = 88.dp).clip(RoundedCornerShape(8.dp))
+                                    .clickable { openNote(note) }.padding(horizontal = 8.dp, vertical = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f).padding(end = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
