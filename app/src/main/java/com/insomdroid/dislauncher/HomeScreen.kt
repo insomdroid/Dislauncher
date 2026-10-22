@@ -356,9 +356,8 @@ internal fun HomeScreen(
                         Box(
                             modifier = Modifier
                                 .padding(start = 6.dp)
-                                .size(7.dp)
+                                .size(6.dp)
                                 .background(notificationDotColor, CircleShape)
-                                .border(1.dp, MaterialTheme.colorScheme.background.copy(alpha = 0.65f), CircleShape)
                         )
                     }
                     if (movingFavoriteId == itemId) {
