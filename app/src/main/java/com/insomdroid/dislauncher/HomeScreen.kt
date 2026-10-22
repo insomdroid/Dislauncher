@@ -7,7 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -30,6 +30,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.DragIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -118,6 +122,7 @@ internal fun HomeScreen(
     val favoriteAppsByPackage = remember(visibleFavorites) { visibleFavorites.associateBy { it.packageName } }
     var draggingMainItem by remember { mutableStateOf<String?>(null) }
     var dragDistance by remember { mutableFloatStateOf(0f) }
+    var selectedFavoriteMenu by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(isActive, hostResumed, preferences.showBattery) {
         if (!isActive || !hostResumed) return@LaunchedEffect
@@ -303,41 +308,15 @@ internal fun HomeScreen(
                 Row(
                     modifier = Modifier.fillMaxWidth()
                         .alpha(if (draggingMainItem == itemId) 0.62f else 1f)
-                        .pointerInput(itemId) {
-                            detectDragGesturesAfterLongPress(
-                                onDragStart = {
-                                    draggingMainItem = itemId
-                                    dragDistance = 0f
+                        .combinedClickable(
+                            onClick = { app?.let(onLaunch) },
+                            onLongClick = {
+                                if (app != null) {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                },
-                                onDragEnd = {
-                                    draggingMainItem = null
-                                    dragDistance = 0f
-                                },
-                                onDragCancel = {
-                                    draggingMainItem = null
-                                    dragDistance = 0f
-                                },
-                                onDrag = { change, dragAmount ->
-                                    change.consume()
-                                    dragDistance += dragAmount.y
-                                    val threshold = 28.dp.toPx()
-                                    if (kotlin.math.abs(dragDistance) >= threshold) {
-                                        val order = latestOrderedMainItemIds.value
-                                        val current = order.indexOf(itemId)
-                                        val direction = if (dragDistance > 0f) 1 else -1
-                                        val target = order.getOrNull(current + direction)
-                                        if (target != null) {
-                                            latestMoveHomeItem.value(itemId, target)
-                                            dragDistance -= direction * threshold
-                                        } else {
-                                            dragDistance = 0f
-                                        }
-                                    }
+                                    selectedFavoriteMenu = itemId
                                 }
-                            )
-                        }
-                        .clickable { app?.let(onLaunch) }
+                            }
+                        )
                         .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -373,6 +352,75 @@ internal fun HomeScreen(
                                 .background(notificationDotColor, CircleShape)
                                 .border(1.dp, MaterialTheme.colorScheme.background.copy(alpha = 0.65f), CircleShape)
                         )
+                    }
+                    Box {
+                        Icon(
+                            imageVector = Icons.Filled.DragIndicator,
+                            contentDescription = "Reorder favourite",
+                            tint = secondaryText.copy(alpha = 0.72f),
+                            modifier = Modifier.size(24.dp)
+                                .pointerInput(itemId) {
+                                    detectDragGestures(
+                                        onDragStart = {
+                                            draggingMainItem = itemId
+                                            dragDistance = 0f
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        },
+                                        onDragEnd = {
+                                            draggingMainItem = null
+                                            dragDistance = 0f
+                                        },
+                                        onDragCancel = {
+                                            draggingMainItem = null
+                                            dragDistance = 0f
+                                        },
+                                        onDrag = { change, dragAmount ->
+                                            change.consume()
+                                            dragDistance += dragAmount.y
+                                            val threshold = 28.dp.toPx()
+                                            if (kotlin.math.abs(dragDistance) >= threshold) {
+                                                val order = latestOrderedMainItemIds.value
+                                                val current = order.indexOf(itemId)
+                                                val direction = if (dragDistance > 0f) 1 else -1
+                                                val target = order.getOrNull(current + direction)
+                                                if (target != null) {
+                                                    latestMoveHomeItem.value(itemId, target)
+                                                    dragDistance -= direction * threshold
+                                                } else {
+                                                    dragDistance = 0f
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
+                        )
+                        DropdownMenu(
+                            expanded = selectedFavoriteMenu == itemId,
+                            onDismissRequest = { selectedFavoriteMenu = null }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Open") },
+                                onClick = { selectedFavoriteMenu = null; app?.let(onLaunch) }
+                            )
+                            if (app != null) {
+                                DropdownMenuItem(
+                                    text = { Text("App info") },
+                                    onClick = {
+                                        selectedFavoriteMenu = null
+                                        openApplicationInfo(context, app)
+                                    }
+                                )
+                                if (!app.isSystem) {
+                                    DropdownMenuItem(
+                                        text = { Text("Uninstall") },
+                                        onClick = {
+                                            selectedFavoriteMenu = null
+                                            requestUninstall(context, app)
+                                        }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
