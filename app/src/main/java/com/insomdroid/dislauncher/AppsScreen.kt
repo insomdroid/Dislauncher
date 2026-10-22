@@ -43,6 +43,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Calculate
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -298,28 +301,77 @@ internal fun AppsScreen(
                     }
                 }
                 items(filtered, key = { it.packageName }) { app ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().combinedClickable(
-                            onClick = { onLaunch(app) },
-                            onLongClick = { if (!app.packageName.startsWith("internal:")) selectedApp = app }
-                        ).padding(vertical = 8.dp, horizontal = 0.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (preferences.showAppIcons) {
-                            AppIcon(app, preferences.iconPack, size = 18.dp, iconShape = preferences.iconShape)
-                            Spacer(Modifier.width(9.dp))
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().combinedClickable(
+                                onClick = { onLaunch(app) },
+                                onLongClick = { if (!app.packageName.startsWith("internal:")) selectedApp = app }
+                            ).padding(vertical = 8.dp, horizontal = 0.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (preferences.showAppIcons) {
+                                AppIcon(app, preferences.iconPack, size = 18.dp, iconShape = preferences.iconShape)
+                                Spacer(Modifier.width(9.dp))
+                            }
+                            Text(
+                                app.label,
+                                color = mainText,
+                                fontSize = 25.sp,
+                                lineHeight = 32.sp,
+                                fontFamily = fontFamily,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                                    .padding(start = if (preferences.showAppIcons) 0.dp else 20.dp)
+                            )
                         }
-                        Text(
-                            app.label,
-                            color = mainText,
-                            fontSize = 25.sp,
-                            lineHeight = 32.sp,
-                            fontFamily = fontFamily,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
-                                .padding(start = if (preferences.showAppIcons) 0.dp else 20.dp)
-                        )
+                        DropdownMenu(
+                            expanded = selectedApp?.packageName == app.packageName,
+                            onDismissRequest = { selectedApp = null }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Open") },
+                                onClick = { selectedApp = null; onLaunch(app) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Rename") },
+                                onClick = {
+                                    renameValue = app.label
+                                    renamingApp = app
+                                    selectedApp = null
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Text(if (app.packageName in favorites) "Remove from favourites" else "Add to favourites")
+                                },
+                                onClick = { selectedApp = null; onToggleFavorite(app.packageName) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Add to Folders") },
+                                onClick = { selectedFolderApp = app; selectedApp = null }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Hide from launcher") },
+                                onClick = { selectedApp = null; onToggleHidden(app.packageName) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("App info") },
+                                onClick = {
+                                    selectedApp = null
+                                    openApplicationInfo(context, app)
+                                }
+                            )
+                            if (!app.isSystem) {
+                                DropdownMenuItem(
+                                    text = { Text("Uninstall") },
+                                    onClick = {
+                                        selectedApp = null
+                                        requestUninstall(context, app)
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
                 if (showSettingsEntry) {
@@ -569,43 +621,60 @@ internal fun AppsScreen(
                 assignment.startsWith(app.packageName + "\t") && assignment.substringAfter("\t", "") == folder
             } && !app.packageName.startsWith("internal:")
         }.sortedBy { it.label.lowercase(Locale.getDefault()) }
-        AlertDialog(
-            onDismissRequest = { selectedFolder = null },
-            title = { Text(folder) },
-            text = {
-                Column(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp)
-                        .verticalScroll(androidx.compose.foundation.rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
+        ModalBottomSheet(
+            onDismissRequest = { selectedFolder = null }
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp)
+                    .verticalScroll(androidx.compose.foundation.rememberScrollState())
+                    .padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    androidx.compose.material3.HorizontalDivider(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
-                        thickness = 1.dp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    if (folderApps.isEmpty()) {
-                        Text("This folder is empty.", color = secondary, modifier = Modifier.padding(vertical = 12.dp))
-                    }
-                    folderApps.forEach { folderApp ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().clickable {
-                                selectedFolder = null
-                                onLaunch(folderApp)
-                            }.padding(vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            if (preferences.showAppIcons) {
-                                AppIcon(folderApp, preferences.iconPack, size = 18.dp, iconShape = preferences.iconShape)
-                                Spacer(Modifier.width(9.dp))
-                            }
-                            Text(folderApp.label, color = mainText, fontSize = 25.sp, lineHeight = 32.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(folder, style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            "${folderApps.size} apps",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall
+                        )
                     }
                 }
-            },
-            confirmButton = { TextButton(onClick = { selectedFolder = null }) { Text("Done") } }
-        )
+                if (folderApps.isEmpty()) {
+                    Text(
+                        "This folder is empty.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                }
+                folderApps.forEach { folderApp ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable {
+                            selectedFolder = null
+                            onLaunch(folderApp)
+                        }.padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (preferences.showAppIcons) {
+                            AppIcon(folderApp, preferences.iconPack, size = 20.dp, iconShape = preferences.iconShape)
+                            Spacer(Modifier.width(12.dp))
+                        }
+                        Text(
+                            folderApp.label,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = MaterialTheme.typography.bodyLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
     }
+    
     selectedFolderApp?.let { app ->
         AlertDialog(
             onDismissRequest = { selectedFolderApp = null },
@@ -641,68 +710,6 @@ internal fun AppsScreen(
                 }
             },
             confirmButton = { TextButton(onClick = { selectedFolderApp = null }) { Text("Done") } }
-        )
-    }
-    selectedApp?.let { app ->
-        AlertDialog(
-            onDismissRequest = { selectedApp = null },
-            title = { Text(app.label) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    TextButton(
-                        onClick = { selectedApp = null; onLaunch(app) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text("Open", modifier = Modifier.fillMaxWidth()) }
-                    TextButton(
-                        onClick = {
-                            renameValue = app.label
-                            renamingApp = app
-                            selectedApp = null
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text("Rename", modifier = Modifier.fillMaxWidth()) }
-                    TextButton(
-                        onClick = { selectedApp = null; onToggleFavorite(app.packageName) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            if (app.packageName in favorites) "Remove from favourites" else "Add to favourites",
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                    TextButton(
-                        onClick = { selectedFolderApp = app; selectedApp = null },
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text("Add to Folders", modifier = Modifier.fillMaxWidth()) }
-                    TextButton(
-                        onClick = { selectedApp = null; onToggleHidden(app.packageName) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            "Hide from launcher",
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                    TextButton(
-                        onClick = {
-                            selectedApp = null
-                            openApplicationInfo(context, app)
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text("App info", modifier = Modifier.fillMaxWidth()) }
-                    if (!app.isSystem) {
-                        TextButton(
-                            onClick = {
-                                selectedApp = null
-                                requestUninstall(context, app)
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) { Text("Uninstall", modifier = Modifier.fillMaxWidth()) }
-                    }
-                }
-            },
-            confirmButton = { TextButton(onClick = { selectedApp = null }) { Text("Done") }
-            }
         )
     }
     renamingApp?.let { app ->
