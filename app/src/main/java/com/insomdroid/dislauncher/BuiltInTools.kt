@@ -827,7 +827,7 @@ private fun readDeviceCalendarEvents(context: Context, start: LocalDate, endExcl
     try {
         context.contentResolver.query(uri, arrayOf(CalendarContract.Instances.EVENT_ID, CalendarContract.Instances.TITLE,
             CalendarContract.Instances.BEGIN, CalendarContract.Instances.END, CalendarContract.Instances.ALL_DAY),
-            null, null, "\${CalendarContract.Instances.BEGIN} ASC")?.use { cursor ->
+            null, null, "${CalendarContract.Instances.BEGIN} ASC")?.use { cursor ->
             val idIndex = cursor.getColumnIndexOrThrow(CalendarContract.Instances.EVENT_ID)
             val titleIndex = cursor.getColumnIndexOrThrow(CalendarContract.Instances.TITLE)
             val beginIndex = cursor.getColumnIndexOrThrow(CalendarContract.Instances.BEGIN)
@@ -841,7 +841,7 @@ private fun readDeviceCalendarEvents(context: Context, start: LocalDate, endExcl
         }
     } catch (_: SecurityException) { return emptyList() }
       catch (_: IllegalArgumentException) { return emptyList() }
-    return result.distinctBy { "\${it.id}:\${it.begin}" }
+    return result.distinctBy { "${it.id}:${it.begin}" }
 }
 
 private fun openDeviceCalendarEvent(context: Context, event: DeviceCalendarEvent) {
