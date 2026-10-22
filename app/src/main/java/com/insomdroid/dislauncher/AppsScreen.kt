@@ -676,3 +676,18 @@ internal fun AppsScreen(
         }
     }
 }
+
+internal fun openApplicationInfo(context: Context, app: LauncherApp) {
+    val intent = Intent(
+        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+        Uri.parse("package:${app.packageName}")
+    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    context.startActivity(intent)
+}
+
+internal fun requestUninstall(context: Context, app: LauncherApp) {
+    if (app.isSystem) return
+    val intent = Intent(Intent.ACTION_DELETE, Uri.parse("package:${app.packageName}"))
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    context.startActivity(intent)
+}
