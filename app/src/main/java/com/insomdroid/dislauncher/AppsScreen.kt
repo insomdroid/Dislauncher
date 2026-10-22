@@ -159,7 +159,7 @@ internal fun AppsScreen(
         val result = linkedMapOf<String, Int>()
         // Built-in tools occupy one horizontal row in the first list item.
         val installedAppsOffset = (if (filteredBuiltIns.isNotEmpty() || (preferences.showBuiltInApps && !searching)) 1 else 0) +
-            filteredFolders.size + (if (!searching) 1 else 0)
+            filteredFolders.size
         filtered.forEachIndexed { index, app ->
             val letter = app.label.firstOrNull()?.uppercaseChar()?.toString()
                 ?.takeIf { it in allAlphabetLetters } ?: "#"
@@ -189,8 +189,6 @@ internal fun AppsScreen(
     var renameValue by remember { mutableStateOf("") }
     var selectedFolder by remember { mutableStateOf<String?>(null) }
     var selectedFolderApp by remember { mutableStateOf<LauncherApp?>(null) }
-    var showCreateFolder by remember { mutableStateOf(false) }
-    var newFolderName by remember { mutableStateOf("") }
     val context = androidx.compose.ui.platform.LocalContext.current
     LaunchedEffect(isActive, preferences.autoLaunchKeyboard, preferences.showSearchBar) {
         if (isActive && preferences.autoLaunchKeyboard && preferences.showSearchBar) {
@@ -301,23 +299,6 @@ internal fun AppsScreen(
                                 modifier = Modifier.weight(1f)
                             )
                         }
-                    }
-                }
-                if (!searching) item(key = "create-folder-entry") {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().clickable { newFolderName = ""; showCreateFolder = true }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Outlined.Folder, contentDescription = null, tint = secondary, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(9.dp))
-                        Text(
-                            "＋ Create folder",
-                            color = secondary,
-                            fontSize = 15.sp,
-                            fontFamily = fontFamily,
-                            modifier = Modifier.weight(1f)
-                        )
                     }
                 }
                 items(filtered, key = { it.packageName }) { app ->
@@ -672,10 +653,10 @@ internal fun AppsScreen(
                 }
                 folderApps.forEach { folderApp ->
                     Row(
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable {
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(vertical = 6.dp).clickable {
                             selectedFolder = null
                             onLaunch(folderApp)
-                        }.padding(vertical = 6.dp),
+                        },
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (preferences.showAppIcons) {
@@ -693,118 +674,5 @@ internal fun AppsScreen(
                 }
             }
         }
-    }
-    
-    if (showCreateFolder) {
-        AlertDialog(
-            onDismissRequest = { showCreateFolder = false },
-            title = { Text("Create folder") },
-            text = {
-                OutlinedTextField(
-                    value = newFolderName,
-                    onValueChange = { newFolderName = it.filterNot { ch -> ch == '\t' || ch == '\n' }.take(32) },
-                    singleLine = true,
-                    label = { Text("Folder name") }
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    enabled = newFolderName.isNotBlank() &&
-                        preferences.appFolders.none { it.equals(newFolderName.trim(), ignoreCase = true) },
-                    onClick = {
-                        val name = newFolderName.trim()
-                        if (name.isNotEmpty()) {
-                            onPreferencesChange(preferences.copy(appFolders = preferences.appFolders + name))
-                            showCreateFolder = false
-                        }
-                    }
-                ) { Text("Create") }
-            },
-            dismissButton = { TextButton(onClick = { showCreateFolder = false }) { Text("Cancel") } }
-        )
-    }
-    selectedFolderApp?.let { app ->
-        AlertDialog(
-            onDismissRequest = { selectedFolderApp = null },
-            title = { Text("Add to Folders") },
-            text = {
-                Column(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp)
-                        .verticalScroll(androidx.compose.foundation.rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
-                    if (preferences.appFolders.isEmpty()) {
-                        Text("Create a folder in Settings → Apps → Manage folders first.")
-                    } else {
-                        preferences.appFolders.sortedBy { it.lowercase(Locale.getDefault()) }.forEach { folder ->
-                            val isAssigned = preferences.folderAssignments.any {
-                                it.startsWith(app.packageName + "\t") && it.substringAfter("\t", "") == folder
-                            }
-                            TextButton(
-                                onClick = {
-                                    val remaining = preferences.folderAssignments.filterNot {
-                                        it.startsWith(app.packageName + "\t")
-                                    }.toMutableSet()
-                                    if (!isAssigned) remaining.add(app.packageName + "\t" + folder)
-                                    onPreferencesChange(preferences.copy(folderAssignments = remaining))
-                                    selectedFolderApp = null
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text((if (isAssigned) "✓ " else "") + folder, modifier = Modifier.fillMaxWidth())
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = { TextButton(onClick = { selectedFolderApp = null }) { Text("Done") } }
-        )
-    }
-    renamingApp?.let { app ->
-        AlertDialog(
-            onDismissRequest = { renamingApp = null },
-            title = { Text("Rename app") },
-            text = {
-                OutlinedTextField(
-                    value = renameValue,
-                    onValueChange = { renameValue = it.take(60) },
-                    singleLine = true,
-                    label = { Text("App name") }
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    enabled = renameValue.isNotBlank(),
-                    onClick = {
-                        onRenameApp(app.packageName, renameValue)
-                        renamingApp = null
-                    }
-                ) { Text("Save") }
-            },
-            dismissButton = {
-                TextButton(onClick = { renamingApp = null }) { Text("Cancel") }
-            }
-        )
-    }
-
-}
-
-
-private fun openApplicationInfo(context: Context, app: LauncherApp) {
-    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${app.packageName}"))
-    runCatching { context.startActivity(intent) }
-}
-
-private fun requestUninstall(context: Context, app: LauncherApp) {
-    val intent = Intent(Intent.ACTION_UNINSTALL_PACKAGE).apply {
-        data = Uri.parse("package:${app.packageName}")
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    }
-    runCatching { context.startActivity(intent) }.onFailure {
-        android.widget.Toast.makeText(
-            context,
-            "Unable to open the system uninstaller.",
-            android.widget.Toast.LENGTH_LONG
-        ).show()
     }
 }
