@@ -111,6 +111,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import io.noties.markwon.Markwon
+import io.noties.markwon.ext.tables.TablesPlugin
+import io.noties.markwon.ext.strikethrough.StrikethroughPlugin
+import io.noties.markwon.ext.tasklist.TaskListPlugin
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.LocalDate
@@ -594,7 +597,11 @@ private fun NotesTool(
                     textStyle = MaterialTheme.typography.titleLarge, readOnly = previewMode
                 )
                 if (previewMode) {
-                    val markdownRenderer = remember(context) { Markwon.create(context) }
+                    val markdownRenderer = remember(context) { Markwon.builder(context)
+                        .usePlugin(TablesPlugin.create(context))
+                        .usePlugin(StrikethroughPlugin.create())
+                        .usePlugin(TaskListPlugin.create(context))
+                        .build() }
                     AndroidView(
                         factory = { viewContext -> TextView(viewContext).apply { setPadding(8, 8, 8, 8); textSize = 16f } },
                         update = { textView ->
