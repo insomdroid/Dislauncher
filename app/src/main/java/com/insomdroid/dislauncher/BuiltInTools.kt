@@ -610,19 +610,19 @@ private fun NotesTool(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
-                                IconButton(onClick = { body += if (body.isBlank()) "# " else "\n# "; saveCurrent() }) {
+                                IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "# ", ""); body = bodyField.text; saveCurrent() }) {
                                     Icon(Icons.Outlined.Title, contentDescription = "Heading")
                                 }
-                                IconButton(onClick = { body += if (body.isBlank()) "**bold**" else "\n**bold**"; saveCurrent() }) {
+                                IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "**", "**"); body = bodyField.text; saveCurrent() }) {
                                     Icon(Icons.Outlined.FormatBold, contentDescription = "Bold")
                                 }
-                                IconButton(onClick = { body += if (body.isBlank()) "- " else "\n- "; saveCurrent() }) {
+                                IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "- ", ""); body = bodyField.text; saveCurrent() }) {
                                     Icon(Icons.Outlined.FormatListBulleted, contentDescription = "List")
                                 }
-                                IconButton(onClick = { body += if (body.isBlank()) "- [ ] " else "\n- [ ] "; saveCurrent() }) {
+                                IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "- [ ] ", ""); body = bodyField.text; saveCurrent() }) {
                                     Icon(Icons.Outlined.Checklist, contentDescription = "Checklist")
                                 }
-                                IconButton(onClick = { body += if (body.isBlank()) "[link](https://)" else "\n[link](https://)"; saveCurrent() }) {
+                                IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "[", "](https://)"); body = bodyField.text; saveCurrent() }) {
                                     Icon(Icons.Outlined.InsertLink, contentDescription = "Insert link")
                                 }
                                 IconButton(onClick = { imageLauncher.launch(arrayOf("image/*")) }) {
@@ -669,6 +669,25 @@ private fun NotesTool(
             dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancel") } }
         )
     }
+}
+
+
+private fun markdownEdit(field: TextFieldValue, body: String, prefix: String, suffix: String): TextFieldValue {
+    val start = field.selection.min.coerceIn(0, body.length)
+    val end = field.selection.max.coerceIn(start, body.length)
+    if (suffix.isEmpty()) {
+        val lineStart = body.lastIndexOf('\n', (start - 1).coerceAtLeast(0)).let { if (it < 0) 0 else it + 1 }
+        val insertion = if (lineStart == 0) prefix else "\n" + prefix
+        val updated = body.substring(0, lineStart) + insertion + body.substring(lineStart)
+        return TextFieldValue(updated, TextRange(lineStart + insertion.length))
+    }
+    val selected = body.substring(start, end)
+    val inner = selected.ifEmpty { if (prefix == "[") "link" else "text" }
+    val replacement = prefix + inner + suffix
+    val updated = body.substring(0, start) + replacement + body.substring(end)
+    val selection = if (selected.isEmpty()) TextRange(start + prefix.length + inner.length)
+        else TextRange(start + prefix.length, start + prefix.length + selected.length)
+    return TextFieldValue(updated, selection)
 }
 
 @Composable
