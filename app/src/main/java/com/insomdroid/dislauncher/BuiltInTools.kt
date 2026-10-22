@@ -53,6 +53,12 @@ import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Title
+import androidx.compose.material.icons.outlined.FormatBold
+import androidx.compose.material.icons.outlined.FormatListBulleted
+import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.material.icons.outlined.InsertLink
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -580,35 +586,35 @@ private fun NotesTool(
                 )
                 if (!previewMode) {
                     Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerLow
+                        modifier = Modifier.fillMaxWidth().shadow(8.dp, RoundedCornerShape(28.dp)),
+                        shape = RoundedCornerShape(28.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        tonalElevation = 3.dp
                     ) {
                         Row(
-                            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 4.dp),
+                            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
-                            TextButton(
-                                onClick = { body += if (body.isBlank()) "# " else "\n# "; saveCurrent() },
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-                            ) { Text("Heading", maxLines = 1, softWrap = false) }
-                            TextButton(
-                                onClick = { body += if (body.isBlank()) "**bold**" else "\n**bold**"; saveCurrent() },
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-                            ) { Text("Bold", maxLines = 1, softWrap = false) }
-                            TextButton(
-                                onClick = { body += if (body.isBlank()) "- " else "\n- "; saveCurrent() },
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-                            ) { Text("• List", maxLines = 1, softWrap = false) }
-                            TextButton(
-                                onClick = { body += if (body.isBlank()) "- [ ] " else "\n- [ ] "; saveCurrent() },
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-                            ) { Text("Checklist", maxLines = 1, softWrap = false) }
-                            TextButton(
-                                onClick = { body += if (body.isBlank()) "[link](https://)" else "\n[link](https://)"; saveCurrent() },
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-                            ) { Text("Link", maxLines = 1, softWrap = false) }
+                            IconButton(onClick = { body += if (body.isBlank()) "# " else "\n# "; saveCurrent() }) {
+                                Icon(Icons.Outlined.Title, contentDescription = "Heading")
+                            }
+                            IconButton(onClick = { body += if (body.isBlank()) "**bold**" else "\n**bold**"; saveCurrent() }) {
+                                Icon(Icons.Outlined.FormatBold, contentDescription = "Bold")
+                            }
+                            IconButton(onClick = { body += if (body.isBlank()) "- " else "\n- "; saveCurrent() }) {
+                                Icon(Icons.Outlined.FormatListBulleted, contentDescription = "List")
+                            }
+                            IconButton(onClick = { body += if (body.isBlank()) "- [ ] " else "\n- [ ] "; saveCurrent() }) {
+                                Icon(Icons.Outlined.Checklist, contentDescription = "Checklist")
+                            }
+                            IconButton(onClick = { body += if (body.isBlank()) "[link](https://)" else "\n[link](https://)"; saveCurrent() }) {
+                                Icon(Icons.Outlined.InsertLink, contentDescription = "Insert link")
+                            }
+                            IconButton(onClick = { imageLauncher.launch(arrayOf("image/*")) }) {
+                                Icon(Icons.Outlined.Image, contentDescription = "Insert image")
+                            }
                         }
                     }
                 }
