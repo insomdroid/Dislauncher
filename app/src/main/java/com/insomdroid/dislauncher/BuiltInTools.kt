@@ -267,7 +267,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     val title = when (tool) {
         BuiltInTool.NOTES -> if (notesEditing) "Note" else "Notes"
         BuiltInTool.CALCULATOR -> if (calculatorShowingHistory) "History" else "Calculator"
-        BuiltInTool.CALENDAR -> ""
+        BuiltInTool.CALENDAR -> "Calendar"
         BuiltInTool.UNIT_CONVERTER -> "Unit Converter"
     }
     Scaffold(
