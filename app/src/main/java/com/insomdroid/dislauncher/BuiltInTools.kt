@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.ContentUris
 import android.provider.CalendarContract
 import android.content.Intent
+import android.net.Uri
+import android.widget.ImageView
 import android.content.pm.PackageManager
 import android.os.Build
 import android.widget.Toast
@@ -12,6 +14,8 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.text.ClickableText
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -366,6 +370,16 @@ private fun NotesTool(
             Toast.makeText(context, "Markdown exported", Toast.LENGTH_SHORT).show()
         }.onFailure { Toast.makeText(context, "Could not export Markdown file", Toast.LENGTH_LONG).show() }
     }
+    val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null && selectedId != null) runCatching {
+            context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            val markdownImage = "![](<" + uri.toString() + ">)"
+            body = if (body.isBlank()) markdownImage else body + "\n\n" + markdownImage
+            saveCurrent()
+        }.onFailure {
+            Toast.makeText(context, "Could not add image", Toast.LENGTH_LONG).show()
+        }
+    }
 
     fun saveCurrent() {
         val id = selectedId ?: return
@@ -510,18 +524,40 @@ private fun NotesTool(
         } else {
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        if (previewMode) "Preview" else if (title.isBlank()) "New note" else title,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis
+                    )
                     IconButton(onClick = { previewMode = !previewMode }) {
                         Icon(
                             if (previewMode) Icons.Outlined.Edit else Icons.Outlined.Visibility,
                             contentDescription = if (previewMode) "Edit note" else "Preview note"
                         )
                     }
-                    Spacer(Modifier.weight(1f))
                     IconButton(onClick = { exportNote(title, body) }) {
                         Icon(Icons.Outlined.FileDownload, contentDescription = "Export Markdown file")
                     }
-                    IconButton(onClick = { deleteTarget = selectedId }) {
-                        Icon(Icons.Outlined.DeleteOutline, contentDescription = "Delete note")
+                    Box {
+                        var editorMenuExpanded by remember { mutableStateOf(false) }
+                        IconButton(onClick = { editorMenuExpanded = true }) {
+                            Icon(Icons.Outlined.MoreVert, contentDescription = "More note actions")
+                        }
+                        DropdownMenu(expanded = editorMenuExpanded, onDismissRequest = { editorMenuExpanded = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Insert image") },
+                                onClick = {
+                                    editorMenuExpanded = false
+                                    imageLauncher.launch(arrayOf("image/*"))
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Delete note") },
+                                leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null) },
+                                onClick = { editorMenuExpanded = false; deleteTarget = selectedId }
+                            )
+                        }
                     }
                 }
                 OutlinedTextField(
@@ -535,6 +571,20 @@ private fun NotesTool(
                         items(body.lines().ifEmpty { listOf("") }) { line -> MarkdownPreviewLine(line) }
                     }
                 } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(onClick = { body += if (body.isBlank()) "# " else "\n# " }) { Text("H") }
+                        TextButton(onClick = { body += if (body.isBlank()) "**bold**" else "\n**bold**" }) { Text("B") }
+                        TextButton(onClick = { body += if (body.isBlank()) "- " else "\n- " }) { Text("List") }
+                        TextButton(onClick = { body += if (body.isBlank()) "- [ ] " else "\n- [ ] " }) { Text("Checklist") }
+                        TextButton(onClick = { body += if (body.isBlank()) "[link](https://)" else "\n[link](https://)" }) { Text("Link") }
+                        IconButton(onClick = { imageLauncher.launch(arrayOf("image/*")) }) {
+                            Icon(Icons.Outlined.Add, contentDescription = "Insert image")
+                        }
+                    }
                     OutlinedTextField(
                         value = body, onValueChange = { body = it; saveCurrent() },
                         modifier = Modifier.weight(1f).fillMaxWidth(), placeholder = { Text("Write Markdown here…") },
@@ -583,6 +633,18 @@ private fun NotesTool(
 @Composable
 private fun MarkdownPreviewLine(line: String) {
     val trimmed = line.trimStart()
+    val imageMatch = Regex("^!\\[[^]]*]\\((?:<)?([^)>]+)(?:>)?\\)$").matchEntire(trimmed)
+    if (imageMatch != null) {
+        val imageUri = runCatching { Uri.parse(imageMatch.groupValues[1]) }.getOrNull()
+        if (imageUri != null) {
+            AndroidView(
+                factory = { context -> ImageView(context).apply { adjustViewBounds = true; scaleType = ImageView.ScaleType.FIT_CENTER } },
+                update = { view -> runCatching { view.setImageURI(imageUri) } },
+                modifier = Modifier.fillMaxWidth().height(220.dp)
+            )
+        }
+        return
+    }
     val headingLevel = trimmed.takeWhile { it == '#' }.length.coerceIn(0, 6)
         .takeIf { trimmed.startsWith("#") && trimmed.getOrNull(it) == ' ' } ?: 0
     val displayText = when {
@@ -603,12 +665,40 @@ private fun MarkdownPreviewLine(line: String) {
         if (headingLevel > 0) addStyle(SpanStyle(fontWeight = FontWeight.SemiBold), 0, length)
         if (trimmed.startsWith(">")) addStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant, fontStyle = FontStyle.Italic), 0, length)
     }
-    Text(styled, style = when {
-        headingLevel == 1 -> MaterialTheme.typography.headlineSmall
-        headingLevel == 2 -> MaterialTheme.typography.titleLarge
-        headingLevel in 3..6 -> MaterialTheme.typography.titleMedium
-        else -> MaterialTheme.typography.bodyLarge
-    }, color = MaterialTheme.colorScheme.onSurface)
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val linkRegex = Regex("\\[([^]]+)]\\((https?://[^)]+)\\)")
+    val linkedText = buildAnnotatedString {
+        var cursor = 0
+        linkRegex.findAll(visibleText).forEach { match ->
+            append(visibleText.substring(cursor, match.range.first))
+            pushStringAnnotation(tag = "URL", annotation = match.groupValues[2])
+            pushStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline))
+            append(match.groupValues[1])
+            pop()
+            pop()
+            cursor = match.range.last + 1
+        }
+        append(visibleText.substring(cursor))
+    }
+    ClickableText(
+        text = linkedText,
+        style = when {
+            headingLevel == 1 -> MaterialTheme.typography.headlineSmall
+            headingLevel == 2 -> MaterialTheme.typography.titleLarge
+            headingLevel in 3..6 -> MaterialTheme.typography.titleMedium
+            else -> MaterialTheme.typography.bodyLarge
+        }.copy(color = MaterialTheme.colorScheme.onSurface),
+        modifier = Modifier.fillMaxWidth(),
+        onClick = { offset ->
+            linkedText.getStringAnnotations("URL", offset, offset).firstOrNull()?.let { annotation ->
+                runCatching {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(annotation.item)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    if (intent.resolveActivity(context.packageManager) != null) context.startActivity(intent)
+                    else Toast.makeText(context, "No app can open this link", Toast.LENGTH_SHORT).show()
+                }.onFailure { Toast.makeText(context, "Could not open link", Toast.LENGTH_SHORT).show() }
+            }
+        }
+    )
 }
 
 @Composable
@@ -998,23 +1088,29 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
 
     Box(modifier = modifier) {
     Column(modifier = Modifier.fillMaxSize().padding(bottom = 72.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(month.format(monthFormatter), style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Medium)
-                if (month == YearMonth.now()) {
-                    Text("Calendar", style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Text(month.format(monthFormatter), modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Medium,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                IconButton(onClick = { month = month.minusMonths(1); selectedDate = month.atDay(1) }) {
+                    Icon(Icons.Outlined.ArrowBack, contentDescription = "Previous month")
+                }
+                IconButton(onClick = { month = month.plusMonths(1); selectedDate = month.atDay(1) }) {
+                    Icon(Icons.Outlined.ArrowForward, contentDescription = "Next month")
                 }
             }
-            TextButton(onClick = { month = YearMonth.now(); selectedDate = LocalDate.now() }) {
-                Text("Today")
-            }
-            IconButton(onClick = { month = month.minusMonths(1); selectedDate = month.atDay(1) }) {
-                Icon(Icons.Outlined.ArrowBack, contentDescription = "Previous month")
-            }
-            IconButton(onClick = { month = month.plusMonths(1); selectedDate = month.atDay(1) }) {
-                Icon(Icons.Outlined.ArrowForward, contentDescription = "Next month")
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    selectedDate.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.getDefault())),
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis
+                )
+                TextButton(onClick = { month = YearMonth.now(); selectedDate = LocalDate.now() }) {
+                    Text(if (Locale.getDefault().language == "id") "Hari ini" else "Today")
+                }
             }
         }
         Surface(
