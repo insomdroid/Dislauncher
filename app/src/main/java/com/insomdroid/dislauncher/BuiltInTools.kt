@@ -244,6 +244,21 @@ private fun markdownForSafePreview(markdown: String): String =
             "[$description — external image hidden for privacy]"
         }
 
+/** Match the Markdown preview's Android TextView to Dislauncher's selected font family. */
+private fun markdownPreviewTypeface(context: Context): android.graphics.Typeface {
+    val preferences = LauncherPreferences.load(context)
+    return when (preferences.fontMode) {
+        "dislauncher" -> androidx.core.content.ContextCompat.getFont(context, R.font.inter_variable)
+            ?: android.graphics.Typeface.DEFAULT
+        "custom" -> listOf("ttf", "otf")
+            .map { java.io.File(context.filesDir, "fonts/custom-font.$it") }
+            .firstOrNull { it.isFile && it.length() in 12L..MAX_CUSTOM_FONT_BYTES.toLong() }
+            ?.let { file -> runCatching { android.graphics.Typeface.createFromFile(file) }.getOrNull() }
+            ?: android.graphics.Typeface.DEFAULT
+        else -> android.graphics.Typeface.DEFAULT
+    }
+}
+
 private data class CalculatorHistoryEntry(
     val id: String,
     val expression: String,
@@ -686,15 +701,18 @@ private fun NotesTool(
                     val previewTextSizePx = with(LocalDensity.current) {
                         MaterialTheme.typography.bodyMedium.fontSize.toPx()
                     }
+                    val previewTypeface = remember(context) { markdownPreviewTypeface(context) }
                     AndroidView(
                         factory = { viewContext ->
                             TextView(viewContext).apply {
                                 setPadding(8, 8, 8, 8)
                                 setTextSize(TypedValue.COMPLEX_UNIT_PX, previewTextSizePx)
+                                typeface = previewTypeface
                             }
                         },
                         update = { textView ->
                             textView.setTextSize(TypedValue.COMPLEX_UNIT_PX, previewTextSizePx)
+                            textView.typeface = previewTypeface
                             textView.setTextColor(android.graphics.Color.rgb(
                                 (previewTextColor.red * 255).toInt(),
                                 (previewTextColor.green * 255).toInt(),
