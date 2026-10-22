@@ -353,12 +353,29 @@ internal fun HomeScreen(
                             "purple" -> androidx.compose.ui.graphics.Color(0xFFAB47BC)
                             else -> androidx.compose.ui.graphics.Color.White
                         }
-                        Box(
-                            modifier = Modifier
-                                .padding(start = 6.dp)
-                                .size(6.dp)
-                                .background(notificationDotColor, CircleShape)
-                        )
+                        val notificationCount = NotificationDotState.countFor(app.packageName)
+                        if (notificationCount > 1) {
+                            Box(
+                                modifier = Modifier.padding(start = 6.dp)
+                                    .size(width = 18.dp, height = 18.dp)
+                                    .background(notificationDotColor, RoundedCornerShape(9.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (notificationCount > 99) "99+" else notificationCount.toString(),
+                                    color = androidx.compose.ui.graphics.Color.Black,
+                                    fontSize = 10.sp,
+                                    lineHeight = 12.sp,
+                                    maxLines = 1
+                                )
+                            }
+                        } else {
+                            Box(
+                                modifier = Modifier.padding(start = 6.dp)
+                                    .size(6.dp)
+                                    .background(notificationDotColor, CircleShape)
+                            )
+                        }
                     }
                     if (movingFavoriteId == itemId) {
                         Icon(
