@@ -43,8 +43,8 @@ internal fun HomeHeader(
         Text(
             timeText,
             color = primaryText,
-            fontSize = 34.sp,
-            lineHeight = 36.sp,
+            fontSize = HomeDesign.clockSize,
+            lineHeight = HomeDesign.clockLineHeight,
             letterSpacing = (-0.6).sp,
             fontWeight = FontWeight.Light,
             fontFamily = fontFamily,
@@ -55,12 +55,12 @@ internal fun HomeHeader(
         )
     }
     if (preferences.showDate) {
-        Spacer(Modifier.height(2.dp))
+        Spacer(Modifier.height(HomeDesign.clockToDate))
         Text(
             dateText,
             color = secondaryText,
-            fontSize = 13.sp,
-            lineHeight = 17.sp,
+            fontSize = HomeDesign.dateSize,
+            lineHeight = HomeDesign.dateLineHeight,
             fontFamily = fontFamily,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -68,7 +68,7 @@ internal fun HomeHeader(
         )
     }
     if (preferences.showYearProgress || preferences.showDayProgress) {
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(HomeDesign.progressLineGap))
         if (preferences.showYearProgress) {
             ProgressLine(
                 label = "Year in progress",
@@ -80,7 +80,7 @@ internal fun HomeHeader(
             )
         }
         if (preferences.showDayProgress) {
-            if (preferences.showYearProgress) Spacer(Modifier.height(4.dp))
+            if (preferences.showYearProgress) Spacer(Modifier.height(HomeDesign.progressLineGap))
             ProgressLine(
                 label = "Day in progress",
                 percent = (now.toSecondOfDay() * 100f / 86400f).toInt(),
@@ -104,17 +104,17 @@ internal fun ProgressLine(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(5.dp)
+        verticalArrangement = Arrangement.spacedBy(HomeDesign.progressLabelGap)
     ) {
         Text(
             "$label $percent%",
             color = primaryText,
-            fontSize = 12.sp,
-            lineHeight = 16.sp,
+            fontSize = HomeDesign.progressLabelSize,
+            lineHeight = HomeDesign.progressLabelLineHeight,
             fontWeight = FontWeight.Normal
         )
         Canvas(
-            modifier = Modifier.fillMaxWidth(0.40f).height(4.dp)
+            modifier = Modifier.fillMaxWidth(HomeDesign.progressTrackWidth).height(HomeDesign.progressTrackHeight)
         ) {
             val centerY = size.height / 2f
             val strokeWidth = size.height
