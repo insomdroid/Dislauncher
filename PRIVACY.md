@@ -1,6 +1,6 @@
 # Privacy and Permissions
 
-**Last reviewed:** 20 October 2026
+**Last reviewed:** 22 October 2026
 
 Dislauncher is an independent Android launcher. This note describes data handling in the reviewed source; Android, device manufacturers and third-party services have their own policies.
 
@@ -17,6 +17,8 @@ Dislauncher is an independent Android launcher. This note describes data handlin
 Most settings and personal content remain in app-private storage or Android preferences and are not uploaded to a Dislauncher-operated server in the reviewed source. Uninstalling the app may remove local data; back up anything important first.
 
 Weather requests send latitude and longitude to the Open-Meteo forecast API. The provider also receives normal connection metadata, such as your IP address. Weather can be left disabled, and location access is not needed for ordinary app launching.
+
+Markdown notes are stored locally. The Markdown preview suppresses remote image embeds so simply previewing a note does not automatically request images from third-party hosts. Imported Markdown is limited to 1 MiB to reduce memory-exhaustion risk. Links that a user explicitly opens may still contact their destination, and images selected through Android's document picker remain local URI references managed by Android permissions.
 
 See [Open-Meteo](https://open-meteo.com/) for information about the weather provider.
 
