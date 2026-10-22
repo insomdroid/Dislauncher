@@ -854,6 +854,7 @@ private fun openDeviceCalendarEvent(context: Context, event: DeviceCalendarEvent
     }.onFailure { Toast.makeText(context, "Could not open calendar event", Toast.LENGTH_SHORT).show() }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
     var tasks by remember(context) { mutableStateOf(loadTasks(context)) }
