@@ -372,17 +372,6 @@ private fun NotesTool(
             Toast.makeText(context, "Markdown exported", Toast.LENGTH_SHORT).show()
         }.onFailure { Toast.makeText(context, "Could not export Markdown file", Toast.LENGTH_LONG).show() }
     }
-    val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null && selectedId != null) runCatching {
-            context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            val markdownImage = "![](<" + uri.toString() + ">)"
-            body = if (body.isBlank()) markdownImage else body + "\n\n" + markdownImage
-            saveCurrent()
-        }.onFailure {
-            Toast.makeText(context, "Could not add image", Toast.LENGTH_LONG).show()
-        }
-    }
-
     fun saveCurrent() {
         val id = selectedId ?: return
         if (title.isBlank() && body.isBlank()) {
@@ -396,6 +385,17 @@ private fun NotesTool(
             .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
         saveNotes(context, notes)
     }
+    val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null && selectedId != null) runCatching {
+            context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            val markdownImage = "![](<" + uri.toString() + ">)"
+            body = if (body.isBlank()) markdownImage else body + "\n\n" + markdownImage
+            saveCurrent()
+        }.onFailure {
+            Toast.makeText(context, "Could not add image", Toast.LENGTH_LONG).show()
+        }
+    }
+
     fun openNote(note: LocalNote) {
         selectedId = note.id
         title = note.title
