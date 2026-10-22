@@ -380,8 +380,10 @@ internal fun AppsScreen(
                 if (showSettingsEntry) {
                     item(key = "dislauncher-settings-entry") {
                         Row(
-                            modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenSettings)
-                                .padding(vertical = 8.dp, horizontal = 0.dp),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable(onClick = onOpenSettings)
+                                .padding(horizontal = 8.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             if (preferences.showAppIcons) {
