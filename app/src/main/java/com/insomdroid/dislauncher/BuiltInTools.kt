@@ -32,6 +32,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.Edit
@@ -989,7 +990,7 @@ private fun CalendarTool(context: Context, modifier: Modifier = Modifier) {
                 Icon(Icons.Outlined.ArrowBack, contentDescription = "Previous month")
             }
             IconButton(onClick = { month = month.plusMonths(1); selectedDate = month.atDay(1) }) {
-                Icon(Icons.Outlined.Event, contentDescription = "Next month")
+                Icon(Icons.Outlined.ArrowForward, contentDescription = "Next month")
             }
         }
         Surface(
