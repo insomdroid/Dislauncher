@@ -688,6 +688,7 @@ private fun NotesTool(
                     selectedId = null
                     title = ""
                     body = ""
+                    bodyField = TextFieldValue("")
                     previewMode = false
                     onEditingChanged(false)
                 }) { Text("Delete") }
