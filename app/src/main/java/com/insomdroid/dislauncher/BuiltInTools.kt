@@ -28,7 +28,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -338,6 +337,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     var calculatorShowingHistory by remember { mutableStateOf(false) }
     var calculatorHistoryHasItems by remember { mutableStateOf(false) }
     var calculatorClearHistorySignal by remember { mutableStateOf(0) }
+    var calendarMonth by remember { mutableStateOf(YearMonth.now()) }
     fun requestClose() = onBack()
     BackHandler(enabled = tool != BuiltInTool.NOTES || !notesEditing) {
         if (tool == BuiltInTool.CALCULATOR && calculatorShowingHistory) {
@@ -355,8 +355,13 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     Scaffold(
                 containerColor = MaterialTheme.colorScheme.background,
                 topBar = {
-                    if (tool != BuiltInTool.CALENDAR && !(tool == BuiltInTool.NOTES && notesEditing)) TopAppBar(
-                        title = { Text(title, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    if (!(tool == BuiltInTool.NOTES && notesEditing)) TopAppBar(
+                        title = {
+                            Text(
+                                if (tool == BuiltInTool.CALENDAR) calendarMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())) else title,
+                                fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis
+                            )
+                        },
                         navigationIcon = {
                             IconButton(onClick = {
                                 when {
@@ -369,6 +374,14 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             }
                         },
                         actions = {
+                            if (tool == BuiltInTool.CALENDAR) {
+                                IconButton(onClick = { calendarMonth = calendarMonth.minusMonths(1) }) {
+                                    Icon(Icons.Outlined.ArrowBack, contentDescription = builtInToolText("Previous month", "Bulan sebelumnya"))
+                                }
+                                IconButton(onClick = { calendarMonth = calendarMonth.plusMonths(1) }) {
+                                    Icon(Icons.Outlined.ArrowForward, contentDescription = builtInToolText("Next month", "Bulan berikutnya"))
+                                }
+                            }
                             if (tool == BuiltInTool.CALCULATOR) {
                                 if (calculatorShowingHistory) {
                                     IconButton(
@@ -415,7 +428,12 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             clearHistorySignal = calculatorClearHistorySignal,
                             onHistoryAvailabilityChanged = { calculatorHistoryHasItems = it }
                         )
-                        BuiltInTool.CALENDAR -> CalendarTool(context, onBackRequested = onBack, modifier = Modifier.fillMaxSize())
+                        BuiltInTool.CALENDAR -> CalendarTool(
+                            context = context,
+                            month = calendarMonth,
+                            onMonthChange = { calendarMonth = it },
+                            modifier = Modifier.fillMaxSize()
+                        )
                         BuiltInTool.UNIT_CONVERTER -> UnitConverterTool(Modifier.fillMaxSize())
                     }
                     }
@@ -1018,9 +1036,13 @@ private fun CalculatorTool(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CalendarTool(context: Context, onBackRequested: () -> Unit, modifier: Modifier = Modifier) {
+private fun CalendarTool(
+    context: Context,
+    month: YearMonth,
+    onMonthChange: (YearMonth) -> Unit,
+    modifier: Modifier = Modifier
+) {
     var tasks by remember(context) { mutableStateOf(loadTasks(context)) }
-    var month by remember { mutableStateOf(YearMonth.now()) }
     var calendarPermission by remember { mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED) }
     var deviceEvents by remember { mutableStateOf<List<DeviceCalendarEvent>>(emptyList()) }
     val calendarPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -1045,7 +1067,7 @@ private fun CalendarTool(context: Context, onBackRequested: () -> Unit, modifier
             scheduleLocalReminder(context, task.id, task.title, task.reminderAt)
         }
         selectedDate = LocalDate.parse(task.date)
-        month = YearMonth.from(selectedDate)
+        onMonthChange(YearMonth.from(selectedDate))
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -1075,7 +1097,6 @@ private fun CalendarTool(context: Context, onBackRequested: () -> Unit, modifier
     }
 
     val dateFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", Locale.getDefault())
-    val monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())
     val firstDayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
     val weekDays = (0..6).map { firstDayOfWeek.plus(it.toLong()) }
     val taskDate = selectedDate.toString()
@@ -1086,36 +1107,10 @@ private fun CalendarTool(context: Context, onBackRequested: () -> Unit, modifier
 
     Box(modifier = modifier) {
     Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Column(verticalArrangement = Arrangement.spacedBy(0.dp), modifier = Modifier.fillMaxWidth()) {
-            TopAppBar(
-                windowInsets = WindowInsets(0.dp),
-                title = {
-                    Text(
-                        month.format(monthFormatter),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackRequested) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = builtInToolText("Back", "Kembali"))
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { month = month.minusMonths(1); selectedDate = month.atDay(1) }) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = builtInToolText("Previous month", "Bulan sebelumnya"))
-                    }
-                    IconButton(onClick = { month = month.plusMonths(1); selectedDate = month.atDay(1) }) {
-                        Icon(Icons.Outlined.ArrowForward, contentDescription = builtInToolText("Next month", "Bulan berikutnya"))
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
-            )
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        LaunchedEffect(month) {
+            if (YearMonth.from(selectedDate) != month) selectedDate = month.atDay(1)
+        }
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     selectedDate.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.getDefault())),
                     modifier = Modifier.weight(1f),
@@ -1123,7 +1118,7 @@ private fun CalendarTool(context: Context, onBackRequested: () -> Unit, modifier
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
-                TextButton(onClick = { month = YearMonth.now(); selectedDate = LocalDate.now() }) {
+                TextButton(onClick = { onMonthChange(YearMonth.now()); selectedDate = LocalDate.now() }) {
                     Text(if (Locale.getDefault().language == "id") "Hari ini" else "Today")
                 }
             }
