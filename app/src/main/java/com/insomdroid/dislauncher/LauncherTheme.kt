@@ -214,24 +214,29 @@ internal fun DislauncherTheme(
         )
     } else colorScheme
     val fontFamily = remember(preferences.fontMode, preferences.customFontName) {
-        when (preferences.fontMode) {
-            "dislauncher" -> FontFamily(
-                Font(
-                    R.font.inter_variable,
-                    weight = FontWeight.Normal,
-                    variationSettings = FontVariation.Settings(FontVariation.weight(400))
-                ),
-                Font(
-                    R.font.inter_variable,
-                    weight = FontWeight.Medium,
-                    variationSettings = FontVariation.Settings(FontVariation.weight(500))
-                ),
-                Font(
-                    R.font.inter_variable,
-                    weight = FontWeight.SemiBold,
-                    variationSettings = FontVariation.Settings(FontVariation.weight(600))
-                )
+        fun variableFont(resourceId: Int) = FontFamily(
+            Font(
+                resourceId,
+                weight = FontWeight.Normal,
+                variationSettings = FontVariation.Settings(FontVariation.weight(400))
+            ),
+            Font(
+                resourceId,
+                weight = FontWeight.Medium,
+                variationSettings = FontVariation.Settings(FontVariation.weight(500))
+            ),
+            Font(
+                resourceId,
+                weight = FontWeight.SemiBold,
+                variationSettings = FontVariation.Settings(FontVariation.weight(600))
             )
+        )
+        when (preferences.fontMode) {
+            "dislauncher", "mono" -> variableFont(R.font.inter_variable)
+            "spline_sans" -> variableFont(R.font.spline_sans_variable)
+            "outfit" -> variableFont(R.font.outfit_variable)
+            "dm_sans" -> variableFont(R.font.dm_sans_variable)
+            "geist" -> variableFont(R.font.geist_variable)
             "custom" -> {
                 val fontFile = listOf("ttf", "otf")
                     .map { File(context.filesDir, "fonts/custom-font.$it") }
