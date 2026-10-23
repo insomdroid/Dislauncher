@@ -360,6 +360,7 @@ internal fun SettingsScreen(
                                     ),
                                     tr("Apply to screen…", "Terapkan ke layar…"),
                                     {
+                                        wallpaperTarget = preferences.wallpaperTarget
                                         openDialog = "wallpaperTarget"
                                     }
                                 )
@@ -372,6 +373,7 @@ internal fun SettingsScreen(
                                     ),
                                     tr("Apply to screen…", "Terapkan ke layar…"),
                                     {
+                                        wallpaperTarget = preferences.wallpaperTarget
                                         openDialog = "wallpaperTarget"
                                     }
                                 )
