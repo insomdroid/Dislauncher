@@ -24,10 +24,6 @@ Dislauncher is a lightweight, text-first Android launcher designed to keep your 
   <img src="Screenshot/Screenshot_20261022-221343_Dislauncher.png" alt="Dislauncher screenshot 8" width="42%" />
 </p>
 
-<p align="center">
-  <img src="Screenshot/Screenshot_20261022-221437_Dislauncher.png" alt="Dislauncher screenshot 9" width="42%" />
-</p>
-
 
 ## Key features
 
