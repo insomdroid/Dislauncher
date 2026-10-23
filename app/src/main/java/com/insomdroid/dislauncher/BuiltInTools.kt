@@ -409,7 +409,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             .align(Alignment.TopCenter)
                             .padding(padding)
                             .padding(
-                                horizontal = if (tool == BuiltInTool.CALENDAR) 0.dp else if (maxWidth >= 600.dp) 24.dp else 16.dp,
+                                horizontal = if (maxWidth >= 600.dp) 24.dp else 16.dp,
                                 vertical = if (tool == BuiltInTool.CALENDAR) 0.dp else 8.dp
                             )
                     ) {
