@@ -58,8 +58,8 @@ val generateLauncherForeground by tasks.registering(Copy::class) {
     rename { "dislauncher_icon_foreground.png" }
 }
 
-// Keep font binaries in the repository as base64 source files so GitHub's text API can store them.
-// Decode them locally into Android resources; no network access is needed during a build.
+// Keep font sources checked into the repository and decode them locally into Android resources.
+// This avoids runtime and build-time font downloads.
 val generatedBundledFonts = layout.buildDirectory.dir("generated/res/bundledFonts")
 val generateBundledFonts by tasks.registering {
     val fontSourceFiles = fileTree(layout.projectDirectory.dir("font-source")) {
