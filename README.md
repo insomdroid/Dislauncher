@@ -5,23 +5,23 @@ Dislauncher is a lightweight, text-first Android launcher designed to keep your 
 ## Screenshots
 
 <p align="center">
-  <img src="Screenshot/Screenshot_20261022-221222_Dislauncher.png" alt="Dislauncher screenshot 1" width="42%" />
-  <img src="Screenshot/Screenshot_20261022-221233_Dislauncher.png" alt="Dislauncher screenshot 2" width="42%" />
+  <img src="Screenshot/Screenshot_20261022-221222_Dislauncher.png" alt="Dislauncher screenshot 1" width="30%" />
+  <img src="Screenshot/Screenshot_20261022-221233_Dislauncher.png" alt="Dislauncher screenshot 2" width="30%" />
 </p>
 
 <p align="center">
-  <img src="Screenshot/Screenshot_20261022-221259_Dislauncher.png" alt="Dislauncher screenshot 3" width="42%" />
-  <img src="Screenshot/Screenshot_20261022-221309_Dislauncher.png" alt="Dislauncher screenshot 4" width="42%" />
+  <img src="Screenshot/Screenshot_20261022-221259_Dislauncher.png" alt="Dislauncher screenshot 3" width="30%" />
+  <img src="Screenshot/Screenshot_20261022-221309_Dislauncher.png" alt="Dislauncher screenshot 4" width="30%" />
 </p>
 
 <p align="center">
-  <img src="Screenshot/Screenshot_20261022-221316_Dislauncher.png" alt="Dislauncher screenshot 5" width="42%" />
-  <img src="Screenshot/Screenshot_20261022-221321_Dislauncher.png" alt="Dislauncher screenshot 6" width="42%" />
+  <img src="Screenshot/Screenshot_20261022-221316_Dislauncher.png" alt="Dislauncher screenshot 5" width="30%" />
+  <img src="Screenshot/Screenshot_20261022-221321_Dislauncher.png" alt="Dislauncher screenshot 6" width="30%" />
 </p>
 
 <p align="center">
-  <img src="Screenshot/Screenshot_20261022-221335_Dislauncher.png" alt="Dislauncher screenshot 7" width="42%" />
-  <img src="Screenshot/Screenshot_20261022-221343_Dislauncher.png" alt="Dislauncher screenshot 8" width="42%" />
+  <img src="Screenshot/Screenshot_20261022-221335_Dislauncher.png" alt="Dislauncher screenshot 7" width="30%" />
+  <img src="Screenshot/Screenshot_20261022-221343_Dislauncher.png" alt="Dislauncher screenshot 8" width="30%" />
 </p>
 
 
