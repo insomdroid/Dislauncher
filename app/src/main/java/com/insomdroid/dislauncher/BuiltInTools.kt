@@ -1122,7 +1122,6 @@ private fun CalendarTool(
                     Text(if (Locale.getDefault().language == "id") "Hari ini" else "Today")
                 }
             }
-        }
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
