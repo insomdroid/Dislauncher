@@ -386,6 +386,10 @@ internal fun SettingsScreen(
                                 listOf(
                                     "system" to tr("System", "Sistem"),
                                     "dislauncher" to "Inter Variable",
+                                    "spline_sans" to "Spline Sans",
+                                    "outfit" to "Outfit",
+                                    "dm_sans" to "DM Sans",
+                                    "geist" to "Geist",
                                     "custom" to tr("Custom", "Kustom")
                                 )
                             ) { value ->
