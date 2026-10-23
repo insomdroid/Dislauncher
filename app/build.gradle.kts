@@ -74,7 +74,7 @@ val generateBundledFonts by tasks.registering {
         outputDir.mkdirs()
         fontSourceFiles.files.forEach { source ->
             val outputFile = outputDir.resolve(source.name.removeSuffix(".b64"))
-            outputFile.writeBytes(Base64.getDecoder().decode(source.readText().trim()))
+            outputFile.writeBytes(Base64.getMimeDecoder().decode(source.readText()))
         }
     }
 }
