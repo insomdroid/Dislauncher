@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -16,7 +15,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -31,37 +29,25 @@ private data class ChangelogEntry(
     val sections: List<ChangelogSection>
 )
 
-private fun readChangelog(context: Context, language: String): List<ChangelogEntry> {
+private fun readChangelog(context: Context): List<ChangelogEntry> {
     val source = context.assets.open("changelog.md").bufferedReader().use { it.readText() }
     return source.split(Regex("(?m)^##\\s+")).drop(1).mapNotNull { block ->
         val lines = block.lines()
         val header = lines.firstOrNull().orEmpty().split("|").map(String::trim)
-        if (header.size < 3) return@mapNotNull null
+        if (header.size < 2) return@mapNotNull null
         val version = header[0].removePrefix("v")
-        val date = if (language == "id") header[2] else header[1]
-        var activeLanguage = ""
+        val date = header[1]
         var sectionTitle = ""
         val sections = mutableListOf<Pair<String, MutableList<String>>>()
         lines.drop(1).forEach { rawLine ->
             val line = rawLine.trim()
             when {
-                line == "### en" -> {
-                    activeLanguage = "en"
-                    sections.clear()
-                    sectionTitle = ""
-                }
-                line == "### id" -> {
-                    activeLanguage = "id"
-                    sections.clear()
-                    sectionTitle = ""
-                }
-                activeLanguage != language -> Unit
                 line.startsWith("#### ") -> {
                     sectionTitle = line.removePrefix("#### ").trim()
                     sections += sectionTitle to mutableListOf()
                 }
                 line.startsWith("- ") -> {
-                    if (sections.isEmpty()) sections += (sectionTitle.ifBlank { if (language == "id") "Perubahan" else "Changes" }) to mutableListOf()
+                    if (sections.isEmpty()) sections += (sectionTitle.ifBlank { "Changes" }) to mutableListOf()
                     sections.last().second += line.removePrefix("- ")
                         .replace(Regex("\\*\\*(.*?)\\*\\*"), "$1")
                 }
@@ -79,16 +65,11 @@ private fun readChangelog(context: Context, language: String): List<ChangelogEnt
 @Composable
 internal fun ChangelogScreen() {
     val context = LocalContext.current
-    val configuration = LocalConfiguration.current
-    val language = remember(configuration) {
-        val code = configuration.locales[0]?.language
-        if (code == "id" || code == "in") "id" else "en"
-    }
-    val entries = remember(context, language) { runCatching { readChangelog(context, language) }.getOrDefault(emptyList()) }
+    val entries = remember(context) { runCatching { readChangelog(context) }.getOrDefault(emptyList()) }
 
     if (entries.isEmpty()) {
         Text(
-            settingsLocalizedText(context, "Changelog is unavailable.", "Catatan perubahan tidak tersedia."),
+            "Changelog is unavailable.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
