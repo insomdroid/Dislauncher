@@ -233,6 +233,8 @@ internal fun DislauncherTheme(
         )
         when (preferences.fontMode) {
             "dislauncher", "mono" -> variableFont(R.font.inter_variable)
+            "urbanist" -> variableFont(R.font.urbanist_variable)
+            "sora" -> variableFont(R.font.sora_variable)
             "spline_sans" -> variableFont(R.font.spline_sans_variable)
             "outfit" -> variableFont(R.font.outfit_variable)
             "dm_sans" -> variableFont(R.font.dm_sans_variable)
