@@ -19,7 +19,7 @@ Dislauncher is a lightweight, text-first Android launcher designed to keep your 
 
 - **Minimal Home screen:** clock, date, progress indicators, and favourite apps in a text-first layout.
 - **App drawer:** searchable alphabetical app list, favourites, folders, hidden apps, and compatible icon packs.
-- **Personalisation:** System, Light, Dark, and Black themes, Dynamic Color, accent colours, wallpapers, built-in fonts (Inter, Syne, Bricolage Grotesque, Doto, and Major Mono Display), custom fonts, and text sizing.
+- **Personalisation:** System, Light, Dark, and Black themes, Dynamic Color, accent colours, wallpapers, built-in fonts (Inter, Syne, Bricolage Grotesque, Doto, and Overpass Mono), custom fonts, and text sizing.
 - **Everyday tools:** built-in calendar and local reminders, Markdown notes, calculator, unit converter, optional weather, and music controls.
 - **Useful shortcuts:** notification dots, app actions, and optional gestures for quick access to common tasks.
 - **Privacy-minded:** no account system, advertising SDK, or analytics SDK in the reviewed source. Optional features may request permissions or connect to external services.
@@ -65,9 +65,9 @@ Core launcher features can be used without enabling every optional permission. W
 
 ## Fonts and licensing
 
-Inter, Syne, Bricolage Grotesque, Doto, and Major Mono Display are bundled with the app. Font files are stored in the repository and decoded into Android resources during the local build, so builds do not download fonts from the network. The built-in font selection applies across the launcher interface.
+Inter, Syne, Bricolage Grotesque, Doto, and Overpass Mono are bundled with the app. Font files are stored in the repository and decoded into Android resources during the local build, so builds do not download fonts from the network. The built-in font selection applies across the launcher interface.
 
-The bundled fonts are licensed under the SIL Open Font License 1.1. Copyright notices, source repositories, and the consolidated license text are in [FONT_LICENSES.txt](app/src/main/assets/licenses/FONT_LICENSES.txt). Syne and Bricolage Grotesque provide distinctive but usable sans-serif choices, while Doto and Major Mono Display offer more experimental display styles.
+The bundled fonts are licensed under the SIL Open Font License 1.1. Copyright notices, source repositories, and the consolidated license text are in [FONT_LICENSES.txt](app/src/main/assets/licenses/FONT_LICENSES.txt). Syne and Bricolage Grotesque provide distinctive but usable sans-serif choices, while Doto offers an experimental display style, while Overpass Mono provides a restrained monospace option.
 
 ## License
 
