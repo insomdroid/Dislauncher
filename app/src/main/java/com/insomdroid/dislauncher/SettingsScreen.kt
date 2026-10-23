@@ -386,6 +386,8 @@ internal fun SettingsScreen(
                                 listOf(
                                     "system" to tr("System", "Sistem"),
                                     "dislauncher" to "Inter Variable",
+                                    "urbanist" to "Urbanist",
+                                    "sora" to "Sora",
                                     "spline_sans" to "Spline Sans",
                                     "outfit" to "Outfit",
                                     "dm_sans" to "DM Sans",
