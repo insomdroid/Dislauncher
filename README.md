@@ -65,9 +65,9 @@ Core launcher features can be used without enabling every optional permission. W
 
 ## Fonts and licensing
 
-Inter, Spline Sans, Outfit, DM Sans, and Geist are bundled with the app. Font files are stored in the repository and decoded into Android resources during the local build, so builds do not download fonts from the network. The built-in font selection applies across the launcher interface.
+Inter, Urbanist, Sora, Spline Sans, Outfit, DM Sans, and Geist are bundled with the app. Font files are stored in the repository and decoded into Android resources during the local build, so builds do not download fonts from the network. The built-in font selection applies across the launcher interface.
 
-The bundled fonts are licensed under the SIL Open Font License 1.1. Copyright notices, source repositories, and the consolidated license text are in [FONT_LICENSES.txt](app/src/main/assets/licenses/FONT_LICENSES.txt). Satoshi and Chillax are not bundled because their current Fontshare/ITF terms restrict public redistribution of the font files.
+The bundled fonts are licensed under the SIL Open Font License 1.1. Copyright notices, source repositories, and the consolidated license text are in [FONT_LICENSES.txt](app/src/main/assets/licenses/FONT_LICENSES.txt). Urbanist is the geometric, modern alternative to Satoshi; Sora provides a more expressive alternative to Chillax. Both are available under SIL Open Font License 1.1 and can be redistributed with the app.
 
 ## License
 
