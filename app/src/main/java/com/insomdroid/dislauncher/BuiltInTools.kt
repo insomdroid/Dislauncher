@@ -246,7 +246,7 @@ private fun writeNoteArchive(context: Context, destination: Uri, markdown: Strin
     ZipOutputStream(output.buffered()).use { zip ->
         val copiedImages = linkedMapOf<String, String>()
         var totalBytes = 0L
-        val pattern = Regex("""!\\[([^\\]]*)]\\((?:<)?(content://[^)\\s>]+)(?:>)?\\)""")
+        val pattern = Regex("""!\[([^\]]*)]\((?:<)?(content://[^)\s>]+)(?:>)?\)""")
         val portableMarkdown = pattern.replace(markdown) { match ->
             val uriText = match.groupValues[2]
             val path = copiedImages.getOrPut(uriText) {
