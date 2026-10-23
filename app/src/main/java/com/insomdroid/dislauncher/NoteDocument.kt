@@ -94,7 +94,7 @@ internal object NoteDocumentCodec {
                 }
                 checklistPattern.matches(line) -> {
                     val match = checklistPattern.matchEntire(line)!!
-                    add(NoteBlockType.CHECKLIST, match.groupValues[3], checked = match.groupValues[1].lowercase() == "x")
+                    add(NoteBlockType.CHECKLIST, match.groupValues[2], checked = match.groupValues[1].lowercase() == "x")
                     index++
                 }
                 bulletPattern.matches(line) -> {
