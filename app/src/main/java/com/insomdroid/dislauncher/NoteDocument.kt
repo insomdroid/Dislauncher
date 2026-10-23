@@ -153,29 +153,41 @@ internal object NoteDocumentCodec {
         return result
     }
 
-    fun toMarkdown(document: NoteDocument): String = document.blocks.joinToString("\n\n") { block ->
-        val text = block.spans.joinToString("") { span ->
-            when {
-                span.imageUri != null -> "![${span.imageAlt.ifBlank { span.text }}](<${span.imageUri}>)"
-                span.link != null -> "[${span.text}](${span.link})"
-                NoteMark.CODE in span.marks -> "`${span.text}`"
-                NoteMark.BOLD in span.marks && NoteMark.ITALIC in span.marks -> "***${span.text}***"
-                NoteMark.BOLD in span.marks -> "**${span.text}**"
-                NoteMark.ITALIC in span.marks -> "*${span.text}*"
-                NoteMark.STRIKETHROUGH in span.marks -> "~~${span.text}~~"
-                else -> span.text
+    fun toMarkdown(document: NoteDocument): String {
+        val rendered = document.blocks.map { block ->
+            val text = block.spans.joinToString("") { span ->
+                when {
+                    span.imageUri != null -> "![${span.imageAlt.ifBlank { span.text }}](<${span.imageUri}>)"
+                    span.link != null -> "[${span.text}](${span.link})"
+                    NoteMark.CODE in span.marks -> "`${span.text}`"
+                    NoteMark.BOLD in span.marks && NoteMark.ITALIC in span.marks -> "***${span.text}***"
+                    NoteMark.BOLD in span.marks -> "**${span.text}**"
+                    NoteMark.ITALIC in span.marks -> "*${span.text}*"
+                    NoteMark.STRIKETHROUGH in span.marks -> "~~${span.text}~~"
+                    else -> span.text
+                }
             }
+            val markdown = when (block.type) {
+                NoteBlockType.PARAGRAPH -> text
+                NoteBlockType.HEADING -> "${"#".repeat(block.level.coerceIn(1, 6))} $text"
+                NoteBlockType.BULLET -> "- $text"
+                NoteBlockType.NUMBERED -> "${block.orderedIndex.coerceAtLeast(1)}. $text"
+                NoteBlockType.QUOTE -> "> $text"
+                NoteBlockType.CHECKLIST -> "- [${if (block.checked) "x" else " "}] $text"
+                NoteBlockType.CODE -> "```\n$text\n```"
+                NoteBlockType.DIVIDER -> "---"
+            }
+            block to markdown
         }
-        when (block.type) {
-            NoteBlockType.PARAGRAPH -> text
-            NoteBlockType.HEADING -> "${"#".repeat(block.level.coerceIn(1, 6))} $text"
-            NoteBlockType.BULLET -> "- $text"
-            NoteBlockType.NUMBERED -> "${block.orderedIndex.coerceAtLeast(1)}. $text"
-            NoteBlockType.QUOTE -> "> $text"
-            NoteBlockType.CHECKLIST -> "- [${if (block.checked) "x" else " "}] $text"
-            NoteBlockType.CODE -> "```\n$text\n```"
-            NoteBlockType.DIVIDER -> "---"
-        }
+        return rendered.mapIndexed { index, (block, markdown) ->
+            if (index == 0) markdown
+            else {
+                val previous = rendered[index - 1].first
+                val consecutiveListItems = block.type == previous.type &&
+                    block.type in setOf(NoteBlockType.BULLET, NoteBlockType.NUMBERED, NoteBlockType.CHECKLIST, NoteBlockType.QUOTE)
+                (if (consecutiveListItems) "\n" else "\n\n") + markdown
+            }
+        }.joinToString("")
     }
 
     fun encode(document: NoteDocument): String {
