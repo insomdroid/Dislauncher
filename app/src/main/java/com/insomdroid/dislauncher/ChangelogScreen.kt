@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -78,8 +79,9 @@ private fun readChangelog(context: Context, language: String): List<ChangelogEnt
 @Composable
 internal fun ChangelogScreen() {
     val context = LocalContext.current
-    val language = remember(context) {
-        val code = context.resources.configuration.locales[0]?.language
+    val configuration = LocalConfiguration.current
+    val language = remember(configuration) {
+        val code = configuration.locales[0]?.language
         if (code == "id" || code == "in") "id" else "en"
     }
     val entries = remember(context, language) { runCatching { readChangelog(context, language) }.getOrDefault(emptyList()) }
