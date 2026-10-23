@@ -58,6 +58,25 @@ val generateLauncherForeground by tasks.registering(Copy::class) {
     rename { "dislauncher_icon_foreground.png" }
 }
 
+// Keep font binaries in the repository as base64 source files so GitHub's text API can store them.
+// Decode them locally into Android resources; no network access is needed during a build.
+val generatedBundledFonts = layout.buildDirectory.dir("generated/res/bundledFonts")
+val generateBundledFonts by tasks.registering {
+    val fontSourceFiles = fileTree(layout.projectDirectory.dir("font-source")) {
+        include("*.ttf.b64")
+    }
+    inputs.files(fontSourceFiles)
+    outputs.dir(generatedBundledFonts)
+    doLast {
+        val outputDir = generatedBundledFonts.get().dir("font").asFile
+        outputDir.mkdirs()
+        fontSourceFiles.files.forEach { source ->
+            val outputFile = outputDir.resolve(source.name.removeSuffix(".b64"))
+            outputFile.writeBytes(java.util.Base64.getDecoder().decode(source.readText().trim()))
+        }
+    }
+}
+
 val generatedChangelogAssets = layout.buildDirectory.dir("generated/assets/changelog")
 val prepareChangelogAsset by tasks.registering(Copy::class) {
     from(rootProject.file("CHANGELOG.md"))
@@ -104,6 +123,7 @@ android {
     }
 
     sourceSets.getByName("main").res.srcDir(generatedLauncherResources)
+    sourceSets.getByName("main").res.srcDir(generatedBundledFonts)
     sourceSets.getByName("main").assets.srcDir(generatedChangelogAssets)
 
     compileOptions {
@@ -121,7 +141,7 @@ android {
 }
 
 tasks.named("preBuild").configure {
-    dependsOn(generateLauncherForeground, prepareChangelogAsset)
+    dependsOn(generateLauncherForeground, prepareChangelogAsset, generateBundledFonts)
 }
 
 dependencies {
