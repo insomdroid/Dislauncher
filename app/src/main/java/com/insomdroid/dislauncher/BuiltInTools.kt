@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -1085,9 +1086,10 @@ private fun CalendarTool(context: Context, onBackRequested: () -> Unit, modifier
             .thenBy { if (it.time.isBlank()) "99:99" else it.time })
 
     Box(modifier = modifier) {
-    Column(modifier = Modifier.fillMaxSize().padding(bottom = 64.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(0.dp), modifier = Modifier.fillMaxWidth()) {
             TopAppBar(
+                windowInsets = WindowInsets(0.dp),
                 title = {
                     Text(
                         month.format(monthFormatter),
@@ -1206,7 +1208,11 @@ private fun CalendarTool(context: Context, onBackRequested: () -> Unit, modifier
                 Text("Nothing planned", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
-            LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(bottom = 72.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 items(dayEvents, key = { "device-${it.id}-${it.begin}" }) { event ->
                     Row(Modifier.fillMaxWidth().clickable { openDeviceCalendarEvent(context, event) }
                         .padding(horizontal = 4.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
