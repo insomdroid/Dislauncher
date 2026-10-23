@@ -233,12 +233,10 @@ internal fun DislauncherTheme(
         )
         when (preferences.fontMode) {
             "dislauncher", "mono" -> variableFont(R.font.inter_variable)
-            "urbanist" -> variableFont(R.font.urbanist_variable)
-            "sora" -> variableFont(R.font.sora_variable)
-            "spline_sans" -> variableFont(R.font.spline_sans_variable)
-            "outfit" -> variableFont(R.font.outfit_variable)
-            "dm_sans" -> variableFont(R.font.dm_sans_variable)
-            "geist" -> variableFont(R.font.geist_variable)
+            "syne" -> variableFont(R.font.syne_variable)
+            "bricolage_grotesque" -> variableFont(R.font.bricolage_grotesque_variable)
+            "doto" -> variableFont(R.font.doto_variable)
+            "major_mono_display" -> FontFamily(Font(R.font.major_mono_display_regular))
             "custom" -> {
                 val fontFile = listOf("ttf", "otf")
                     .map { File(context.filesDir, "fonts/custom-font.$it") }
