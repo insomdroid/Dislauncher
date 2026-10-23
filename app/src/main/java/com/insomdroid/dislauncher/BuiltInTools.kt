@@ -1350,8 +1350,8 @@ private fun CalendarTool(
                             Icon(Icons.Outlined.Notifications, contentDescription = builtInToolText("Reminder", "Pengingat"),
                                 tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 10.dp))
                         }
-                        Column(Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).clickable { beginEditTask(task) }
-                            .padding(vertical = 6.dp, horizontal = 4.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Column(Modifier.weight(1f).padding(vertical = 6.dp, horizontal = 4.dp),
+                            verticalArrangement = Arrangement.spacedBy(3.dp)) {
                             Text(task.title, style = MaterialTheme.typography.bodyLarge,
                                 textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None,
                                 color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface)
@@ -1364,6 +1364,10 @@ private fun CalendarTool(
                                 if (task.type == "reminder") Text("Reminder", style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.primary)
                             }
+                        }
+                        IconButton(onClick = { beginEditTask(task) }) {
+                            Icon(Icons.Outlined.Edit, contentDescription = builtInToolText("Edit task", "Edit tugas"),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         IconButton(onClick = { deleteTarget = task }) {
                             Icon(Icons.Outlined.DeleteOutline, contentDescription = builtInToolText("Delete task", "Hapus tugas"),
