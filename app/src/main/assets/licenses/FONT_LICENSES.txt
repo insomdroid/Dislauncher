@@ -1,9 +1,32 @@
-Copyright 2020 The Inter Project Authors (https://github.com/rsms/inter)
+THIRD-PARTY FONT LICENSES
+=========================
 
-This Font Software is licensed under the SIL Open Font License, Version 1.1.
-This license is copied below, and is also available with a FAQ at:
-https://scripts.sil.org/OFL
+The following font families are bundled with Dislauncher. Each is licensed under the
+SIL Open Font License, Version 1.1 (OFL-1.1). This notice and the license text below
+are included to satisfy the license notice requirements for redistribution with software.
 
+Inter
+Copyright 2020 The Inter Project Authors
+Source: https://github.com/rsms/inter
+
+Syne
+Copyright 2017 The Syne Project Authors
+Source: https://gitlab.com/bonjour-monde/fonderie/syne-typeface
+
+Bricolage Grotesque
+Copyright 2022 The Bricolage Grotesque Project Authors
+Source: https://github.com/ateliertriay/bricolage
+
+Doto
+Copyright 2024 The Doto Project Authors
+Source: https://github.com/oliverlalan/Doto
+
+Overpass Mono
+Copyright 2021 The Overpass Project Authors
+Source: https://github.com/RedHatOfficial/Overpass
+
+These notices apply to the respective font software, not to Dislauncher's original source code.
+The font software remains under OFL-1.1; Dislauncher itself is licensed separately under MIT.
 
 -----------------------------------------------------------
 SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007

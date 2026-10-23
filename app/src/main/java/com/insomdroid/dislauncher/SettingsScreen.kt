@@ -386,6 +386,10 @@ internal fun SettingsScreen(
                                 listOf(
                                     "system" to tr("System", "Sistem"),
                                     "dislauncher" to "Inter Variable",
+                                    "syne" to "Syne",
+                                    "bricolage_grotesque" to "Bricolage Grotesque",
+                                    "doto" to "Doto",
+                                    "overpass_mono" to "Overpass Mono",
                                     "custom" to tr("Custom", "Kustom")
                                 )
                             ) { value ->
