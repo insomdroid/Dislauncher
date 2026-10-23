@@ -106,7 +106,7 @@ internal fun SettingsScreen(
     var openDialog by remember { mutableStateOf("") }
     var newFolderName by remember { mutableStateOf("") }
     var manageFolderName by remember { mutableStateOf<String?>(null) }
-    var wallpaperTarget by remember { mutableStateOf("both") }
+    var wallpaperTarget by remember(preferences.wallpaperTarget) { mutableStateOf(preferences.wallpaperTarget) }
     var showRestartConfirmation by remember { mutableStateOf(false) }
     var detectedIconPacks by remember { mutableStateOf(iconPacks) }
     var refreshVersion by remember { mutableStateOf(0) }
@@ -288,20 +288,41 @@ internal fun SettingsScreen(
                             ) {
                                 onPreferencesChange(preferences.copy(dynamicColor = it))
                             }
-                            ChoiceRow(
-                                tr("Accent color", "Warna aksen"),
-                                preferences.accentPreset,
-                                listOf(
-                                    "default" to tr("Default", "Bawaan"),
-                                    "red" to tr("Red", "Merah"),
-                                    "yellow" to tr("Yellow", "Kuning"),
-                                    "blue" to tr("Blue", "Biru"),
-                                    "green" to tr("Green", "Hijau"),
-                                    "purple" to tr("Purple", "Ungu"),
-                                    "orange" to tr("Orange", "Oranye"),
-                                    "pink" to tr("Pink", "Merah muda")
-                                )
-                            ) { onPreferencesChange(preferences.copy(accentPreset = it)) }
+                            if (preferences.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        tr("Accent color", "Warna aksen"),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        tr(
+                                            "Managed by Dynamic color while it is enabled.",
+                                            "Dikelola oleh Warna dinamis selama fitur ini aktif."
+                                        ),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            } else {
+                                ChoiceRow(
+                                    tr("Accent color", "Warna aksen"),
+                                    preferences.accentPreset,
+                                    listOf(
+                                        "default" to tr("Default", "Bawaan"),
+                                        "red" to tr("Red", "Merah"),
+                                        "yellow" to tr("Yellow", "Kuning"),
+                                        "blue" to tr("Blue", "Biru"),
+                                        "green" to tr("Green", "Hijau"),
+                                        "purple" to tr("Purple", "Ungu"),
+                                        "orange" to tr("Orange", "Oranye"),
+                                        "pink" to tr("Pink", "Merah muda")
+                                    )
+                                ) { onPreferencesChange(preferences.copy(accentPreset = it)) }
+                            }
                         }
                         SettingsGroup(tr("Wallpaper", "Wallpaper")) {
                             ChoiceRow(
@@ -339,7 +360,6 @@ internal fun SettingsScreen(
                                     ),
                                     tr("Apply to screen…", "Terapkan ke layar…"),
                                     {
-                                        wallpaperTarget = "both"
                                         openDialog = "wallpaperTarget"
                                     }
                                 )
@@ -352,7 +372,6 @@ internal fun SettingsScreen(
                                     ),
                                     tr("Apply to screen…", "Terapkan ke layar…"),
                                     {
-                                        wallpaperTarget = "both"
                                         openDialog = "wallpaperTarget"
                                     }
                                 )
@@ -786,6 +805,7 @@ internal fun SettingsScreen(
                     onClick = {
                         val target = wallpaperTarget
                         openDialog = ""
+                        onPreferencesChange(preferences.copy(wallpaperTarget = target))
                         if (preferences.wallpaperMode == "image" && preferences.wallpaperUri == null) {
                             android.widget.Toast.makeText(
                                 context,
