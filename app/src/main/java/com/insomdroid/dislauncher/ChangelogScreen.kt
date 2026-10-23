@@ -44,8 +44,16 @@ private fun readChangelog(context: Context, language: String): List<ChangelogEnt
         lines.drop(1).forEach { rawLine ->
             val line = rawLine.trim()
             when {
-                line == "### en" -> activeLanguage = "en"
-                line == "### id" -> activeLanguage = "id"
+                line == "### en" -> {
+                    activeLanguage = "en"
+                    sections.clear()
+                    sectionTitle = ""
+                }
+                line == "### id" -> {
+                    activeLanguage = "id"
+                    sections.clear()
+                    sectionTitle = ""
+                }
                 activeLanguage != language -> Unit
                 line.startsWith("#### ") -> {
                     sectionTitle = line.removePrefix("#### ").trim()
