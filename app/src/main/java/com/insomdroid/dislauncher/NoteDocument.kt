@@ -49,7 +49,7 @@ internal object NoteDocumentCodec {
     private val bulletPattern = Regex("^\\s*[-*+]\\s+(.+)$")
     private val numberedPattern = Regex("^\\s*(\\d+)[.)]\\s+(.+)$")
     private val checklistPattern = Regex("^\\s*[-*+]\\s+\\[([ xX])]\\s+(.+)$")
-    private val inlinePattern = Regex("""!\[([^\]]*)\]\((?:<)?([^)>]+)(?:>)?\)|\[([^\]]+)\]\((https?://[^)]+)\)|\*\*(.+?)\*\*|~~(.+?)~~|\*(.+?)\*|`([^`]+)`""")
+    private val inlinePattern = Regex("""!\[([^\]]*)\]\((?:<)?([^)>]+)(?:>)?\)|\[([^\]]+)\]\((https?://[^)]+)\)|\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|~~(.+?)~~|\*(.+?)\*|`([^`]+)`""")
 
     fun fromMarkdown(markdown: String): NoteDocument {
         if (markdown.isBlank()) return NoteDocument()
@@ -141,10 +141,11 @@ internal object NoteDocumentCodec {
                     imageAlt = g[1]
                 )
                 match.value.startsWith("[") -> result += NoteInline(text = g[3], link = g[4])
-                g[5].isNotEmpty() -> result += NoteInline(g[5], setOf(NoteMark.BOLD))
-                g[6].isNotEmpty() -> result += NoteInline(g[6], setOf(NoteMark.STRIKETHROUGH))
-                g[7].isNotEmpty() -> result += NoteInline(g[7], setOf(NoteMark.ITALIC))
-                g[8].isNotEmpty() -> result += NoteInline(g[8], setOf(NoteMark.CODE))
+                g[5].isNotEmpty() -> result += NoteInline(g[5], setOf(NoteMark.BOLD, NoteMark.ITALIC))
+                g[6].isNotEmpty() -> result += NoteInline(g[6], setOf(NoteMark.BOLD))
+                g[7].isNotEmpty() -> result += NoteInline(g[7], setOf(NoteMark.STRIKETHROUGH))
+                g[8].isNotEmpty() -> result += NoteInline(g[8], setOf(NoteMark.ITALIC))
+                g[9].isNotEmpty() -> result += NoteInline(g[9], setOf(NoteMark.CODE))
             }
             cursor = match.range.last + 1
         }
