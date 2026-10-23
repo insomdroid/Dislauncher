@@ -3,6 +3,7 @@ package com.insomdroid.dislauncher
 import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.widget.TextView
 import android.content.pm.PackageManager
 import android.os.Build
@@ -32,6 +33,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -131,6 +135,13 @@ import java.util.Date
 import java.text.SimpleDateFormat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
+import com.kizitonwose.calendar.compose.HorizontalCalendar
+import com.kizitonwose.calendar.compose.rememberCalendarState
+import com.kizitonwose.calendar.core.DayPosition
 import java.util.UUID
 
 internal enum class BuiltInTool { NOTES, CALCULATOR, CALENDAR, UNIT_CONVERTER }
@@ -223,6 +234,39 @@ private fun readMarkdownBounded(input: java.io.InputStream, maxBytes: Int): Stri
             result.write(buffer, 0, count)
         }
         return result.toByteArray().toString(Charsets.UTF_8)
+    }
+}
+
+/**
+ * Creates a portable Markdown archive. Local content:// image references are copied into
+ * images/ and rewritten to relative paths. Remote images are never downloaded.
+ */
+private fun writeNoteArchive(context: Context, destination: Uri, markdown: String) {
+    val output = context.contentResolver.openOutputStream(destination) ?: error("Unable to open export destination")
+    ZipOutputStream(output.buffered()).use { zip ->
+        val copiedImages = linkedMapOf<String, String>()
+        var totalBytes = 0L
+        val pattern = Regex("""!\\[([^\\]]*)]\\((?:<)?(content://[^)\\s>]+)(?:>)?\\)""")
+        val portableMarkdown = pattern.replace(markdown) { match ->
+            val uriText = match.groupValues[2]
+            val path = copiedImages.getOrPut(uriText) {
+                val bytes = context.contentResolver.openInputStream(Uri.parse(uriText))?.use { it.readBytes() }
+                    ?: error("Could not read a local image referenced by this note")
+                require(bytes.size <= 20 * 1024 * 1024) { "An image exceeds the 20 MiB export limit" }
+                totalBytes += bytes.size
+                require(totalBytes <= 100 * 1024 * 1024) { "Images exceed the 100 MiB export limit" }
+                val ext = Uri.parse(uriText).lastPathSegment?.substringAfterLast('.', "")?.lowercase(Locale.ROOT)
+                    ?.takeIf { it.matches(Regex("[a-z0-9]{1,8}")) } ?: "bin"
+                val entry = "images/image_${copiedImages.size + 1}.$ext"
+                zip.putNextEntry(ZipEntry(entry)); zip.write(bytes); zip.closeEntry()
+                entry
+            }
+            "![${match.groupValues[1]}]($path)"
+        }
+        zip.putNextEntry(ZipEntry("note.md")); zip.write(portableMarkdown.toByteArray(Charsets.UTF_8)); zip.closeEntry()
+        zip.putNextEntry(ZipEntry("README.txt"))
+        zip.write("Dislauncher note archive. note.md contains the note; images/ contains local image assets referenced with relative paths.".toByteArray(Charsets.UTF_8))
+        zip.closeEntry()
     }
 }
 
@@ -455,6 +499,7 @@ private fun NotesTool(
     var body by remember { mutableStateOf("") }
     var bodyField by remember { mutableStateOf(TextFieldValue("")) }
     var searchQuery by remember { mutableStateOf("") }
+    var notesGridView by remember(context) { mutableStateOf(notesStore(context).getBoolean("grid_view", false)) }
     var previewMode by remember { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<String?>(null) }
     var noteMenuTarget by remember { mutableStateOf<String?>(null) }
@@ -479,12 +524,13 @@ private fun NotesTool(
             onEditingChanged(true)
         }.onFailure { Toast.makeText(context, "Could not import Markdown file", Toast.LENGTH_LONG).show() }
     }
-    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/markdown")) { uri ->
-        if (uri != null) runCatching {
-            context.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { it.write(exportContent) }
-                ?: error("Unable to write this file")
-            Toast.makeText(context, "Markdown exported", Toast.LENGTH_SHORT).show()
-        }.onFailure { Toast.makeText(context, "Could not export Markdown file", Toast.LENGTH_LONG).show() }
+    val exportScope = rememberCoroutineScope()
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+        if (uri != null) exportScope.launch {
+            val result = withContext(Dispatchers.IO) { runCatching { writeNoteArchive(context, uri, exportContent) } }
+            result.onSuccess { Toast.makeText(context, "Note archive exported", Toast.LENGTH_SHORT).show() }
+                .onFailure { Toast.makeText(context, "Could not export note archive: ${it.message.orEmpty()}", Toast.LENGTH_LONG).show() }
+        }
     }
     fun saveCurrent() {
         val id = selectedId ?: return
@@ -539,7 +585,7 @@ private fun NotesTool(
     fun exportNote(noteTitle: String, noteBody: String) {
         exportContent = if (noteTitle.isBlank()) noteBody else "# $noteTitle\n\n$noteBody"
         val safeName = noteTitle.ifBlank { "note" }.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim().ifBlank { "note" }
-        exportLauncher.launch("$safeName.md")
+        exportLauncher.launch("$safeName.zip")
     }
 
     LaunchedEffect(backSignal) { if (backSignal > 0 && selectedId != null) closeEditor() }
@@ -562,6 +608,10 @@ private fun NotesTool(
                         singleLine = true,
                         shape = RoundedCornerShape(16.dp)
                     )
+                    TextButton(onClick = {
+                        notesGridView = !notesGridView
+                        notesStore(context).edit().putBoolean("grid_view", notesGridView).apply()
+                    }) { Text(if (notesGridView) "List" else "Grid") }
                     IconButton(
                         onClick = { importLauncher.launch(arrayOf("text/markdown", "text/plain", "application/octet-stream")) },
                         modifier = Modifier.size(48.dp)
@@ -574,28 +624,40 @@ private fun NotesTool(
                 }
                 if (visibleNotes.isEmpty()) {
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.padding(horizontal = 24.dp)
-                        ) {
-                            Icon(
-                                Icons.Outlined.NoteAdd,
-                                contentDescription = null,
-                                modifier = Modifier.size(36.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                if (searchQuery.isBlank()) "No notes yet" else "No matching notes",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                if (searchQuery.isBlank()) "Create a note to keep your thoughts in one place." else "Try a different search term.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
-                            )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(horizontal = 24.dp)) {
+                            Icon(Icons.Outlined.NoteAdd, contentDescription = null, modifier = Modifier.size(36.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(if (searchQuery.isBlank()) "No notes yet" else "No matching notes",
+                                style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                            Text(if (searchQuery.isBlank()) "Create a note to keep your thoughts in one place." else "Try a different search term.",
+                                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center)
+                        }
+                    }
+                } else if (notesGridView) {
+                    LazyVerticalGrid(columns = GridCells.Fixed(2), modifier = Modifier.weight(1f).fillMaxWidth(),
+                        contentPadding = PaddingValues(bottom = 88.dp), horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        gridItems(visibleNotes, key = { it.id }) { note ->
+                            Surface(modifier = Modifier.fillMaxWidth().heightIn(min = 132.dp).clickable { openNote(note) },
+                                shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                tonalElevation = 1.dp) {
+                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    if (note.pinned) Text("PINNED", style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary)
+                                    Text(note.title.ifBlank { "Untitled note" }, style = MaterialTheme.typography.titleMedium,
+                                        maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                    Text(note.content.lineSequence().map { it.trimStart('#', ' ', '-', '*') }
+                                        .firstOrNull { it.isNotBlank() }.orEmpty().ifBlank { "No content" },
+                                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 4, overflow = TextOverflow.Ellipsis)
+                                    Spacer(Modifier.weight(1f))
+                                    Text(Instant.ofEpochMilli(note.updatedAt).atZone(ZoneId.systemDefault())
+                                        .format(DateTimeFormatter.ofPattern("d MMM, HH:mm", Locale.getDefault())),
+                                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
                         }
                     }
                 } else {
@@ -623,25 +685,17 @@ private fun NotesTool(
                                         IconButton(onClick = { noteMenuTarget = note.id }) {
                                             Icon(Icons.Outlined.MoreVert, contentDescription = builtInToolText("Note actions", "Aksi catatan"))
                                         }
-                                        DropdownMenu(
-                                            expanded = noteMenuTarget == note.id,
-                                            onDismissRequest = { noteMenuTarget = null }
-                                        ) {
-                                            DropdownMenuItem(
-                                                text = { Text(if (note.pinned) "Unpin note" else "Pin note") },
+                                        DropdownMenu(expanded = noteMenuTarget == note.id, onDismissRequest = { noteMenuTarget = null }) {
+                                            DropdownMenuItem(text = { Text(if (note.pinned) "Unpin note" else "Pin note") },
                                                 leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null) },
                                                 onClick = {
                                                     notes = notes.map { if (it.id == note.id) it.copy(pinned = !it.pinned) else it }
                                                         .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
-                                                    saveNotes(context, notes)
-                                                    noteMenuTarget = null
-                                                }
-                                            )
-                                            DropdownMenuItem(
-                                                text = { Text(builtInToolText("Delete", "Hapus")) },
+                                                    saveNotes(context, notes); noteMenuTarget = null
+                                                })
+                                            DropdownMenuItem(text = { Text(builtInToolText("Delete", "Hapus")) },
                                                 leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null) },
-                                                onClick = { deleteTarget = note.id; noteMenuTarget = null }
-                                            )
+                                                onClick = { deleteTarget = note.id; noteMenuTarget = null })
                                         }
                                     }
                                 }
@@ -650,7 +704,6 @@ private fun NotesTool(
                         }
                     }
                 }
-            }
         } else {
             Column(Modifier.fillMaxSize().imePadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -1100,10 +1153,11 @@ private fun CalendarTool(
     val firstDayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
     val weekDays = (0..6).map { firstDayOfWeek.plus(it.toLong()) }
     val taskDate = selectedDate.toString()
-    val dayEvents = deviceEvents.filter { Instant.ofEpochMilli(it.begin).atZone(ZoneId.systemDefault()).toLocalDate() == selectedDate }.sortedBy { it.begin }
+    val dayEvents = deviceEvents.filter { Instant.ofEpochMilli(it.begin).atZone(ZoneId.systemDefault()).toLocalDate() == selectedDate }
+        .sortedWith(compareBy<DeviceCalendarEvent> { if (it.allDay) 0 else 1 }.thenBy { it.begin })
     val dayTasks = tasks.filter { it.date == taskDate }
-        .sortedWith(compareBy<LocalTask> { it.completed }.thenByDescending { it.priority }
-            .thenBy { if (it.time.isBlank()) "99:99" else it.time })
+        .sortedWith(compareBy<LocalTask> { if (it.time.isBlank()) 2 else 1 }
+            .thenBy { it.time.ifBlank { "99:99" } }.thenBy { it.completed }.thenByDescending { it.priority })
 
     Box(modifier = modifier) {
     Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -1122,62 +1176,56 @@ private fun CalendarTool(
                     Text(if (Locale.getDefault().language == "id") "Hari ini" else "Today")
                 }
             }
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerLow
-        ) {
-            Column(Modifier.padding(horizontal = 8.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+        val calendarFirstDay = remember { WeekFields.of(Locale.getDefault()).firstDayOfWeek }
+        val calendarState = rememberCalendarState(
+            startMonth = month.minusMonths(24),
+            endMonth = month.plusMonths(24),
+            firstVisibleMonth = month,
+            firstDayOfWeek = calendarFirstDay
+        )
+        LaunchedEffect(month) {
+            if (calendarState.firstVisibleMonth.yearMonth != month) calendarState.scrollToMonth(month)
+        }
+        LaunchedEffect(calendarState.firstVisibleMonth.yearMonth) {
+            val visibleMonth = calendarState.firstVisibleMonth.yearMonth
+            if (visibleMonth != month) onMonthChange(visibleMonth)
+        }
+        Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLow) {
+            Column(Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
                 Row(Modifier.fillMaxWidth()) {
-                    weekDays.forEach { weekDay ->
-                        Text(
-                            weekDay.getDisplayName(java.time.format.TextStyle.NARROW, Locale.getDefault()),
+                    (0..6).map { calendarFirstDay.plus(it.toLong()) }.forEach { weekDay ->
+                        Text(weekDay.getDisplayName(java.time.format.TextStyle.NARROW, Locale.getDefault()),
                             Modifier.weight(1f).padding(vertical = 4.dp), textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.labelMedium
-                        )
+                            color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
                     }
                 }
-                val firstOffset = (month.atDay(1).dayOfWeek.value - firstDayOfWeek.value + 7) % 7
-                val cells = List(firstOffset) { 0 } + (1..month.lengthOfMonth()).toList()
-                cells.chunked(7).forEach { week ->
-                    Row(Modifier.fillMaxWidth()) {
-                        week.forEach { day ->
-                            Box(Modifier.weight(1f).height(38.dp).padding(1.dp), contentAlignment = Alignment.Center) {
-                                if (day > 0) {
-                                    val dateValue = month.atDay(day)
-                                    val selected = dateValue == selectedDate
-                                    val today = dateValue == LocalDate.now()
-                                    val hasTasks = tasks.any { it.date == dateValue.toString() } ||
-                                        deviceEvents.any { Instant.ofEpochMilli(it.begin).atZone(ZoneId.systemDefault()).toLocalDate() == dateValue }
-                                    Column(
-                                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp))
-                                            .background(when {
-                                                selected -> MaterialTheme.colorScheme.primary
-                                                today -> MaterialTheme.colorScheme.secondaryContainer
-                                                else -> Color.Transparent
-                                            })
-                                            .clickable { selectedDate = dateValue },
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Center
-                                    ) {
-                                        Text(day.toString(), color = when {
-                                            selected -> MaterialTheme.colorScheme.onPrimary
-                                            today -> MaterialTheme.colorScheme.onSecondaryContainer
-                                            else -> MaterialTheme.colorScheme.onSurface
-                                        }, style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = if (selected || today) FontWeight.SemiBold else FontWeight.Normal)
-                                        Box(Modifier.padding(top = 2.dp).size(4.dp).clip(CircleShape)
-                                            .background(if (hasTasks) {
-                                                if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
-                                            } else Color.Transparent))
-                                    }
-                                }
-                            }
+                HorizontalCalendar(state = calendarState, dayContent = { day ->
+                    val dateValue = day.date
+                    if (day.position == DayPosition.MonthDate) {
+                        val selected = dateValue == selectedDate
+                        val today = dateValue == LocalDate.now()
+                        val hasTasks = tasks.any { it.date == dateValue.toString() } ||
+                            deviceEvents.any { Instant.ofEpochMilli(it.begin).atZone(ZoneId.systemDefault()).toLocalDate() == dateValue }
+                        Column(modifier = Modifier.fillMaxWidth().height(38.dp).padding(1.dp)
+                            .clip(RoundedCornerShape(14.dp)).background(when {
+                                selected -> MaterialTheme.colorScheme.primary
+                                today -> MaterialTheme.colorScheme.secondaryContainer
+                                else -> Color.Transparent
+                            }).clickable { selectedDate = dateValue },
+                            horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                            Text(dateValue.dayOfMonth.toString(), color = when {
+                                selected -> MaterialTheme.colorScheme.onPrimary
+                                today -> MaterialTheme.colorScheme.onSecondaryContainer
+                                else -> MaterialTheme.colorScheme.onSurface
+                            }, style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = if (selected || today) FontWeight.SemiBold else FontWeight.Normal)
+                            Box(Modifier.padding(top = 2.dp).size(4.dp).clip(CircleShape).background(if (hasTasks) {
+                                if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
+                            } else Color.Transparent))
                         }
-                        repeat(7 - week.size) { Spacer(Modifier.weight(1f)) }
-                    }
-                }
+                    } else Box(Modifier.fillMaxWidth().height(38.dp))
+                })
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
