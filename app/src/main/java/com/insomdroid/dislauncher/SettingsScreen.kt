@@ -122,9 +122,15 @@ internal fun SettingsScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    BackHandler(enabled = selectedCategory != null) {
-        selectedCategory = null
-        openDialog = ""
+    var showChangelog by remember { mutableStateOf(false) }
+
+    BackHandler(enabled = showChangelog || selectedCategory != null) {
+        if (showChangelog) {
+            showChangelog = false
+        } else {
+            selectedCategory = null
+            openDialog = ""
+        }
     }
 
     val adminComponent = remember(context) {
@@ -167,7 +173,9 @@ internal fun SettingsScreen(
         )
     }
 
-    val categoryTitle = when (selectedCategory) {
+    val categoryTitle = if (showChangelog) {
+        tr("What's New", "Yang Baru")
+    } else when (selectedCategory) {
         SettingsCategory.APPEARANCE -> tr("Appearance", "Tampilan")
         SettingsCategory.HOME -> tr("Home screen", "Layar utama")
         SettingsCategory.APPS -> tr("Apps", "Aplikasi")
@@ -191,10 +199,14 @@ internal fun SettingsScreen(
                 navigationIcon = {
                     IconButton(
                         onClick = {
-                            if (selectedCategory != null) {
-                                selectedCategory = null
-                                openDialog = ""
-                            } else onBack()
+                            when {
+                                showChangelog -> showChangelog = false
+                                selectedCategory != null -> {
+                                    selectedCategory = null
+                                    openDialog = ""
+                                }
+                                else -> onBack()
+                            }
                         }
                     ) {
                         Icon(
@@ -220,7 +232,9 @@ internal fun SettingsScreen(
                 }),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            if (selectedCategory == null) {
+            if (showChangelog) {
+                ChangelogScreen()
+            } else if (selectedCategory == null) {
                 Text(
                     tr("Choose a category", "Pilih kategori"),
                     style = MaterialTheme.typography.bodyMedium,
@@ -699,6 +713,11 @@ internal fun SettingsScreen(
                                     modifier = Modifier.weight(1f)
                                 )
                             }
+                            SettingAction(
+                                tr("What's New", "Yang Baru"),
+                                tr("See what's changed in every release.", "Lihat perubahan pada setiap versi."),
+                                tr("View", "Lihat")
+                            ) { showChangelog = true }
                             SettingAction(
                                 tr("Restart Launcher", "Mulai ulang launcher"),
                                 tr("Reloads the launcher interface.", "Memuat ulang antarmuka launcher."),

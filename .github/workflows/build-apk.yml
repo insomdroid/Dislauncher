@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'app/**'
+      - 'CHANGELOG.md'
       - 'gradle/**'
       - 'gradlew'
       - 'gradlew.bat'
@@ -20,6 +21,7 @@ on:
       - main
     paths:
       - 'app/**'
+      - 'CHANGELOG.md'
       - 'gradle/**'
       - 'gradlew'
       - 'gradlew.bat'

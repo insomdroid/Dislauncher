@@ -58,6 +58,13 @@ val generateLauncherForeground by tasks.registering(Copy::class) {
     rename { "dislauncher_icon_foreground.png" }
 }
 
+val generatedChangelogAssets = layout.buildDirectory.dir("generated/assets/changelog")
+val prepareChangelogAsset by tasks.registering(Copy::class) {
+    from(rootProject.file("CHANGELOG.md"))
+    into(generatedChangelogAssets)
+    rename { "changelog.md" }
+}
+
 android {
     namespace = "com.insomdroid.dislauncher"
     compileSdk = 36
@@ -97,6 +104,7 @@ android {
     }
 
     sourceSets.getByName("main").res.srcDir(generatedLauncherResources)
+    sourceSets.getByName("main").assets.srcDir(generatedChangelogAssets)
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -113,7 +121,7 @@ android {
 }
 
 tasks.named("preBuild").configure {
-    dependsOn(generateLauncherForeground)
+    dependsOn(generateLauncherForeground, prepareChangelogAsset)
 }
 
 dependencies {
