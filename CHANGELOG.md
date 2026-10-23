@@ -3,6 +3,11 @@
 This file is the single source of truth for the in-app What's New screen.
 Keep release notes in English. The build copies this file into the APK; the app reads it locally and does not need a network connection.
 
+## 1.2.1 | 23 October 2026
+#### Fixes
+- Fixed Dynamic Color settings so the manual accent option clearly indicates when system colors take precedence.
+- Remembered the last confirmed wallpaper target when reopening the wallpaper selection dialog.
+
 ## 1.2.0 | 22 October 2026
 #### What's New
 - **Improved Notes:** Write and edit notes with Markdown, preview formatting, import and export `.md` files, search note content, and pin important notes.
