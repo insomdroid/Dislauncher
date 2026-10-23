@@ -247,8 +247,7 @@ private fun markdownPreviewTypeface(context: Context): android.graphics.Typeface
             ?.let { file -> runCatching { android.graphics.Typeface.createFromFile(file) }.getOrNull() }
             ?: android.graphics.Typeface.DEFAULT
         else -> android.graphics.Typeface.DEFAULT
-    }
-}
+    }}
 
 private data class CalculatorHistoryEntry(
     val id: String,
@@ -396,7 +395,10 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             .fillMaxSize()
                             .align(Alignment.TopCenter)
                             .padding(padding)
-                            .padding(horizontal = if (maxWidth >= 600.dp) 24.dp else 16.dp, vertical = 8.dp)
+                            .padding(
+                                horizontal = if (tool == BuiltInTool.CALENDAR) 0.dp else if (maxWidth >= 600.dp) 24.dp else 16.dp,
+                                vertical = if (tool == BuiltInTool.CALENDAR) 0.dp else 8.dp
+                            )
                     ) {
                     when (tool) {
                         BuiltInTool.NOTES -> NotesTool(
@@ -497,8 +499,7 @@ private fun NotesTool(
             val markdownImage = "![](<" + uri.toString() + ">)"
             body = if (body.isBlank()) markdownImage else body + "\n\n" + markdownImage
             bodyField = TextFieldValue(body, TextRange(body.length))
-            saveCurrent()
-        }.onFailure {
+            saveCurrent()        }.onFailure {
             Toast.makeText(context, "Could not add image", Toast.LENGTH_LONG).show()
         }
     }
@@ -747,8 +748,7 @@ private fun NotesTool(
                                     Icon(Icons.Outlined.FormatStrikethrough, contentDescription = builtInToolText("Strikethrough", "Coret"))
                                 }
                                 IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "`", "`"); body = bodyField.text; saveCurrent() }) {
-                                    Icon(Icons.Outlined.Code, contentDescription = builtInToolText("Inline code", "Kode sebaris"))
-                                }
+                                    Icon(Icons.Outlined.Code, contentDescription = builtInToolText("Inline code", "Kode sebaris"))                                }
                                 IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "- ", ""); body = bodyField.text; saveCurrent() }) {
                                     Icon(Icons.Outlined.FormatListBulleted, contentDescription = builtInToolText("List", "Daftar"))
                                 }
@@ -997,8 +997,7 @@ private fun CalculatorTool(
                     }
                 }
             }
-        }
-    }
+        }    }
 
     if (showClearHistoryDialog) {
         AlertDialog(
@@ -1247,8 +1246,7 @@ private fun CalendarTool(context: Context, onBackRequested: () -> Unit, modifier
                                 textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None,
                                 color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface)
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Surface(color = priorityColor(task.priority), shape = RoundedCornerShape(50)) {
-                                    Text(priorityLabel(task.priority), modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                Surface(color = priorityColor(task.priority), shape = RoundedCornerShape(50)) {                                    Text(priorityLabel(task.priority), modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface)
                                 }
                                 if (task.time.isNotBlank()) Text(task.time, style = MaterialTheme.typography.labelSmall,
