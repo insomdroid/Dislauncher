@@ -718,6 +718,7 @@ private fun NotesTool(
                         }
                     }
                 }
+            }
         } else {
             Column(Modifier.fillMaxSize().imePadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
