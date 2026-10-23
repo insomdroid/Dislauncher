@@ -9,29 +9,21 @@ Inter
 Copyright 2020 The Inter Project Authors
 Source: https://github.com/rsms/inter
 
-Urbanist
-Copyright 2021 The Urbanist Project Authors
-Source: https://github.com/coreyhu/Urbanist
+Syne
+Copyright 2017 The Syne Project Authors
+Source: https://gitlab.com/bonjour-monde/fonderie/syne-typeface
 
-Sora
-Copyright 2019 The Sora Project Authors
-Source: https://github.com/sora-xor/sora-font
+Bricolage Grotesque
+Copyright 2022 The Bricolage Grotesque Project Authors
+Source: https://github.com/ateliertriay/bricolage
 
-Spline Sans
-Copyright 2021 The Spline Sans Project Authors
-Source: https://github.com/SorkinType/SplineSans
+Doto
+Copyright 2024 The Doto Project Authors
+Source: https://github.com/oliverlalan/Doto
 
-Outfit
-Copyright 2021 The Outfit Project Authors
-Source: https://github.com/Outfitio/Outfit-Fonts
-
-DM Sans
-Copyright 2014 The DM Sans Project Authors
-Source: https://github.com/googlefonts/dm-fonts
-
-Geist Sans
-Copyright 2024 The Geist Project Authors
-Source: https://github.com/vercel/geist-font
+Major Mono Display
+Copyright 2018 The Major Mono Project Authors
+Source: https://github.com/googlefonts/majormono
 
 These notices apply to the respective font software, not to Dislauncher's original source code.
 The font software remains under OFL-1.1; Dislauncher itself is licensed separately under MIT.
