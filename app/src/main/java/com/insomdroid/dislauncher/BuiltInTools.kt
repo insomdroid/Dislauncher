@@ -1242,8 +1242,8 @@ private fun CalendarTool(
             }
         val calendarFirstDay = remember { WeekFields.of(Locale.getDefault()).firstDayOfWeek }
         val calendarInitialMonth = remember { month }
-        val calendarStartMonth = remember { calendarInitialMonth.minusMonths(24) }
-        val calendarEndMonth = remember { calendarInitialMonth.plusMonths(24) }
+        val calendarStartMonth = remember { calendarInitialMonth.minusMonths(120) }
+        val calendarEndMonth = remember { calendarInitialMonth.plusMonths(120) }
         val calendarState = rememberCalendarState(
             startMonth = calendarStartMonth,
             endMonth = calendarEndMonth,
