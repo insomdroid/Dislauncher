@@ -160,7 +160,9 @@ private data class LocalNote(
     val title: String,
     val content: String,
     val updatedAt: Long,
-    val pinned: Boolean = false
+    val pinned: Boolean = false,
+    /** Versioned structured document JSON; content remains Markdown for backwards compatibility. */
+    val documentJson: String = ""
 )
 
 private data class LocalTask(
@@ -181,7 +183,15 @@ private fun loadNotes(context: Context): List<LocalNote> = runCatching {
     val array = JSONArray(notesStore(context).getString("notes_json", "[]") ?: "[]")
     (0 until array.length()).mapNotNull { i ->
         val o = array.optJSONObject(i) ?: return@mapNotNull null
-        LocalNote(o.optString("id"), o.optString("title"), o.optString("content"), o.optLong("updatedAt"), o.optBoolean("pinned", false))
+        val content = o.optString("content")
+        val savedDocument = o.optString("document")
+        val documentJson = savedDocument.takeIf {
+            it.isNotBlank() && NoteDocumentCodec.decode(it) != null
+        } ?: NoteDocumentCodec.encode(NoteDocumentCodec.fromMarkdown(content))
+        LocalNote(
+            o.optString("id"), o.optString("title"), content, o.optLong("updatedAt"),
+            o.optBoolean("pinned", false), documentJson
+        )
     }.filter { it.id.isNotBlank() }
 }.getOrDefault(emptyList()).sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
 
@@ -189,7 +199,10 @@ private fun saveNotes(context: Context, notes: List<LocalNote>) {
     val array = JSONArray()
     notes.forEach { note ->
         array.put(JSONObject().put("id", note.id).put("title", note.title)
-            .put("content", note.content).put("updatedAt", note.updatedAt).put("pinned", note.pinned))
+            .put("content", note.content)
+            .put("document", note.documentJson.takeIf { it.isNotBlank() }
+                ?: NoteDocumentCodec.encode(NoteDocumentCodec.fromMarkdown(note.content)))
+            .put("updatedAt", note.updatedAt).put("pinned", note.pinned))
     }
     notesStore(context).edit().putString("notes_json", array.toString()).apply()
 }
@@ -556,7 +569,10 @@ private fun NotesTool(
             return
         }
         val pinned = notes.firstOrNull { it.id == id }?.pinned ?: false
-        val current = LocalNote(id, title.trim(), body, System.currentTimeMillis(), pinned)
+        val current = LocalNote(
+            id, title.trim(), body, System.currentTimeMillis(), pinned,
+            NoteDocumentCodec.encode(NoteDocumentCodec.fromMarkdown(body))
+        )
         notes = (notes.filterNot { it.id == id } + current)
             .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
         saveNotes(context, notes)
