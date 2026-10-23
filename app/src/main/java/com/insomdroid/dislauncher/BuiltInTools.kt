@@ -1134,6 +1134,7 @@ private fun CalendarTool(
     }
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     var showEditor by remember { mutableStateOf(false) }
+    var editingTaskId by remember { mutableStateOf<String?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     var title by remember { mutableStateOf("") }
@@ -1147,6 +1148,8 @@ private fun CalendarTool(
     fun addTask(task: LocalTask, schedule: Boolean) {
         tasks = (tasks.filterNot { it.id == task.id } + task)
         saveTasks(context, tasks)
+        // Replacing a reminder must also replace its previously scheduled alarm.
+        cancelLocalReminder(context, task.id)
         if (schedule && task.type == "reminder" && task.reminderAt > System.currentTimeMillis()) {
             scheduleLocalReminder(context, task.id, task.title, task.reminderAt)
         }
@@ -1166,11 +1169,22 @@ private fun CalendarTool(
     }
 
     fun beginNewTask() {
+        editingTaskId = null
         title = ""
         type = "todo"
         date = selectedDate
         time = LocalTime.of(9, 0)
         priority = 2
+        showEditor = true
+    }
+
+    fun beginEditTask(task: LocalTask) {
+        editingTaskId = task.id
+        title = task.title
+        type = task.type
+        date = runCatching { LocalDate.parse(task.date) }.getOrDefault(selectedDate)
+        time = runCatching { LocalTime.parse(task.time) }.getOrDefault(LocalTime.of(9, 0))
+        priority = task.priority
         showEditor = true
     }
 
@@ -1317,7 +1331,8 @@ private fun CalendarTool(
                             Icon(Icons.Outlined.Notifications, contentDescription = builtInToolText("Reminder", "Pengingat"),
                                 tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 10.dp))
                         }
-                        Column(Modifier.weight(1f).padding(vertical = 2.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Column(Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).clickable { beginEditTask(task) }
+                            .padding(vertical = 6.dp, horizontal = 4.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                             Text(task.title, style = MaterialTheme.typography.bodyLarge,
                                 textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None,
                                 color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface)
@@ -1351,7 +1366,7 @@ private fun CalendarTool(
     if (showEditor) {
         AlertDialog(
             onDismissRequest = { showEditor = false },
-            title = { Text(builtInToolText("New task", "Tugas baru")) },
+            title = { Text(if (editingTaskId == null) builtInToolText("New task", "Tugas baru") else builtInToolText("Edit task", "Edit tugas")) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedTextField(value = title, onValueChange = { title = it },
@@ -1438,10 +1453,19 @@ private fun CalendarTool(
                         if (type == "reminder" && at <= System.currentTimeMillis()) {
                             Toast.makeText(context, "Choose a future time for the reminder", Toast.LENGTH_SHORT).show()
                         } else {
-                            val task = LocalTask(UUID.randomUUID().toString(), title.trim(), type,
-                                date.toString(), if (type == "reminder") time.format(DateTimeFormatter.ofPattern("HH:mm")) else "",
-                                at, priority)
+                            val existing = editingTaskId?.let { id -> tasks.firstOrNull { it.id == id } }
+                            val task = LocalTask(
+                                id = editingTaskId ?: UUID.randomUUID().toString(),
+                                title = title.trim(),
+                                type = type,
+                                date = date.toString(),
+                                time = if (type == "reminder") time.format(DateTimeFormatter.ofPattern("HH:mm")) else "",
+                                reminderAt = at,
+                                priority = priority,
+                                completed = existing?.completed ?: false
+                            )
                             showEditor = false
+                            editingTaskId = null
                             val permissionMissing = Build.VERSION.SDK_INT >= 33 &&
                                 ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
                             if (type == "reminder" && permissionMissing) {
@@ -1454,7 +1478,7 @@ private fun CalendarTool(
                     }
                 }) { Text(builtInToolText("Save", "Simpan")) }
             },
-            dismissButton = { TextButton(onClick = { showEditor = false }) { Text(builtInToolText("Cancel", "Batal")) } }
+            dismissButton = { TextButton(onClick = { showEditor = false; editingTaskId = null }) { Text(builtInToolText("Cancel", "Batal")) } }
         )
     }
 
