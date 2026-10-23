@@ -97,7 +97,7 @@ internal data class LauncherPreferences(
         }
 
         private fun normalizeFontMode(value: String): String = when (value) {
-            "system", "custom", "urbanist", "sora", "spline_sans", "outfit", "dm_sans", "geist" -> value
+            "system", "custom", "syne", "bricolage_grotesque", "doto", "major_mono_display" -> value
             "dislauncher", "mono" -> "dislauncher"
             else -> "system"
         }
