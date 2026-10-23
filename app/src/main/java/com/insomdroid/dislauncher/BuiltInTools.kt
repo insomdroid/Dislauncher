@@ -676,8 +676,27 @@ private fun NotesTool(
                                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     if (note.pinned) Text("PINNED", style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.primary)
-                                    Text(note.title.ifBlank { "Untitled note" }, style = MaterialTheme.typography.titleMedium,
-                                        maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                    Row(verticalAlignment = Alignment.Top) {
+                                        Text(note.title.ifBlank { "Untitled note" }, modifier = Modifier.weight(1f),
+                                            style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                        Box {
+                                            IconButton(onClick = { noteMenuTarget = note.id }, modifier = Modifier.size(32.dp)) {
+                                                Icon(Icons.Outlined.MoreVert, contentDescription = builtInToolText("Note actions", "Aksi catatan"))
+                                            }
+                                            DropdownMenu(expanded = noteMenuTarget == note.id, onDismissRequest = { noteMenuTarget = null }) {
+                                                DropdownMenuItem(text = { Text(if (note.pinned) "Unpin note" else "Pin note") },
+                                                    leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null) },
+                                                    onClick = {
+                                                        notes = notes.map { if (it.id == note.id) it.copy(pinned = !it.pinned, updatedAt = System.currentTimeMillis()) else it }
+                                                            .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
+                                                        saveNotes(context, notes); noteMenuTarget = null
+                                                    })
+                                                DropdownMenuItem(text = { Text(builtInToolText("Delete", "Hapus")) },
+                                                    leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null) },
+                                                    onClick = { deleteTarget = note.id; noteMenuTarget = null })
+                                            }
+                                        }
+                                    }
                                     Text(note.content.lineSequence().map { it.trimStart('#', ' ', '-', '*') }
                                         .firstOrNull { it.isNotBlank() }.orEmpty().ifBlank { "No content" },
                                         style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
