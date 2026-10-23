@@ -1217,7 +1217,10 @@ private fun CalendarTool(
     val firstDayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
     val weekDays = (0..6).map { firstDayOfWeek.plus(it.toLong()) }
     val taskDate = selectedDate.toString()
-    val dayEvents = deviceEvents.filter { Instant.ofEpochMilli(it.begin).atZone(ZoneId.systemDefault()).toLocalDate() == selectedDate }
+    val selectedDayStart = selectedDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    val selectedDayEnd = selectedDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    // Show multi-day events on every day they overlap, not only on their start date.
+    val dayEvents = deviceEvents.filter { it.begin < selectedDayEnd && it.end > selectedDayStart }
         .sortedWith(compareBy<DeviceCalendarEvent> { if (it.allDay) 0 else 1 }.thenBy { it.begin })
     val dayTasks = tasks.filter { it.date == taskDate }
         .sortedWith(compareBy<LocalTask> { if (it.time.isBlank()) 2 else 1 }
@@ -1272,8 +1275,10 @@ private fun CalendarTool(
                     if (day.position == DayPosition.MonthDate) {
                         val selected = dateValue == selectedDate
                         val today = dateValue == LocalDate.now()
+                        val dayStart = dateValue.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                        val dayEnd = dateValue.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
                         val hasTasks = tasks.any { it.date == dateValue.toString() } ||
-                            deviceEvents.any { Instant.ofEpochMilli(it.begin).atZone(ZoneId.systemDefault()).toLocalDate() == dateValue }
+                            deviceEvents.any { it.begin < dayEnd && it.end > dayStart }
                         Column(modifier = Modifier.fillMaxWidth().height(38.dp).padding(1.dp)
                             .clip(RoundedCornerShape(14.dp)).background(when {
                                 selected -> MaterialTheme.colorScheme.primary
