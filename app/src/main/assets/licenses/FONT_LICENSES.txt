@@ -9,6 +9,14 @@ Inter
 Copyright 2020 The Inter Project Authors
 Source: https://github.com/rsms/inter
 
+Urbanist
+Copyright 2021 The Urbanist Project Authors
+Source: https://github.com/coreyhu/Urbanist
+
+Sora
+Copyright 2019 The Sora Project Authors
+Source: https://github.com/sora-xor/sora-font
+
 Spline Sans
 Copyright 2021 The Spline Sans Project Authors
 Source: https://github.com/SorkinType/SplineSans
