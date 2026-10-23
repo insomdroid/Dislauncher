@@ -241,6 +241,20 @@ private fun readMarkdownBounded(input: java.io.InputStream, maxBytes: Int): Stri
  * Creates a portable Markdown archive. Local content:// image references are copied into
  * images/ and rewritten to relative paths. Remote images are never downloaded.
  */
+private fun readImageBounded(input: java.io.InputStream, maxBytes: Int): ByteArray {
+    input.use { stream ->
+        val output = java.io.ByteArrayOutputStream()
+        val buffer = ByteArray(8192)
+        while (true) {
+            val count = stream.read(buffer)
+            if (count < 0) break
+            require(output.size() + count <= maxBytes) { "An image exceeds the 20 MiB export limit" }
+            output.write(buffer, 0, count)
+        }
+        return output.toByteArray()
+    }
+}
+
 private fun writeNoteArchive(context: Context, destination: Uri, markdown: String) {
     val output = context.contentResolver.openOutputStream(destination) ?: error("Unable to open export destination")
     ZipOutputStream(output.buffered()).use { zip ->
@@ -250,9 +264,9 @@ private fun writeNoteArchive(context: Context, destination: Uri, markdown: Strin
         val portableMarkdown = pattern.replace(markdown) { match ->
             val uriText = match.groupValues[2]
             val path = copiedImages.getOrPut(uriText) {
-                val bytes = context.contentResolver.openInputStream(Uri.parse(uriText))?.use { it.readBytes() }
+                val imageStream = context.contentResolver.openInputStream(Uri.parse(uriText))
                     ?: error("Could not read a local image referenced by this note")
-                require(bytes.size <= 20 * 1024 * 1024) { "An image exceeds the 20 MiB export limit" }
+                val bytes = readImageBounded(imageStream, 20 * 1024 * 1024)
                 totalBytes += bytes.size
                 require(totalBytes <= 100 * 1024 * 1024) { "Images exceed the 100 MiB export limit" }
                 val ext = Uri.parse(uriText).lastPathSegment?.substringAfterLast('.', "")?.lowercase(Locale.ROOT)
@@ -1177,10 +1191,13 @@ private fun CalendarTool(
                 }
             }
         val calendarFirstDay = remember { WeekFields.of(Locale.getDefault()).firstDayOfWeek }
+        val calendarInitialMonth = remember { month }
+        val calendarStartMonth = remember { calendarInitialMonth.minusMonths(24) }
+        val calendarEndMonth = remember { calendarInitialMonth.plusMonths(24) }
         val calendarState = rememberCalendarState(
-            startMonth = month.minusMonths(24),
-            endMonth = month.plusMonths(24),
-            firstVisibleMonth = month,
+            startMonth = calendarStartMonth,
+            endMonth = calendarEndMonth,
+            firstVisibleMonth = calendarInitialMonth,
             firstDayOfWeek = calendarFirstDay
         )
         LaunchedEffect(month) {
