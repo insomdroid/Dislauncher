@@ -93,6 +93,20 @@ internal fun writeStructuredNoteArchive(
 
 internal fun readStructuredNoteArchive(context: Context, input: InputStream): ImportedNoteArchive {
     val archiveRoot = File(context.filesDir, "notes-import/${UUID.randomUUID()}").canonicalFile
+    return try {
+        readStructuredNoteArchiveFromRoot(context, input, archiveRoot)
+    } catch (failure: Exception) {
+        // A rejected or malformed archive must not leave extracted images in app storage.
+        archiveRoot.deleteRecursively()
+        throw failure
+    }
+}
+
+private fun readStructuredNoteArchiveFromRoot(
+    context: Context,
+    input: InputStream,
+    archiveRoot: File
+): ImportedNoteArchive {
     val assets = linkedMapOf<String, File>()
     var documentBytes: ByteArray? = null
     var entryCount = 0
