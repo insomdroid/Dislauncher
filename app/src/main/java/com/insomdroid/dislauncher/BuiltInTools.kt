@@ -896,7 +896,7 @@ private fun NotesTool(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
-                                IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "# ", ""); body = bodyField.text; saveCurrent() }) {
+                                IconButton(onClick = { body = applyBlockPrefix(body, bodyField, "# "); bodyField = richFieldFromMarkdown(body); saveCurrent() }) {
                                     Icon(Icons.Outlined.Title, contentDescription = builtInToolText("Heading", "Judul bagian"))
                                 }
                                 IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "**", "**"); body = bodyField.text; saveCurrent() }) {
@@ -910,22 +910,22 @@ private fun NotesTool(
                                 }
                                 IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "`", "`"); body = bodyField.text; saveCurrent() }) {
                                     Icon(Icons.Outlined.Code, contentDescription = builtInToolText("Inline code", "Kode sebaris"))                                }
-                                IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "- ", ""); body = bodyField.text; saveCurrent() }) {
+                                IconButton(onClick = { body = applyBlockPrefix(body, bodyField, "- "); bodyField = richFieldFromMarkdown(body); saveCurrent() }) {
                                     Icon(Icons.Outlined.FormatListBulleted, contentDescription = builtInToolText("List", "Daftar"))
                                 }
-                                IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "1. ", ""); body = bodyField.text; saveCurrent() }) {
+                                IconButton(onClick = { body = applyBlockPrefix(body, bodyField, "1. "); bodyField = richFieldFromMarkdown(body); saveCurrent() }) {
                                     Icon(Icons.Outlined.FormatListNumbered, contentDescription = builtInToolText("Numbered list", "Daftar bernomor"))
                                 }
-                                IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "> ", ""); body = bodyField.text; saveCurrent() }) {
+                                IconButton(onClick = { body = applyBlockPrefix(body, bodyField, "> "); bodyField = richFieldFromMarkdown(body); saveCurrent() }) {
                                     Icon(Icons.Outlined.FormatQuote, contentDescription = builtInToolText("Block quote", "Kutipan blok"))
                                 }
-                                IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "---", ""); body = bodyField.text; saveCurrent() }) {
+                                IconButton(onClick = { body = applyBlockPrefix(body, bodyField, "---"); bodyField = richFieldFromMarkdown(body); saveCurrent() }) {
                                     Icon(Icons.Outlined.HorizontalRule, contentDescription = builtInToolText("Horizontal divider", "Garis pemisah"))
                                 }
-                                IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "- [ ] ", ""); body = bodyField.text; saveCurrent() }) {
+                                IconButton(onClick = { body = applyBlockPrefix(body, bodyField, "- [ ] "); bodyField = richFieldFromMarkdown(body); saveCurrent() }) {
                                     Icon(Icons.Outlined.Checklist, contentDescription = builtInToolText("Checklist", "Daftar centang"))
                                 }
-                                IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "[", "](https://)"); body = bodyField.text; saveCurrent() }) {
+                                IconButton(onClick = { body = body + "[link](https://)"; bodyField = richFieldFromMarkdown(body); saveCurrent() }) {
                                     Icon(Icons.Outlined.InsertLink, contentDescription = builtInToolText("Insert link", "Sisipkan tautan"))
                                 }
                                 IconButton(onClick = { imageLauncher.launch(arrayOf("image/*")) }) {
