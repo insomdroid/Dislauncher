@@ -176,6 +176,15 @@ private data class LocalTask(
     val completed: Boolean = false
 )
 
+/** A single agenda row, sorted all-day first, timed items chronologically, then untimed tasks. */
+private data class CalendarAgendaItem(
+    val key: String,
+    val group: Int,
+    val timestamp: Long,
+    val event: DeviceCalendarEvent? = null,
+    val task: LocalTask? = null
+)
+
 private fun notesStore(context: Context) =
     context.getSharedPreferences("dislauncher_notes", Context.MODE_PRIVATE)
 
@@ -1228,6 +1237,33 @@ private fun CalendarTool(
         .sortedWith(compareBy<LocalTask> { if (it.time.isBlank()) 2 else 1 }
             .thenBy { it.time.ifBlank { "99:99" } }.thenBy { it.completed }.thenByDescending { it.priority })
 
+    // Interleave timed device events and local reminders by clock time. Keep all-day
+    // events first and untimed to-dos last, regardless of their stored priority.
+    val agendaItems = buildList {
+        dayEvents.forEach { event ->
+            add(CalendarAgendaItem(
+                key = "device-${event.id}-${event.begin}",
+                group = if (event.allDay) 0 else 1,
+                timestamp = event.begin,
+                event = event
+            ))
+        }
+        dayTasks.forEach { task ->
+            val timed = task.time.isNotBlank()
+            val timestamp = if (timed) runCatching {
+                LocalDate.parse(task.date).atTime(LocalTime.parse(task.time))
+                    .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            }.getOrDefault(Long.MAX_VALUE) else Long.MAX_VALUE
+            add(CalendarAgendaItem(
+                key = "task-${task.id}",
+                group = if (timed) 1 else 2,
+                timestamp = timestamp,
+                task = task
+            ))
+        }
+    }.sortedWith(compareBy<CalendarAgendaItem> { it.group }.thenBy { it.timestamp }
+        .thenBy { it.task?.completed ?: false }.thenByDescending { it.task?.priority ?: 0 })
+
     Box(modifier = modifier) {
     Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         LaunchedEffect(month) {
@@ -1328,22 +1364,24 @@ private fun CalendarTool(
                 contentPadding = PaddingValues(bottom = 72.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                items(dayEvents, key = { "device-${it.id}-${it.begin}" }) { event ->
-                    Row(Modifier.fillMaxWidth().clickable { openDeviceCalendarEvent(context, event) }
-                        .padding(horizontal = 4.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(if (event.allDay) "All day" else SimpleDateFormat(
-                            if (android.text.format.DateFormat.is24HourFormat(context)) "HH:mm" else "h:mm a",
-                            Locale.getDefault()).format(Date(event.begin)),
-                            modifier = Modifier.width(72.dp), style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary)
-                        Box(Modifier.width(3.dp).height(34.dp).clip(RoundedCornerShape(2.dp))
-                            .background(MaterialTheme.colorScheme.tertiary))
-                        Text(event.title, modifier = Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.bodyLarge,
-                            maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    }
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
-                }
-                items(dayTasks, key = { "task-${it.id}" }) { task ->
+                items(agendaItems, key = { it.key }) { item ->
+                    val event = item.event
+                    val task = item.task
+                    if (event != null) {
+                        Row(Modifier.fillMaxWidth().clickable { openDeviceCalendarEvent(context, event) }
+                            .padding(horizontal = 4.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(if (event.allDay) builtInToolText("All day", "Sepanjang hari") else SimpleDateFormat(
+                                if (android.text.format.DateFormat.is24HourFormat(context)) "HH:mm" else "h:mm a",
+                                Locale.getDefault()).format(Date(event.begin)),
+                                modifier = Modifier.width(72.dp), style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary)
+                            Box(Modifier.width(3.dp).height(34.dp).clip(RoundedCornerShape(2.dp))
+                                .background(MaterialTheme.colorScheme.tertiary))
+                            Text(event.title, modifier = Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.bodyLarge,
+                                maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        }
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+                    } else if (task != null) {
                     Row(
                         Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically
