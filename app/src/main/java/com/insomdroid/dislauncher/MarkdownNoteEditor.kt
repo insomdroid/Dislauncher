@@ -1,5 +1,7 @@
 package com.insomdroid.dislauncher
 
+import android.view.ViewGroup
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -130,15 +132,33 @@ internal fun MarkdownNoteEditor(
             AndroidView(
                 modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
                 factory = { viewContext ->
-                    TextView(viewContext).apply {
-                        setTextColor(colors.onSurface.toArgb())
-                        textSize = 16f
-                        setPadding(0, 0, 0, 24)
+                    ScrollView(viewContext).apply {
+                        isFillViewport = true
+                        clipToPadding = false
+                        overScrollMode = android.view.View.OVER_SCROLL_IF_CONTENT_SCROLLS
+                        addView(
+                            TextView(viewContext).apply {
+                                setTextColor(colors.onSurface.toArgb())
+                                textSize = 16f
+                                setPadding(0, 0, 0, 24)
+                                layoutParams = ScrollView.LayoutParams(
+                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                    ViewGroup.LayoutParams.WRAP_CONTENT
+                                )
+                            }
+                        )
                     }
                 },
-                update = { view ->
-                    view.setTextColor(colors.onSurface.toArgb())
-                    markwon.setMarkdown(view, field.text)
+                update = { scrollView ->
+                    val textView = scrollView.getChildAt(0) as TextView
+                    textView.setTextColor(colors.onSurface.toArgb())
+
+                    // Re-render only when the Markdown source actually changes.
+                    // Theme/recomposition updates should not parse the whole document again.
+                    if (scrollView.tag != field.text) {
+                        markwon.setMarkdown(textView, field.text)
+                        scrollView.tag = field.text
+                    }
                 }
             )
         }
