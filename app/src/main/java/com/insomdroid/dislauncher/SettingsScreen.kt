@@ -344,6 +344,33 @@ internal fun SettingsScreen(
                                     tr("Choose image", "Pilih gambar"),
                                     onChooseWallpaper
                                 )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        tr("Dim Home wallpaper", "Redupkan wallpaper Home"),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Text("${preferences.homeWallpaperDim}%", style = MaterialTheme.typography.bodyMedium)
+                                }
+                                Slider(
+                                    value = preferences.homeWallpaperDim.toFloat(),
+                                    onValueChange = { value ->
+                                        onPreferencesChange(preferences.copy(homeWallpaperDim = value.roundToInt()))
+                                    },
+                                    valueRange = 0f..100f,
+                                    steps = 19
+                                )
+                                Text(
+                                    tr(
+                                        "0% keeps the wallpaper bright; 100% makes it fully dark.",
+                                        "0% menjaga wallpaper tetap terang; 100% membuatnya gelap sepenuhnya."
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                                 SettingAction(
                                     tr("Apply wallpaper", "Terapkan wallpaper"),
                                     tr(
@@ -528,11 +555,14 @@ internal fun SettingsScreen(
                                 tr("Dot color", "Warna titik"),
                                 preferences.notificationDotColor,
                                 listOf(
-                                    "white" to tr("White", "Putih"),
+                                    "default" to tr("Default", "Bawaan"),
                                     "red" to tr("Red", "Merah"),
-                                    "orange" to tr("Orange", "Oranye"),
+                                    "yellow" to tr("Yellow", "Kuning"),
                                     "blue" to tr("Blue", "Biru"),
-                                    "purple" to tr("Purple", "Ungu")
+                                    "green" to tr("Green", "Hijau"),
+                                    "purple" to tr("Purple", "Ungu"),
+                                    "orange" to tr("Orange", "Oranye"),
+                                    "pink" to tr("Pink", "Merah muda")
                                 )
                             ) { color ->
                                 onPreferencesChange(preferences.copy(notificationDotColor = color))
