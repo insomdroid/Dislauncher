@@ -20,7 +20,7 @@ Dislauncher is a lightweight, text-first Android launcher designed to keep your 
 - **Minimal Home screen:** clock, date, progress indicators, and favourite apps in a text-first layout.
 - **App drawer:** searchable alphabetical app list, favourites, folders, hidden apps, and compatible icon packs.
 - **Personalisation:** System, Light, Dark, and Black themes, Dynamic Color, accent colours, wallpapers, built-in fonts (Inter, Syne, Bricolage Grotesque, Doto, and Overpass Mono), custom fonts, and text sizing.
-- **Everyday tools:** built-in calendar and local reminders, Markdown notes, calculator, unit converter, optional weather, and music controls.
+- **Everyday tools:** built-in calendar and local reminders, structured rich-text notes, scientific calculator, unit converter, optional weather, and music controls.
 - **Useful shortcuts:** notification dots, app actions, and optional gestures for quick access to common tasks.
 - **Privacy-minded:** no account system, advertising SDK, or analytics SDK in the reviewed source. Optional features may request permissions or connect to external services.
 

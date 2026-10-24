@@ -20,9 +20,10 @@ The APK is created at `app/build/outputs/apk/debug/app-debug.apk`. On Windows, u
 
 ## GitHub Actions and releases
 
-- Pushes to `main` trigger the test-build workflow for changes under `app/`, `gradle/`, the root Gradle files/wrapper, `Screenshot/dislauncher.png`, and the configured workflow files.
-- Documentation-only changes and other screenshot changes do not trigger that workflow.
-- CI runs Android lint and creates a temporary test APK artifact. It is not an official release.
-- Official releases are built from version tags such as `v1.1.1`. The release workflow requires production-signing secrets, verifies the APK signature, and publishes the APK with a SHA-256 checksum.
+- Changes to app source, tests, Gradle files, release documentation, screenshots, or the configured workflows trigger the test-build workflow.
+- CI runs `testReleaseUnitTest`, Android lint, and a temporary debug-signed test APK build. It does not require production-signing secrets and is not an official release.
+- Official releases are built from semantic-version tags such as `v1.3.0`.
+- The release workflow keeps production-signing secrets in the build job only, verifies the APK signature against the configured keystore certificate, and creates a SHA-256 checksum.
+- Publishing runs in a separate job with release-write permission and uploads only the APK and checksum that passed the build/signature checks.
 
 Download releases from the [official Releases page](https://github.com/insomdroid/Dislauncher/releases/latest).

@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.dp
 import java.math.BigDecimal
 import java.math.RoundingMode
 
-private data class ConverterUnit(
+internal data class ConverterUnit(
     val name: String,
     val symbol: String,
     val factor: Double,
@@ -122,12 +122,12 @@ private val converterCategories = listOf(
     )),
 )
 
-private fun convertUnitValue(value: Double, from: ConverterUnit, to: ConverterUnit): Double {
+internal fun convertUnitValue(value: Double, from: ConverterUnit, to: ConverterUnit): Double {
     val baseValue = if (from.inverse) from.factor / value else (value + from.offset) * from.factor
     return if (to.inverse) to.factor / baseValue else baseValue / to.factor - to.offset
 }
 
-private fun formatConvertedValue(value: Double): String {
+internal fun formatConvertedValue(value: Double): String {
     if (!value.isFinite()) return "—"
     if (value == 0.0) return "0"
     return BigDecimal.valueOf(value).setScale(8, RoundingMode.HALF_UP)
