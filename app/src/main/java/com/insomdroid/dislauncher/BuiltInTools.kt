@@ -627,27 +627,42 @@ private fun NotesTool(
     }
 
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) runCatching {
-            val input = context.contentResolver.openInputStream(uri) ?: error("Unable to read archive")
-            val imported = readStructuredNoteArchive(context, input)
-            val importedNote = LocalNote(
-                id = UUID.randomUUID().toString(),
-                title = imported.title,
-                content = plainText(imported.document),
-                updatedAt = System.currentTimeMillis(),
-                documentJson = NoteDocumentCodec.encode(imported.document),
-                labels = imported.labels,
-                color = imported.color
-            )
-            allLabels = allLabels + imported.labels
-            notesStore(context).edit().putString("note_labels", allLabels.sorted().joinToString(",")).apply()
-            notes = (notes + importedNote).sortedWith(
-                compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt }
-            )
-            saveNotes(context, notes)
-            openNote(importedNote)
-        }.onFailure {
-            Toast.makeText(context, "Could not import note archive: ${it.message.orEmpty()}", Toast.LENGTH_LONG).show()
+        if (uri != null) {
+            scope.launch {
+                val importResult = withContext(Dispatchers.IO) {
+                    runCatching {
+                        val input = context.contentResolver.openInputStream(uri)
+                            ?: error("Unable to read archive")
+                        input.use { readStructuredNoteArchive(context, it) }
+                    }
+                }
+                importResult.onSuccess { imported ->
+                    val importedNote = LocalNote(
+                        id = UUID.randomUUID().toString(),
+                        title = imported.title,
+                        content = plainText(imported.document),
+                        updatedAt = System.currentTimeMillis(),
+                        documentJson = NoteDocumentCodec.encode(imported.document),
+                        labels = imported.labels,
+                        color = imported.color
+                    )
+                    allLabels = allLabels + imported.labels
+                    notesStore(context).edit()
+                        .putString("note_labels", allLabels.sorted().joinToString(","))
+                        .apply()
+                    notes = (notes + importedNote).sortedWith(
+                        compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt }
+                    )
+                    saveNotes(context, notes)
+                    openNote(importedNote)
+                }.onFailure {
+                    Toast.makeText(
+                        context,
+                        "Could not import note archive: ${it.message.orEmpty()}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
         }
     }
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
