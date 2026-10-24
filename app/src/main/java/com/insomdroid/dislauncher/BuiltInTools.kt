@@ -153,7 +153,8 @@ private data class LocalNote(
     val pinned: Boolean = false,
     /** Versioned structured document JSON; content is a searchable plain-text projection. */
     val documentJson: String = "",
-    val labels: List<String> = emptyList()
+    val labels: List<String> = emptyList(),
+    val color: String = "default"
 )
 
 private data class LocalTask(
@@ -197,7 +198,8 @@ private fun loadNotes(context: Context): List<LocalNote> {
                 updatedAt = o.optLong("updatedAt"),
                 pinned = o.optBoolean("pinned", false),
                 documentJson = NoteDocumentCodec.encode(document),
-                labels = o.optJSONArray("labels")?.let { array -> (0 until array.length()).map { array.optString(it) } }.orEmpty()
+                labels = o.optJSONArray("labels")?.let { array -> (0 until array.length()).map { array.optString(it) } }.orEmpty(),
+                color = o.optString("color", "default")
             )
         }.filter { it.id.isNotBlank() }
     }.getOrDefault(emptyList()).sortedWith(
@@ -216,7 +218,7 @@ private fun saveNotes(context: Context, notes: List<LocalNote>) {
             .put("document", note.documentJson.takeIf { it.isNotBlank() }
                 ?: NoteDocumentCodec.encode(NoteDocumentCodec.fromLegacyContent(note.content)))
             .put("updatedAt", note.updatedAt).put("pinned", note.pinned)
-            .put("labels", JSONArray(note.labels)))
+            .put("labels", JSONArray(note.labels)).put("color", note.color))
     }
     notesStore(context).edit().putString("notes_json", array.toString()).apply()
 }
@@ -455,8 +457,10 @@ private fun NotesTool(
     var document by remember { mutableStateOf(NoteDocument()) }
     var searchQuery by remember { mutableStateOf("") }
     var currentLabels by remember { mutableStateOf(setOf<String>()) }
+    var currentColor by remember { mutableStateOf("default") }
+    var showColorPicker by remember { mutableStateOf(false) }
     var activeLabel by remember { mutableStateOf<String?>(null) }
-    var allLabels by remember(context) { mutableStateOf(notesStore(context).getString("note_labels", "Ideas,Personal,Work").orEmpty().split(",").map { it.trim() }.filter { it.isNotBlank() }.toSet()) }
+    var allLabels by remember(context) { mutableStateOf(notesStore(context).getString("note_labels", "").orEmpty().split(",").map { it.trim() }.filter { it.isNotBlank() }.toSet()) }
     var newLabel by remember { mutableStateOf("") }
     var showLabelManager by remember { mutableStateOf(false) }
     var showNoteLabels by remember { mutableStateOf(false) }
@@ -493,7 +497,8 @@ private fun NotesTool(
             updatedAt = System.currentTimeMillis(),
             pinned = pinned,
             documentJson = NoteDocumentCodec.encode(document),
-            labels = currentLabels.toList()
+            labels = currentLabels.toList(),
+            color = currentColor
         )
         notes = (notes.filterNot { it.id == id } + current)
             .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
@@ -505,6 +510,7 @@ private fun NotesTool(
         document = NoteDocumentCodec.decode(note.documentJson)
             ?: NoteDocumentCodec.fromLegacyContent(note.content)
         currentLabels = note.labels.toSet()
+        currentColor = note.color
         undoHistory = emptyList()
         redoHistory = emptyList()
         onEditingChanged(true)
@@ -514,6 +520,7 @@ private fun NotesTool(
         title = ""
         document = NoteDocument()
         currentLabels = emptySet()
+        currentColor = "default"
         undoHistory = emptyList()
         redoHistory = emptyList()
         onEditingChanged(true)
@@ -674,9 +681,17 @@ private fun NotesTool(
                         gridItems(visibleNotes, key = { it.id }) { note ->
                             Surface(
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 144.dp).clickable { openNote(note) },
-                                shape = RoundedCornerShape(16.dp),
-                                color = MaterialTheme.colorScheme.surfaceContainerLow,
-                                tonalElevation = 1.dp
+                                shape = RoundedCornerShape(12.dp),
+                                color = when (note.color) {
+                                    "red" -> MaterialTheme.colorScheme.errorContainer
+                                    "yellow" -> MaterialTheme.colorScheme.secondaryContainer
+                                    "green" -> MaterialTheme.colorScheme.tertiaryContainer
+                                    "blue" -> MaterialTheme.colorScheme.primaryContainer
+                                    "purple" -> MaterialTheme.colorScheme.tertiaryContainer
+                                    else -> MaterialTheme.colorScheme.surfaceContainerLow
+                                },
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
+                                tonalElevation = 0.dp
                             ) {
                                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -822,6 +837,8 @@ private fun NotesTool(
                                 })
                             DropdownMenuItem(text = { Text("Labels") },
                                 onClick = { menuTarget = null; showNoteLabels = true })
+                            DropdownMenuItem(text = { Text("Note color") },
+                                onClick = { menuTarget = null; showColorPicker = true })
                             DropdownMenuItem(text = { Text("Insert image") },
                                 leadingIcon = { Icon(Icons.Outlined.Image, contentDescription = null) },
                                 onClick = { menuTarget = null; imageLauncher.launch(arrayOf("image/*")) })
@@ -899,6 +916,39 @@ private fun NotesTool(
                 }) { Text("Save") }
             },
             dismissButton = { TextButton(onClick = { showLabelManager = false; newLabel = "" }) { Text("Cancel") } }
+        )
+    }
+    if (showColorPicker) {
+        AlertDialog(
+            onDismissRequest = { showColorPicker = false },
+            title = { Text("Note color") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("default", "red", "yellow", "green", "blue", "purple").forEach { color ->
+                        val label = when (color) {
+                            "default" -> "Default"
+                            "red" -> "Red"
+                            "yellow" -> "Yellow"
+                            "green" -> "Green"
+                            "blue" -> "Blue"
+                            else -> "Purple"
+                        }
+                        FilterChip(
+                            selected = currentColor == color,
+                            onClick = { currentColor = color },
+                            label = { Text(label) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    notes = notes.map { if (it.id == selectedId) it.copy(color = currentColor) else it }
+                    saveNotes(context, notes)
+                    showColorPicker = false
+                }) { Text("Done") }
+            }
         )
     }
     if (showNoteLabels) {
