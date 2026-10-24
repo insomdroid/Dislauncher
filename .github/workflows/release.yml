@@ -46,6 +46,11 @@ jobs:
             echo "::error::Expected a semantic-version tag such as v1.3.0; got: $RELEASE_TAG"
             exit 1
           fi
+          RELEASE_VERSION="${RELEASE_TAG#v}"
+          if ! grep -Fq "## ${RELEASE_VERSION} |" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no entry for ${RELEASE_VERSION}"
+            exit 1
+          fi
           echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
 
       - name: Checkout the exact release tag
@@ -95,6 +100,15 @@ jobs:
           APK="app/build/outputs/apk/release/app-release.apk"
           test -s "$APK"
 
+          EXPECTED_VERSION="${RELEASE_TAG_INPUT#v}"
+          AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
+          test -n "$AAPT"
+          BADGING="$("$AAPT" dump badging "$APK")"
+          printf '%s\n' "$BADGING" | grep -Fq "package: name='com.insomdroid.dislauncher'"
+          printf '%s\n' "$BADGING" | grep -Fq "versionName='$EXPECTED_VERSION'"
+          printf '%s\n' "$BADGING" | grep -Fq "sdkVersion:'26'"
+          printf '%s\n' "$BADGING" | grep -Fq "targetSdkVersion:'36'"
+
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           test -n "$APKSIGNER"
           "$APKSIGNER" verify --verbose --print-certs "$APK"
@@ -114,7 +128,8 @@ jobs:
           APK_NAME="Dislauncher-$RELEASE_TAG_INPUT.apk"
           cp "$APK" "$APK_NAME"
           sha256sum "$APK_NAME" > "$APK_NAME.sha256"
-          echo "Verified production-signed APK and generated SHA-256 checksum: $APK_NAME"
+          sha256sum -c "$APK_NAME.sha256"
+          echo "Verified package id, version, SDK levels, production signing certificate, and SHA-256 checksum: $APK_NAME"
 
       - name: Upload verified APK and checksum for publishing
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
