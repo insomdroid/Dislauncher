@@ -157,6 +157,8 @@ private data class LocalNote(
     val color: String = "default"
 )
 
+private data class PendingNoteExport(val title: String, val document: NoteDocument, val labels: List<String>, val color: String)
+
 private data class LocalTask(
     val id: String,
     val title: String,
@@ -473,7 +475,7 @@ private fun NotesTool(
     var deleteTarget by remember { mutableStateOf<String?>(null) }
     var undoHistory by remember { mutableStateOf(listOf<NoteDocument>()) }
     var redoHistory by remember { mutableStateOf(listOf<NoteDocument>()) }
-    var pendingExport by remember { mutableStateOf<Pair<String, NoteDocument>?>(null) }
+    var pendingExport by remember { mutableStateOf<PendingNoteExport?>(null) }
     val scope = rememberCoroutineScope()
 
     fun plainText(doc: NoteDocument): String = NoteDocumentCodec.plainText(doc)
@@ -540,7 +542,9 @@ private fun NotesTool(
                 title = imported.title,
                 content = plainText(imported.document),
                 updatedAt = System.currentTimeMillis(),
-                documentJson = NoteDocumentCodec.encode(imported.document)
+                documentJson = NoteDocumentCodec.encode(imported.document),
+                labels = imported.labels,
+                color = imported.color
             )
             notes = (notes + importedNote).sortedWith(
                 compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt }
@@ -556,7 +560,7 @@ private fun NotesTool(
         if (uri != null && request != null) {
             scope.launch {
                 val result = withContext(Dispatchers.IO) {
-                    runCatching { writeStructuredNoteArchive(context, uri, request.first, request.second) }
+                    runCatching { writeStructuredNoteArchive(context, uri, request.title, request.document, request.labels, request.color) }
                 }
                 result.onSuccess { Toast.makeText(context, "Note archive exported", Toast.LENGTH_SHORT).show() }
                     .onFailure { Toast.makeText(context, "Could not export note archive: ${it.message.orEmpty()}", Toast.LENGTH_LONG).show() }
@@ -674,7 +678,7 @@ private fun NotesTool(
                     LazyVerticalGrid(
                         columns = GridCells.Adaptive(minSize = 156.dp),
                         modifier = Modifier.weight(1f).fillMaxWidth(),
-                        contentPadding = PaddingValues(bottom = 96.dp),
+                        contentPadding = PaddingValues(start = 4.dp, top = 8.dp, end = 4.dp, bottom = 96.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
@@ -837,7 +841,7 @@ private fun NotesTool(
                                 leadingIcon = { Icon(Icons.Outlined.FileDownload, contentDescription = null) },
                                 onClick = {
                                     saveCurrent()
-                                    pendingExport = title to document
+                                    pendingExport = PendingNoteExport(title, document, currentLabels.toList(), currentColor)
                                     val filename = title.ifBlank { "note" }.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim().ifBlank { "note" }
                                     menuTarget = null
                                     exportLauncher.launch("$filename.zip")
