@@ -1,6 +1,14 @@
 package com.insomdroid.dislauncher
 
 import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.ln
+import kotlin.math.log10
+import kotlin.math.pow
+import kotlin.math.sin
+import kotlin.math.sqrt
+import kotlin.math.tan
 
 /** Pure expression parsing and formatting, isolated from the calculator UI. */
 internal fun applyCalculatorPercentage(expression: String): String {
@@ -40,7 +48,7 @@ internal fun formatCalculation(value: Double): String =
     else "%.8f".format(Locale.US, value).trimEnd('0').trimEnd('.')
 
 internal class ExpressionParser(raw: String) {
-    private val input = raw.replace("×", "*").replace("÷", "/").replace("−", "-").replace(" ", "")
+    private val input = raw.replace("×", "*").replace("÷", "/").replace("−", "-").replace("π", "pi").replace("√", "sqrt").replace(" ", "")
     private var index = 0
     fun parse(): Double {
         require(input.isNotBlank())
@@ -59,16 +67,24 @@ internal class ExpressionParser(raw: String) {
         return value
     }
     private fun term(): Double {
-        var value = primary()
+        var value = power()
         while (index < input.length && (input[index] == '*' || input[index] == '/')) {
             val op = input[index++]
-            val rhs = primary()
+            val rhs = power()
             value = if (op == '*') value * rhs else {
                 require(rhs != 0.0)
                 value / rhs
             }
         }
         return value
+    }
+    private fun power(): Double {
+        val base = primary()
+        if (index < input.length && input[index] == '^') {
+            index++
+            return base.pow(power())
+        }
+        return base
     }
     private fun primary(): Double {
         if (index < input.length && (input[index] == '+' || input[index] == '-')) {
@@ -82,6 +98,28 @@ internal class ExpressionParser(raw: String) {
             require(index < input.length && input[index] == ')')
             index++
             return value
+        }
+        if (index < input.length && input[index].isLetter()) {
+            val start = index
+            while (index < input.length && input[index].isLetter()) index++
+            val name = input.substring(start, index).lowercase(Locale.US)
+            if (name == "pi") return Math.PI
+            if (name == "e") return Math.E
+            require(index < input.length && input[index] == '(')
+            index++
+            val argument = expression()
+            require(index < input.length && input[index] == ')')
+            index++
+            return when (name) {
+                "sin" -> sin(Math.toRadians(argument))
+                "cos" -> cos(Math.toRadians(argument))
+                "tan" -> tan(Math.toRadians(argument))
+                "sqrt" -> { require(argument >= 0.0); sqrt(argument) }
+                "ln" -> { require(argument > 0.0); ln(argument) }
+                "log" -> { require(argument > 0.0); log10(argument) }
+                "abs" -> abs(argument)
+                else -> error("Unknown function")
+            }
         }
         val start = index
         var dots = 0
