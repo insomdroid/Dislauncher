@@ -362,8 +362,10 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                     if (!(tool == BuiltInTool.NOTES && notesEditing)) TopAppBar(
                         title = {
                             Text(
-                                if (tool == BuiltInTool.CALENDAR) calendarMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())) else title,
-                                fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis
+                                title,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         },
                         navigationIcon = {
@@ -414,7 +416,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             .padding(padding)
                             .padding(
                                 horizontal = if (maxWidth >= 600.dp) 24.dp else 16.dp,
-                                vertical = if (tool == BuiltInTool.CALENDAR) 0.dp else 8.dp
+                                vertical = 10.dp
                             )
                     ) {
                     when (tool) {
@@ -1045,12 +1047,11 @@ private fun CalculatorTool(
         listOf("7", "8", "9", "×"),
         listOf("4", "5", "6", "−"),
         listOf("1", "2", "3", "+"),
-        listOf("(", "0", ")", "."),
-        listOf("±", "00", "=", " ")
+        listOf("±", "0", ".", "=")
     )
 
     BoxWithConstraints(modifier = modifier) {
-        val keySize = minOf(72.dp, (maxWidth - 24.dp) / 4, (maxHeight - if (scientificMode) 260.dp else 190.dp) / 6)
+        val keySize = minOf(72.dp, (maxWidth - 24.dp) / 4, (maxHeight - if (scientificMode) 240.dp else 170.dp) / 5)
             .coerceAtLeast(36.dp)
 
         if (showHistory) {
@@ -1139,9 +1140,7 @@ private fun CalculatorTool(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         rowKeys.forEach { key ->
-                            if (key.isBlank()) {
-                                Spacer(Modifier.size(keySize))
-                            } else {
+                            {
                                 val operator = key in listOf("÷", "×", "−", "+", "=")
                                 val action: () -> Unit = {
                                     when (key) {
@@ -1344,10 +1343,11 @@ private fun CalendarTool(
         }
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    selectedDate.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.getDefault())),
+                    month.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())),
                     modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
                 TextButton(onClick = { showWeekView = !showWeekView }) {
