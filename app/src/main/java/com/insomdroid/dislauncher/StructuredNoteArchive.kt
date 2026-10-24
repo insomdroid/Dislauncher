@@ -32,12 +32,13 @@ internal fun writeStructuredNoteArchive(
         ?: error("Unable to open export destination")
     ZipOutputStream(output.buffered()).use { zip ->
         val imageEntries = linkedMapOf<String, ByteArray>()
+        val sourceEntries = linkedMapOf<String, String>()
         var totalBytes = 0L
         val portableBlocks = document.blocks.map { block ->
-            block.copy(spans = block.spans.map { span ->
-                val source = span.imageUri ?: return@map span
+            block.copy(spans = block.spans.map spanLoop@ { span ->
+                val source = span.imageUri ?: return@spanLoop span
                 val sourceUri = Uri.parse(source)
-                if (sourceUri.scheme !in setOf("content", "file")) return@map span
+                if (sourceUri.scheme !in setOf("content", "file")) return@spanLoop span
                 if (sourceUri.scheme == "file") {
                     val allowedRoot = File(context.filesDir, "notes-import").canonicalFile
                     val candidate = File(sourceUri.path.orEmpty()).canonicalFile
@@ -45,19 +46,18 @@ internal fun writeStructuredNoteArchive(
                         "An image reference points outside Dislauncher storage"
                     }
                 }
-                val entry = imageEntries.keys.firstOrNull { it.startsWith("images/") &&
-                    imageEntries[it]?.contentHashCode() == source.hashCode() }
-                    ?: run {
-                        val bytes = context.contentResolver.openInputStream(sourceUri)?.use { readBounded(it, MAX_NOTE_ARCHIVE_IMAGE_BYTES) }
-                            ?: error("Could not read a local image referenced by this note")
-                        totalBytes += bytes.size
-                        require(totalBytes <= MAX_NOTE_ARCHIVE_TOTAL_BYTES) { "Images exceed the 100 MiB export limit" }
-                        val extension = sourceUri.lastPathSegment?.substringAfterLast('.', "")?.lowercase()
-                            ?.takeIf { it.matches(Regex("[a-z0-9]{1,8}")) } ?: "bin"
-                        val name = "images/image_${imageEntries.size + 1}.$extension"
-                        imageEntries[name] = bytes
-                        name
-                    }
+                val entry = sourceEntries[source] ?: run {
+                    val bytes = context.contentResolver.openInputStream(sourceUri)?.use { readBounded(it, MAX_NOTE_ARCHIVE_IMAGE_BYTES) }
+                        ?: error("Could not read a local image referenced by this note")
+                    totalBytes += bytes.size
+                    require(totalBytes <= MAX_NOTE_ARCHIVE_TOTAL_BYTES) { "Images exceed the 100 MiB export limit" }
+                    val extension = sourceUri.lastPathSegment?.substringAfterLast('.', "")?.lowercase()
+                        ?.takeIf { it.matches(Regex("[a-z0-9]{1,8}")) } ?: "bin"
+                    val name = "images/image_${imageEntries.size + 1}.$extension"
+                    imageEntries[name] = bytes
+                    sourceEntries[source] = name
+                    name
+                }
                 span.copy(imageUri = entry)
             })
         }
