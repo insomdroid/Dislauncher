@@ -161,6 +161,7 @@ private fun formatConvertedValue(value: Double): String {
 @Composable
 internal fun UnitConverterTool(modifier: Modifier = Modifier) {
     var categoryIndex by remember { mutableStateOf(0) }
+    var categoryQuery by remember { mutableStateOf("") }
     var input by remember { mutableStateOf("1") }
     var fromIndex by remember { mutableStateOf(0) }
     var toIndex by remember { mutableStateOf(1) }
@@ -174,12 +175,22 @@ internal fun UnitConverterTool(modifier: Modifier = Modifier) {
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)
     ) {
+        OutlinedTextField(
+            value = categoryQuery,
+            onValueChange = { categoryQuery = it },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            placeholder = { Text(builtInToolText("Search units and categories", "Cari satuan dan kategori")) },
+            leadingIcon = { Text("⌕", style = MaterialTheme.typography.titleLarge) }
+        )
         Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             converterCategories.forEachIndexed { index, item ->
+                if (categoryQuery.isBlank() || item.name.contains(categoryQuery, ignoreCase = true) ||
+                    item.units.any { it.name.contains(categoryQuery, ignoreCase = true) || it.symbol.contains(categoryQuery, ignoreCase = true) }) {
                 FilterChip(
                     selected = categoryIndex == index,
                     onClick = {
@@ -189,6 +200,7 @@ internal fun UnitConverterTool(modifier: Modifier = Modifier) {
                     },
                     label = { Text(item.name, maxLines = 1) }
                 )
+                }
             }
         }
 
@@ -284,9 +296,13 @@ private fun ConverterDropdown(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var query by remember(label) { mutableStateOf("") }
+    val filteredOptions = options.withIndex().filter { (_, option) ->
+        query.isBlank() || option.contains(query, ignoreCase = true)
+    }
     Box(modifier = modifier) {
         Surface(
-            modifier = Modifier.fillMaxWidth().clickable { expanded = true },
+            modifier = Modifier.fillMaxWidth().clickable { expanded = true; query = "" },
             shape = RoundedCornerShape(12.dp),
             color = MaterialTheme.colorScheme.surfaceContainerLow,
             contentColor = MaterialTheme.colorScheme.onSurface
@@ -308,11 +324,19 @@ private fun ConverterDropdown(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            options.forEachIndexed { index, option ->
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                modifier = Modifier.width(240.dp).padding(horizontal = 8.dp),
+                singleLine = true,
+                placeholder = { Text(builtInToolText("Search unit", "Cari satuan")) }
+            )
+            filteredOptions.forEach { (index, option) ->
                 DropdownMenuItem(
                     text = { Text(option) },
                     onClick = {
                         expanded = false
+                        query = ""
                         onSelected(index)
                     }
                 )
