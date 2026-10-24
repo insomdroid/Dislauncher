@@ -233,11 +233,44 @@ internal fun RichNoteEditor(
                         BasicTextField(
                             value = field,
                             onValueChange = { next ->
-                                field = next
-                                fields[block.id] = next
-                                activeBlockId = block.id
-                                activeField = next
-                                updateBlock(block.id) { it.copy(spans = spansFromField(next)) }
+                                if ('\n' in next.text && block.type != NoteBlockType.CODE) {
+                                    val parts = next.text.split('\n')
+                                    val replacementBlocks = parts.mapIndexed { index, part ->
+                                        val start = parts.take(index).sumOf { it.length + 1 }
+                                        val sliced = sliceField(next, start, start + part.length)
+                                        val isTrailingEmptyListItem = part.isBlank() && index == parts.lastIndex &&
+                                            block.type in setOf(NoteBlockType.BULLET, NoteBlockType.NUMBERED, NoteBlockType.CHECKLIST)
+                                        val type = when {
+                                            isTrailingEmptyListItem -> NoteBlockType.PARAGRAPH
+                                            index > 0 && block.type == NoteBlockType.HEADING -> NoteBlockType.PARAGRAPH
+                                            else -> block.type
+                                        }
+                                        if (index == 0) block.copy(type = type, spans = spansFromField(sliced))
+                                        else NoteBlock(
+                                            id = UUID.randomUUID().toString(),
+                                            type = type,
+                                            spans = spansFromField(sliced),
+                                            checked = false,
+                                            orderedIndex = if (type == NoteBlockType.NUMBERED) block.orderedIndex + index else 1
+                                        )
+                                    }
+                                    val updatedBlocks = document.blocks.flatMap { existing ->
+                                        if (existing.id == block.id) replacementBlocks else listOf(existing)
+                                    }
+                                    onDocumentChange(document.copy(blocks = updatedBlocks))
+                                    val active = replacementBlocks.last()
+                                    val lastText = active.spans.joinToString("") { it.text }
+                                    val cursor = TextFieldValue(lastText, TextRange(lastText.length))
+                                    activeBlockId = active.id
+                                    activeField = cursor
+                                    fields[active.id] = cursor
+                                } else {
+                                    field = next
+                                    fields[block.id] = next
+                                    activeBlockId = block.id
+                                    activeField = next
+                                    updateBlock(block.id) { it.copy(spans = spansFromField(next)) }
+                                }
                             },
                             readOnly = readOnly,
                             textStyle = textStyle.copy(color = MaterialTheme.colorScheme.onSurface),
@@ -286,6 +319,25 @@ internal fun RichNoteEditor(
             dismissButton = { TextButton(onClick = { showLinkDialog = false }) { Text("Cancel") } }
         )
     }
+}
+
+private fun sliceField(field: TextFieldValue, start: Int, end: Int): TextFieldValue {
+    val safeStart = start.coerceIn(0, field.text.length)
+    val safeEnd = end.coerceIn(safeStart, field.text.length)
+    val sliced = buildAnnotatedString {
+        append(field.text.substring(safeStart, safeEnd))
+        field.annotatedString.spanStyles.forEach { range ->
+            val overlapStart = maxOf(range.start, safeStart)
+            val overlapEnd = minOf(range.end, safeEnd)
+            if (overlapStart < overlapEnd) addStyle(range.item, overlapStart - safeStart, overlapEnd - safeStart)
+        }
+        field.annotatedString.getStringAnnotations("URL", safeStart, safeEnd).forEach { range ->
+            val overlapStart = maxOf(range.start, safeStart)
+            val overlapEnd = minOf(range.end, safeEnd)
+            if (overlapStart < overlapEnd) addStringAnnotation("URL", range.item, overlapStart - safeStart, overlapEnd - safeStart)
+        }
+    }
+    return TextFieldValue(sliced, TextRange(sliced.length))
 }
 
 private fun fieldFromBlock(block: NoteBlock, linkColor: androidx.compose.ui.graphics.Color): TextFieldValue {
