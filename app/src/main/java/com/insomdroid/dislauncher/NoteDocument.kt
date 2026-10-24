@@ -6,9 +6,8 @@ import org.json.JSONObject
 /**
  * Structured, versioned note document model.
  *
- * Markdown remains the import/export interchange format. Existing notes are parsed into
- * typed blocks and inline spans on first load; the original Markdown field is retained
- * during the compatibility period so older app builds and exports remain readable.
+ * Structured JSON is the canonical format. The legacy text parser is only used to migrate
+ * notes created by older app versions; the active editor and archive format are structured.
  */
 internal enum class NoteBlockType {
     PARAGRAPH, HEADING, BULLET, NUMBERED, QUOTE, CHECKLIST, CODE, DIVIDER
@@ -51,7 +50,7 @@ internal object NoteDocumentCodec {
     private val checklistPattern = Regex("^\\s*[-*+]\\s+\\[([ xX])]\\s+(.+)$")
     private val inlinePattern = Regex("""!\[([^\]]*)\]\((?:<)?([^)>]+)(?:>)?\)|\[([^\]]+)\]\((https?://[^)]+)\)|\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|~~(.+?)~~|\*(.+?)\*|`([^`]+)`""")
 
-    fun fromMarkdown(markdown: String): NoteDocument {
+    fun fromLegacyContent(markdown: String): NoteDocument {
         if (markdown.isBlank()) return NoteDocument()
         val lines = markdown.replace("\r\n", "\n").replace('\r', '\n').split('\n')
         val blocks = mutableListOf<NoteBlock>()
@@ -153,41 +152,16 @@ internal object NoteDocumentCodec {
         return result
     }
 
-    fun toMarkdown(document: NoteDocument): String {
-        val rendered = document.blocks.map { block ->
-            val text = block.spans.joinToString("") { span ->
-                when {
-                    span.imageUri != null -> "![${span.imageAlt.ifBlank { span.text }}](<${span.imageUri}>)"
-                    span.link != null -> "[${span.text}](${span.link})"
-                    NoteMark.CODE in span.marks -> "`${span.text}`"
-                    NoteMark.BOLD in span.marks && NoteMark.ITALIC in span.marks -> "***${span.text}***"
-                    NoteMark.BOLD in span.marks -> "**${span.text}**"
-                    NoteMark.ITALIC in span.marks -> "*${span.text}*"
-                    NoteMark.STRIKETHROUGH in span.marks -> "~~${span.text}~~"
-                    else -> span.text
-                }
-            }
-            val markdown = when (block.type) {
-                NoteBlockType.PARAGRAPH -> text
-                NoteBlockType.HEADING -> "${"#".repeat(block.level.coerceIn(1, 6))} $text"
-                NoteBlockType.BULLET -> "- $text"
-                NoteBlockType.NUMBERED -> "${block.orderedIndex.coerceAtLeast(1)}. $text"
-                NoteBlockType.QUOTE -> "> $text"
-                NoteBlockType.CHECKLIST -> "- [${if (block.checked) "x" else " "}] $text"
-                NoteBlockType.CODE -> "```\n$text\n```"
-                NoteBlockType.DIVIDER -> "---"
-            }
-            block to markdown
+    fun plainText(document: NoteDocument): String = document.blocks.joinToString("\n") { block ->
+        val text = block.spans.joinToString("") { it.text }
+        when (block.type) {
+            NoteBlockType.BULLET -> "• $text"
+            NoteBlockType.NUMBERED -> "${block.orderedIndex}. $text"
+            NoteBlockType.CHECKLIST -> "${if (block.checked) "☑" else "☐"} $text"
+            NoteBlockType.QUOTE -> "▏ $text"
+            NoteBlockType.DIVIDER -> "────────"
+            else -> text
         }
-        return rendered.mapIndexed { index, (block, markdown) ->
-            if (index == 0) markdown
-            else {
-                val previous = rendered[index - 1].first
-                val consecutiveListItems = block.type == previous.type &&
-                    block.type in setOf(NoteBlockType.BULLET, NoteBlockType.NUMBERED, NoteBlockType.CHECKLIST, NoteBlockType.QUOTE)
-                (if (consecutiveListItems) "\n" else "\n\n") + markdown
-            }
-        }.joinToString("")
     }
 
     fun encode(document: NoteDocument): String {
