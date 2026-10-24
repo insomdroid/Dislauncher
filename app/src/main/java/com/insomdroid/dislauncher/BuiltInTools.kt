@@ -11,6 +11,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -75,6 +76,7 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -150,7 +152,8 @@ private data class LocalNote(
     val updatedAt: Long,
     val pinned: Boolean = false,
     /** Versioned structured document JSON; content is a searchable plain-text projection. */
-    val documentJson: String = ""
+    val documentJson: String = "",
+    val labels: List<String> = emptyList()
 )
 
 private data class LocalTask(
@@ -193,7 +196,8 @@ private fun loadNotes(context: Context): List<LocalNote> {
                 content = NoteDocumentCodec.plainText(document),
                 updatedAt = o.optLong("updatedAt"),
                 pinned = o.optBoolean("pinned", false),
-                documentJson = NoteDocumentCodec.encode(document)
+                documentJson = NoteDocumentCodec.encode(document),
+                labels = o.optJSONArray("labels")?.let { array -> (0 until array.length()).map { array.optString(it) } }.orEmpty()
             )
         }.filter { it.id.isNotBlank() }
     }.getOrDefault(emptyList()).sortedWith(
@@ -211,7 +215,8 @@ private fun saveNotes(context: Context, notes: List<LocalNote>) {
             .put("content", note.content)
             .put("document", note.documentJson.takeIf { it.isNotBlank() }
                 ?: NoteDocumentCodec.encode(NoteDocumentCodec.fromLegacyContent(note.content)))
-            .put("updatedAt", note.updatedAt).put("pinned", note.pinned))
+            .put("updatedAt", note.updatedAt).put("pinned", note.pinned)
+            .put("labels", JSONArray(note.labels)))
     }
     notesStore(context).edit().putString("notes_json", array.toString()).apply()
 }
@@ -449,6 +454,12 @@ private fun NotesTool(
     var title by remember { mutableStateOf("") }
     var document by remember { mutableStateOf(NoteDocument()) }
     var searchQuery by remember { mutableStateOf("") }
+    var currentLabels by remember { mutableStateOf(setOf<String>()) }
+    var activeLabel by remember { mutableStateOf<String?>(null) }
+    var allLabels by remember(context) { mutableStateOf(notesStore(context).getString("note_labels", "Ideas,Personal,Work").orEmpty().split(",").map { it.trim() }.filter { it.isNotBlank() }.toSet()) }
+    var newLabel by remember { mutableStateOf("") }
+    var showLabelManager by remember { mutableStateOf(false) }
+    var showNoteLabels by remember { mutableStateOf(false) }
     var gridView by remember(context) {
         mutableStateOf(context.getSharedPreferences("dislauncher_notes", Context.MODE_PRIVATE).getBoolean("grid_view", true))
     }
@@ -481,7 +492,8 @@ private fun NotesTool(
             content = plainText(document),
             updatedAt = System.currentTimeMillis(),
             pinned = pinned,
-            documentJson = NoteDocumentCodec.encode(document)
+            documentJson = NoteDocumentCodec.encode(document),
+            labels = currentLabels.toList()
         )
         notes = (notes.filterNot { it.id == id } + current)
             .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
@@ -492,6 +504,7 @@ private fun NotesTool(
         title = note.title
         document = NoteDocumentCodec.decode(note.documentJson)
             ?: NoteDocumentCodec.fromLegacyContent(note.content)
+        currentLabels = note.labels.toSet()
         undoHistory = emptyList()
         redoHistory = emptyList()
         onEditingChanged(true)
@@ -500,6 +513,7 @@ private fun NotesTool(
         selectedId = UUID.randomUUID().toString()
         title = ""
         document = NoteDocument()
+        currentLabels = emptySet()
         undoHistory = emptyList()
         redoHistory = emptyList()
         onEditingChanged(true)
@@ -574,6 +588,7 @@ private fun NotesTool(
 
     val visibleNotes = notes.filter { note ->
         (!pinnedOnly || note.pinned) &&
+            (activeLabel == null || activeLabel in note.labels) &&
             (searchQuery.isBlank() || note.title.contains(searchQuery, true) ||
                 note.content.contains(searchQuery, true))
     }.let { list ->
@@ -616,10 +631,23 @@ private fun NotesTool(
                                 onClick = { pinnedOnly = !pinnedOnly; menuTarget = null })
                             DropdownMenuItem(text = { Text(if (sortByTitle) "Sort by modified" else "Sort by title") },
                                 onClick = { sortByTitle = !sortByTitle; menuTarget = null })
+                            DropdownMenuItem(text = { Text("Manage labels") },
+                                onClick = { menuTarget = null; showLabelManager = true })
                             DropdownMenuItem(text = { Text("Import note archive") },
                                 leadingIcon = { Icon(Icons.Outlined.FileOpen, contentDescription = null) },
                                 onClick = { menuTarget = null; importLauncher.launch(arrayOf("application/zip", "application/octet-stream")) })
                         }
+                    }
+                }
+                Row(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FilterChip(selected = activeLabel == null && !pinnedOnly, onClick = { activeLabel = null; pinnedOnly = false }, label = { Text("All notes") })
+                    FilterChip(selected = pinnedOnly, onClick = { pinnedOnly = !pinnedOnly; activeLabel = null }, label = { Text("Pinned") })
+                    allLabels.sorted().forEach { label ->
+                        FilterChip(selected = activeLabel == label, onClick = { activeLabel = if (activeLabel == label) null else label; pinnedOnly = false }, label = { Text(label) })
                     }
                 }
                 if (visibleNotes.isEmpty()) {
@@ -675,6 +703,15 @@ private fun NotesTool(
                                     }
                                     Text(note.content.ifBlank { "No content" }, style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 5, overflow = TextOverflow.Ellipsis)
+                                    if (note.labels.isNotEmpty()) {
+                                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            note.labels.forEach { label ->
+                                                Surface(shape = RoundedCornerShape(6.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+                                                    Text(label, Modifier.padding(horizontal = 6.dp, vertical = 3.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                                                }
+                                            }
+                                        }
+                                    }
                                     Spacer(Modifier.weight(1f))
                                     Text(Instant.ofEpochMilli(note.updatedAt).atZone(ZoneId.systemDefault())
                                         .format(DateTimeFormatter.ofPattern("d MMM, HH:mm", Locale.getDefault())),
@@ -700,6 +737,9 @@ private fun NotesTool(
                                     }
                                     Text(note.content.ifBlank { "No content" }, style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                    if (note.labels.isNotEmpty()) {
+                                        Text(note.labels.joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    }
                                     Text(Instant.ofEpochMilli(note.updatedAt).atZone(ZoneId.systemDefault())
                                         .format(DateTimeFormatter.ofPattern("d MMM, HH:mm", Locale.getDefault())),
                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -780,6 +820,8 @@ private fun NotesTool(
                                     menuTarget = null
                                     exportLauncher.launch("$filename.zip")
                                 })
+                            DropdownMenuItem(text = { Text("Labels") },
+                                onClick = { menuTarget = null; showNoteLabels = true })
                             DropdownMenuItem(text = { Text("Insert image") },
                                 leadingIcon = { Icon(Icons.Outlined.Image, contentDescription = null) },
                                 onClick = { menuTarget = null; imageLauncher.launch(arrayOf("image/*")) })
@@ -789,15 +831,26 @@ private fun NotesTool(
                         }
                     }
                 }
-                OutlinedTextField(
+                BasicTextField(
                     value = title,
                     onValueChange = { title = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Title") },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
                     singleLine = true,
-                    textStyle = MaterialTheme.typography.titleLarge,
-                    shape = RoundedCornerShape(12.dp)
+                    textStyle = MaterialTheme.typography.headlineSmall.copy(color = MaterialTheme.colorScheme.onSurface),
+                    decorationBox = { inner ->
+                        if (title.isBlank()) Text("Title", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        inner()
+                    }
                 )
+                if (currentLabels.isNotEmpty()) {
+                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        currentLabels.sorted().forEach { label ->
+                            Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+                                Text(label, Modifier.padding(horizontal = 8.dp, vertical = 5.dp), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                            }
+                        }
+                    }
+                }
                 RichNoteEditor(
                     document = document,
                     onDocumentChange = { updated ->
@@ -812,6 +865,69 @@ private fun NotesTool(
                 )
             }
         }
+    }
+
+    if (showLabelManager) {
+        AlertDialog(
+            onDismissRequest = { showLabelManager = false; newLabel = "" },
+            title = { Text("Manage labels") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = newLabel, onValueChange = { newLabel = it }, singleLine = true, label = { Text("New label") })
+                    allLabels.sorted().forEach { label ->
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text(label, Modifier.weight(1f))
+                            TextButton(onClick = {
+                                allLabels = allLabels - label
+                                notes = notes.map { it.copy(labels = it.labels - label) }
+                                saveNotes(context, notes)
+                                notesStore(context).edit().putString("note_labels", allLabels.sorted().joinToString(",")).apply()
+                                if (activeLabel == label) activeLabel = null
+                                currentLabels = currentLabels - label
+                            }) { Text("Remove") }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val label = newLabel.trim()
+                    if (label.isNotBlank()) allLabels = allLabels + label
+                    notesStore(context).edit().putString("note_labels", allLabels.sorted().joinToString(",")).apply()
+                    newLabel = ""
+                    showLabelManager = false
+                }) { Text("Save") }
+            },
+            dismissButton = { TextButton(onClick = { showLabelManager = false; newLabel = "" }) { Text("Cancel") } }
+        )
+    }
+    if (showNoteLabels) {
+        AlertDialog(
+            onDismissRequest = { showNoteLabels = false },
+            title = { Text("Labels") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    if (allLabels.isEmpty()) Text("Create labels from the Notes menu first.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    allLabels.sorted().forEach { label ->
+                        Row(Modifier.fillMaxWidth().clickable {
+                            currentLabels = if (label in currentLabels) currentLabels - label else currentLabels + label
+                        }.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = label in currentLabels, onCheckedChange = { checked ->
+                                currentLabels = if (checked) currentLabels + label else currentLabels - label
+                            })
+                            Text(label)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    notes = notes.map { if (it.id == selectedId) it.copy(labels = currentLabels.toList()) else it }
+                    saveNotes(context, notes)
+                    showNoteLabels = false
+                }) { Text("Done") }
+            }
+        )
     }
 
     if (deleteTarget != null) {
