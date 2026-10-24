@@ -672,13 +672,20 @@ private fun NotesTool(
                     }
                 } else if (gridView) {
                     LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
+                        columns = GridCells.Adaptive(minSize = 156.dp),
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                         contentPadding = PaddingValues(bottom = 96.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         gridItems(visibleNotes, key = { it.id }) { note ->
+                            val noteCardContentColor = when (note.color) {
+                                "red" -> MaterialTheme.colorScheme.onErrorContainer
+                                "yellow" -> MaterialTheme.colorScheme.onSecondaryContainer
+                                "green", "purple" -> MaterialTheme.colorScheme.onTertiaryContainer
+                                "blue" -> MaterialTheme.colorScheme.onPrimaryContainer
+                                else -> MaterialTheme.colorScheme.onSurface
+                            }
                             Surface(
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 144.dp).clickable { openNote(note) },
                                 shape = RoundedCornerShape(12.dp),
@@ -698,7 +705,7 @@ private fun NotesTool(
                                         if (note.pinned) Icon(Icons.Outlined.PushPin, contentDescription = "Pinned",
                                             tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(15.dp))
                                         Text(note.title.ifBlank { "Untitled note" }, modifier = Modifier.weight(1f),
-                                            style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                            style = MaterialTheme.typography.titleMedium, color = noteCardContentColor, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                         Box {
                                             IconButton(onClick = { menuTarget = note.id }, modifier = Modifier.size(28.dp)) {
                                                 Icon(Icons.Outlined.MoreVert, contentDescription = "Note actions")
@@ -717,7 +724,7 @@ private fun NotesTool(
                                         }
                                     }
                                     Text(note.content.ifBlank { "No content" }, style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 5, overflow = TextOverflow.Ellipsis)
+                                        color = noteCardContentColor.copy(alpha = 0.82f), maxLines = 5, overflow = TextOverflow.Ellipsis)
                                     if (note.labels.isNotEmpty()) {
                                         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                             note.labels.forEach { label ->
