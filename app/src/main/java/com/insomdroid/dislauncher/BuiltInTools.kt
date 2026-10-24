@@ -176,21 +176,33 @@ private data class CalendarAgendaItem(
 private fun notesStore(context: Context) =
     context.getSharedPreferences("dislauncher_notes", Context.MODE_PRIVATE)
 
-private fun loadNotes(context: Context): List<LocalNote> = runCatching {
-    val array = JSONArray(notesStore(context).getString("notes_json", "[]") ?: "[]")
-    (0 until array.length()).mapNotNull { i ->
-        val o = array.optJSONObject(i) ?: return@mapNotNull null
-        val content = o.optString("content")
-        val savedDocument = o.optString("document")
-        val documentJson = savedDocument.takeIf {
-            it.isNotBlank() && NoteDocumentCodec.decode(it) != null
-        } ?: NoteDocumentCodec.encode(NoteDocumentCodec.fromLegacyContent(content))
-        LocalNote(
-            o.optString("id"), o.optString("title"), content, o.optLong("updatedAt"),
-            o.optBoolean("pinned", false), documentJson
-        )
-    }.filter { it.id.isNotBlank() }
-}.getOrDefault(emptyList()).sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
+private fun loadNotes(context: Context): List<LocalNote> {
+    val loaded = runCatching {
+        val array = JSONArray(notesStore(context).getString("notes_json", "[]") ?: "[]")
+        (0 until array.length()).mapNotNull { i ->
+            val o = array.optJSONObject(i) ?: return@mapNotNull null
+            val oldContent = o.optString("content")
+            val savedDocument = o.optString("document")
+            val document = savedDocument.takeIf {
+                it.isNotBlank() && NoteDocumentCodec.decode(it) != null
+            }?.let { NoteDocumentCodec.decode(it) }
+                ?: NoteDocumentCodec.fromLegacyContent(oldContent)
+            LocalNote(
+                id = o.optString("id"),
+                title = o.optString("title"),
+                content = NoteDocumentCodec.plainText(document),
+                updatedAt = o.optLong("updatedAt"),
+                pinned = o.optBoolean("pinned", false),
+                documentJson = NoteDocumentCodec.encode(document)
+            )
+        }.filter { it.id.isNotBlank() }
+    }.getOrDefault(emptyList()).sortedWith(
+        compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt }
+    )
+    // Persist the structured migration so future opens never need the legacy text parser.
+    saveNotes(context, loaded)
+    return loaded
+}
 
 private fun saveNotes(context: Context, notes: List<LocalNote>) {
     val array = JSONArray()
