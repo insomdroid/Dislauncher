@@ -23,9 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowDownward
-import androidx.compose.material.icons.outlined.ArrowUpward
-import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.CheckBox
 import androidx.compose.material.icons.outlined.ChevronLeft
@@ -154,33 +151,6 @@ internal fun RichNoteEditor(
     fun changeIndent(delta: Int) {
         val id = activeBlockId ?: return
         updateBlock(id) { it.copy(indentLevel = (it.indentLevel + delta).coerceIn(0, 5)) }
-    }
-    fun moveActiveBlock(delta: Int) {
-        val id = activeBlockId ?: return
-        val from = document.blocks.indexOfFirst { it.id == id }
-        if (from < 0) return
-        val to = (from + delta).coerceIn(0, document.blocks.lastIndex)
-        if (from == to) return
-        val reordered = document.blocks.toMutableList()
-        val block = reordered.removeAt(from)
-        reordered.add(to, block)
-        onDocumentChange(document.copy(blocks = reordered))
-    }
-    fun deleteActiveBlock() {
-        val id = activeBlockId ?: return
-        if (document.blocks.size <= 1) {
-            updateBlock(id) { it.copy(type = NoteBlockType.PARAGRAPH, spans = emptyList(), checked = false, indentLevel = 0) }
-            activeField = TextFieldValue("")
-            fields[id] = activeField
-            return
-        }
-        val index = document.blocks.indexOfFirst { it.id == id }
-        val remaining = document.blocks.filterNot { it.id == id }
-        onDocumentChange(document.copy(blocks = remaining))
-        val next = remaining.getOrNull(index.coerceAtMost(remaining.lastIndex)) ?: remaining.last()
-        activeBlockId = next.id
-        activeField = fieldFromBlock(next, linkColor)
-        fields[next.id] = activeField
     }
     fun applyLink(url: String) {
         val id = activeBlockId ?: return
@@ -361,9 +331,6 @@ internal fun RichNoteEditor(
                             IconButton(onClick = { changeIndent(-1) }) { Icon(Icons.Outlined.ChevronLeft, "Decrease indent") }
                             IconButton(onClick = { changeIndent(1) }) { Icon(Icons.Outlined.ChevronRight, "Increase indent") }
                             IconButton(onClick = { changeActiveType(NoteBlockType.DIVIDER) }) { Icon(Icons.Outlined.HorizontalRule, "Divider") }
-                            IconButton(onClick = { moveActiveBlock(-1) }) { Icon(Icons.Outlined.ArrowUpward, "Move block up") }
-                            IconButton(onClick = { moveActiveBlock(1) }) { Icon(Icons.Outlined.ArrowDownward, "Move block down") }
-                            IconButton(onClick = { deleteActiveBlock() }) { Icon(Icons.Outlined.DeleteOutline, "Delete block") }
                             IconButton(onClick = { showFormattingTools = false }) { Icon(Icons.Outlined.ChevronLeft, "Close formatting tools") }
                         }
                     } else {
