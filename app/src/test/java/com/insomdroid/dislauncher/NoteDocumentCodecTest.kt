@@ -7,53 +7,41 @@ import org.junit.Test
 
 class NoteDocumentCodecTest {
     @Test
-    fun roundTripsCommonMarkdownBlocksAndInlineMarks() {
-        val markdown = """# Heading
+    fun structuredDocumentRoundTripsRichBlocksAndInlineMarks() {
+        val document = NoteDocument(
+            blocks = listOf(
+                NoteBlock("heading", NoteBlockType.HEADING, spans = listOf(NoteInline("Heading", setOf(NoteMark.BOLD))), level = 2),
+                NoteBlock("paragraph", NoteBlockType.PARAGRAPH, spans = listOf(
+                    NoteInline("bold", setOf(NoteMark.BOLD)),
+                    NoteInline(" italic", setOf(NoteMark.ITALIC)),
+                    NoteInline(" link", link = "https://example.com")
+                )),
+                NoteBlock("checked", NoteBlockType.CHECKLIST, spans = listOf(NoteInline("finished")), checked = true),
+                NoteBlock("unchecked", NoteBlockType.CHECKLIST, spans = listOf(NoteInline("next")), checked = false),
+                NoteBlock("numbered", NoteBlockType.NUMBERED, spans = listOf(NoteInline("first")), orderedIndex = 2, indentLevel = 1),
+                NoteBlock("quote", NoteBlockType.QUOTE, spans = listOf(NoteInline("quoted"))),
+                NoteBlock("code", NoteBlockType.CODE, spans = listOf(NoteInline("val answer = 42", setOf(NoteMark.CODE)))),
+                NoteBlock("divider", NoteBlockType.DIVIDER)
+            )
+        )
 
-A **bold**, *italic*, ***both***, ~~removed~~, `code`, and [site](https://example.com).
-
-- [x] finished
-- [ ] next
-
-1. first
-2. second
-
-> quoted
-> continued
-
----
-
-```
-val answer = 42
-```"""
-
-        val parsed = NoteDocumentCodec.fromMarkdown(markdown)
-
-        assertEquals(markdown, NoteDocumentCodec.toMarkdown(parsed))
-        assertEquals(markdown, NoteDocumentCodec.toMarkdown(
-            NoteDocumentCodec.decode(NoteDocumentCodec.encode(parsed))!!
-        ))
-        assertTrue(parsed.blocks.any { it.type == NoteBlockType.CHECKLIST && it.checked })
-        assertTrue(parsed.blocks.any {
-            it.spans.any { span ->
-                NoteMark.BOLD in span.marks && NoteMark.ITALIC in span.marks && span.text == "both"
-            }
-        })
+        assertEquals(document, NoteDocumentCodec.decode(NoteDocumentCodec.encode(document)))
+        assertTrue(document.blocks.any { it.type == NoteBlockType.CHECKLIST && it.checked })
+        assertTrue(document.blocks.any { it.indentLevel == 1 })
     }
 
     @Test
-    fun emptyMarkdownProducesAnEmptyDocument() {
-        assertTrue(NoteDocumentCodec.fromMarkdown("").blocks.isEmpty())
-        assertEquals("", NoteDocumentCodec.toMarkdown(NoteDocument()))
+    fun emptyLegacyContentProducesAnEmptyDocument() {
+        assertTrue(NoteDocumentCodec.fromLegacyContent("").blocks.isEmpty())
+        assertEquals("", NoteDocumentCodec.plainText(NoteDocument()))
     }
 
     @Test
-    fun roundTripsMultilineParagraphsAndLocalImageReferences() {
-        val markdown = "First line\nsecond line\n\n![photo](<content://media/external/images/media/42>)"
+    fun migratesLegacyParagraphsAndImageReferencesIntoTypedBlocks() {
+        val legacy = "First line\nsecond line\n\n![photo](<content://media/external/images/media/42>)"
+        val document = NoteDocumentCodec.fromLegacyContent(legacy)
 
-        val document = NoteDocumentCodec.fromMarkdown(markdown)
-
-        assertEquals(markdown, NoteDocumentCodec.toMarkdown(document))
+        assertTrue(document.blocks.any { it.type == NoteBlockType.PARAGRAPH && it.spans.any { span -> span.text.contains("First line") } })
         val image = document.blocks.flatMap { it.spans }.single { it.imageUri != null }
         assertEquals("content://media/external/images/media/42", image.imageUri)
         assertEquals("photo", image.imageAlt)
