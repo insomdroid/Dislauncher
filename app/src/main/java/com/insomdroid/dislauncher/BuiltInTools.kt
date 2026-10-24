@@ -477,7 +477,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             onMonthChange = { calendarMonth = it },
                             modifier = Modifier.fillMaxSize()
                         )
-                        BuiltInTool.UNIT_CONVERTER -> UnitConverterTool(Modifier.fillMaxSize(), converterSearchQuery, { converterSearchQuery = it })
+                        BuiltInTool.UNIT_CONVERTER -> UnitConverterTool(Modifier.fillMaxSize(), converterSearchQuery)
                     }
                     }
                 }
