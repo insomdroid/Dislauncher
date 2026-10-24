@@ -350,11 +350,14 @@ internal fun HomeScreen(
                         app.packageName in activeNotificationPackages
                     ) {
                         val notificationDotColor = when (preferences.notificationDotColor) {
-                            "red" -> androidx.compose.ui.graphics.Color(0xFFE53935)
-                            "orange" -> androidx.compose.ui.graphics.Color(0xFFFF9800)
-                            "blue" -> androidx.compose.ui.graphics.Color(0xFF2196F3)
-                            "purple" -> androidx.compose.ui.graphics.Color(0xFFAB47BC)
-                            else -> androidx.compose.ui.graphics.Color.White
+                            "red" -> androidx.compose.ui.graphics.Color(0xFFBA1A1A)
+                            "yellow" -> androidx.compose.ui.graphics.Color(0xFF795900)
+                            "blue" -> androidx.compose.ui.graphics.Color(0xFF005AC1)
+                            "green" -> androidx.compose.ui.graphics.Color(0xFF386A20)
+                            "purple" -> androidx.compose.ui.graphics.Color(0xFF6750A4)
+                            "orange" -> androidx.compose.ui.graphics.Color(0xFF8B5000)
+                            "pink" -> androidx.compose.ui.graphics.Color(0xFF9C4168)
+                            else -> MaterialTheme.colorScheme.primary
                         }
                         val notificationCount = NotificationDotState.countFor(app.packageName)
                         if (notificationCount > 1) {
@@ -367,7 +370,7 @@ internal fun HomeScreen(
                             ) {
                                 Text(
                                     text = if (notificationCount > 99) "99+" else notificationCount.toString(),
-                                    color = if (preferences.notificationDotColor == "white") androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.White,
+                                    color = if (preferences.notificationDotColor == "yellow") androidx.compose.ui.graphics.Color.Black else MaterialTheme.colorScheme.onPrimary,
                                     fontSize = 10.sp,
                                     lineHeight = 12.sp,
                                     maxLines = 1
