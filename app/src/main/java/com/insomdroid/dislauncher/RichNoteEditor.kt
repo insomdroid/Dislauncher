@@ -99,6 +99,28 @@ internal fun RichNoteEditor(
     fun updateBlock(blockId: String, transform: (NoteBlock) -> NoteBlock) {
         onDocumentChange(document.copy(blocks = document.blocks.map { if (it.id == blockId) transform(it) else it }))
     }
+    fun isMarkActive(mark: NoteMark): Boolean {
+        val id = activeBlockId ?: return false
+        val field = fields[id] ?: activeField
+        val start = field.selection.min.coerceIn(0, field.text.length)
+        val end = field.selection.max.coerceIn(start, field.text.length)
+        if (start == end) return false
+        val block = document.blocks.firstOrNull { it.id == id } ?: return false
+        val source = block.spans.ifEmpty {
+            if (field.text.isEmpty()) emptyList() else listOf(NoteInline(field.text))
+        }
+        return sourceSelectedHasMark(source, start, end, mark)
+    }
+    fun isBlockTypeActive(type: NoteBlockType): Boolean {
+        val id = activeBlockId ?: return false
+        return document.blocks.firstOrNull { it.id == id }?.type == type
+    }
+    fun toolbarButtonModifier(active: Boolean): Modifier =
+        if (active) Modifier.background(
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+            RoundedCornerShape(8.dp)
+        ) else Modifier
+
     fun applyMark(mark: NoteMark) {
         val id = activeBlockId ?: return
         // Read the latest field snapshot: toolbar taps can move focus away from BasicTextField.
@@ -363,18 +385,18 @@ internal fun RichNoteEditor(
                             horizontalArrangement = Arrangement.SpaceEvenly,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            IconButton(onClick = { changeActiveType(NoteBlockType.HEADING) }) { Icon(Icons.Outlined.Title, "Heading") }
-                            IconButton(onClick = { applyMark(NoteMark.BOLD) }) { Icon(Icons.Outlined.FormatBold, "Bold") }
-                            IconButton(onClick = { applyMark(NoteMark.ITALIC) }) { Icon(Icons.Outlined.FormatItalic, "Italic") }
-                            IconButton(onClick = { applyMark(NoteMark.STRIKETHROUGH) }) { Icon(Icons.Outlined.FormatStrikethrough, "Strikethrough") }
-                            IconButton(onClick = { applyMark(NoteMark.UNDERLINE) }) { Icon(Icons.Outlined.FormatUnderlined, "Underline") }
-                            IconButton(onClick = { applyMark(NoteMark.CODE) }) { Icon(Icons.Outlined.Code, "Inline code") }
+                            IconButton(onClick = { changeActiveType(NoteBlockType.HEADING) }, modifier = toolbarButtonModifier(isBlockTypeActive(NoteBlockType.HEADING))) { Icon(Icons.Outlined.Title, "Heading") }
+                            IconButton(onClick = { applyMark(NoteMark.BOLD) }, modifier = toolbarButtonModifier(isMarkActive(NoteMark.BOLD))) { Icon(Icons.Outlined.FormatBold, "Bold") }
+                            IconButton(onClick = { applyMark(NoteMark.ITALIC) }, modifier = toolbarButtonModifier(isMarkActive(NoteMark.ITALIC))) { Icon(Icons.Outlined.FormatItalic, "Italic") }
+                            IconButton(onClick = { applyMark(NoteMark.STRIKETHROUGH) }, modifier = toolbarButtonModifier(isMarkActive(NoteMark.STRIKETHROUGH))) { Icon(Icons.Outlined.FormatStrikethrough, "Strikethrough") }
+                            IconButton(onClick = { applyMark(NoteMark.UNDERLINE) }, modifier = toolbarButtonModifier(isMarkActive(NoteMark.UNDERLINE))) { Icon(Icons.Outlined.FormatUnderlined, "Underline") }
+                            IconButton(onClick = { applyMark(NoteMark.CODE) }, modifier = toolbarButtonModifier(isMarkActive(NoteMark.CODE))) { Icon(Icons.Outlined.Code, "Inline code") }
                             IconButton(onClick = { showLinkDialog = true }) { Icon(Icons.Outlined.InsertLink, "Insert link") }
-                            IconButton(onClick = { changeActiveType(NoteBlockType.BULLET) }) { Icon(Icons.Outlined.FormatListBulleted, "Bulleted list") }
-                            IconButton(onClick = { changeActiveType(NoteBlockType.NUMBERED) }) { Icon(Icons.Outlined.FormatListNumbered, "Numbered list") }
-                            IconButton(onClick = { changeActiveType(NoteBlockType.CHECKLIST) }) { Icon(Icons.Outlined.CheckBox, "Checklist") }
-                            IconButton(onClick = { changeActiveType(NoteBlockType.QUOTE) }) { Icon(Icons.Outlined.FormatQuote, "Quote") }
-                            IconButton(onClick = { changeActiveType(NoteBlockType.CODE) }) { Icon(Icons.Outlined.Code, "Code block") }
+                            IconButton(onClick = { changeActiveType(NoteBlockType.BULLET) }, modifier = toolbarButtonModifier(isBlockTypeActive(NoteBlockType.BULLET))) { Icon(Icons.Outlined.FormatListBulleted, "Bulleted list") }
+                            IconButton(onClick = { changeActiveType(NoteBlockType.NUMBERED) }, modifier = toolbarButtonModifier(isBlockTypeActive(NoteBlockType.NUMBERED))) { Icon(Icons.Outlined.FormatListNumbered, "Numbered list") }
+                            IconButton(onClick = { changeActiveType(NoteBlockType.CHECKLIST) }, modifier = toolbarButtonModifier(isBlockTypeActive(NoteBlockType.CHECKLIST))) { Icon(Icons.Outlined.CheckBox, "Checklist") }
+                            IconButton(onClick = { changeActiveType(NoteBlockType.QUOTE) }, modifier = toolbarButtonModifier(isBlockTypeActive(NoteBlockType.QUOTE))) { Icon(Icons.Outlined.FormatQuote, "Quote") }
+                            IconButton(onClick = { changeActiveType(NoteBlockType.CODE) }, modifier = toolbarButtonModifier(isBlockTypeActive(NoteBlockType.CODE))) { Icon(Icons.Outlined.Code, "Code block") }
                             IconButton(onClick = { changeIndent(-1) }) { Icon(Icons.Outlined.ChevronLeft, "Decrease indent") }
                             IconButton(onClick = { changeIndent(1) }) { Icon(Icons.Outlined.ChevronRight, "Increase indent") }
                             IconButton(onClick = { changeActiveType(NoteBlockType.DIVIDER) }) { Icon(Icons.Outlined.HorizontalRule, "Divider") }
