@@ -221,11 +221,21 @@ internal fun RichNoteEditor(
                 var field by remember(block.id) { mutableStateOf(initial) }
                 LaunchedEffect(block.spans, block.type, block.checked) {
                     val fresh = fieldFromBlock(block, linkColor)
-                    if (fresh.text != field.text || fresh.annotatedString.spanStyles != field.annotatedString.spanStyles) {
-                        field = fresh
-                        fields[block.id] = fresh
-                        if (activeBlockId == block.id) activeField = fresh
+                    // The structured document is authoritative. Always sync the visible field
+                    // when its block changes, while preserving the cursor/selection whenever
+                    // the text itself has not changed. This prevents a transient styled frame
+                    // from being overwritten by a stale BasicTextField-local value.
+                    val synced = if (fresh.text == field.text) {
+                        fresh.copy(selection = TextRange(
+                            field.selection.min.coerceIn(0, fresh.text.length),
+                            field.selection.max.coerceIn(0, fresh.text.length)
+                        ))
+                    } else {
+                        fresh
                     }
+                    field = synced
+                    fields[block.id] = synced
+                    if (activeBlockId == block.id) activeField = synced
                 }
                 Row(
                     Modifier.fillMaxWidth().padding(start = (block.indentLevel * 16).dp, top = 2.dp, bottom = 2.dp),
