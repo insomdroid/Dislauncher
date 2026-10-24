@@ -4,146 +4,205 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111111">
-  <meta name="description" content="Dislauncher is a lightweight, open-source Android launcher with a text-first Home screen, fast app access, thoughtful personalisation, and useful built-in tools.">
-  <meta property="og:title" content="Dislauncher — A calmer Android Home">
-  <meta property="og:description" content="A text-first Android launcher. Less clutter, quick access, useful tools.">
+  <meta name="description" content="Dislauncher is a minimal, text-first Android launcher built for a more intentional Home screen, quick app access, personalisation, and useful everyday tools.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Dislauncher — Make room for what matters">
+  <meta property="og:description" content="A calmer, text-first Android Home screen. Less clutter, quick access, useful tools.">
   <meta property="og:image" content="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/Screenshot_20261022-221222_Dislauncher.png">
-  <title>Dislauncher — A calmer Android Home</title>
+  <meta name="color-scheme" content="dark">
+  <title>Dislauncher — Make room for what matters</title>
   <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/Minimalist%20Dislauncher%20Logo%20on%20Black.png">
   <style>
     :root {
       color-scheme: dark;
-      --bg: #111;
-      --panel: #171717;
-      --panel-soft: #1c1c1c;
-      --text: #f4f4f4;
-      --muted: #a4a4a4;
-      --subtle: #737373;
+      --bg: #101010;
+      --surface: #171717;
+      --surface-raised: #1c1c1c;
+      --text: #f3f3f3;
+      --muted: #a5a5a5;
+      --subtle: #777;
       --line: #303030;
-      --white-line: #555;
-      --content: 1080px;
+      --line-strong: #4b4b4b;
+      --content: 1160px;
       --font: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --radius: 5px;
     }
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; scroll-padding-top: 82px; }
-    body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.65 var(--font); -webkit-font-smoothing: antialiased; }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 90px; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.7 var(--font); -webkit-font-smoothing: antialiased; }
     a { color: inherit; text-decoration: none; }
     img { display: block; max-width: 100%; }
-    a:focus-visible { outline: 2px solid var(--text); outline-offset: 5px; }
-    ::selection { background: #eee; color: #111; }
-    .wrap { width: min(var(--content), calc(100% - 56px)); margin-inline: auto; }
-    .topbar { display: flex; justify-content: space-between; align-items: center; gap: 24px; min-height: 78px; border-bottom: 1px solid var(--line); }
-    .brand { display: inline-flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 650; letter-spacing: -.04em; }
-    .brand img { width: 29px; height: 29px; object-fit: contain; border-radius: 7px; }
-    nav { display: flex; align-items: center; gap: 25px; color: var(--muted); font-size: 12px; }
-    nav a:hover, .text-link:hover { color: var(--text); }
-    .nav-download { padding: 9px 14px; border: 1px solid var(--white-line); border-radius: 3px; color: var(--text); }
-    .nav-download:hover { background: var(--text); color: var(--bg); }
-    .eyebrow { margin: 0 0 20px; color: var(--muted); font: 10px/1.5 var(--font); letter-spacing: .16em; text-transform: uppercase; }
+    button, summary { font: inherit; }
+    a:focus-visible, summary:focus-visible { outline: 2px solid var(--text); outline-offset: 5px; }
+    ::selection { background: #f1f1f1; color: #111; }
+    .wrap { width: min(var(--content), calc(100% - 64px)); margin-inline: auto; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 26px; min-height: 82px; border-bottom: 1px solid var(--line); }
+    .brand { display: inline-flex; align-items: center; gap: 11px; font-size: 15px; font-weight: 650; letter-spacing: -.04em; white-space: nowrap; }
+    .brand img { width: 31px; height: 31px; border-radius: 7px; object-fit: contain; }
+    nav { display: flex; align-items: center; gap: 26px; color: var(--muted); font-size: 12px; }
+    nav a:hover, .inline-link:hover, footer a:hover { color: var(--text); }
+    .nav-cta { padding: 9px 13px; border: 1px solid var(--line-strong); border-radius: var(--radius); color: var(--text); transition: background .18s ease, color .18s ease; }
+    .nav-cta:hover { background: var(--text); color: var(--bg); }
+    .hero { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(270px, .78fr); align-items: center; gap: clamp(48px, 8vw, 112px); padding-block: clamp(76px, 10vw, 132px); }
+    .eyebrow { display: flex; align-items: center; gap: 10px; margin: 0 0 23px; color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: .17em; text-transform: uppercase; }
+    .eyebrow::before { width: 22px; height: 1px; background: var(--line-strong); content: ""; }
     h1, h2, h3, p { margin-top: 0; }
     h1, h2, h3 { letter-spacing: -.055em; }
-    h1 { max-width: 620px; margin-bottom: 23px; font-size: clamp(48px, 7vw, 82px); font-weight: 560; line-height: 1.02; }
-    h1 span { display: block; color: #888; }
-    .hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(280px, .75fr); align-items: center; gap: clamp(40px, 8vw, 100px); padding-block: clamp(72px, 10vw, 124px); }
-    .lead { max-width: 445px; margin-bottom: 29px; color: #b5b5b5; font-size: 16px; line-height: 1.85; }
+    h1 { max-width: 680px; margin-bottom: 24px; font-size: clamp(54px, 7.3vw, 92px); font-weight: 540; line-height: .99; }
+    h1 span { display: block; color: #858585; }
+    .lead { max-width: 470px; margin-bottom: 30px; color: #b6b6b6; font-size: 16px; line-height: 1.85; }
     .actions { display: flex; flex-wrap: wrap; gap: 10px; }
-    .button { display: inline-flex; align-items: center; justify-content: center; gap: 16px; min-height: 46px; padding: 11px 16px; border: 1px solid var(--text); border-radius: 3px; background: var(--text); color: #111; font-size: 12px; font-weight: 650; transition: background .15s ease, color .15s ease; }
+    .button { display: inline-flex; min-height: 47px; align-items: center; justify-content: center; gap: 18px; padding: 12px 16px; border: 1px solid var(--text); border-radius: var(--radius); background: var(--text); color: #111; font-size: 12px; font-weight: 650; transition: background .18s ease, color .18s ease, border-color .18s ease; }
     .button:hover { background: transparent; color: var(--text); }
-    .button.secondary { border-color: var(--white-line); background: transparent; color: var(--text); }
-    .button.secondary:hover { background: var(--panel-soft); }
+    .button.secondary { border-color: var(--line-strong); background: transparent; color: var(--text); }
+    .button.secondary:hover { background: var(--surface-raised); }
+    .button .arrow { font-size: 15px; line-height: 1; }
     .hero-meta { margin: 18px 0 0; color: var(--subtle); font-size: 11px; }
-    .hero-visual { justify-self: center; width: min(100%, 300px); }
-    .device { padding: 7px; border: 1px solid #494949; border-radius: 26px; background: #050505; box-shadow: 0 28px 70px #0008; }
-    .device-screen { overflow: hidden; border-radius: 20px; background: #fff; aspect-ratio: 9 / 19.2; }
+    .hero-visual { position: relative; justify-self: center; width: min(100%, 320px); }
+    .device { padding: 7px; border: 1px solid #454545; border-radius: 28px; background: #050505; box-shadow: 0 30px 85px #0009; }
+    .device-screen { overflow: hidden; aspect-ratio: 9 / 19.2; border-radius: 21px; background: #f4f4f4; }
     .device-screen img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
-    .image-caption { display: flex; justify-content: space-between; gap: 12px; padding: 13px 2px 0; color: var(--subtle); font-size: 10px; }
-    .section { padding-block: clamp(62px, 8vw, 94px); border-top: 1px solid var(--line); }
-    .section-heading { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 35px; margin-bottom: 34px; }
-    .section-label { padding-top: 8px; color: var(--muted); font-size: 10px; letter-spacing: .13em; text-transform: uppercase; }
-    h2 { max-width: 670px; margin-bottom: 15px; font-size: clamp(34px, 5vw, 55px); font-weight: 540; line-height: 1.1; }
-    .section-copy { max-width: 570px; margin-bottom: 0; color: var(--muted); font-size: 14px; line-height: 1.85; }
-    .principle { display: grid; grid-template-columns: 1.1fr .9fr; align-items: end; gap: 70px; }
-    .principle h2 { margin: 0; }
-    .principle-copy { max-width: 420px; color: var(--muted); font-size: 14px; line-height: 1.9; }
-    .principle-copy p { margin-bottom: 20px; }
-    .text-link { display: inline-block; padding-bottom: 4px; border-bottom: 1px solid var(--white-line); font-size: 12px; font-weight: 600; }
-    .gallery { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-    figure { min-width: 0; margin: 0; padding: 12px; border: 1px solid var(--line); background: var(--panel); }
-    .shot-image { display: flex; justify-content: center; align-items: center; min-height: 220px; padding: 12px; background: #0b0b0b; }
-    .shot-image img { width: 100%; max-height: 460px; object-fit: contain; }
-    figcaption { display: flex; flex-direction: column; gap: 3px; padding: 14px 3px 3px; }
+    .screen-note { position: absolute; right: -36px; bottom: 74px; max-width: 150px; padding: 12px 14px; border: 1px solid var(--line-strong); border-radius: var(--radius); background: #171717; box-shadow: 0 12px 30px #0006; }
+    .screen-note strong { display: block; font-size: 11px; font-weight: 600; }
+    .screen-note span { display: block; margin-top: 2px; color: var(--muted); font-size: 10px; }
+    .visual-caption { display: flex; justify-content: space-between; gap: 12px; padding: 13px 2px 0; color: var(--subtle); font-size: 10px; letter-spacing: .04em; }
+    .trust-row { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .trust-item { display: flex; align-items: center; gap: 12px; min-height: 78px; padding: 18px 24px; border-right: 1px solid var(--line); }
+    .trust-item:first-child { padding-left: 0; }
+    .trust-item:last-child { border-right: 0; }
+    .trust-mark { display: grid; width: 29px; height: 29px; flex: 0 0 auto; place-items: center; border: 1px solid var(--line-strong); border-radius: 50%; color: #ddd; font-size: 12px; }
+    .trust-item strong { display: block; font-size: 11px; font-weight: 600; }
+    .trust-item span:last-child { display: block; color: var(--subtle); font-size: 10px; }
+    .section { padding-block: clamp(68px, 9vw, 106px); border-bottom: 1px solid var(--line); }
+    .section-head { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 36px; margin-bottom: 38px; }
+    .section-label { padding-top: 9px; color: var(--muted); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; }
+    h2 { max-width: 730px; margin-bottom: 17px; font-size: clamp(37px, 5.1vw, 62px); font-weight: 530; line-height: 1.08; }
+    .section-copy { max-width: 610px; margin-bottom: 0; color: var(--muted); font-size: 14px; line-height: 1.9; }
+    .manifesto { display: grid; grid-template-columns: 1fr .78fr; align-items: end; gap: 80px; }
+    .manifesto h2 { margin: 0; }
+    .manifesto-copy { max-width: 440px; color: var(--muted); font-size: 14px; line-height: 1.95; }
+    .manifesto-copy p { margin-bottom: 20px; }
+    .inline-link { display: inline-block; padding-bottom: 4px; border-bottom: 1px solid var(--line-strong); font-size: 12px; font-weight: 600; }
+    .gallery { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+    figure { min-width: 0; margin: 0; padding: 10px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+    .shot { display: grid; min-height: 245px; place-items: center; overflow: hidden; padding: 10px; background: #0b0b0b; }
+    .shot img { width: 100%; max-height: 430px; object-fit: contain; }
+    figcaption { display: flex; flex-direction: column; gap: 4px; padding: 14px 3px 4px; }
     figcaption strong { font-size: 12px; font-weight: 600; }
-    figcaption span { color: var(--subtle); font-size: 10px; }
-    .features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
-    .feature { min-height: 190px; padding: 24px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-    .feature-number { color: var(--subtle); font-size: 10px; letter-spacing: .1em; }
-    .feature h3 { margin: 25px 0 10px; font-size: 19px; font-weight: 560; }
-    .feature p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.85; }
-    .tools { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-top: 28px; border: 1px solid var(--line); }
-    .tool { padding: 16px; border-right: 1px solid var(--line); }
+    figcaption span { color: var(--subtle); font-size: 10px; line-height: 1.6; }
+    .feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+    .feature { min-height: 205px; padding: 25px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .feature-index { color: var(--subtle); font-size: 10px; letter-spacing: .11em; }
+    .feature h3 { margin: 28px 0 10px; font-size: 20px; font-weight: 560; }
+    .feature p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.9; }
+    .tool-strip { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-top: 18px; border: 1px solid var(--line); }
+    .tool { min-height: 100px; padding: 17px; border-right: 1px solid var(--line); }
     .tool:last-child { border-right: 0; }
-    .tool strong { display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600; }
-    .tool span { color: var(--subtle); font-size: 10px; line-height: 1.6; }
-    .download { padding-block: clamp(64px, 8vw, 92px); border-top: 1px solid var(--line); background: #171717; }
-    .download-inner { display: flex; align-items: end; justify-content: space-between; gap: 40px; }
-    .download h2 { margin-bottom: 14px; }
-    .download .section-copy { max-width: 500px; }
-    .download-actions { display: flex; flex-direction: column; gap: 9px; min-width: 180px; }
-    .download-actions .button { justify-content: space-between; }
-    .specs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; margin-top: 45px; padding-top: 22px; border-top: 1px solid #383838; }
+    .tool strong { display: block; margin-bottom: 5px; font-size: 11px; font-weight: 600; }
+    .tool span { color: var(--subtle); font-size: 10px; line-height: 1.7; }
+    .personalisation { display: grid; grid-template-columns: .85fr 1fr; gap: clamp(35px, 8vw, 100px); align-items: center; }
+    .personalisation h2 { font-size: clamp(36px, 4.7vw, 56px); }
+    .option-list { border-top: 1px solid var(--line); }
+    .option { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 17px 0; border-bottom: 1px solid var(--line); }
+    .option strong { font-size: 12px; font-weight: 600; }
+    .option span { color: var(--muted); font-size: 11px; text-align: right; }
+    .privacy-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+    .privacy-card { padding: 24px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+    .privacy-card .small-label { margin-bottom: 22px; color: var(--subtle); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+    .privacy-card h3 { margin-bottom: 10px; font-size: 20px; font-weight: 550; }
+    .privacy-card p { margin-bottom: 0; color: var(--muted); font-size: 12px; line-height: 1.9; }
+    .get-started { background: #151515; }
+    .download-layout { display: grid; grid-template-columns: 1fr .8fr; gap: 70px; align-items: start; }
+    .download-layout h2 { max-width: 570px; }
+    .download-layout .section-copy { margin-bottom: 25px; }
+    .install-steps { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+    .install-steps li { display: grid; grid-template-columns: 32px 1fr; gap: 12px; padding: 17px 0; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 12px; line-height: 1.8; }
+    .step-num { color: var(--text); font-size: 10px; }
+    .install-steps strong { color: var(--text); font-weight: 600; }
+    .download-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+    .download-note { margin-top: 16px; color: var(--subtle); font-size: 10px; line-height: 1.7; }
+    .specs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 45px; padding-top: 22px; border-top: 1px solid var(--line); }
     .spec-label { display: block; margin-bottom: 7px; color: var(--subtle); font-size: 9px; letter-spacing: .13em; text-transform: uppercase; }
     .spec strong { font-size: 12px; font-weight: 600; }
-    footer { padding-block: 25px 32px; }
-    .footer-inner { display: flex; justify-content: space-between; align-items: center; gap: 20px; color: var(--subtle); font-size: 10px; }
-    .footer-links { display: flex; flex-wrap: wrap; gap: 17px; }
-    @media (max-width: 760px) {
-      .wrap { width: calc(100% - 40px); }
-      .hero { grid-template-columns: minmax(0, 1fr) minmax(220px, .7fr); gap: 28px; }
-      .section-heading { grid-template-columns: 115px minmax(0, 1fr); gap: 20px; }
-      .principle { gap: 35px; }
-      .features { grid-template-columns: 1fr; }
-      .feature { min-height: 0; }
-      .feature h3 { margin-top: 17px; }
-      .tools { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .faq-list { border-top: 1px solid var(--line); }
+    details { border-bottom: 1px solid var(--line); }
+    summary { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 19px 0; cursor: pointer; list-style: none; font-size: 13px; font-weight: 560; }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: "+"; color: var(--muted); font-size: 19px; font-weight: 400; }
+    details[open] summary::after { content: "−"; }
+    .faq-answer { max-width: 760px; padding: 0 36px 20px 0; color: var(--muted); font-size: 12px; line-height: 1.9; }
+    .faq-answer p:last-child { margin-bottom: 0; }
+    footer { padding-block: 27px 35px; }
+    .footer-main { display: flex; align-items: flex-start; justify-content: space-between; gap: 30px; padding-bottom: 24px; }
+    .footer-brand { max-width: 260px; }
+    .footer-brand .brand { margin-bottom: 12px; }
+    .footer-brand p { color: var(--subtle); font-size: 11px; line-height: 1.8; }
+    .footer-links { display: flex; flex-wrap: wrap; gap: 16px 22px; padding-top: 7px; color: var(--muted); font-size: 11px; }
+    .footer-bottom { display: flex; justify-content: space-between; gap: 18px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--subtle); font-size: 10px; }
+    @media (max-width: 900px) {
+      .wrap { width: min(var(--content), calc(100% - 48px)); }
+      .hero { gap: 45px; }
+      .screen-note { right: -20px; }
+      .gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .shot { min-height: 200px; }
+      .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .feature { min-height: 180px; }
+      .tool-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .tool { border-bottom: 1px solid var(--line); }
       .tool:nth-child(3) { border-right: 0; }
       .tool:nth-child(4), .tool:nth-child(5) { border-bottom: 0; }
+      .tool:nth-child(4) { border-right: 1px solid var(--line); }
+      .download-layout { gap: 40px; }
     }
-    @media (max-width: 560px) {
-      html { scroll-padding-top: 68px; }
-      .wrap { width: calc(100% - 32px); }
-      .topbar { min-height: 68px; }
+    @media (max-width: 620px) {
+      html { scroll-padding-top: 72px; }
+      .wrap { width: calc(100% - 36px); }
+      .topbar { min-height: 70px; }
       nav { gap: 12px; font-size: 11px; }
-      nav a:not(.nav-download) { display: none; }
-      .nav-download { padding: 8px 10px; }
-      .hero { grid-template-columns: 1fr; gap: 38px; padding-block: 62px; }
-      h1 { font-size: clamp(50px, 12vw, 68px); }
+      nav a:not(.nav-cta) { display: none; }
+      .nav-cta { padding: 8px 10px; }
+      .hero { grid-template-columns: 1fr; gap: 40px; padding-block: 64px 70px; }
+      h1 { font-size: clamp(53px, 13vw, 75px); }
       .lead { font-size: 14px; }
-      .hero-visual { width: min(78%, 275px); }
-      .section { padding-block: 58px; }
-      .section-heading, .principle { grid-template-columns: 1fr; gap: 13px; }
-      .section-heading { margin-bottom: 25px; }
+      .hero-visual { width: min(77%, 280px); }
+      .screen-note { right: -27px; bottom: 62px; }
+      .trust-row { grid-template-columns: 1fr; }
+      .trust-item, .trust-item:first-child { min-height: 64px; padding: 13px 0; border-right: 0; border-bottom: 1px solid var(--line); }
+      .trust-item:last-child { border-bottom: 0; }
+      .section { padding-block: 60px; }
+      .section-head, .manifesto, .personalisation, .download-layout { grid-template-columns: 1fr; gap: 16px; }
+      .section-head { margin-bottom: 27px; }
       .section-label { padding-top: 0; }
-      h2 { font-size: clamp(34px, 9vw, 46px); }
-      .gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+      h2 { font-size: clamp(36px, 9vw, 48px); }
+      .manifesto-copy { margin-top: 8px; }
+      .gallery { gap: 9px; }
       figure { padding: 7px; }
-      .shot-image { min-height: 0; padding: 7px; }
-      figcaption { padding: 10px 2px 2px; }
+      .shot { min-height: 0; padding: 7px; }
+      figcaption { padding: 10px 2px 3px; }
       figcaption strong { font-size: 10px; }
       figcaption span { font-size: 9px; }
-      .tools { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .tool { padding: 13px; border-bottom: 1px solid var(--line) !important; }
+      .feature-grid { grid-template-columns: 1fr; }
+      .feature { min-height: 0; padding: 21px; }
+      .feature h3 { margin-top: 18px; }
+      .tool-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .tool { min-height: 88px; padding: 13px; border-bottom: 1px solid var(--line) !important; }
       .tool:nth-child(2), .tool:nth-child(4) { border-right: 0; }
       .tool:nth-child(3) { border-right: 1px solid var(--line); }
       .tool:last-child { border-bottom: 0 !important; }
-      .download-inner { flex-direction: column; align-items: stretch; gap: 25px; }
-      .download-actions { display: grid; grid-template-columns: 1fr 1fr; min-width: 0; }
-      .download-actions .button { padding-inline: 10px; font-size: 10px; }
+      .privacy-panel { grid-template-columns: 1fr; gap: 12px; }
+      .privacy-card { padding: 20px; }
+      .download-layout { gap: 28px; }
+      .download-buttons { display: grid; grid-template-columns: 1fr 1fr; }
+      .download-buttons .button { padding-inline: 10px; gap: 8px; font-size: 10px; }
       .specs { grid-template-columns: 1fr; gap: 15px; margin-top: 30px; }
-      .footer-inner { align-items: flex-start; flex-direction: column; }
-      .footer-links { gap: 13px; }
+      .footer-main, .footer-bottom { flex-direction: column; }
+      .footer-main { gap: 15px; }
+      .footer-links { gap: 13px 17px; }
     }
-    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+    }
   </style>
 </head>
 <body>
@@ -154,9 +213,10 @@
     </a>
     <nav aria-label="Main navigation">
       <a href="#features">Features</a>
-      <a href="#screens">Screens</a>
-      <a href="https://github.com/insomdroid/Dislauncher" target="_blank" rel="noopener noreferrer">Source code ↗</a>
-      <a class="nav-download" href="https://github.com/insomdroid/Dislauncher/releases/latest" target="_blank" rel="noopener noreferrer">Get Dislauncher ↗</a>
+      <a href="#screens">Screenshots</a>
+      <a href="#personalisation">Personalisation</a>
+      <a href="#faq">FAQ</a>
+      <a class="nav-cta" href="https://github.com/insomdroid/Dislauncher/releases/latest" target="_blank" rel="noopener noreferrer">Download <span aria-hidden="true">↗</span></a>
     </nav>
   </header>
 
@@ -164,58 +224,69 @@
     <section class="wrap hero" aria-labelledby="hero-title">
       <div>
         <p class="eyebrow">A different kind of Android launcher</p>
-        <h1 id="hero-title">Less clutter.<span>More intention.</span></h1>
-        <p class="lead">A text-first Home screen that keeps your favourite apps close, your everyday tools handy, and distractions to a minimum.</p>
+        <h1 id="hero-title">Make room for <span>what matters.</span></h1>
+        <p class="lead">A text-first Home screen for people who want less visual clutter, quick access to their apps, and everyday tools close at hand.</p>
         <div class="actions">
-          <a class="button" href="https://github.com/insomdroid/Dislauncher/releases/latest" target="_blank" rel="noopener noreferrer">Download for Android <span aria-hidden="true">↗</span></a>
-          <a class="button secondary" href="#features">Explore features <span aria-hidden="true">↓</span></a>
+          <a class="button" href="https://github.com/insomdroid/Dislauncher/releases/latest" target="_blank" rel="noopener noreferrer">Get Dislauncher <span class="arrow" aria-hidden="true">↗</span></a>
+          <a class="button secondary" href="#features">Explore features <span class="arrow" aria-hidden="true">↓</span></a>
         </div>
         <p class="hero-meta">Open source · Android 8.0+ · No account required</p>
       </div>
       <div class="hero-visual">
         <div class="device">
           <div class="device-screen">
-            <img src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/Screenshot_20261022-221222_Dislauncher.png" alt="Dislauncher Home screen showing its text-first layout" fetchpriority="high">
+            <img src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/Screenshot_20261022-221222_Dislauncher.png" alt="Dislauncher Home screen with its minimal, text-first layout" fetchpriority="high">
           </div>
         </div>
-        <div class="image-caption"><span>01 — Home</span><span>Designed for focus</span></div>
+        <div class="screen-note"><strong>Less noise, by design.</strong><span>Your Home screen, on your terms.</span></div>
+        <div class="visual-caption"><span>01 — Home</span><span>Made for daily use</span></div>
       </div>
     </section>
 
-    <section class="section">
-      <div class="wrap principle">
+    <div class="wrap trust-row" aria-label="Dislauncher highlights">
+      <div class="trust-item"><span class="trust-mark" aria-hidden="true">↗</span><div><strong>Open source</strong><span>Explore the code on GitHub</span></div></div>
+      <div class="trust-item"><span class="trust-mark" aria-hidden="true">Aa</span><div><strong>Make it yours</strong><span>Appearance, type and gestures</span></div></div>
+      <div class="trust-item"><span class="trust-mark" aria-hidden="true">＋</span><div><strong>Useful by default</strong><span>Tools built into your launcher</span></div></div>
+    </div>
+
+    <section class="section" aria-labelledby="idea-title">
+      <div class="wrap manifesto">
         <div>
           <p class="eyebrow">The idea</p>
-          <h2>Your phone should work for you, not compete for your attention.</h2>
+          <h2 id="idea-title">Your phone should work for you, not compete for your attention.</h2>
         </div>
-        <div class="principle-copy">
-          <p>Dislauncher puts useful information and clear text ahead of rows of oversized icons. Open apps quickly, organise the ones you rely on, and shape the experience around your routine.</p>
-          <a class="text-link" href="https://github.com/insomdroid/Dislauncher" target="_blank" rel="noopener noreferrer">Explore the open-source project ↗</a>
+        <div class="manifesto-copy">
+          <p>Dislauncher puts clear text and useful information ahead of a wall of icons. Keep favourite apps close, find the rest quickly, and shape your Home screen around the way you actually use your phone.</p>
+          <a class="inline-link" href="https://github.com/insomdroid/Dislauncher" target="_blank" rel="noopener noreferrer">Explore the open-source project ↗</a>
         </div>
       </div>
     </section>
 
     <section class="section" id="screens" aria-labelledby="screens-title">
       <div class="wrap">
-        <div class="section-heading">
+        <div class="section-head">
           <p class="section-label">A closer look</p>
           <div>
             <h2 id="screens-title">Simple on the surface. Useful throughout.</h2>
-            <p class="section-copy">A thoughtful Home screen, practical everyday tools, and personalisation that keeps the experience unmistakably yours.</p>
+            <p class="section-copy">Take a look at the real interface: from your Home screen and app access to the settings that make the launcher yours.</p>
           </div>
         </div>
         <div class="gallery">
           <figure>
-            <div class="shot-image"><img src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/Screenshot_20261022-221233_Dislauncher.png" alt="Dislauncher app navigation and app access" loading="lazy" decoding="async"></div>
-            <figcaption><strong>Find apps, faster</strong><span>Search, favourites, folders and hidden apps</span></figcaption>
+            <div class="shot"><img src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/Screenshot_20261022-221233_Dislauncher.png" alt="Dislauncher app navigation screen" loading="lazy" decoding="async"></div>
+            <figcaption><strong>Find apps, faster</strong><span>App access made straightforward</span></figcaption>
           </figure>
           <figure>
-            <div class="shot-image"><img src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/Screenshot_20261022-221259_Dislauncher.png" alt="Dislauncher everyday interface" loading="lazy" decoding="async"></div>
-            <figcaption><strong>Keep the essentials close</strong><span>Useful information at a glance</span></figcaption>
+            <div class="shot"><img src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/Screenshot_20261022-221259_Dislauncher.png" alt="Dislauncher interface showing everyday launcher features" loading="lazy" decoding="async"></div>
+            <figcaption><strong>Keep essentials close</strong><span>Useful details without the clutter</span></figcaption>
           </figure>
           <figure>
-            <div class="shot-image"><img src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/Screenshot_20261022-221309_Dislauncher.png" alt="Dislauncher personalisation interface" loading="lazy" decoding="async"></div>
-            <figcaption><strong>Make it feel like yours</strong><span>Appearance and behaviour preferences</span></figcaption>
+            <div class="shot"><img src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/Screenshot_20261022-221309_Dislauncher.png" alt="Dislauncher appearance and personalisation settings" loading="lazy" decoding="async"></div>
+            <figcaption><strong>Make it yours</strong><span>Choose the look that feels right</span></figcaption>
+          </figure>
+          <figure>
+            <div class="shot"><img src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/Screenshot_20261022-221316_Dislauncher.png" alt="Another view of Dislauncher settings and controls" loading="lazy" decoding="async"></div>
+            <figcaption><strong>Thoughtful details</strong><span>Settings for your daily routine</span></figcaption>
           </figure>
         </div>
       </div>
@@ -223,90 +294,131 @@
 
     <section class="section" id="features" aria-labelledby="features-title">
       <div class="wrap">
-        <div class="section-heading">
+        <div class="section-head">
           <p class="section-label">Made for daily use</p>
           <div>
             <h2 id="features-title">Everything has a purpose.</h2>
-            <p class="section-copy">A focused launcher with practical features, without adding noise to your Home screen.</p>
+            <p class="section-copy">A focused launcher with the essentials built in. Choose what you want to see and leave the rest out of your way.</p>
           </div>
         </div>
-        <div class="features">
-          <article class="feature">
-            <span class="feature-number">01 / HOME</span>
-            <h3>A calmer Home screen</h3>
-            <p>Clock, date, progress indicators and favourite apps, with optional battery, weather, calendar agenda, music controls and notification indicators.</p>
-          </article>
-          <article class="feature">
-            <span class="feature-number">02 / APP ACCESS</span>
-            <h3>Less searching. More doing.</h3>
-            <p>Searchable alphabetical app drawer, favourites, folders, hidden apps, icon-pack support and shortcuts for common actions.</p>
-          </article>
-          <article class="feature">
-            <span class="feature-number">03 / PERSONALISATION</span>
-            <h3>Your setup, your rules</h3>
-            <p>System, light, dark and black themes, accent colours, wallpapers, a choice of fonts, text sizing, gestures and layout preferences.</p>
-          </article>
+        <div class="feature-grid">
+          <article class="feature"><span class="feature-index">01 / HOME</span><h3>A calmer Home screen</h3><p>Clock, date, progress indicators and favourite apps, with optional battery, weather, calendar agenda, music controls and notification indicators.</p></article>
+          <article class="feature"><span class="feature-index">02 / APP ACCESS</span><h3>Less searching. More doing.</h3><p>Searchable alphabetical app drawer, favourites, folders, hidden apps, icon-pack support and shortcuts for common actions.</p></article>
+          <article class="feature"><span class="feature-index">03 / PERSONALISATION</span><h3>Your setup, your rules</h3><p>System, light, dark and black themes, accent colours, wallpapers, font choices, text sizing, gestures and layout preferences.</p></article>
+          <article class="feature"><span class="feature-index">04 / NOTES</span><h3>Capture a thought</h3><p>Keep notes with rich-text formatting, lists, checklists and images. Search and pin notes, choose list or grid view, and import or export your notes.</p></article>
+          <article class="feature"><span class="feature-index">05 / CALENDAR</span><h3>See the day ahead</h3><p>Browse the month, choose a date and review its agenda. Local tasks and reminders can sit alongside events from your device calendar when enabled.</p></article>
+          <article class="feature"><span class="feature-index">06 / EVERYDAY TOOLS</span><h3>Useful when you need them</h3><p>Work through calculations, revisit recent results, and convert common measurements without leaving the launcher experience.</p></article>
         </div>
-        <div class="tools" aria-label="Built-in tools">
-          <div class="tool"><strong>Notes</strong><span>Rich text, lists, checklists and images</span></div>
-          <div class="tool"><strong>Calendar</strong><span>Monthly view, daily agenda and reminders</span></div>
-          <div class="tool"><strong>Calculator</strong><span>Calculations with recent history</span></div>
+        <div class="tool-strip" aria-label="Built-in and optional tools">
+          <div class="tool"><strong>Notes</strong><span>Rich text, checklists and images</span></div>
+          <div class="tool"><strong>Calendar</strong><span>Monthly view and daily agenda</span></div>
+          <div class="tool"><strong>Calculator</strong><span>Calculations and history</span></div>
           <div class="tool"><strong>Unit converter</strong><span>Common units and measurements</span></div>
           <div class="tool"><strong>Weather & music</strong><span>Optional Home screen tools</span></div>
-        </div>
-        <div class="features" style="margin-top:16px">
-          <article class="feature">
-            <span class="feature-number">04 / NOTES</span>
-            <h3>Notes that keep up</h3>
-            <p>Write with rich-text formatting, headings, links, lists, checklists and images. Search and pin notes, switch between list and grid views, and import or export notes for safekeeping.</p>
-          </article>
-          <article class="feature">
-            <span class="feature-number">05 / CALENDAR</span>
-            <h3>See the day ahead</h3>
-            <p>Browse the month, choose a date and see its agenda. Keep local tasks and reminders alongside events from your device calendar when you choose to connect them.</p>
-          </article>
-          <article class="feature">
-            <span class="feature-number">06 / EVERYDAY TOOLS</span>
-            <h3>Useful when you need them</h3>
-            <p>Work through calculations, revisit recent results, and convert common measurements without leaving your launcher experience.</p>
-          </article>
         </div>
       </div>
     </section>
 
-    <section class="download" id="download" aria-labelledby="download-title">
+    <section class="section" id="personalisation" aria-labelledby="personalisation-title">
+      <div class="wrap personalisation">
+        <div>
+          <p class="eyebrow">Personal, not prescriptive</p>
+          <h2 id="personalisation-title">Your phone should feel like yours.</h2>
+          <p class="section-copy">Keep the interface minimal, then tune the details to suit your eyes, your habits and your setup. No single look is required.</p>
+        </div>
+        <div class="option-list" aria-label="Personalisation options">
+          <div class="option"><strong>Appearance</strong><span>System, light, dark and black themes</span></div>
+          <div class="option"><strong>Colour</strong><span>Accent colour and wallpaper</span></div>
+          <div class="option"><strong>Typography</strong><span>Font choices and text sizing</span></div>
+          <div class="option"><strong>Navigation</strong><span>Gestures, layout and app access</span></div>
+          <div class="option"><strong>Home screen</strong><span>Choose which optional tools appear</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="privacy" aria-labelledby="privacy-title">
       <div class="wrap">
-        <div class="download-inner">
+        <div class="section-head">
+          <p class="section-label">Your device, your choice</p>
+          <div>
+            <h2 id="privacy-title">Clear about access. Open about code.</h2>
+            <p class="section-copy">Some features need Android permissions to work. You can choose whether to enable optional integrations, and you can inspect the project yourself.</p>
+          </div>
+        </div>
+        <div class="privacy-panel">
+          <article class="privacy-card"><p class="small-label">Permissions</p><h3>Enable features when you need them.</h3><p>Calendar integration may request access to device calendar events. Weather, music controls and notification indicators may need their related access or settings. If a feature is optional, you can leave it disabled.</p></article>
+          <article class="privacy-card"><p class="small-label">Transparency</p><h3>Read the source and safety notes.</h3><p>Dislauncher is open source. Review the <a class="inline-link" href="https://github.com/insomdroid/Dislauncher/blob/main/PRIVACY.md" target="_blank" rel="noopener noreferrer">privacy information</a> and <a class="inline-link" href="https://github.com/insomdroid/Dislauncher/blob/main/APK_SAFETY.md" target="_blank" rel="noopener noreferrer">APK safety notes</a> before installing.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section get-started" id="download" aria-labelledby="download-title">
+      <div class="wrap">
+        <div class="download-layout">
           <div>
             <p class="eyebrow">Open source. Made for Android.</p>
-            <h2 id="download-title">Make space for what matters.</h2>
-            <p class="section-copy">Try Dislauncher on your device, explore its everyday tools, or help shape what comes next.</p>
+            <h2 id="download-title">A more intentional Home starts here.</h2>
+            <p class="section-copy">Download the latest release from GitHub. Dislauncher supports Android 8.0 and later; the release page includes the available APK and checksum file.</p>
+            <div class="download-buttons">
+              <a class="button" href="https://github.com/insomdroid/Dislauncher/releases/latest" target="_blank" rel="noopener noreferrer">Download APK <span class="arrow" aria-hidden="true">↗</span></a>
+              <a class="button secondary" href="https://github.com/insomdroid/Dislauncher" target="_blank" rel="noopener noreferrer">View source <span class="arrow" aria-hidden="true">↗</span></a>
+            </div>
+            <p class="download-note">Install only releases you trust. Android may ask you to allow installation from the browser or file manager you use to open the APK.</p>
           </div>
-          <div class="download-actions">
-            <a class="button" href="https://github.com/insomdroid/Dislauncher/releases/latest" target="_blank" rel="noopener noreferrer">Download APK <span aria-hidden="true">↗</span></a>
-            <a class="button secondary" href="https://github.com/insomdroid/Dislauncher" target="_blank" rel="noopener noreferrer">View source code <span aria-hidden="true">↗</span></a>
+          <div>
+            <p class="section-label">Get started</p>
+            <ol class="install-steps">
+              <li><span class="step-num">01</span><span><strong>Open the releases page.</strong><br>Choose the latest Dislauncher release.</span></li>
+              <li><span class="step-num">02</span><span><strong>Download the APK.</strong><br>Use the checksum file if you want to verify the download.</span></li>
+              <li><span class="step-num">03</span><span><strong>Install and set as Home.</strong><br>Follow Android's prompts, then choose Dislauncher as your launcher.</span></li>
+            </ol>
           </div>
         </div>
         <div class="specs">
-          <div><span class="spec-label">Platform</span><strong>Android 8.0 and later</strong></div>
-          <div><span class="spec-label">Everyday tools</span><strong>Notes · Calendar · Calculator · Converter</strong></div>
-          <div><span class="spec-label">Project</span><strong>Open source · MIT License</strong></div>
+          <div class="spec"><span class="spec-label">Platform</span><strong>Android 8.0 and later</strong></div>
+          <div class="spec"><span class="spec-label">Includes</span><strong>Notes · Calendar · Calculator · Converter</strong></div>
+          <div class="spec"><span class="spec-label">Project</span><strong>Open source · MIT License</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="faq" aria-labelledby="faq-title">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="section-label">Good to know</p>
+          <div>
+            <h2 id="faq-title">A few quick answers.</h2>
+            <p class="section-copy">Need more detail? The project repository contains the source code, documentation and release notes.</p>
+          </div>
+        </div>
+        <div class="faq-list">
+          <details><summary>Which Android versions are supported?</summary><div class="faq-answer"><p>Dislauncher supports Android 8.0 (Oreo) and later.</p></div></details>
+          <details><summary>How do I install Dislauncher?</summary><div class="faq-answer"><p>Download the APK from the <a class="inline-link" href="https://github.com/insomdroid/Dislauncher/releases/latest" target="_blank" rel="noopener noreferrer">latest GitHub release</a>, open it and follow Android's installation prompts. Depending on your device settings, Android may ask you to allow installs from the app used to open the APK. Review the linked APK safety notes if Android displays a warning.</p></div></details>
+          <details><summary>Does Dislauncher need every permission?</summary><div class="faq-answer"><p>No. Some permissions are only relevant to specific integrations, such as showing device calendar events or notification indicators. Review each permission prompt and enable only the features you want to use.</p></div></details>
+          <details><summary>Can I use my own look and layout?</summary><div class="faq-answer"><p>Yes. Dislauncher offers theme and accent options, wallpaper, font and text-size choices, gestures, layout preferences and optional Home screen tools.</p></div></details>
+          <details><summary>Are Notes and Calendar built in?</summary><div class="faq-answer"><p>Yes. Dislauncher includes Notes, Calendar, Calculator and Unit Converter. Calendar can show local tasks and reminders, and device calendar events when you enable that integration.</p></div></details>
+          <details><summary>Where can I check the code and privacy details?</summary><div class="faq-answer"><p>Visit the <a class="inline-link" href="https://github.com/insomdroid/Dislauncher" target="_blank" rel="noopener noreferrer">GitHub repository</a>, read the <a class="inline-link" href="https://github.com/insomdroid/Dislauncher/blob/main/PRIVACY.md" target="_blank" rel="noopener noreferrer">privacy information</a>, or review the <a class="inline-link" href="https://github.com/insomdroid/Dislauncher/blob/main/APK_SAFETY.md" target="_blank" rel="noopener noreferrer">APK safety notes</a>.</p></div></details>
         </div>
       </div>
     </section>
   </main>
 
   <footer class="wrap">
-    <div class="footer-inner">
-      <span>Dislauncher · An independent open-source project</span>
-      <nav aria-label="Footer navigation" class="footer-links">
+    <div class="footer-main">
+      <div class="footer-brand">
+        <a class="brand" href="#top"><img src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/Minimalist%20Dislauncher%20Logo%20on%20Black.png" alt=""><span>Dislauncher</span></a>
+        <p>A calmer Android Home screen.<br>Independent, open source, built for daily use.</p>
+      </div>
+      <nav class="footer-links" aria-label="Footer navigation">
         <a href="https://github.com/insomdroid/Dislauncher" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://github.com/insomdroid/Dislauncher/releases/latest" target="_blank" rel="noopener noreferrer">Releases</a>
         <a href="https://github.com/insomdroid/Dislauncher/blob/main/README.md" target="_blank" rel="noopener noreferrer">Documentation</a>
         <a href="https://github.com/insomdroid/Dislauncher/blob/main/PRIVACY.md" target="_blank" rel="noopener noreferrer">Privacy</a>
         <a href="https://github.com/insomdroid/Dislauncher/blob/main/APK_SAFETY.md" target="_blank" rel="noopener noreferrer">APK safety</a>
         <a href="https://ko-fi.com/insomdroid" target="_blank" rel="noopener noreferrer">Support</a>
       </nav>
     </div>
+    <div class="footer-bottom"><span>© Dislauncher · An independent open-source project</span><a href="#top">Back to top ↑</a></div>
   </footer>
 </body>
 </html>
