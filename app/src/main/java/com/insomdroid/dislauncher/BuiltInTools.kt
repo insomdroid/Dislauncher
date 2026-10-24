@@ -1124,10 +1124,10 @@ private fun CalculatorTool(
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 if (scientificMode) {
                     Row(
-                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         listOf(
                             "sin" to "sin(", "cos" to "cos(", "tan" to "tan(",
                             "√" to "sqrt(", "ln" to "ln(", "log" to "log(",
