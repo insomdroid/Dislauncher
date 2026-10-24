@@ -678,6 +678,9 @@ private fun NotesTool(
                     ) {
                         Icon(Icons.Outlined.FileOpen, contentDescription = builtInToolText("Import Markdown file", "Impor berkas Markdown"))
                     }
+                    IconButton(onClick = { zipImportLauncher.launch(arrayOf("application/zip", "application/octet-stream")) }, modifier = Modifier.size(48.dp)) {
+                        Icon(Icons.Outlined.FileOpen, contentDescription = builtInToolText("Import note archive", "Impor arsip catatan"))
+                    }
                 }
                 val visibleNotes = notes.filter {
                     searchQuery.isBlank() || it.title.contains(searchQuery, true) || it.content.contains(searchQuery, true)
@@ -823,6 +826,11 @@ private fun NotesTool(
                                 importLauncher.launch(arrayOf("text/markdown", "text/plain", "application/octet-stream"))
                             })
                             DropdownMenuItem(
+                            DropdownMenuItem(text = { Text(builtInToolText("Import ZIP archive", "Impor arsip ZIP")) }, leadingIcon = { Icon(Icons.Outlined.FileOpen, contentDescription = null) }, onClick = {
+                                saveCurrent()
+                                editorMenuExpanded = false
+                                zipImportLauncher.launch(arrayOf("application/zip", "application/octet-stream"))
+                            })
                                 text = { Text(builtInToolText("Delete note", "Hapus catatan")) },
                                 leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null) },
                                 onClick = { editorMenuExpanded = false; deleteTarget = selectedId }
