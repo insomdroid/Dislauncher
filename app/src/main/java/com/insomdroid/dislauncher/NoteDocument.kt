@@ -154,7 +154,7 @@ internal object NoteDocumentCodec {
     }
 
     fun plainText(document: NoteDocument): String = document.blocks.joinToString("\n") { block ->
-        val text = block.spans.joinToString("") { it.text }
+        val text = block.spans.joinToString("") { span -> span.text.ifBlank { if (span.imageUri != null) "[Image]" else "" } }
         when (block.type) {
             NoteBlockType.BULLET -> "• $text"
             NoteBlockType.NUMBERED -> "${block.orderedIndex}. $text"
