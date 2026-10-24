@@ -131,7 +131,7 @@ internal fun WelcomeOnboardingScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(R.drawable.ic_launcher_foreground),
+                    painter = painterResource(R.drawable.dislauncher_icon_foreground),
                     contentDescription = "Dislauncher logo",
                     modifier = Modifier.size(32.dp)
                 )
@@ -398,6 +398,10 @@ internal fun WelcomeOnboardingScreen(
                                             label = { Text(label) }
                                         )
                                     }
+                                }
+                                Spacer(Modifier.height(8.dp))
+                                TextButton(onClick = { openSystemSettings(Settings.ACTION_HOME_SETTINGS) }) {
+                                    Text("Set as default Home")
                                 }
                             }
                         }
