@@ -101,32 +101,39 @@ internal fun RichNoteEditor(
     }
     fun applyMark(mark: NoteMark) {
         val id = activeBlockId ?: return
-        val field = activeField
+        // Read the latest field snapshot: toolbar taps can move focus away from BasicTextField.
+        val field = fields[id] ?: activeField
         val start = field.selection.min.coerceIn(0, field.text.length)
         val end = field.selection.max.coerceIn(start, field.text.length)
         if (start == end) return
 
-        // Persist marks in the document model, not just as transient TextField styling.
-        // Splitting at the selection edges makes toggling reliable for mixed-format text.
-        val source = spansFromField(field)
+        val block = document.blocks.firstOrNull { it.id == id } ?: return
+        // Work from the canonical document spans, not TextField's transient visual styles.
+        val source = block.spans.ifEmpty { if (field.text.isEmpty()) emptyList() else listOf(NoteInline(field.text)) }
         val rebuilt = mutableListOf<NoteInline>()
         var offset = 0
         source.forEach { span ->
             val spanStart = offset
             val spanEnd = offset + span.text.length
             offset = spanEnd
-            val cuts = listOf(spanStart, start.coerceIn(spanStart, spanEnd), end.coerceIn(spanStart, spanEnd), spanEnd)
-                .distinct().sorted()
-            for (i in 0 until cuts.lastIndex) {
-                val a = cuts[i]
-                val b = cuts[i + 1]
+            val localCuts = listOf(
+                spanStart,
+                start.coerceIn(spanStart, spanEnd),
+                end.coerceIn(spanStart, spanEnd),
+                spanEnd
+            ).distinct().sorted()
+            for (i in 0 until localCuts.lastIndex) {
+                val a = localCuts[i]
+                val b = localCuts[i + 1]
                 if (a >= b) continue
-                val isSelected = a < end && b > start
+                val selected = a < end && b > start
                 val marks = span.marks.toMutableSet()
-                if (isSelected) {
-                    if (mark in marks) marks.remove(mark) else marks.add(mark)
+                if (selected) {
+                    // Mixed selections become consistently formatted; clicking again removes it.
+                    val allSelectedAlreadyMarked = sourceSelectedHasMark(source, start, end, mark)
+                    if (allSelectedAlreadyMarked) marks.remove(mark) else marks.add(mark)
                 }
-                val piece = NoteInline(span.text.substring(a - spanStart, b - spanStart), marks, span.link)
+                val piece = span.copy(text = span.text.substring(a - spanStart, b - spanStart), marks = marks)
                 val previous = rebuilt.lastOrNull()
                 if (previous != null && previous.marks == piece.marks && previous.link == piece.link &&
                     previous.imageUri == null && piece.imageUri == null) {
@@ -136,13 +143,11 @@ internal fun RichNoteEditor(
                 }
             }
         }
-        val nextBlockSpans = rebuilt
-        updateBlock(id) { it.copy(spans = nextBlockSpans) }
-        val nextBlock = document.blocks.firstOrNull { it.id == id }?.copy(spans = nextBlockSpans)
-            ?: NoteBlock(id = id, type = NoteBlockType.PARAGRAPH, spans = nextBlockSpans)
-        val next = fieldFromBlock(nextBlock, linkColor).copy(selection = field.selection)
-        activeField = next
-        fields[id] = next
+        val nextBlock = block.copy(spans = rebuilt)
+        onDocumentChange(document.copy(blocks = document.blocks.map { if (it.id == id) nextBlock else it }))
+        val nextField = fieldFromBlock(nextBlock, linkColor).copy(selection = TextRange(start, end))
+        activeField = nextField
+        fields[id] = nextField
     }
     fun changeActiveType(type: NoteBlockType) {
         val id = activeBlockId ?: document.blocks.lastOrNull()?.id ?: return
@@ -421,6 +426,31 @@ internal fun RichNoteEditor(
             dismissButton = { TextButton(onClick = { showLinkDialog = false }) { Text("Cancel") } }
         )
     }
+}
+
+
+private fun sourceSelectedHasMark(
+    spans: List<NoteInline>,
+    selectionStart: Int,
+    selectionEnd: Int,
+    mark: NoteMark
+): Boolean {
+    var offset = 0
+    var selectedLength = 0
+    var markedLength = 0
+    spans.forEach { span ->
+        val spanStart = offset
+        val spanEnd = offset + span.text.length
+        offset = spanEnd
+        val overlapStart = maxOf(spanStart, selectionStart)
+        val overlapEnd = minOf(spanEnd, selectionEnd)
+        if (overlapStart < overlapEnd) {
+            val length = overlapEnd - overlapStart
+            selectedLength += length
+            if (mark in span.marks) markedLength += length
+        }
+    }
+    return selectedLength > 0 && markedLength == selectedLength
 }
 
 private fun sliceField(field: TextFieldValue, start: Int, end: Int): TextFieldValue {
