@@ -178,45 +178,6 @@ internal fun RichNoteEditor(
     }
 
     Column(modifier.fillMaxSize()) {
-        if (!readOnly) {
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                shape = RoundedCornerShape(14.dp),
-                tonalElevation = 2.dp,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 4.dp, vertical = 2.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = { changeActiveType(NoteBlockType.HEADING) }) { Icon(Icons.Outlined.Title, "Heading") }
-                    IconButton(onClick = { applyMark(NoteMark.BOLD) }) { Icon(Icons.Outlined.FormatBold, "Bold") }
-                    IconButton(onClick = { applyMark(NoteMark.ITALIC) }) { Icon(Icons.Outlined.FormatItalic, "Italic") }
-                    IconButton(onClick = { applyMark(NoteMark.STRIKETHROUGH) }) { Icon(Icons.Outlined.FormatStrikethrough, "Strikethrough") }
-                    IconButton(onClick = { applyMark(NoteMark.UNDERLINE) }) { Icon(Icons.Outlined.FormatUnderlined, "Underline") }
-                    IconButton(onClick = { applyMark(NoteMark.CODE) }) { Icon(Icons.Outlined.Code, "Inline code") }
-                    IconButton(onClick = { changeActiveType(NoteBlockType.CODE) }) { Icon(Icons.Outlined.Code, "Code block") }
-                    IconButton(onClick = { showLinkDialog = true }) { Icon(Icons.Outlined.InsertLink, "Insert link") }
-                    IconButton(onClick = { changeActiveType(NoteBlockType.BULLET) }) { Icon(Icons.Outlined.FormatListBulleted, "Bulleted list") }
-                    IconButton(onClick = { changeActiveType(NoteBlockType.NUMBERED) }) { Icon(Icons.Outlined.FormatListNumbered, "Numbered list") }
-                    IconButton(onClick = { changeActiveType(NoteBlockType.QUOTE) }) { Icon(Icons.Outlined.FormatQuote, "Quote") }
-                    IconButton(onClick = { changeActiveType(NoteBlockType.CHECKLIST) }) { Icon(Icons.Outlined.CheckBox, "Checklist") }
-                    IconButton(onClick = { changeIndent(-1) }) { Icon(Icons.Outlined.ChevronLeft, "Decrease indent") }
-                    IconButton(onClick = { changeIndent(1) }) { Icon(Icons.Outlined.ChevronRight, "Increase indent") }
-                    IconButton(onClick = { moveActiveBlock(-1) }) { Icon(Icons.Outlined.ArrowUpward, "Move block up") }
-                    IconButton(onClick = { moveActiveBlock(1) }) { Icon(Icons.Outlined.ArrowDownward, "Move block down") }
-                    IconButton(onClick = { deleteActiveBlock() }) { Icon(Icons.Outlined.DeleteOutline, "Delete block") }
-                    IconButton(onClick = { changeActiveType(NoteBlockType.DIVIDER) }) { Icon(Icons.Outlined.HorizontalRule, "Divider") }
-                    if (onInsertImage != null) {
-                        IconButton(onClick = onInsertImage) {
-                            Icon(Icons.Outlined.Add, "Insert attachment")
-                        }
-                    }
-                }
-            }
-        }
-        Spacer(Modifier.height(8.dp))
         LazyColumn(
             modifier = Modifier.weight(1f).fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -340,6 +301,44 @@ internal fun RichNoteEditor(
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
                         IconButton(onClick = { addBlock() }) { Icon(Icons.Outlined.Add, "Add paragraph") }
                         Text("Add block", Modifier.align(Alignment.CenterVertically).clickable { addBlock() }, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+        if (!readOnly) {
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                shape = RoundedCornerShape(14.dp),
+                tonalElevation = 2.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 4.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { changeActiveType(NoteBlockType.HEADING) }) { Icon(Icons.Outlined.Title, "Heading") }
+                    IconButton(onClick = { applyMark(NoteMark.BOLD) }) { Icon(Icons.Outlined.FormatBold, "Bold") }
+                    IconButton(onClick = { applyMark(NoteMark.ITALIC) }) { Icon(Icons.Outlined.FormatItalic, "Italic") }
+                    IconButton(onClick = { applyMark(NoteMark.STRIKETHROUGH) }) { Icon(Icons.Outlined.FormatStrikethrough, "Strikethrough") }
+                    IconButton(onClick = { applyMark(NoteMark.UNDERLINE) }) { Icon(Icons.Outlined.FormatUnderlined, "Underline") }
+                    IconButton(onClick = { applyMark(NoteMark.CODE) }) { Icon(Icons.Outlined.Code, "Inline code") }
+                    IconButton(onClick = { changeActiveType(NoteBlockType.CODE) }) { Icon(Icons.Outlined.Code, "Code block") }
+                    IconButton(onClick = { showLinkDialog = true }) { Icon(Icons.Outlined.InsertLink, "Insert link") }
+                    IconButton(onClick = { changeActiveType(NoteBlockType.BULLET) }) { Icon(Icons.Outlined.FormatListBulleted, "Bulleted list") }
+                    IconButton(onClick = { changeActiveType(NoteBlockType.NUMBERED) }) { Icon(Icons.Outlined.FormatListNumbered, "Numbered list") }
+                    IconButton(onClick = { changeActiveType(NoteBlockType.QUOTE) }) { Icon(Icons.Outlined.FormatQuote, "Quote") }
+                    IconButton(onClick = { changeActiveType(NoteBlockType.CHECKLIST) }) { Icon(Icons.Outlined.CheckBox, "Checklist") }
+                    IconButton(onClick = { changeIndent(-1) }) { Icon(Icons.Outlined.ChevronLeft, "Decrease indent") }
+                    IconButton(onClick = { changeIndent(1) }) { Icon(Icons.Outlined.ChevronRight, "Increase indent") }
+                    IconButton(onClick = { moveActiveBlock(-1) }) { Icon(Icons.Outlined.ArrowUpward, "Move block up") }
+                    IconButton(onClick = { moveActiveBlock(1) }) { Icon(Icons.Outlined.ArrowDownward, "Move block down") }
+                    IconButton(onClick = { deleteActiveBlock() }) { Icon(Icons.Outlined.DeleteOutline, "Delete block") }
+                    IconButton(onClick = { changeActiveType(NoteBlockType.DIVIDER) }) { Icon(Icons.Outlined.HorizontalRule, "Divider") }
+                    if (onInsertImage != null) {
+                        IconButton(onClick = onInsertImage) {
+                            Icon(Icons.Outlined.Add, "Insert attachment")
+                        }
                     }
                 }
             }
