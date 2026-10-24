@@ -22,6 +22,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CheckBox
+import androidx.compose.material.icons.outlined.ChevronLeft
+import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.FormatBold
 import androidx.compose.material.icons.outlined.FormatItalic
@@ -112,6 +114,10 @@ internal fun RichNoteEditor(
         val id = activeBlockId ?: document.blocks.lastOrNull()?.id ?: return
         updateBlock(id) { it.copy(type = type) }
     }
+    fun changeIndent(delta: Int) {
+        val id = activeBlockId ?: return
+        updateBlock(id) { it.copy(indentLevel = (it.indentLevel + delta).coerceIn(0, 5)) }
+    }
     fun applyLink(url: String) {
         val id = activeBlockId ?: return
         val field = activeField
@@ -164,6 +170,8 @@ internal fun RichNoteEditor(
                     IconButton(onClick = { changeActiveType(NoteBlockType.NUMBERED) }) { Icon(Icons.Outlined.FormatListNumbered, "Numbered list") }
                     IconButton(onClick = { changeActiveType(NoteBlockType.QUOTE) }) { Icon(Icons.Outlined.FormatQuote, "Quote") }
                     IconButton(onClick = { changeActiveType(NoteBlockType.CHECKLIST) }) { Icon(Icons.Outlined.CheckBox, "Checklist") }
+                    IconButton(onClick = { changeIndent(-1) }) { Icon(Icons.Outlined.ChevronLeft, "Decrease indent") }
+                    IconButton(onClick = { changeIndent(1) }) { Icon(Icons.Outlined.ChevronRight, "Increase indent") }
                     IconButton(onClick = { changeActiveType(NoteBlockType.DIVIDER) }) { Icon(Icons.Outlined.HorizontalRule, "Divider") }
                     if (onInsertImage != null) {
                         IconButton(onClick = onInsertImage) {
@@ -190,7 +198,7 @@ internal fun RichNoteEditor(
                     }
                 }
                 Row(
-                    Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                    Modifier.fillMaxWidth().padding(start = (block.indentLevel * 16).dp, top = 2.dp, bottom = 2.dp),
                     verticalAlignment = Alignment.Top
                 ) {
                     when (block.type) {
@@ -251,7 +259,8 @@ internal fun RichNoteEditor(
                                             type = type,
                                             spans = spansFromField(sliced),
                                             checked = false,
-                                            orderedIndex = if (type == NoteBlockType.NUMBERED) block.orderedIndex + index else 1
+                                            orderedIndex = if (type == NoteBlockType.NUMBERED) block.orderedIndex + index else 1,
+                                            indentLevel = block.indentLevel
                                         )
                                     }
                                     val updatedBlocks = document.blocks.flatMap { existing ->
