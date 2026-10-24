@@ -45,7 +45,9 @@ internal fun writeStructuredNoteArchive(
             block.copy(spans = block.spans.map spanLoop@ { span ->
                 val source = span.imageUri ?: return@spanLoop span
                 val sourceUri = Uri.parse(source)
-                if (sourceUri.scheme !in setOf("content", "file")) return@spanLoop span
+                require(sourceUri.scheme in setOf("content", "file")) {
+                    "Only local images can be exported in a note archive"
+                }
                 if (sourceUri.scheme == "file") {
                     val allowedRoot = File(context.filesDir, "notes-import").canonicalFile
                     val candidate = File(sourceUri.path.orEmpty()).canonicalFile
@@ -139,9 +141,10 @@ internal fun readStructuredNoteArchive(context: Context, input: InputStream): Im
     val decoded = NoteDocumentCodec.decode(encoded) ?: error("Note document is invalid")
     val localDocument = decoded.copy(blocks = decoded.blocks.map { block ->
         block.copy(spans = block.spans.map { span ->
-            val path = span.imageUri
-            val file = path?.let { assets[it] }
-            if (file != null) span.copy(imageUri = Uri.fromFile(file).toString()) else span
+            val path = span.imageUri ?: return@map span
+            val file = assets[path]
+                ?: error("Archive references a missing image or an image outside its assets directory")
+            span.copy(imageUri = Uri.fromFile(file).toString())
         })
     })
     val labels = root.optJSONArray("labels")?.let { array -> (0 until array.length()).map { array.optString(it) } }.orEmpty()
