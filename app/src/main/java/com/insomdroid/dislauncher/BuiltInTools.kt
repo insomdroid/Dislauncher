@@ -546,6 +546,8 @@ private fun NotesTool(
                 labels = imported.labels,
                 color = imported.color
             )
+            allLabels = allLabels + imported.labels
+            notesStore(context).edit().putString("note_labels", allLabels.sorted().joinToString(",")).apply()
             notes = (notes + importedNote).sortedWith(
                 compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt }
             )
