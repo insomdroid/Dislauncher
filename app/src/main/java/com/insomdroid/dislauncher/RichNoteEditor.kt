@@ -302,6 +302,15 @@ internal fun RichNoteEditor(
                 }
             }
             if (!readOnly) {
+                item {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+                        IconButton(onClick = { addBlock() }) { Icon(Icons.Outlined.Add, "Add paragraph") }
+                        Text("Add block", Modifier.align(Alignment.CenterVertically).clickable { addBlock() }, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+        if (!readOnly) {
             Surface(
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 shape = RoundedCornerShape(16.dp),
