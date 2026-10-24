@@ -113,6 +113,9 @@ jobs:
         env:
           APP_VERSION_NAME: "${{ steps.version.outputs.app_version_name }}"
           APP_BUILD_NUMBER: "${{ github.run_number }}"
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
