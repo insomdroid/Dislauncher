@@ -22,6 +22,7 @@ import java.util.zip.ZipInputStream
  * while persistence and interchange remain Markdown-compatible.
  */
 internal fun richFieldFromMarkdown(markdown: String) {
+    val pattern = Regex("""(\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|~~(.+?)~~|(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)|`([^`]+)`)""")
     val annotated = buildAnnotatedString {
         var cursor = 0
         pattern.findAll(markdown).forEach { match ->
