@@ -560,6 +560,27 @@ private fun NotesTool(
             onEditingChanged(true)
         }.onFailure { Toast.makeText(context, "Could not import Markdown file", Toast.LENGTH_LONG).show() }
     }
+    val zipImportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) runCatching {
+            val input = context.contentResolver.openInputStream(uri) ?: error("Unable to read archive")
+            val imported = readNoteArchive(context, input)
+            val firstLine = imported.lineSequence().firstOrNull().orEmpty()
+            val importedTitle = if (firstLine.startsWith("# ")) firstLine.removePrefix("# ").trim() else ""
+            val importedBody = if (importedTitle.isNotEmpty()) imported.substringAfter("\\n", "") else imported
+            val note = LocalNote(UUID.randomUUID().toString(), importedTitle, importedBody, System.currentTimeMillis(),
+                documentJson = NoteDocumentCodec.encode(NoteDocumentCodec.fromMarkdown(importedBody)))
+            val updatedNotes = (notes + note).sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
+            notes = updatedNotes
+            saveNotes(context, updatedNotes)
+            selectedId = note.id
+            title = note.title
+            body = note.content
+            bodyField = richFieldFromMarkdown(note.content)
+            previewMode = false
+            onEditingChanged(true)
+        }.onFailure { Toast.makeText(context, "Could not import note archive: ${it.message.orEmpty()}", Toast.LENGTH_LONG).show() }
+    }
+
     val exportScope = rememberCoroutineScope()
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
         if (uri != null) exportScope.launch {
