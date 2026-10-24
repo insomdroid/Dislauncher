@@ -48,6 +48,24 @@ val answer = 42
     }
 
     @Test
+    fun roundTripsMultilineParagraphsAndLocalImageReferences() {
+        val markdown = "First line\nsecond line\n\n![photo](<content://media/external/images/media/42>)"
+
+        val document = NoteDocumentCodec.fromMarkdown(markdown)
+
+        assertEquals(markdown, NoteDocumentCodec.toMarkdown(document))
+        val image = document.blocks.flatMap { it.spans }.single { it.imageUri != null }
+        assertEquals("content://media/external/images/media/42", image.imageUri)
+        assertEquals("photo", image.imageAlt)
+    }
+
+    @Test
+    fun malformedDocumentJsonIsRejectedSafely() {
+        assertNull(NoteDocumentCodec.decode("not-json"))
+        assertNull(NoteDocumentCodec.decode("""{"version":1,"blocks":[{"type":"NOT_A_BLOCK"}]}"""))
+    }
+
+    @Test
     fun rejectsUnknownDocumentVersions() {
         assertNull(NoteDocumentCodec.decode("""{"version":99,"blocks":[]}"""))
     }
