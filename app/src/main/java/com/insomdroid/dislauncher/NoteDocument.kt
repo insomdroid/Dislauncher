@@ -57,14 +57,45 @@ internal object NoteDocumentCodec {
         val blocks = mutableListOf<NoteBlock>()
         var index = 0
         fun add(type: NoteBlockType, text: String = "", level: Int = 1, checked: Boolean = false, orderedIndex: Int = 1) {
-            blocks += NoteBlock(
-                id = "b${blocks.size + 1}",
-                type = type,
-                spans = if (text.isEmpty()) emptyList() else parseInline(text),
-                level = level,
-                checked = checked,
-                orderedIndex = orderedIndex
-            )
+            val parsed = if (text.isEmpty()) emptyList() else parseInline(text)
+            if (parsed.none { it.imageUri != null }) {
+                blocks += NoteBlock(
+                    id = "b${blocks.size + 1}",
+                    type = type,
+                    spans = parsed,
+                    level = level,
+                    checked = checked,
+                    orderedIndex = orderedIndex
+                )
+                return
+            }
+            val textSpans = mutableListOf<NoteInline>()
+            fun flushText() {
+                if (textSpans.isNotEmpty()) {
+                    blocks += NoteBlock(
+                        id = "b${blocks.size + 1}",
+                        type = type,
+                        spans = textSpans.toList(),
+                        level = level,
+                        checked = checked,
+                        orderedIndex = orderedIndex
+                    )
+                    textSpans.clear()
+                }
+            }
+            parsed.forEach { span ->
+                if (span.imageUri != null) {
+                    flushText()
+                    blocks += NoteBlock(
+                        id = "b${blocks.size + 1}",
+                        type = NoteBlockType.PARAGRAPH,
+                        spans = listOf(span)
+                    )
+                } else {
+                    textSpans += span
+                }
+            }
+            flushText()
         }
         fun isSpecial(line: String): Boolean =
             line.startsWith("```") || headingPattern.matches(line) || checklistPattern.matches(line) ||
