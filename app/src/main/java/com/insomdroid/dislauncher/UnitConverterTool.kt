@@ -137,8 +137,7 @@ internal fun formatConvertedValue(value: Double): String {
 @Composable
 internal fun UnitConverterTool(
     modifier: Modifier = Modifier,
-    categoryQuery: String,
-    onCategoryQueryChange: (String) -> Unit
+    categoryQuery: String
 ) {
     var categoryIndex by remember { mutableStateOf(0) }
     var input by remember { mutableStateOf("1") }
