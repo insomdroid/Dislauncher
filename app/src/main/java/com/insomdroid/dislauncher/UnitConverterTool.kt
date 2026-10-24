@@ -9,9 +9,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -34,7 +37,8 @@ private data class ConverterUnit(
     val name: String,
     val symbol: String,
     val factor: Double,
-    val offset: Double = 0.0
+    val offset: Double = 0.0,
+    val inverse: Boolean = false
 )
 
 private data class ConverterCategory(
@@ -92,11 +96,59 @@ private val converterCategories = listOf(
         ConverterUnit(builtInToolText("Hour", "Jam"), "h", 3600.0),
         ConverterUnit(builtInToolText("Day", "Hari"), "d", 86400.0)
     ))
+    ConverterCategory(builtInToolText("Pressure", "Tekanan"), listOf(
+        ConverterUnit("Pascal", "Pa", 1.0),
+        ConverterUnit("Kilopascal", "kPa", 1000.0),
+        ConverterUnit("Bar", "bar", 100000.0),
+        ConverterUnit("Atmosphere", "atm", 101325.0),
+        ConverterUnit("Pound per square inch", "psi", 6894.757293)
+    )),
+    ConverterCategory(builtInToolText("Energy", "Energi"), listOf(
+        ConverterUnit("Joule", "J", 1.0),
+        ConverterUnit("Kilojoule", "kJ", 1000.0),
+        ConverterUnit("Calorie", "cal", 4.184),
+        ConverterUnit("Kilocalorie", "kcal", 4184.0),
+        ConverterUnit("Watt-hour", "Wh", 3600.0),
+        ConverterUnit("Kilowatt-hour", "kWh", 3600000.0)
+    )),
+    ConverterCategory(builtInToolText("Power", "Daya"), listOf(
+        ConverterUnit("Watt", "W", 1.0),
+        ConverterUnit("Kilowatt", "kW", 1000.0),
+        ConverterUnit("Metric horsepower", "hp", 735.49875),
+        ConverterUnit("Mechanical horsepower", "hp (US)", 745.699872)
+    )),
+    ConverterCategory(builtInToolText("Frequency", "Frekuensi"), listOf(
+        ConverterUnit("Hertz", "Hz", 1.0),
+        ConverterUnit("Kilohertz", "kHz", 1000.0),
+        ConverterUnit("Megahertz", "MHz", 1000000.0),
+        ConverterUnit("Gigahertz", "GHz", 1000000000.0),
+        ConverterUnit("Revolutions per minute", "rpm", 1.0 / 60.0)
+    )),
+    ConverterCategory(builtInToolText("Data storage", "Penyimpanan data"), listOf(
+        ConverterUnit("Byte", "B", 1.0),
+        ConverterUnit("Kilobyte", "kB", 1000.0),
+        ConverterUnit("Megabyte", "MB", 1000000.0),
+        ConverterUnit("Gigabyte", "GB", 1000000000.0),
+        ConverterUnit("Kibibyte", "KiB", 1024.0),
+        ConverterUnit("Mebibyte", "MiB", 1048576.0),
+        ConverterUnit("Gibibyte", "GiB", 1073741824.0)
+    )),
+    ConverterCategory(builtInToolText("Fuel economy", "Konsumsi bahan bakar"), listOf(
+        ConverterUnit("Liters per 100 km", "L/100 km", 100.0, inverse = true),
+        ConverterUnit("Miles per US gallon", "mpg (US)", 0.425143707),
+        ConverterUnit("Miles per UK gallon", "mpg (UK)", 0.354006)
+    )),
+    ConverterCategory(builtInToolText("Radiation dose", "Dosis radiasi"), listOf(
+        ConverterUnit("Gray", "Gy", 1.0),
+        ConverterUnit("Milligray", "mGy", 0.001),
+        ConverterUnit("Microgray", "µGy", 0.000001),
+        ConverterUnit("Rad", "rad", 0.01)
+    ))
 )
 
 private fun convertUnitValue(value: Double, from: ConverterUnit, to: ConverterUnit): Double {
-    val baseValue = (value + from.offset) * from.factor
-    return baseValue / to.factor - to.offset
+    val baseValue = if (from.inverse) from.factor / value else (value + from.offset) * from.factor
+    return if (to.inverse) to.factor / baseValue else baseValue / to.factor - to.offset
 }
 
 private fun formatConvertedValue(value: Double): String {
@@ -122,22 +174,22 @@ internal fun UnitConverterTool(modifier: Modifier = Modifier) {
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.compact)) {
-            Text(
-                builtInToolText("Category", "Kategori"),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            ConverterDropdown(
-                label = category.name,
-                options = converterCategories.map { it.name },
-                onSelected = { selected ->
-                    categoryIndex = selected
-                    fromIndex = 0
-                    toIndex = if (converterCategories[selected].units.size > 1) 1 else 0
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            converterCategories.forEachIndexed { index, item ->
+                FilterChip(
+                    selected = categoryIndex == index,
+                    onClick = {
+                        categoryIndex = index
+                        fromIndex = 0
+                        toIndex = if (item.units.size > 1) 1 else 0
+                    },
+                    label = { Text(item.name, maxLines = 1) }
+                )
+            }
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.compact)) {
@@ -196,7 +248,14 @@ internal fun UnitConverterTool(modifier: Modifier = Modifier) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Surface(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().clickable {
+                    if (result.isNotBlank()) {
+                        input = result
+                        val oldFrom = fromIndex
+                        fromIndex = toIndex
+                        toIndex = oldFrom
+                    }
+                },
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh
             ) {
