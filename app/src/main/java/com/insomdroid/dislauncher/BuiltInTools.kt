@@ -41,6 +41,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FileDownload
@@ -54,6 +55,8 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Title
+import androidx.compose.material.icons.outlined.ViewList
+import androidx.compose.material.icons.outlined.ViewModule
 import androidx.compose.material.icons.outlined.FormatBold
 import androidx.compose.material.icons.outlined.FormatItalic
 import androidx.compose.material.icons.outlined.FormatStrikethrough
@@ -339,6 +342,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     var notesEditing by remember { mutableStateOf(false) }
     var notesBackSignal by remember { mutableStateOf(0) }
     var calculatorShowingHistory by remember { mutableStateOf(false) }
+    var calculatorScientificMode by remember { mutableStateOf(false) }
     var calculatorHistoryHasItems by remember { mutableStateOf(false) }
     var calculatorClearHistorySignal by remember { mutableStateOf(0) }
     var calendarMonth by remember { mutableStateOf(YearMonth.now()) }
@@ -359,7 +363,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     Scaffold(
                 containerColor = MaterialTheme.colorScheme.background,
                 topBar = {
-                    if (!(tool == BuiltInTool.NOTES && notesEditing)) TopAppBar(
+                    if (!(tool == BuiltInTool.NOTES)) TopAppBar(
                         title = {
                             Text(
                                 title,
@@ -386,6 +390,11 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                                 }
                                 IconButton(onClick = { calendarMonth = calendarMonth.plusMonths(1) }) {
                                     Icon(Icons.Outlined.ArrowForward, contentDescription = builtInToolText("Next month", "Bulan berikutnya"))
+                                }
+                            }
+                            if (tool == BuiltInTool.CALCULATOR && !calculatorShowingHistory) {
+                                TextButton(onClick = { calculatorScientificMode = !calculatorScientificMode }) {
+                                    Text(if (calculatorScientificMode) builtInToolText("Basic", "Dasar") else builtInToolText("Scientific", "Ilmiah"))
                                 }
                             }
                             if (tool == BuiltInTool.CALCULATOR) {
@@ -424,7 +433,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             context = context,
                             backSignal = notesBackSignal,
                             onEditingChanged = { notesEditing = it },
-                            onBackRequested = { notesBackSignal++ },
+                            onBackRequested = { if (notesEditing) notesBackSignal++ else requestClose() },
                             modifier = Modifier.fillMaxSize()
                         )
                         BuiltInTool.CALCULATOR -> CalculatorTool(
@@ -432,7 +441,9 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             showHistory = calculatorShowingHistory,
                             onShowHistoryChange = { calculatorShowingHistory = it },
                             clearHistorySignal = calculatorClearHistorySignal,
-                            onHistoryAvailabilityChanged = { calculatorHistoryHasItems = it }
+                            onHistoryAvailabilityChanged = { calculatorHistoryHasItems = it },
+                            scientificMode = calculatorScientificMode,
+                            onScientificModeChange = { calculatorScientificMode = it }
                         )
                         BuiltInTool.CALENDAR -> CalendarTool(
                             context = context,
@@ -460,6 +471,7 @@ private fun NotesTool(
     var title by remember { mutableStateOf("") }
     var document by remember { mutableStateOf(NoteDocument()) }
     var searchQuery by remember { mutableStateOf("") }
+    var searchExpanded by remember { mutableStateOf(false) }
     var currentLabels by remember { mutableStateOf(setOf<String>()) }
     var currentColor by remember { mutableStateOf("default") }
     var showColorPicker by remember { mutableStateOf(false) }
@@ -617,24 +629,39 @@ private fun NotesTool(
                 Row(
                     Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        modifier = Modifier.weight(1f),
-                        placeholder = { Text("Search notes") },
-                        leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-                        singleLine = true,
-                        shape = RoundedCornerShape(16.dp)
-                    )
+                    IconButton(onClick = onBackRequested) {
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = builtInToolText("Back", "Kembali"))
+                    }
+                    if (searchExpanded) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            modifier = Modifier.weight(1f),
+                            placeholder = { Text("Search notes") },
+                            singleLine = true,
+                            shape = RoundedCornerShape(14.dp),
+                            trailingIcon = {
+                                IconButton(onClick = { searchQuery = ""; searchExpanded = false }) {
+                                    Icon(Icons.Outlined.Close, contentDescription = "Close search")
+                                }
+                            }
+                        )
+                    } else {
+                        Text("Notes", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold, maxLines = 1)
+                        IconButton(onClick = { searchExpanded = true }) {
+                            Icon(Icons.Outlined.Search, contentDescription = "Search notes")
+                        }
+                    }
                     IconButton(onClick = {
                         gridView = !gridView
                         context.getSharedPreferences("dislauncher_notes", Context.MODE_PRIVATE)
                             .edit().putBoolean("grid_view", gridView).apply()
                     }) {
-                        Icon(if (gridView) Icons.Outlined.FormatListBulleted else Icons.Outlined.Title,
-                            contentDescription = if (gridView) "List view" else "Grid view")
+                        Icon(if (gridView) Icons.Outlined.ViewList else Icons.Outlined.ViewModule,
+                            contentDescription = if (gridView) "Switch to list view" else "Switch to grid view")
                     }
                     Box {
                         IconButton(onClick = { menuTarget = "home" }) {
@@ -1027,12 +1054,13 @@ private fun CalculatorTool(
     showHistory: Boolean,
     onShowHistoryChange: (Boolean) -> Unit,
     clearHistorySignal: Int,
-    onHistoryAvailabilityChanged: (Boolean) -> Unit
+    onHistoryAvailabilityChanged: (Boolean) -> Unit,
+    scientificMode: Boolean,
+    onScientificModeChange: (Boolean) -> Unit
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     var expression by remember { mutableStateOf("") }
     var result by remember { mutableStateOf("") }
-    var scientificMode by remember { mutableStateOf(false) }
     var showClearHistoryDialog by remember { mutableStateOf(false) }
     var history by remember(context) { mutableStateOf(loadCalculatorHistory(context)) }
 
@@ -1094,15 +1122,12 @@ private fun CalculatorTool(
             }
         } else {
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(
+                if (scientificMode) {
+                    Row(
                     Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextButton(onClick = { scientificMode = !scientificMode }) {
-                        Text(if (scientificMode) builtInToolText("Basic mode", "Mode dasar") else builtInToolText("Scientific", "Ilmiah"))
-                    }
-                    if (scientificMode) {
                         listOf(
                             "sin" to "sin(", "cos" to "cos(", "tan" to "tan(",
                             "√" to "sqrt(", "ln" to "ln(", "log" to "log(",
