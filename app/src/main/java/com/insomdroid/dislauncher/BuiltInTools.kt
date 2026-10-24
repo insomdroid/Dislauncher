@@ -1035,6 +1035,7 @@ private fun CalendarTool(
         calendarPermission = granted || ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED
     }
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+    var showWeekView by remember { mutableStateOf(false) }
     var showEditor by remember { mutableStateOf(false) }
     var editingTaskId by remember { mutableStateOf<String?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
@@ -1149,6 +1150,9 @@ private fun CalendarTool(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
+                TextButton(onClick = { showWeekView = !showWeekView }) {
+                    Text(if (showWeekView) builtInToolText("Month", "Bulan") else builtInToolText("Week", "Minggu"))
+                }
                 TextButton(onClick = { onMonthChange(YearMonth.now()); selectedDate = LocalDate.now() }) {
                     Text(if (Locale.getDefault().language == "id") "Hari ini" else "Today")
                 }
@@ -1170,7 +1174,52 @@ private fun CalendarTool(
             val visibleMonth = calendarState.firstVisibleMonth.yearMonth
             if (visibleMonth != month) onMonthChange(visibleMonth)
         }
-        Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp),
+        if (showWeekView) {
+            Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    val weekStart = selectedDate.minusDays((0..6).first { calendarFirstDay.plus(it.toLong()) == selectedDate.dayOfWeek }.toLong())
+                    (0..6).forEach { offset ->
+                        val dayDate = weekStart.plusDays(offset.toLong())
+                        val selected = dayDate == selectedDate
+                        val today = dayDate == LocalDate.now()
+                        val dayStart = dayDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                        val dayEnd = dayDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                        val hasItems = tasks.any { it.date == dayDate.toString() } ||
+                            deviceEvents.any { it.begin < dayEnd && it.end > dayStart }
+                        Column(
+                            Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(when {
+                                selected -> MaterialTheme.colorScheme.primary
+                                today -> MaterialTheme.colorScheme.secondaryContainer
+                                else -> Color.Transparent
+                            }).clickable { selectedDate = dayDate; onMonthChange(YearMonth.from(dayDate)) }
+                                .padding(vertical = 10.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            Text(dayDate.dayOfWeek.getDisplayName(java.time.format.TextStyle.NARROW, Locale.getDefault()),
+                                color = when {
+                                    selected -> MaterialTheme.colorScheme.onPrimary
+                                    today -> MaterialTheme.colorScheme.onSecondaryContainer
+                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                }, style = MaterialTheme.typography.labelSmall)
+                            Text(dayDate.dayOfMonth.toString(),
+                                color = when {
+                                    selected -> MaterialTheme.colorScheme.onPrimary
+                                    today -> MaterialTheme.colorScheme.onSecondaryContainer
+                                    else -> MaterialTheme.colorScheme.onSurface
+                                }, style = MaterialTheme.typography.titleMedium,
+                                fontWeight = if (selected || today) FontWeight.SemiBold else FontWeight.Normal)
+                            Box(Modifier.size(4.dp).clip(CircleShape).background(if (hasItems) {
+                                if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
+                            } else Color.Transparent))
+                        }
+                    }
+                }
+            }
+        } else {
+            Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp),
             color = MaterialTheme.colorScheme.surfaceContainerLow) {
             Column(Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
                 Row(Modifier.fillMaxWidth()) {
@@ -1209,6 +1258,7 @@ private fun CalendarTool(
                     } else Box(Modifier.fillMaxWidth().height(38.dp))
                 })
             }
+        }
         }
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
