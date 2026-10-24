@@ -85,14 +85,9 @@ class StructuredNoteArchiveImageTest {
     }
 
     @Test
-    fun rejectsArchiveWithDuplicateDocumentEntries() {
-        val doc = JSONObject()
-            .put("format", "dislauncher-note")
-            .put("formatVersion", 1)
-            .put("title", "Duplicate")
-            .put("document", JSONObject(NoteDocumentCodec.encode(NoteDocument())))
-            .toString()
-        val bytes = zipWithEntries("note.json" to doc, "note.json" to doc)
+    fun rejectsDocumentEntryLargerThanConfiguredLimit() {
+        val oversizedDocument = "x".repeat(2 * 1024 * 1024 + 1)
+        val bytes = zipWithEntries("note.json" to oversizedDocument)
 
         assertThrows(IllegalArgumentException::class.java) {
             readStructuredNoteArchive(context, ByteArrayInputStream(bytes))
