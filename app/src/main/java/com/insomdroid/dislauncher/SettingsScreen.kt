@@ -926,36 +926,35 @@ internal fun SettingsScreen(
                             if (parts.size == 2 && parts[1] == folder) parts[0] else null
                         }.toSet()
                         Text(tr("Apps in this folder", "Aplikasi dalam folder"), style = MaterialTheme.typography.bodyMedium)
-                        val folderApps = apps.filter { it.packageName in assigned && !it.packageName.startsWith("internal:") }
+                        Text(tr("Apps in this folder", "Aplikasi dalam folder"), style = MaterialTheme.typography.bodyMedium)
+                        apps.filter { !it.packageName.startsWith("internal:") }
                             .sortedBy { it.label.lowercase() }
-                        if (folderApps.isEmpty()) Text(
-                            tr("No apps in this folder yet.", "Belum ada aplikasi di folder ini."),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        folderApps.forEach { app ->
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                                Text(app.label, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                TextButton(onClick = {
-                                    onPreferencesChange(preferences.copy(
-                                        folderAssignments = preferences.folderAssignments.filterNot { it.startsWith(app.packageName + "\t") }.toSet()
-                                    ))
-                                }) { Text(tr("Remove", "Keluarkan")) }
+                            .forEach { app ->
+                                val assignedToThisFolder = preferences.folderAssignments.any {
+                                    it.startsWith(app.packageName + "\t") && it.substringAfter("\t", "") == folder
+                                }
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        app.label,
+                                        modifier = Modifier.weight(1f),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Switch(
+                                        checked = assignedToThisFolder,
+                                        onCheckedChange = { enabled ->
+                                            val withoutExisting = preferences.folderAssignments
+                                                .filterNot { it.startsWith(app.packageName + "\t") }
+                                                .toSet()
+                                            val updated = if (enabled) withoutExisting + (app.packageName + "\t" + folder) else withoutExisting
+                                            onPreferencesChange(preferences.copy(folderAssignments = updated))
+                                        }
+                                    )
+                                }
                             }
-                        }
-                        Text(tr("Add apps", "Tambah aplikasi"), style = MaterialTheme.typography.bodyMedium)
-                        apps.filter { app ->
-                            !app.packageName.startsWith("internal:") && app.packageName !in assigned &&
-                                preferences.folderAssignments.none { it.startsWith(app.packageName + "\t") }
-                        }.sortedBy { it.label.lowercase() }.forEach { app ->
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                                Text(app.label, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                TextButton(onClick = {
-                                    onPreferencesChange(preferences.copy(
-                                        folderAssignments = preferences.folderAssignments + (app.packageName + "\t" + folder)
-                                    ))
-                                }) { Text(tr("Add", "Tambah")) }
-                            }
-                        }
                     }
                 }
             },
