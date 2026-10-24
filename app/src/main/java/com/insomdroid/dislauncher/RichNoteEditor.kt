@@ -29,14 +29,19 @@ import androidx.compose.material.icons.outlined.FormatListBulleted
 import androidx.compose.material.icons.outlined.FormatListNumbered
 import androidx.compose.material.icons.outlined.FormatQuote
 import androidx.compose.material.icons.outlined.FormatStrikethrough
+import androidx.compose.material.icons.outlined.FormatUnderlined
+import androidx.compose.material.icons.outlined.InsertLink
 import androidx.compose.material.icons.outlined.HorizontalRule
 import androidx.compose.material.icons.outlined.Title
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -73,6 +78,9 @@ internal fun RichNoteEditor(
 ) {
     var activeBlockId by remember { mutableStateOf<String?>(null) }
     var activeField by remember { mutableStateOf(TextFieldValue("")) }
+    var showLinkDialog by remember { mutableStateOf(false) }
+    var linkUrl by remember { mutableStateOf("") }
+    val linkColor = MaterialTheme.colorScheme.primary
     val fields = remember { mutableStateMapOf<String, TextFieldValue>() }
 
     fun updateBlock(blockId: String, transform: (NoteBlock) -> NoteBlock) {
@@ -89,6 +97,7 @@ internal fun RichNoteEditor(
             NoteMark.ITALIC -> SpanStyle(fontStyle = FontStyle.Italic)
             NoteMark.STRIKETHROUGH -> SpanStyle(textDecoration = TextDecoration.LineThrough)
             NoteMark.CODE -> SpanStyle(fontFamily = FontFamily.Monospace)
+            NoteMark.UNDERLINE -> SpanStyle(textDecoration = TextDecoration.Underline)
         }
         val styled = buildAnnotatedString {
             append(field.annotatedString)
@@ -102,6 +111,25 @@ internal fun RichNoteEditor(
     fun changeActiveType(type: NoteBlockType) {
         val id = activeBlockId ?: document.blocks.lastOrNull()?.id ?: return
         updateBlock(id) { it.copy(type = type) }
+    }
+    fun applyLink(url: String) {
+        val id = activeBlockId ?: return
+        val field = activeField
+        val start = field.selection.min.coerceIn(0, field.text.length)
+        val end = field.selection.max.coerceIn(start, field.text.length)
+        if (start == end || url.isBlank()) return
+        val normalized = if (url.startsWith("https://") || url.startsWith("http://")) url else "https://$url"
+        val linked = buildAnnotatedString {
+            append(field.annotatedString)
+            addStyle(SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline), start, end)
+            addStringAnnotation("URL", normalized, start, end)
+        }
+        val next = field.copy(annotatedString = linked)
+        activeField = next
+        fields[id] = next
+        updateBlock(id) { it.copy(spans = spansFromField(next)) }
+        showLinkDialog = false
+        linkUrl = ""
     }
     fun addBlock(type: NoteBlockType = NoteBlockType.PARAGRAPH) {
         val block = NoteBlock(id = UUID.randomUUID().toString(), type = type)
@@ -128,7 +156,10 @@ internal fun RichNoteEditor(
                     IconButton(onClick = { applyMark(NoteMark.BOLD) }) { Icon(Icons.Outlined.FormatBold, "Bold") }
                     IconButton(onClick = { applyMark(NoteMark.ITALIC) }) { Icon(Icons.Outlined.FormatItalic, "Italic") }
                     IconButton(onClick = { applyMark(NoteMark.STRIKETHROUGH) }) { Icon(Icons.Outlined.FormatStrikethrough, "Strikethrough") }
+                    IconButton(onClick = { applyMark(NoteMark.UNDERLINE) }) { Icon(Icons.Outlined.FormatUnderlined, "Underline") }
                     IconButton(onClick = { applyMark(NoteMark.CODE) }) { Icon(Icons.Outlined.Code, "Inline code") }
+                    IconButton(onClick = { changeActiveType(NoteBlockType.CODE) }) { Icon(Icons.Outlined.Code, "Code block") }
+                    IconButton(onClick = { showLinkDialog = true }) { Icon(Icons.Outlined.InsertLink, "Insert link") }
                     IconButton(onClick = { changeActiveType(NoteBlockType.BULLET) }) { Icon(Icons.Outlined.FormatListBulleted, "Bulleted list") }
                     IconButton(onClick = { changeActiveType(NoteBlockType.NUMBERED) }) { Icon(Icons.Outlined.FormatListNumbered, "Numbered list") }
                     IconButton(onClick = { changeActiveType(NoteBlockType.QUOTE) }) { Icon(Icons.Outlined.FormatQuote, "Quote") }
@@ -148,10 +179,10 @@ internal fun RichNoteEditor(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             items(document.blocks, key = { it.id }) { block ->
-                val initial = remember(block.id) { fieldFromBlock(block) }
+                val initial = remember(block.id) { fieldFromBlock(block, linkColor) }
                 var field by remember(block.id) { mutableStateOf(initial) }
                 LaunchedEffect(block.spans, block.type, block.checked) {
-                    val fresh = fieldFromBlock(block)
+                    val fresh = fieldFromBlock(block, linkColor)
                     if (fresh.text != field.text || fresh.annotatedString.spanStyles != field.annotatedString.spanStyles) {
                         field = fresh
                         fields[block.id] = fresh
