@@ -65,7 +65,7 @@ private fun readChangelog(context: Context): List<ChangelogEntry> {
 @Composable
 internal fun ChangelogScreen() {
     val context = LocalContext.current
-    val entries = remember(context) { runCatching { readChangelog(context) }.getOrDefault(emptyList()) }
+    val entries = remember(context) { runCatching { readChangelog(context).take(2) }.getOrDefault(emptyList()) }
 
     if (entries.isEmpty()) {
         Text(
