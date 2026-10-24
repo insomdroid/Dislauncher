@@ -1,6 +1,7 @@
 package com.insomdroid.dislauncher
 
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.compose.foundation.horizontalScroll
@@ -141,7 +142,7 @@ internal fun MarkdownNoteEditor(
                                 setTextColor(colors.onSurface.toArgb())
                                 textSize = 16f
                                 setPadding(0, 0, 0, 24)
-                                layoutParams = ScrollView.LayoutParams(
+                                layoutParams = FrameLayout.LayoutParams(
                                     ViewGroup.LayoutParams.MATCH_PARENT,
                                     ViewGroup.LayoutParams.WRAP_CONTENT
                                 )
