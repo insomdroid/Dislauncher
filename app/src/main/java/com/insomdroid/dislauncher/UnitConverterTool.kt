@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenu
@@ -172,7 +173,7 @@ internal fun UnitConverterTool(modifier: Modifier = Modifier) {
     val result = numericInput?.let { formatConvertedValue(convertUnitValue(it, fromUnit, toUnit)) }.orEmpty()
 
     Column(
-        modifier = modifier,
+        modifier = modifier.verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)
     ) {
         OutlinedTextField(
