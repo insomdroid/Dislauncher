@@ -108,6 +108,10 @@ internal object NoteDocumentCodec {
                 index++
                 continue
             }
+            val headingMatch = headingPattern.matchEntire(line)
+            val checklistMatch = checklistPattern.matchEntire(line)
+            val bulletMatch = bulletPattern.matchEntire(line)
+            val numberedMatch = numberedPattern.matchEntire(line)
             when {
                 line.startsWith("```") -> {
                     index++
@@ -118,23 +122,20 @@ internal object NoteDocumentCodec {
                     if (index < lines.size) index++
                     add(NoteBlockType.CODE, code.joinToString("\n"))
                 }
-                headingPattern.matches(line) -> {
-                    val match = headingPattern.matchEntire(line)!!
-                    add(NoteBlockType.HEADING, match.groupValues[2], match.groupValues[1].length)
+                headingMatch != null -> {
+                    add(NoteBlockType.HEADING, headingMatch.groupValues[2], headingMatch.groupValues[1].length)
                     index++
                 }
-                checklistPattern.matches(line) -> {
-                    val match = checklistPattern.matchEntire(line)!!
-                    add(NoteBlockType.CHECKLIST, match.groupValues[2], checked = match.groupValues[1].lowercase() == "x")
+                checklistMatch != null -> {
+                    add(NoteBlockType.CHECKLIST, checklistMatch.groupValues[2], checked = checklistMatch.groupValues[1].lowercase() == "x")
                     index++
                 }
-                bulletPattern.matches(line) -> {
-                    add(NoteBlockType.BULLET, bulletPattern.matchEntire(line)!!.groupValues[1])
+                bulletMatch != null -> {
+                    add(NoteBlockType.BULLET, bulletMatch.groupValues[1])
                     index++
                 }
-                numberedPattern.matches(line) -> {
-                    val match = numberedPattern.matchEntire(line)!!
-                    add(NoteBlockType.NUMBERED, match.groupValues[2], orderedIndex = match.groupValues[1].toIntOrNull() ?: 1)
+                numberedMatch != null -> {
+                    add(NoteBlockType.NUMBERED, numberedMatch.groupValues[2], orderedIndex = numberedMatch.groupValues[1].toIntOrNull() ?: 1)
                     index++
                 }
                 line.trim() in setOf("---", "***", "___") -> {
