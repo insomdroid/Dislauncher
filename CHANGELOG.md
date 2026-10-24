@@ -5,16 +5,17 @@ Keep release notes in English. The build copies this file into the APK; the app 
 
 ## 1.3.0 | Unreleased
 #### What's New
-- **Rich-text Notes:** Create structured notes with headings, bold and italic text, checklists, lists, quotes, code blocks, links, images, labels, pinning, and note colours.
-- **Portable Notes archive:** Export and import a note as an archive that preserves structured formatting and includes locally referenced images.
-- **Redesigned Calendar:** Browse a month and a selected-day agenda that combines device calendar events with local tasks and reminders.
-- **Improved Calculator:** Expanded scientific calculator support with parentheses, powers, trigonometric functions, logarithms, and constants.
-- **Refined Unit Converter:** Convert common length, mass, temperature, speed, area, volume, time, energy, power, and data-storage units.
+- **Redesigned Notes:** Switch between list and grid layouts, search note content, pin important notes, and work with Markdown formatting and preview.
+- **Structured note storage:** Added a versioned note model and Markdown import support to help preserve note content during migration.
+- **Notes export:** Export notes as Markdown files or as an archive containing the note and its locally referenced images.
+- **Redesigned Calendar:** Navigate a month view and see an agenda for the selected date.
+- **Combined agenda:** View device calendar events alongside Dislauncher tasks and reminders, including events that span multiple days.
 - **Bundled typography:** Choose Inter, Syne, Bricolage Grotesque, Doto, or Overpass Mono without downloading fonts separately.
 
 #### Improvements
-- Refined the built-in tools to keep navigation, spacing, and typography consistent with Dislauncher's minimal design.
-- Preserved local-first storage for notes and reminders; device calendar access remains optional.
+- Kept notes and local reminders stored on-device; device calendar access remains optional.
+- Refined the built-in Notes and Calendar flows while retaining Dislauncher's minimal visual style.
+- Updated the Kotlin compiler configuration and simplified the APK build workflow.
 
 ## 1.2.1 | 23 October 2026
 #### Fixes
