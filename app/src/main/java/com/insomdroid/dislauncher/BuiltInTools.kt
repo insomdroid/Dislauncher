@@ -817,12 +817,6 @@ private fun NotesTool(
                         Icon(Icons.Outlined.PushPin, contentDescription = if (selectedNotePinned) "Unpin note" else "Pin note",
                             tint = if (selectedNotePinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    IconButton(onClick = { previewMode = !previewMode }) {
-                        Icon(
-                            if (previewMode) Icons.Outlined.Edit else Icons.Outlined.Visibility,
-                            contentDescription = if (previewMode) "Edit note" else "Preview note"
-                        )
-                    }
                     Box {
                         var editorMenuExpanded by remember { mutableStateOf(false) }
                         IconButton(onClick = { editorMenuExpanded = true }) {
