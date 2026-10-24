@@ -26,6 +26,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.CheckBox
 import androidx.compose.material.icons.outlined.ChevronLeft
 import androidx.compose.material.icons.outlined.ChevronRight
@@ -42,6 +43,8 @@ import androidx.compose.material.icons.outlined.HorizontalRule
 import androidx.compose.material.icons.outlined.Title
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -86,6 +89,8 @@ internal fun RichNoteEditor(
     var activeBlockId by remember { mutableStateOf<String?>(null) }
     var activeField by remember { mutableStateOf(TextFieldValue("")) }
     var showLinkDialog by remember { mutableStateOf(false) }
+    var showFormattingTools by remember { mutableStateOf(false) }
+    var showAddMenu by remember { mutableStateOf(false) }
     var linkUrl by remember { mutableStateOf("") }
     val linkColor = MaterialTheme.colorScheme.primary
     val fields = remember { mutableStateMapOf<String, TextFieldValue>() }
@@ -297,47 +302,68 @@ internal fun RichNoteEditor(
                 }
             }
             if (!readOnly) {
-                item {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
-                        IconButton(onClick = { addBlock() }) { Icon(Icons.Outlined.Add, "Add paragraph") }
-                        Text("Add block", Modifier.align(Alignment.CenterVertically).clickable { addBlock() }, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
-        }
-        if (!readOnly) {
             Surface(
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                shape = RoundedCornerShape(14.dp),
-                tonalElevation = 2.dp,
+                shape = RoundedCornerShape(16.dp),
+                tonalElevation = 1.dp,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
-                    Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 4.dp, vertical = 2.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = { changeActiveType(NoteBlockType.HEADING) }) { Icon(Icons.Outlined.Title, "Heading") }
-                    IconButton(onClick = { applyMark(NoteMark.BOLD) }) { Icon(Icons.Outlined.FormatBold, "Bold") }
-                    IconButton(onClick = { applyMark(NoteMark.ITALIC) }) { Icon(Icons.Outlined.FormatItalic, "Italic") }
-                    IconButton(onClick = { applyMark(NoteMark.STRIKETHROUGH) }) { Icon(Icons.Outlined.FormatStrikethrough, "Strikethrough") }
-                    IconButton(onClick = { applyMark(NoteMark.UNDERLINE) }) { Icon(Icons.Outlined.FormatUnderlined, "Underline") }
-                    IconButton(onClick = { applyMark(NoteMark.CODE) }) { Icon(Icons.Outlined.Code, "Inline code") }
-                    IconButton(onClick = { changeActiveType(NoteBlockType.CODE) }) { Icon(Icons.Outlined.Code, "Code block") }
-                    IconButton(onClick = { showLinkDialog = true }) { Icon(Icons.Outlined.InsertLink, "Insert link") }
-                    IconButton(onClick = { changeActiveType(NoteBlockType.BULLET) }) { Icon(Icons.Outlined.FormatListBulleted, "Bulleted list") }
-                    IconButton(onClick = { changeActiveType(NoteBlockType.NUMBERED) }) { Icon(Icons.Outlined.FormatListNumbered, "Numbered list") }
-                    IconButton(onClick = { changeActiveType(NoteBlockType.QUOTE) }) { Icon(Icons.Outlined.FormatQuote, "Quote") }
-                    IconButton(onClick = { changeActiveType(NoteBlockType.CHECKLIST) }) { Icon(Icons.Outlined.CheckBox, "Checklist") }
-                    IconButton(onClick = { changeIndent(-1) }) { Icon(Icons.Outlined.ChevronLeft, "Decrease indent") }
-                    IconButton(onClick = { changeIndent(1) }) { Icon(Icons.Outlined.ChevronRight, "Increase indent") }
-                    IconButton(onClick = { moveActiveBlock(-1) }) { Icon(Icons.Outlined.ArrowUpward, "Move block up") }
-                    IconButton(onClick = { moveActiveBlock(1) }) { Icon(Icons.Outlined.ArrowDownward, "Move block down") }
-                    IconButton(onClick = { deleteActiveBlock() }) { Icon(Icons.Outlined.DeleteOutline, "Delete block") }
-                    IconButton(onClick = { changeActiveType(NoteBlockType.DIVIDER) }) { Icon(Icons.Outlined.HorizontalRule, "Divider") }
-                    if (onInsertImage != null) {
-                        IconButton(onClick = onInsertImage) {
-                            Icon(Icons.Outlined.Add, "Insert attachment")
+                Column {
+                    if (showFormattingTools) {
+                        Row(
+                            Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 4.dp, vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(onClick = { changeActiveType(NoteBlockType.HEADING) }) { Icon(Icons.Outlined.Title, "Heading") }
+                            IconButton(onClick = { applyMark(NoteMark.BOLD) }) { Icon(Icons.Outlined.FormatBold, "Bold") }
+                            IconButton(onClick = { applyMark(NoteMark.ITALIC) }) { Icon(Icons.Outlined.FormatItalic, "Italic") }
+                            IconButton(onClick = { applyMark(NoteMark.STRIKETHROUGH) }) { Icon(Icons.Outlined.FormatStrikethrough, "Strikethrough") }
+                            IconButton(onClick = { applyMark(NoteMark.UNDERLINE) }) { Icon(Icons.Outlined.FormatUnderlined, "Underline") }
+                            IconButton(onClick = { applyMark(NoteMark.CODE) }) { Icon(Icons.Outlined.Code, "Inline code") }
+                            IconButton(onClick = { showLinkDialog = true }) { Icon(Icons.Outlined.InsertLink, "Insert link") }
+                            IconButton(onClick = { changeActiveType(NoteBlockType.BULLET) }) { Icon(Icons.Outlined.FormatListBulleted, "Bulleted list") }
+                            IconButton(onClick = { changeActiveType(NoteBlockType.NUMBERED) }) { Icon(Icons.Outlined.FormatListNumbered, "Numbered list") }
+                            IconButton(onClick = { changeActiveType(NoteBlockType.CHECKLIST) }) { Icon(Icons.Outlined.CheckBox, "Checklist") }
+                            IconButton(onClick = { changeActiveType(NoteBlockType.QUOTE) }) { Icon(Icons.Outlined.FormatQuote, "Quote") }
+                            IconButton(onClick = { changeActiveType(NoteBlockType.CODE) }) { Icon(Icons.Outlined.Code, "Code block") }
+                            IconButton(onClick = { changeIndent(-1) }) { Icon(Icons.Outlined.ChevronLeft, "Decrease indent") }
+                            IconButton(onClick = { changeIndent(1) }) { Icon(Icons.Outlined.ChevronRight, "Increase indent") }
+                            IconButton(onClick = { changeActiveType(NoteBlockType.DIVIDER) }) { Icon(Icons.Outlined.HorizontalRule, "Divider") }
+                            IconButton(onClick = { moveActiveBlock(-1) }) { Icon(Icons.Outlined.ArrowUpward, "Move block up") }
+                            IconButton(onClick = { moveActiveBlock(1) }) { Icon(Icons.Outlined.ArrowDownward, "Move block down") }
+                            IconButton(onClick = { deleteActiveBlock() }) { Icon(Icons.Outlined.DeleteOutline, "Delete block") }
+                            IconButton(onClick = { showFormattingTools = false }) { Icon(Icons.Outlined.ChevronLeft, "Close formatting tools") }
+                        }
+                    } else {
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box {
+                                TextButton(onClick = { showAddMenu = true }) {
+                                    Icon(Icons.Outlined.Add, contentDescription = null)
+                                    Spacer(Modifier.size(6.dp))
+                                    Text("Add")
+                                }
+                                DropdownMenu(expanded = showAddMenu, onDismissRequest = { showAddMenu = false }) {
+                                    DropdownMenuItem(text = { Text("Text block") }, onClick = { showAddMenu = false; addBlock() })
+                                    DropdownMenuItem(text = { Text("Heading") }, onClick = { showAddMenu = false; addBlock(NoteBlockType.HEADING) })
+                                    DropdownMenuItem(text = { Text("Checklist") }, onClick = { showAddMenu = false; addBlock(NoteBlockType.CHECKLIST) })
+                                    DropdownMenuItem(text = { Text("Bulleted list") }, onClick = { showAddMenu = false; addBlock(NoteBlockType.BULLET) })
+                                    DropdownMenuItem(text = { Text("Numbered list") }, onClick = { showAddMenu = false; addBlock(NoteBlockType.NUMBERED) })
+                                    DropdownMenuItem(text = { Text("Quote") }, onClick = { showAddMenu = false; addBlock(NoteBlockType.QUOTE) })
+                                    DropdownMenuItem(text = { Text("Code block") }, onClick = { showAddMenu = false; addBlock(NoteBlockType.CODE) })
+                                    DropdownMenuItem(text = { Text("Divider") }, onClick = { showAddMenu = false; addBlock(NoteBlockType.DIVIDER) })
+                                    if (onInsertImage != null) DropdownMenuItem(text = { Text("Image") }, onClick = { showAddMenu = false; onInsertImage() })
+                                }
+                            }
+                            TextButton(onClick = { showFormattingTools = true }) {
+                                Icon(Icons.Outlined.Edit, contentDescription = null)
+                                Spacer(Modifier.size(6.dp))
+                                Text("Text format")
+                            }
                         }
                     }
                 }
