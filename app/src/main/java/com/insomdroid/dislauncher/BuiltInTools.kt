@@ -1148,12 +1148,12 @@ private fun CalculatorTool(
                                 }
                                 val labelSize = (keySize.value / 2.35f).coerceIn(18f, 28f).sp
                                 if (operator) {
-                                    Button(onClick = action, modifier = Modifier.size(keySize), shape = CircleShape,
+                                    Button(onClick = action, modifier = Modifier.size(keySize), shape = RoundedCornerShape(18.dp),
                                         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
                                         Text(key, fontSize = labelSize, lineHeight = labelSize)
                                     }
                                 } else {
-                                    FilledTonalButton(onClick = action, modifier = Modifier.size(keySize), shape = CircleShape,
+                                    FilledTonalButton(onClick = action, modifier = Modifier.size(keySize), shape = RoundedCornerShape(18.dp),
                                         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
                                         Text(key, fontSize = labelSize, lineHeight = labelSize)
                                     }
