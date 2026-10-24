@@ -97,13 +97,6 @@ private val converterCategories = listOf(
         ConverterUnit(builtInToolText("Hour", "Jam"), "h", 3600.0),
         ConverterUnit(builtInToolText("Day", "Hari"), "d", 86400.0)
     )),
-    ConverterCategory(builtInToolText("Pressure", "Tekanan"), listOf(
-        ConverterUnit("Pascal", "Pa", 1.0),
-        ConverterUnit("Kilopascal", "kPa", 1000.0),
-        ConverterUnit("Bar", "bar", 100000.0),
-        ConverterUnit("Atmosphere", "atm", 101325.0),
-        ConverterUnit("Pound per square inch", "psi", 6894.757293)
-    )),
     ConverterCategory(builtInToolText("Energy", "Energi"), listOf(
         ConverterUnit("Joule", "J", 1.0),
         ConverterUnit("Kilojoule", "kJ", 1000.0),
@@ -118,13 +111,6 @@ private val converterCategories = listOf(
         ConverterUnit("Metric horsepower", "hp", 735.49875),
         ConverterUnit("Mechanical horsepower", "hp (US)", 745.699872)
     )),
-    ConverterCategory(builtInToolText("Frequency", "Frekuensi"), listOf(
-        ConverterUnit("Hertz", "Hz", 1.0),
-        ConverterUnit("Kilohertz", "kHz", 1000.0),
-        ConverterUnit("Megahertz", "MHz", 1000000.0),
-        ConverterUnit("Gigahertz", "GHz", 1000000000.0),
-        ConverterUnit("Revolutions per minute", "rpm", 1.0 / 60.0)
-    )),
     ConverterCategory(builtInToolText("Data storage", "Penyimpanan data"), listOf(
         ConverterUnit("Byte", "B", 1.0),
         ConverterUnit("Kilobyte", "kB", 1000.0),
@@ -134,17 +120,6 @@ private val converterCategories = listOf(
         ConverterUnit("Mebibyte", "MiB", 1048576.0),
         ConverterUnit("Gibibyte", "GiB", 1073741824.0)
     )),
-    ConverterCategory(builtInToolText("Fuel economy", "Konsumsi bahan bakar"), listOf(
-        ConverterUnit("Liters per 100 km", "L/100 km", 100.0, inverse = true),
-        ConverterUnit("Miles per US gallon", "mpg (US)", 0.425143707),
-        ConverterUnit("Miles per UK gallon", "mpg (UK)", 0.354006)
-    )),
-    ConverterCategory(builtInToolText("Radiation dose", "Dosis radiasi"), listOf(
-        ConverterUnit("Gray", "Gy", 1.0),
-        ConverterUnit("Milligray", "mGy", 0.001),
-        ConverterUnit("Microgray", "µGy", 0.000001),
-        ConverterUnit("Rad", "rad", 0.01)
-    ))
 )
 
 private fun convertUnitValue(value: Double, from: ConverterUnit, to: ConverterUnit): Double {
