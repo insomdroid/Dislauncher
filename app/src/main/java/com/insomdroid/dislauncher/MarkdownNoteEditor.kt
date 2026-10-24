@@ -26,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -131,12 +132,13 @@ internal fun MarkdownNoteEditor(
             )
         } else {
             AndroidView(
-                modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+                modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp).clipToBounds(),
                 factory = { viewContext ->
                     ScrollView(viewContext).apply {
-                        // Keep the preview inside its viewport; do not allow edge bounce
-                        // or nested scrolling to make it appear to pass the editor bounds.
-                        isFillViewport = false
+                        // Give Preview its own opaque surface and a clipped, bounded viewport.
+                        // This prevents the screen behind it from showing through while scrolling.
+                        setBackgroundColor(colors.surface.toArgb())
+                        isFillViewport = true
                         clipChildren = true
                         clipToPadding = true
                         overScrollMode = android.view.View.OVER_SCROLL_NEVER
