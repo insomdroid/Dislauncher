@@ -114,8 +114,8 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
-            // Main-branch CI builds remain debug-signed; the tag-release workflow
-            // must supply all production signing values or it fails before building.
+            // Main-branch and release builds use the production key when supplied.
+            // Pull-request CI builds use debug signing because production secrets are unavailable.
             signingConfig = if (hasProductionSigning) {
                 signingConfigs.getByName("production")
             } else {
