@@ -15,7 +15,12 @@ import java.util.zip.ZipOutputStream
  * Portable, structured note archive. The document JSON is the interchange format;
  * images are copied into the archive and references are rewritten to relative asset paths.
  */
-internal data class ImportedNoteArchive(val title: String, val document: NoteDocument)
+internal data class ImportedNoteArchive(
+    val title: String,
+    val document: NoteDocument,
+    val labels: List<String> = emptyList(),
+    val color: String = "default"
+)
 
 private const val MAX_NOTE_ARCHIVE_ENTRIES = 256
 private const val MAX_NOTE_ARCHIVE_IMAGE_BYTES = 20 * 1024 * 1024
@@ -26,7 +31,9 @@ internal fun writeStructuredNoteArchive(
     context: Context,
     destination: Uri,
     title: String,
-    document: NoteDocument
+    document: NoteDocument,
+    labels: List<String> = emptyList(),
+    color: String = "default"
 ) {
     val output = context.contentResolver.openOutputStream(destination)
         ?: error("Unable to open export destination")
@@ -66,6 +73,8 @@ internal fun writeStructuredNoteArchive(
             .put("format", "dislauncher-note")
             .put("formatVersion", 1)
             .put("title", title)
+            .put("labels", org.json.JSONArray(labels))
+            .put("color", color)
             .put("document", JSONObject(NoteDocumentCodec.encode(portableDocument)))
         val documentBytes = root.toString().toByteArray(Charsets.UTF_8)
         require(documentBytes.size <= MAX_NOTE_DOCUMENT_BYTES) { "Note document exceeds the 2 MiB export limit" }
@@ -135,7 +144,8 @@ internal fun readStructuredNoteArchive(context: Context, input: InputStream): Im
             if (file != null) span.copy(imageUri = Uri.fromFile(file).toString()) else span
         })
     })
-    return ImportedNoteArchive(title, localDocument)
+    val labels = root.optJSONArray("labels")?.let { array -> (0 until array.length()).map { array.optString(it) } }.orEmpty()
+    return ImportedNoteArchive(title, localDocument, labels, root.optString("color", "default"))
 }
 
 private fun readBounded(input: InputStream, maxBytes: Int): ByteArray {
