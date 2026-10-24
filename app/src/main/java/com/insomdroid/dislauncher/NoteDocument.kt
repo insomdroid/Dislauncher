@@ -14,7 +14,7 @@ internal enum class NoteBlockType {
 }
 
 internal enum class NoteMark {
-    BOLD, ITALIC, STRIKETHROUGH, CODE
+    BOLD, ITALIC, STRIKETHROUGH, CODE, UNDERLINE
 }
 
 internal data class NoteInline(
