@@ -537,139 +537,155 @@ private fun NotesTool(
     var notes by remember(context) { mutableStateOf(loadNotes(context)) }
     var selectedId by remember { mutableStateOf<String?>(null) }
     var title by remember { mutableStateOf("") }
-    var body by remember { mutableStateOf("") }
-    var bodyField by remember { mutableStateOf(TextFieldValue("")) }
-    var noteDocument by remember { mutableStateOf(NoteDocument()) }
+    var document by remember { mutableStateOf(NoteDocument()) }
     var searchQuery by remember { mutableStateOf("") }
-    var notesGridView by remember(context) { mutableStateOf(notesStore(context).getBoolean("grid_view", false)) }
-    var previewMode by remember { mutableStateOf(false) }
+    var gridView by remember(context) {
+        mutableStateOf(context.getSharedPreferences("dislauncher_notes", Context.MODE_PRIVATE).getBoolean("grid_view", true))
+    }
+    var pinnedOnly by remember { mutableStateOf(false) }
+    var sortByTitle by remember { mutableStateOf(false) }
+    var menuTarget by remember { mutableStateOf<String?>(null) }
     var deleteTarget by remember { mutableStateOf<String?>(null) }
-    var noteMenuTarget by remember { mutableStateOf<String?>(null) }
-    var exportContent by remember { mutableStateOf("") }
+    var undoHistory by remember { mutableStateOf(listOf<NoteDocument>()) }
+    var redoHistory by remember { mutableStateOf(listOf<NoteDocument>()) }
+    var pendingExport by remember { mutableStateOf<Pair<String, NoteDocument>?>(null) }
+    val scope = rememberCoroutineScope()
 
-    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) runCatching {
-            val input = context.contentResolver.openInputStream(uri)
-                ?: error("Unable to read this file")
-            val imported = readMarkdownBounded(input, MAX_MARKDOWN_IMPORT_BYTES)
-            val firstLine = imported.lineSequence().firstOrNull().orEmpty()
-            val importedTitle = if (firstLine.startsWith("# ")) firstLine.removePrefix("# ").trim() else ""
-            val importedBody = if (importedTitle.isNotEmpty()) imported.substringAfter('\n', "") else imported
-            val note = LocalNote(UUID.randomUUID().toString(), importedTitle, importedBody, System.currentTimeMillis())
-            notes = (notes + note).sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
-            saveNotes(context, notes)
-            selectedId = note.id
-            title = note.title
-            body = note.content
-            bodyField = richFieldFromMarkdown(note.content)
-            noteDocument = NoteDocumentCodec.decode(note.documentJson) ?: NoteDocumentCodec.fromMarkdown(note.content)
-            previewMode = false
-            onEditingChanged(true)
-        }.onFailure { Toast.makeText(context, "Could not import Markdown file", Toast.LENGTH_LONG).show() }
-    }
-    val zipImportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) runCatching {
-            val input = context.contentResolver.openInputStream(uri) ?: error("Unable to read archive")
-            val imported = readNoteArchive(context, input)
-            val firstLine = imported.lineSequence().firstOrNull().orEmpty()
-            val importedTitle = if (firstLine.startsWith("# ")) firstLine.removePrefix("# ").trim() else ""
-            val importedBody = if (importedTitle.isNotEmpty()) imported.substringAfter('\n', "") else imported
-            val note = LocalNote(UUID.randomUUID().toString(), importedTitle, importedBody, System.currentTimeMillis(),
-                documentJson = NoteDocumentCodec.encode(NoteDocumentCodec.fromMarkdown(importedBody)))
-            val updatedNotes = (notes + note).sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
-            notes = updatedNotes
-            saveNotes(context, updatedNotes)
-            selectedId = note.id
-            title = note.title
-            body = note.content
-            bodyField = richFieldFromMarkdown(note.content)
-            noteDocument = NoteDocumentCodec.decode(note.documentJson) ?: NoteDocumentCodec.fromMarkdown(note.content)
-            previewMode = false
-            onEditingChanged(true)
-        }.onFailure { Toast.makeText(context, "Could not import note archive: ${it.message.orEmpty()}", Toast.LENGTH_LONG).show() }
-    }
-
-    val exportScope = rememberCoroutineScope()
-    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
-        if (uri != null) exportScope.launch {
-            val result = withContext(Dispatchers.IO) { runCatching { writeNoteArchive(context, uri, exportContent) } }
-            result.onSuccess { Toast.makeText(context, "Note archive exported", Toast.LENGTH_SHORT).show() }
-                .onFailure { Toast.makeText(context, "Could not export note archive: ${it.message.orEmpty()}", Toast.LENGTH_LONG).show() }
+    fun plainText(doc: NoteDocument): String = doc.blocks.joinToString("\n") { block ->
+        val text = block.spans.joinToString("") { it.text }
+        when (block.type) {
+            NoteBlockType.BULLET -> "• $text"
+            NoteBlockType.NUMBERED -> "${block.orderedIndex}. $text"
+            NoteBlockType.CHECKLIST -> "${if (block.checked) "☑" else "☐"} $text"
+            NoteBlockType.QUOTE -> "▏ $text"
+            NoteBlockType.DIVIDER -> "────────"
+            else -> text
         }
     }
+    fun isEmpty(doc: NoteDocument): Boolean =
+        doc.blocks.all { block -> block.spans.all { it.text.isBlank() && it.imageUri == null } &&
+            block.type == NoteBlockType.PARAGRAPH }
     fun saveCurrent() {
         val id = selectedId ?: return
-        if (title.isBlank() && body.isBlank()) {
-            val removedNote = notes.firstOrNull { it.id == id }
-            notes = notes.filterNot { it.id == id }
-            saveNotes(context, notes)
-            removedNote?.let { releaseUnusedNoteImagePermissions(context, it, notes) }
+        if (title.isBlank() && isEmpty(document)) {
+            if (notes.any { it.id == id }) {
+                notes = notes.filterNot { it.id == id }
+                saveNotes(context, notes)
+            }
             return
         }
         val pinned = notes.firstOrNull { it.id == id }?.pinned ?: false
         val current = LocalNote(
-            id, title.trim(), body, System.currentTimeMillis(), pinned,
-            NoteDocumentCodec.encode(noteDocument)
+            id = id,
+            title = title.trim(),
+            content = plainText(document),
+            updatedAt = System.currentTimeMillis(),
+            pinned = pinned,
+            documentJson = NoteDocumentCodec.encode(document)
         )
         notes = (notes.filterNot { it.id == id } + current)
             .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
         saveNotes(context, notes)
     }
-
-    // Coalesce rapid keystrokes into one local preference write instead of serializing the
-    // complete note on every character. Explicit actions still save immediately.
-    LaunchedEffect(selectedId, title, body) {
-        if (selectedId != null) {
-            kotlinx.coroutines.delay(350)
-            saveCurrent()
-        }
-    }
-
-    val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null && selectedId != null) runCatching {
-            context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            val imageBlock = NoteBlock(
-                id = UUID.randomUUID().toString(),
-                type = NoteBlockType.PARAGRAPH,
-                spans = listOf(NoteInline(text = "", imageUri = uri.toString(), imageAlt = "Image"))
-            )
-            noteDocument = noteDocument.copy(blocks = noteDocument.blocks + imageBlock)
-            body = NoteDocumentCodec.toMarkdown(noteDocument)
-            saveCurrent()
-        }.onFailure {
-            Toast.makeText(context, "Could not add image", Toast.LENGTH_LONG).show()
-        }
-    }
-
     fun openNote(note: LocalNote) {
         selectedId = note.id
         title = note.title
-        body = note.content
-        bodyField = richFieldFromMarkdown(note.content)
-        noteDocument = NoteDocumentCodec.decode(note.documentJson) ?: NoteDocumentCodec.fromMarkdown(note.content)
-        previewMode = false
+        document = NoteDocumentCodec.decode(note.documentJson)
+            ?: NoteDocumentCodec.fromMarkdown(note.content)
+        undoHistory = emptyList()
+        redoHistory = emptyList()
+        onEditingChanged(true)
+    }
+    fun createNote() {
+        selectedId = UUID.randomUUID().toString()
+        title = ""
+        document = NoteDocument()
+        undoHistory = emptyList()
+        redoHistory = emptyList()
         onEditingChanged(true)
     }
     fun closeEditor() {
         saveCurrent()
         selectedId = null
-        previewMode = false
         onEditingChanged(false)
     }
-    fun exportNote(noteTitle: String, noteBody: String) {
-        exportContent = if (noteTitle.isBlank()) noteBody else "# $noteTitle\n\n$noteBody"
-        val safeName = noteTitle.ifBlank { "note" }.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim().ifBlank { "note" }
-        exportLauncher.launch("$safeName.zip")
+
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) runCatching {
+            val input = context.contentResolver.openInputStream(uri) ?: error("Unable to read archive")
+            val imported = readStructuredNoteArchive(context, input)
+            val importedNote = LocalNote(
+                id = UUID.randomUUID().toString(),
+                title = imported.title,
+                content = plainText(imported.document),
+                updatedAt = System.currentTimeMillis(),
+                documentJson = NoteDocumentCodec.encode(imported.document)
+            )
+            notes = (notes + importedNote).sortedWith(
+                compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt }
+            )
+            saveNotes(context, notes)
+            openNote(importedNote)
+        }.onFailure {
+            Toast.makeText(context, "Could not import note archive: ${it.message.orEmpty()}", Toast.LENGTH_LONG).show()
+        }
+    }
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+        val request = pendingExport
+        if (uri != null && request != null) {
+            scope.launch {
+                val result = withContext(Dispatchers.IO) {
+                    runCatching { writeStructuredNoteArchive(context, uri, request.first, request.second) }
+                }
+                result.onSuccess { Toast.makeText(context, "Note archive exported", Toast.LENGTH_SHORT).show() }
+                    .onFailure { Toast.makeText(context, "Could not export note archive: ${it.message.orEmpty()}", Toast.LENGTH_LONG).show() }
+            }
+        }
+        pendingExport = null
+    }
+    val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null && selectedId != null) runCatching {
+            if (uri.scheme == "content") {
+                context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            val imageBlock = NoteBlock(
+                id = UUID.randomUUID().toString(),
+                type = NoteBlockType.PARAGRAPH,
+                spans = listOf(NoteInline(text = "", imageUri = uri.toString(), imageAlt = "Image"))
+            )
+            undoHistory = (undoHistory + document).takeLast(50)
+            redoHistory = emptyList()
+            document = document.copy(blocks = document.blocks + imageBlock)
+        }.onFailure {
+            Toast.makeText(context, "Could not add image", Toast.LENGTH_LONG).show()
+        }
     }
 
-    LaunchedEffect(backSignal) { if (backSignal > 0 && selectedId != null) closeEditor() }
+    LaunchedEffect(selectedId, title, document) {
+        if (selectedId != null) {
+            kotlinx.coroutines.delay(350)
+            saveCurrent()
+        }
+    }
+    LaunchedEffect(backSignal) {
+        if (backSignal > 0 && selectedId != null) closeEditor()
+    }
     BackHandler(enabled = selectedId != null) { closeEditor() }
 
-    Box(modifier = modifier) {
+    val visibleNotes = notes.filter { note ->
+        (!pinnedOnly || note.pinned) &&
+            (searchQuery.isBlank() || note.title.contains(searchQuery, true) ||
+                note.content.contains(searchQuery, true))
+    }.let { list ->
+        if (sortByTitle) list.sortedWith(compareByDescending<LocalNote> { it.pinned }.thenBy { it.title.lowercase() })
+        else list.sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
+    }
+
+    Box(modifier.fillMaxSize()) {
         if (selectedId == null) {
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -677,77 +693,88 @@ private fun NotesTool(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
                         modifier = Modifier.weight(1f),
-                        placeholder = { Text(builtInToolText("Search notes", "Cari catatan")) },
+                        placeholder = { Text("Search notes") },
                         leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
                         singleLine = true,
                         shape = RoundedCornerShape(16.dp)
                     )
-                    TextButton(onClick = {
-                        notesGridView = !notesGridView
-                        notesStore(context).edit().putBoolean("grid_view", notesGridView).apply()
-                    }) { Text(if (notesGridView) "List" else "Grid") }
-                    IconButton(
-                        onClick = { importLauncher.launch(arrayOf("text/markdown", "text/plain", "application/octet-stream")) },
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(Icons.Outlined.FileOpen, contentDescription = builtInToolText("Import Markdown file", "Impor berkas Markdown"))
+                    IconButton(onClick = {
+                        gridView = !gridView
+                        context.getSharedPreferences("dislauncher_notes", Context.MODE_PRIVATE)
+                            .edit().putBoolean("grid_view", gridView).apply()
+                    }) {
+                        Icon(if (gridView) Icons.Outlined.FormatListBulleted else Icons.Outlined.Title,
+                            contentDescription = if (gridView) "List view" else "Grid view")
                     }
-                    IconButton(onClick = { zipImportLauncher.launch(arrayOf("application/zip", "application/octet-stream")) }, modifier = Modifier.size(48.dp)) {
-                        Icon(Icons.Outlined.FileOpen, contentDescription = builtInToolText("Import note archive", "Impor arsip catatan"))
+                    Box {
+                        IconButton(onClick = { menuTarget = "home" }) {
+                            Icon(Icons.Outlined.MoreVert, contentDescription = "Notes options")
+                        }
+                        DropdownMenu(expanded = menuTarget == "home", onDismissRequest = { menuTarget = null }) {
+                            DropdownMenuItem(text = { Text(if (pinnedOnly) "Show all notes" else "Pinned notes") },
+                                leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null) },
+                                onClick = { pinnedOnly = !pinnedOnly; menuTarget = null })
+                            DropdownMenuItem(text = { Text(if (sortByTitle) "Sort by modified" else "Sort by title") },
+                                onClick = { sortByTitle = !sortByTitle; menuTarget = null })
+                            DropdownMenuItem(text = { Text("Import note archive") },
+                                leadingIcon = { Icon(Icons.Outlined.FileOpen, contentDescription = null) },
+                                onClick = { menuTarget = null; importLauncher.launch(arrayOf("application/zip", "application/octet-stream")) })
+                        }
                     }
-                }
-                val visibleNotes = notes.filter {
-                    searchQuery.isBlank() || it.title.contains(searchQuery, true) || it.content.contains(searchQuery, true)
                 }
                 if (visibleNotes.isEmpty()) {
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.padding(horizontal = 24.dp)) {
-                            Icon(Icons.Outlined.NoteAdd, contentDescription = null, modifier = Modifier.size(36.dp),
+                            Icon(Icons.Outlined.NoteAdd, contentDescription = null, modifier = Modifier.size(38.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(if (searchQuery.isBlank()) "No notes yet" else "No matching notes",
-                                style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-                            Text(if (searchQuery.isBlank()) "Create a note to keep your thoughts in one place." else "Try a different search term.",
+                            Text(if (searchQuery.isBlank() && !pinnedOnly) "No notes yet" else "No matching notes",
+                                style = MaterialTheme.typography.titleMedium)
+                            Text(if (searchQuery.isBlank() && !pinnedOnly) "Capture a thought, list, or idea." else "Try another search or filter.",
                                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center)
                         }
                     }
-                } else if (notesGridView) {
-                    LazyVerticalGrid(columns = GridCells.Fixed(2), modifier = Modifier.weight(1f).fillMaxWidth(),
-                        contentPadding = PaddingValues(bottom = 88.dp), horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                } else if (gridView) {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        contentPadding = PaddingValues(bottom = 96.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
                         gridItems(visibleNotes, key = { it.id }) { note ->
-                            Surface(modifier = Modifier.fillMaxWidth().heightIn(min = 132.dp).clickable { openNote(note) },
-                                shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceContainerLow,
-                                tonalElevation = 1.dp) {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 144.dp).clickable { openNote(note) },
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                tonalElevation = 1.dp
+                            ) {
                                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    if (note.pinned) Text("PINNED", style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.primary)
-                                    Row(verticalAlignment = Alignment.Top) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        if (note.pinned) Icon(Icons.Outlined.PushPin, contentDescription = "Pinned",
+                                            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(15.dp))
                                         Text(note.title.ifBlank { "Untitled note" }, modifier = Modifier.weight(1f),
                                             style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                         Box {
-                                            IconButton(onClick = { noteMenuTarget = note.id }, modifier = Modifier.size(32.dp)) {
-                                                Icon(Icons.Outlined.MoreVert, contentDescription = builtInToolText("Note actions", "Aksi catatan"))
+                                            IconButton(onClick = { menuTarget = note.id }, modifier = Modifier.size(28.dp)) {
+                                                Icon(Icons.Outlined.MoreVert, contentDescription = "Note actions")
                                             }
-                                            DropdownMenu(expanded = noteMenuTarget == note.id, onDismissRequest = { noteMenuTarget = null }) {
-                                                DropdownMenuItem(text = { Text(if (note.pinned) "Unpin note" else "Pin note") },
+                                            DropdownMenu(expanded = menuTarget == note.id, onDismissRequest = { menuTarget = null }) {
+                                                DropdownMenuItem(text = { Text(if (note.pinned) "Unpin" else "Pin") },
                                                     leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null) },
                                                     onClick = {
-                                                        notes = notes.map { if (it.id == note.id) it.copy(pinned = !it.pinned, updatedAt = System.currentTimeMillis()) else it }
-                                                            .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
-                                                        saveNotes(context, notes); noteMenuTarget = null
+                                                        notes = notes.map { if (it.id == note.id) it.copy(pinned = !it.pinned) else it }
+                                                        saveNotes(context, notes); menuTarget = null
                                                     })
-                                                DropdownMenuItem(text = { Text(builtInToolText("Delete", "Hapus")) },
+                                                DropdownMenuItem(text = { Text("Delete") },
                                                     leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null) },
-                                                    onClick = { deleteTarget = note.id; noteMenuTarget = null })
+                                                    onClick = { deleteTarget = note.id; menuTarget = null })
                                             }
                                         }
                                     }
-                                    Text(note.content.lineSequence().map { it.trimStart('#', ' ', '-', '*') }
-                                        .firstOrNull { it.isNotBlank() }.orEmpty().ifBlank { "No content" },
-                                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 4, overflow = TextOverflow.Ellipsis)
+                                    Text(note.content.ifBlank { "No content" }, style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 5, overflow = TextOverflow.Ellipsis)
                                     Spacer(Modifier.weight(1f))
                                     Text(Instant.ofEpochMilli(note.updatedAt).atZone(ZoneId.systemDefault())
                                         .format(DateTimeFormatter.ofPattern("d MMM, HH:mm", Locale.getDefault())),
@@ -757,159 +784,132 @@ private fun NotesTool(
                         }
                     }
                 } else {
-                    LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         items(visibleNotes, key = { it.id }) { note ->
-                            Column(Modifier.fillMaxWidth()) {
-                                Row(Modifier.fillMaxWidth().heightIn(min = 88.dp).clip(RoundedCornerShape(8.dp))
-                                    .clickable { openNote(note) }.padding(horizontal = 8.dp, vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically) {
-                                    Column(Modifier.weight(1f).padding(end = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                            if (note.pinned) Text("PINNED", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                                            Text(note.title.ifBlank { "Untitled note" }, style = MaterialTheme.typography.titleMedium,
-                                                maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        }
-                                        Text(note.content.lineSequence().map { it.trimStart('#', ' ', '-', '*') }
-                                            .firstOrNull { it.isNotBlank() }.orEmpty().ifBlank { "No content" },
-                                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                        Text(Instant.ofEpochMilli(note.updatedAt).atZone(ZoneId.systemDefault())
-                                            .format(DateTimeFormatter.ofPattern("d MMM, HH:mm", Locale.getDefault())),
-                                            style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Row(
+                                Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { openNote(note) }
+                                    .padding(horizontal = 8.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(Modifier.weight(1f).padding(end = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        if (note.pinned) Icon(Icons.Outlined.PushPin, contentDescription = "Pinned",
+                                            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+                                        Text(note.title.ifBlank { "Untitled note" }, style = MaterialTheme.typography.titleMedium,
+                                            maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     }
-                                    Box {
-                                        IconButton(onClick = { noteMenuTarget = note.id }) {
-                                            Icon(Icons.Outlined.MoreVert, contentDescription = builtInToolText("Note actions", "Aksi catatan"))
-                                        }
-                                        DropdownMenu(expanded = noteMenuTarget == note.id, onDismissRequest = { noteMenuTarget = null }) {
-                                            DropdownMenuItem(text = { Text(if (note.pinned) "Unpin note" else "Pin note") },
-                                                leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null) },
-                                                onClick = {
-                                                    notes = notes.map { if (it.id == note.id) it.copy(pinned = !it.pinned) else it }
-                                                        .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
-                                                    saveNotes(context, notes); noteMenuTarget = null
-                                                })
-                                            DropdownMenuItem(text = { Text(builtInToolText("Delete", "Hapus")) },
-                                                leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null) },
-                                                onClick = { deleteTarget = note.id; noteMenuTarget = null })
-                                        }
+                                    Text(note.content.ifBlank { "No content" }, style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                    Text(Instant.ofEpochMilli(note.updatedAt).atZone(ZoneId.systemDefault())
+                                        .format(DateTimeFormatter.ofPattern("d MMM, HH:mm", Locale.getDefault())),
+                                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Box {
+                                    IconButton(onClick = { menuTarget = note.id }) {
+                                        Icon(Icons.Outlined.MoreVert, contentDescription = "Note actions")
+                                    }
+                                    DropdownMenu(expanded = menuTarget == note.id, onDismissRequest = { menuTarget = null }) {
+                                        DropdownMenuItem(text = { Text(if (note.pinned) "Unpin" else "Pin") },
+                                            leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null) },
+                                            onClick = {
+                                                notes = notes.map { if (it.id == note.id) it.copy(pinned = !it.pinned) else it }
+                                                saveNotes(context, notes); menuTarget = null
+                                            })
+                                        DropdownMenuItem(text = { Text("Delete") },
+                                            leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null) },
+                                            onClick = { deleteTarget = note.id; menuTarget = null })
                                     }
                                 }
-                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
                             }
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
                         }
                     }
                 }
             }
+            FloatingActionButton(
+                onClick = { createNote() },
+                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 24.dp),
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            ) { Icon(Icons.Outlined.NoteAdd, contentDescription = "New note") }
         } else {
             Column(Modifier.fillMaxSize().imePadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBackRequested) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = builtInToolText("Back", "Kembali"))
-                    }
+                    IconButton(onClick = onBackRequested) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Back") }
+                    IconButton(
+                        onClick = {
+                            if (undoHistory.isNotEmpty()) {
+                                redoHistory = (redoHistory + document).takeLast(50)
+                                document = undoHistory.last()
+                                undoHistory = undoHistory.dropLast(1)
+                            }
+                        },
+                        enabled = undoHistory.isNotEmpty()
+                    ) { Icon(Icons.Outlined.History, contentDescription = "Undo") }
+                    IconButton(
+                        onClick = {
+                            if (redoHistory.isNotEmpty()) {
+                                undoHistory = (undoHistory + document).takeLast(50)
+                                document = redoHistory.last()
+                                redoHistory = redoHistory.dropLast(1)
+                            }
+                        },
+                        enabled = redoHistory.isNotEmpty()
+                    ) { Icon(Icons.Outlined.ArrowForward, contentDescription = "Redo") }
                     Spacer(Modifier.weight(1f))
-                    val selectedNotePinned = notes.firstOrNull { it.id == selectedId }?.pinned == true
+                    val pinned = notes.firstOrNull { it.id == selectedId }?.pinned == true
                     IconButton(onClick = {
-                        notes = notes.map { if (it.id == selectedId) it.copy(pinned = !selectedNotePinned, updatedAt = System.currentTimeMillis()) else it }
+                        notes = notes.map { if (it.id == selectedId) it.copy(pinned = !pinned) else it }
                             .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
                         saveNotes(context, notes)
                     }) {
-                        Icon(Icons.Outlined.PushPin, contentDescription = if (selectedNotePinned) "Unpin note" else "Pin note",
-                            tint = if (selectedNotePinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Outlined.PushPin, contentDescription = if (pinned) "Unpin note" else "Pin note",
+                            tint = if (pinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Box {
-                        var editorMenuExpanded by remember { mutableStateOf(false) }
-                        IconButton(onClick = { editorMenuExpanded = true }) {
-                            Icon(Icons.Outlined.MoreVert, contentDescription = builtInToolText("More note actions", "Aksi catatan lainnya"))
+                        IconButton(onClick = { menuTarget = "editor" }) {
+                            Icon(Icons.Outlined.MoreVert, contentDescription = "More note actions")
                         }
-                        DropdownMenu(expanded = editorMenuExpanded, onDismissRequest = { editorMenuExpanded = false }) {
-                            DropdownMenuItem(text = { Text(builtInToolText("Export note archive", "Ekspor arsip catatan")) }, leadingIcon = { Icon(Icons.Outlined.FileDownload, contentDescription = null) }, onClick = {
-                                editorMenuExpanded = false
-                                exportNote(title, body)
-                            })
-                            DropdownMenuItem(text = { Text(builtInToolText("Import Markdown", "Impor Markdown")) }, leadingIcon = { Icon(Icons.Outlined.FileOpen, contentDescription = null) }, onClick = {
-                                // Commit edits before the import callback switches the active note.
-                                saveCurrent()
-                                editorMenuExpanded = false
-                                importLauncher.launch(arrayOf("text/markdown", "text/plain", "application/octet-stream"))
-                            })
-                            DropdownMenuItem(text = { Text(builtInToolText("Import ZIP archive", "Impor arsip ZIP")) }, leadingIcon = { Icon(Icons.Outlined.FileOpen, contentDescription = null) }, onClick = {
-                                saveCurrent()
-                                editorMenuExpanded = false
-                                zipImportLauncher.launch(arrayOf("application/zip", "application/octet-stream"))
-                            })
-                            DropdownMenuItem(
-                                text = { Text(builtInToolText("Delete note", "Hapus catatan")) },
+                        DropdownMenu(expanded = menuTarget == "editor", onDismissRequest = { menuTarget = null }) {
+                            DropdownMenuItem(text = { Text("Export note archive") },
+                                leadingIcon = { Icon(Icons.Outlined.FileDownload, contentDescription = null) },
+                                onClick = {
+                                    saveCurrent()
+                                    pendingExport = title to document
+                                    val filename = title.ifBlank { "note" }.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim().ifBlank { "note" }
+                                    menuTarget = null
+                                    exportLauncher.launch("$filename.zip")
+                                })
+                            DropdownMenuItem(text = { Text("Insert image") },
+                                leadingIcon = { Icon(Icons.Outlined.Image, contentDescription = null) },
+                                onClick = { menuTarget = null; imageLauncher.launch(arrayOf("image/*")) })
+                            DropdownMenuItem(text = { Text("Delete note") },
                                 leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null) },
-                                onClick = { editorMenuExpanded = false; deleteTarget = selectedId }
-                            )
+                                onClick = { deleteTarget = selectedId; menuTarget = null })
                         }
                     }
                 }
                 OutlinedTextField(
-                    value = title, onValueChange = { title = it }, modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text(builtInToolText("Title (optional)", "Judul (opsional)")) }, singleLine = true,
-                    textStyle = MaterialTheme.typography.titleLarge, readOnly = previewMode
+                    value = title,
+                    onValueChange = { title = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Title") },
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.titleLarge,
+                    shape = RoundedCornerShape(12.dp)
                 )
-                if (previewMode) {
-                    val markdownRenderer = remember(context) { Markwon.builder(context)
-                        .usePlugin(ImagesPlugin.create())
-                        .usePlugin(TablePlugin.create(context))
-                        .usePlugin(StrikethroughPlugin.create())
-                        .usePlugin(TaskListPlugin.create(context))
-                        .build() }
-                    val previewTextColor = MaterialTheme.colorScheme.onSurface
-                    val previewTextSizePx = with(LocalDensity.current) {
-                        MaterialTheme.typography.bodyMedium.fontSize.toPx()
-                    }
-                    val previewTypeface = remember(context) { markdownPreviewTypeface(context) }
-                    AndroidView(
-                        factory = { viewContext ->
-                            TextView(viewContext).apply {
-                                setPadding(8, 8, 8, 8)
-                                setTextSize(TypedValue.COMPLEX_UNIT_PX, previewTextSizePx)
-                                typeface = previewTypeface
-                            }
-                        },
-                        update = { textView ->
-                            textView.setTextSize(TypedValue.COMPLEX_UNIT_PX, previewTextSizePx)
-                            textView.typeface = previewTypeface
-                            textView.setTextColor(android.graphics.Color.rgb(
-                                (previewTextColor.red * 255).toInt(),
-                                (previewTextColor.green * 255).toInt(),
-                                (previewTextColor.blue * 255).toInt()
-                            ))
-                            markdownRenderer.setMarkdown(textView, markdownForSafePreview(body))
-                        },
-                        modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp)
-                    )
-                } else {
-                    RichNoteEditor(
-                        document = noteDocument,
-                        onDocumentChange = { updated ->
-                            noteDocument = updated
-                            body = NoteDocumentCodec.toMarkdown(updated)
-                            bodyField = richFieldFromMarkdown(body)
-                        },
-                        modifier = Modifier.weight(1f).fillMaxWidth(),
-                        onInsertImage = { imageLauncher.launch(arrayOf("image/*")) }
-                    )
-                }
-            }
-        }
-        if (selectedId == null) {
-            FloatingActionButton(onClick = {
-                selectedId = UUID.randomUUID().toString()
-                title = ""
-                body = ""
-                bodyField = TextFieldValue("")
-                noteDocument = NoteDocument()
-                previewMode = false
-                onEditingChanged(true)
-            }, modifier = Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 24.dp),
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer) {
-                Icon(Icons.Outlined.NoteAdd, contentDescription = builtInToolText("New note", "Catatan baru"))
+                RichNoteEditor(
+                    document = document,
+                    onDocumentChange = { updated ->
+                        if (updated != document) {
+                            undoHistory = (undoHistory + document).takeLast(50)
+                            redoHistory = emptyList()
+                            document = updated
+                        }
+                    },
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    onInsertImage = { imageLauncher.launch(arrayOf("image/*")) }
+                )
             }
         }
     }
@@ -917,45 +917,27 @@ private fun NotesTool(
     if (deleteTarget != null) {
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text(builtInToolText("Delete note?", "Hapus catatan?")) },
-            text = { Text(builtInToolText("This note will be permanently deleted from this device.", "Catatan ini akan dihapus permanen dari perangkat.")) },
+            title = { Text("Delete note?") },
+            text = { Text("This note will be permanently deleted from this device.") },
             confirmButton = {
                 TextButton(onClick = {
-                    val removedNote = notes.firstOrNull { it.id == deleteTarget }
-                    notes = notes.filterNot { it.id == deleteTarget }
+                    val target = deleteTarget
+                    val removed = notes.firstOrNull { it.id == target }
+                    notes = notes.filterNot { it.id == target }
                     saveNotes(context, notes)
-                    removedNote?.let { releaseUnusedNoteImagePermissions(context, it, notes) }
+                    removed?.let { releaseUnusedNoteImagePermissions(context, it, notes) }
+                    if (selectedId == target) {
+                        selectedId = null
+                        title = ""
+                        document = NoteDocument()
+                        onEditingChanged(false)
+                    }
                     deleteTarget = null
-                    selectedId = null
-                    title = ""
-                    body = ""
-                    bodyField = TextFieldValue("")
-                    previewMode = false
-                    onEditingChanged(false)
-                }) { Text(builtInToolText("Delete", "Hapus")) }
+                }) { Text("Delete") }
             },
-            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text(builtInToolText("Cancel", "Batal")) } }
+            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancel") } }
         )
     }
-}
-
-
-private fun markdownEdit(field: TextFieldValue, body: String, prefix: String, suffix: String): TextFieldValue {
-    val start = field.selection.min.coerceIn(0, body.length)
-    val end = field.selection.max.coerceIn(start, body.length)
-    if (suffix.isEmpty()) {
-        val lineStart = body.lastIndexOf('\n', (start - 1).coerceAtLeast(0)).let { if (it < 0) 0 else it + 1 }
-        val insertion = if (lineStart == 0) prefix else "\n" + prefix
-        val updated = body.substring(0, lineStart) + insertion + body.substring(lineStart)
-        return TextFieldValue(updated, TextRange(lineStart + insertion.length))
-    }
-    val selected = body.substring(start, end)
-    val inner = selected.ifEmpty { if (prefix == "[") "link" else "text" }
-    val replacement = prefix + inner + suffix
-    val updated = body.substring(0, start) + replacement + body.substring(end)
-    val selection = if (selected.isEmpty()) TextRange(start + prefix.length + inner.length)
-        else TextRange(start + prefix.length, start + prefix.length + selected.length)
-    return TextFieldValue(updated, selection)
 }
 
 @Composable
