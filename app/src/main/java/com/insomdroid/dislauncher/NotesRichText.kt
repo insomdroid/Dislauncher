@@ -21,7 +21,7 @@ import java.util.zip.ZipInputStream
  * Converts inline Markdown marks into styled editable text. The editor edits the styled text,
  * while persistence and interchange remain Markdown-compatible.
  */
-internal fun richFieldFromMarkdown(markdown: String): TextFieldValue {
+    val pattern = Regex("""(\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|~~(.+?)~~|(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)|`([^`]+)`)""")
     val pattern = Regex("""(\\*\\*\\*(.+?)\\*\\*\\*|\\*\\*(.+?)\\*\\*|~~(.+?)~~|(?<!\\*)\\*(?!\\*)(.+?)(?<!\\*)\\*(?!\\*)|\u0060([^\u0060]+)\u0060)""")
     val annotated = buildAnnotatedString {
         var cursor = 0
@@ -125,8 +125,8 @@ internal fun readNoteArchive(context: Context, input: InputStream): String {
     var markdown = markdownBytes.toByteArray().toString(Charsets.UTF_8)
     extracted.forEach { (entryName, file) ->
         val relative = Regex.escape(entryName)
-        markdown = markdown.replace(Regex("""(!\\[[^]]*]\\()<?$relative>?(\\))""")) { match ->
-            "${match.groupValues[1]}<${Uri.fromFile(file)}>${match.groupValues[2]}"
+        markdown = markdown.replace(Regex("""(!\[[^]]*]\()<?$relative>?\)""")) { match ->
+            "${match.groupValues[1]}<${Uri.fromFile(file)}>)"
         }
     }
     return markdown
