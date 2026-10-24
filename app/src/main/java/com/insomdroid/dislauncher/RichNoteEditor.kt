@@ -274,11 +274,15 @@ internal fun RichNoteEditor(
                                     activeField = cursor
                                     fields[active.id] = cursor
                                 } else {
-                                    field = next
-                                    fields[block.id] = next
+                                    val previousField = field
+                                    val preservedSpans = preserveInlineMarks(block.spans, previousField.text, next.text)
+                                    val styledNext = fieldFromBlock(block.copy(spans = preservedSpans), linkColor)
+                                        .copy(selection = next.selection, composition = next.composition)
+                                    field = styledNext
+                                    fields[block.id] = styledNext
                                     activeBlockId = block.id
-                                    activeField = next
-                                    updateBlock(block.id) { it.copy(spans = spansFromField(next)) }
+                                    activeField = styledNext
+                                    updateBlock(block.id) { it.copy(spans = preservedSpans) }
                                 }
                             },
                             readOnly = readOnly,
@@ -379,6 +383,68 @@ internal fun RichNoteEditor(
     }
 }
 
+
+
+/**
+ * Preserve canonical Markdown-style marks while the user edits text. Compose may drop span
+ * styles around a changed selection (especially when a space is typed after formatted text),
+ * so map unchanged characters back to their original inline spans and let inserted characters
+ * inherit the formatting at the insertion point.
+ */
+private fun preserveInlineMarks(
+    source: List<NoteInline>,
+    oldText: String,
+    newText: String
+): List<NoteInline> {
+    if (newText.isEmpty()) return emptyList()
+    if (oldText == newText) return source
+
+    val oldChars = ArrayList<NoteInline>(oldText.length)
+    source.forEach { span ->
+        repeat(span.text.length) { index ->
+            oldChars += span.copy(text = span.text.substring(index, index + 1))
+        }
+    }
+    while (oldChars.size < oldText.length) oldChars += NoteInline(oldText[oldChars.size].toString())
+    if (oldChars.size > oldText.length) oldChars.subList(oldText.length, oldChars.size).clear()
+
+    var prefix = 0
+    val maxPrefix = minOf(oldText.length, newText.length)
+    while (prefix < maxPrefix && oldText[prefix] == newText[prefix]) prefix++
+
+    var suffix = 0
+    while (suffix < oldText.length - prefix && suffix < newText.length - prefix &&
+        oldText[oldText.length - 1 - suffix] == newText[newText.length - 1 - suffix]) {
+        suffix++
+    }
+
+    val mapped = arrayOfNulls<NoteInline>(newText.length)
+    for (i in 0 until prefix) mapped[i] = oldChars.getOrNull(i)
+    for (i in 0 until suffix) {
+        mapped[newText.length - 1 - i] = oldChars.getOrNull(oldText.length - 1 - i)
+    }
+
+    val inherited = oldChars.getOrNull((prefix - 1).coerceAtLeast(0))
+        ?: oldChars.getOrNull(prefix)
+        ?: NoteInline("")
+    for (i in prefix until (newText.length - suffix)) {
+        mapped[i] = inherited.copy(text = newText[i].toString(), imageUri = null, imageAlt = "")
+    }
+
+    val result = mutableListOf<NoteInline>()
+    mapped.forEachIndexed { index, item ->
+        val char = item?.copy(text = newText[index].toString(), imageUri = null, imageAlt = "")
+            ?: NoteInline(newText[index].toString())
+        val previous = result.lastOrNull()
+        if (previous != null && previous.marks == char.marks && previous.link == char.link &&
+            previous.imageUri == null && char.imageUri == null) {
+            result[result.lastIndex] = previous.copy(text = previous.text + char.text)
+        } else {
+            result += char
+        }
+    }
+    return result
+}
 
 private fun sourceSelectedHasMark(
     spans: List<NoteInline>,
