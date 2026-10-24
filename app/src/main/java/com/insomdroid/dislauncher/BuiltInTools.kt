@@ -539,6 +539,7 @@ private fun NotesTool(
     var title by remember { mutableStateOf("") }
     var body by remember { mutableStateOf("") }
     var bodyField by remember { mutableStateOf(TextFieldValue("")) }
+    var noteDocument by remember { mutableStateOf(NoteDocument()) }
     var searchQuery by remember { mutableStateOf("") }
     var notesGridView by remember(context) { mutableStateOf(notesStore(context).getBoolean("grid_view", false)) }
     var previewMode by remember { mutableStateOf(false) }
@@ -561,6 +562,7 @@ private fun NotesTool(
             title = note.title
             body = note.content
             bodyField = richFieldFromMarkdown(note.content)
+            noteDocument = NoteDocumentCodec.decode(note.documentJson) ?: NoteDocumentCodec.fromMarkdown(note.content)
             previewMode = false
             onEditingChanged(true)
         }.onFailure { Toast.makeText(context, "Could not import Markdown file", Toast.LENGTH_LONG).show() }
@@ -606,7 +608,7 @@ private fun NotesTool(
         val pinned = notes.firstOrNull { it.id == id }?.pinned ?: false
         val current = LocalNote(
             id, title.trim(), body, System.currentTimeMillis(), pinned,
-            NoteDocumentCodec.encode(NoteDocumentCodec.fromMarkdown(body))
+            NoteDocumentCodec.encode(noteDocument)
         )
         notes = (notes.filterNot { it.id == id } + current)
             .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
@@ -638,6 +640,7 @@ private fun NotesTool(
         title = note.title
         body = note.content
         bodyField = richFieldFromMarkdown(note.content)
+        noteDocument = NoteDocumentCodec.decode(note.documentJson) ?: NoteDocumentCodec.fromMarkdown(note.content)
         previewMode = false
         onEditingChanged(true)
     }
@@ -881,64 +884,16 @@ private fun NotesTool(
                         modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp)
                     )
                 } else {
-                    Box(Modifier.weight(1f).fillMaxWidth()) {
-                        OutlinedTextField(
-                            value = bodyField,
-                            onValueChange = { bodyField = it; body = richFieldToMarkdown(it.annotatedString) },
-                            modifier = Modifier.fillMaxSize(),
-                            placeholder = { Text(builtInToolText("Write something…", "Tulis sesuatu…")) },
-                            minLines = 8, maxLines = Int.MAX_VALUE
-                        )
-                        Surface(
-                            modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = 8.dp, vertical = 12.dp)
-                                .shadow(4.dp, RoundedCornerShape(12.dp)),
-                            shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            tonalElevation = 3.dp
-                        ) {
-                            Row(
-                                Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 6.dp, vertical = 2.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(2.dp)
-                            ) {
-                                IconButton(onClick = { body = applyBlockPrefix(body, bodyField, "# "); bodyField = richFieldFromMarkdown(body); saveCurrent() }) {
-                                    Icon(Icons.Outlined.Title, contentDescription = builtInToolText("Heading", "Judul bagian"))
-                                }
-                                IconButton(onClick = { bodyField = applyRichMark(bodyField, "bold"); body = richFieldToMarkdown(bodyField.annotatedString); saveCurrent() }) {
-                                    Icon(Icons.Outlined.FormatBold, contentDescription = builtInToolText("Bold", "Tebal"))
-                                }
-                                IconButton(onClick = { bodyField = applyRichMark(bodyField, "italic"); body = richFieldToMarkdown(bodyField.annotatedString); saveCurrent() }) {
-                                    Icon(Icons.Outlined.FormatItalic, contentDescription = builtInToolText("Italic", "Miring"))
-                                }
-                                IconButton(onClick = { bodyField = applyRichMark(bodyField, "strike"); body = richFieldToMarkdown(bodyField.annotatedString); saveCurrent() }) {
-                                    Icon(Icons.Outlined.FormatStrikethrough, contentDescription = builtInToolText("Strikethrough", "Coret"))
-                                }
-                                IconButton(onClick = { bodyField = applyRichMark(bodyField, "code"); body = richFieldToMarkdown(bodyField.annotatedString); saveCurrent() }) {
-                                    Icon(Icons.Outlined.Code, contentDescription = builtInToolText("Inline code", "Kode sebaris"))                                }
-                                IconButton(onClick = { body = applyBlockPrefix(body, bodyField, "- "); bodyField = richFieldFromMarkdown(body); saveCurrent() }) {
-                                    Icon(Icons.Outlined.FormatListBulleted, contentDescription = builtInToolText("List", "Daftar"))
-                                }
-                                IconButton(onClick = { body = applyBlockPrefix(body, bodyField, "1. "); bodyField = richFieldFromMarkdown(body); saveCurrent() }) {
-                                    Icon(Icons.Outlined.FormatListNumbered, contentDescription = builtInToolText("Numbered list", "Daftar bernomor"))
-                                }
-                                IconButton(onClick = { body = applyBlockPrefix(body, bodyField, "> "); bodyField = richFieldFromMarkdown(body); saveCurrent() }) {
-                                    Icon(Icons.Outlined.FormatQuote, contentDescription = builtInToolText("Block quote", "Kutipan blok"))
-                                }
-                                IconButton(onClick = { body = applyBlockPrefix(body, bodyField, "---"); bodyField = richFieldFromMarkdown(body); saveCurrent() }) {
-                                    Icon(Icons.Outlined.HorizontalRule, contentDescription = builtInToolText("Horizontal divider", "Garis pemisah"))
-                                }
-                                IconButton(onClick = { body = applyBlockPrefix(body, bodyField, "- [ ] "); bodyField = richFieldFromMarkdown(body); saveCurrent() }) {
-                                    Icon(Icons.Outlined.Checklist, contentDescription = builtInToolText("Checklist", "Daftar centang"))
-                                }
-                                IconButton(onClick = { body = body + "[link](https://)"; bodyField = richFieldFromMarkdown(body); saveCurrent() }) {
-                                    Icon(Icons.Outlined.InsertLink, contentDescription = builtInToolText("Insert link", "Sisipkan tautan"))
-                                }
-                                IconButton(onClick = { imageLauncher.launch(arrayOf("image/*")) }) {
-                                    Icon(Icons.Outlined.Image, contentDescription = builtInToolText("Insert image", "Sisipkan gambar"))
-                                }
-                            }
-                        }
-                    }
+                    RichNoteEditor(
+                        document = noteDocument,
+                        onDocumentChange = { updated ->
+                            noteDocument = updated
+                            body = NoteDocumentCodec.toMarkdown(updated)
+                            bodyField = richFieldFromMarkdown(body)
+                        },
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        onInsertImage = { imageLauncher.launch(arrayOf("image/*")) }
+                    )
                 }
             }
         }
@@ -948,6 +903,7 @@ private fun NotesTool(
                 title = ""
                 body = ""
                 bodyField = TextFieldValue("")
+                noteDocument = NoteDocument()
                 previewMode = false
                 onEditingChanged(true)
             }, modifier = Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 24.dp),
