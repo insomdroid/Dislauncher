@@ -210,22 +210,25 @@ private fun releaseUnusedNoteImagePermissions(
     removedNote: LocalNote,
     remainingNotes: List<LocalNote>
 ) {
-    runCatching {
-        context.contentResolver.persistedUriPermissions
-            .filter { permission ->
-                permission.isReadPermission &&
-                    removedNote.content.contains(permission.uri.toString()) &&
-                    remainingNotes.none { note -> note.content.contains(permission.uri.toString()) }
+    val removedUris = NoteDocumentCodec.decode(removedNote.documentJson)
+        ?.blocks.orEmpty().flatMap { it.spans }.mapNotNull { it.imageUri }.toSet()
+    val remainingUris = remainingNotes.flatMap { note ->
+        NoteDocumentCodec.decode(note.documentJson)?.blocks.orEmpty().flatMap { it.spans }.mapNotNull { it.imageUri }
+    }.toSet()
+    context.contentResolver.persistedUriPermissions
+        .filter { permission ->
+            permission.isReadPermission &&
+                permission.uri.toString() in removedUris &&
+                permission.uri.toString() !in remainingUris
+        }
+        .forEach { permission ->
+            runCatching {
+                context.contentResolver.releasePersistableUriPermission(
+                    permission.uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
             }
-            .forEach { permission ->
-                runCatching {
-                    context.contentResolver.releasePersistableUriPermission(
-                        permission.uri,
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    )
-                }
-            }
-    }
+        }
 }
 
 private data class CalculatorHistoryEntry(
