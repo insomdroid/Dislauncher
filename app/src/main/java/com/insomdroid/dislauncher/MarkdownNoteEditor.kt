@@ -134,14 +134,18 @@ internal fun MarkdownNoteEditor(
                 modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
                 factory = { viewContext ->
                     ScrollView(viewContext).apply {
-                        isFillViewport = true
-                        clipToPadding = false
-                        overScrollMode = android.view.View.OVER_SCROLL_IF_CONTENT_SCROLLS
+                        // Keep the preview inside its viewport; do not allow edge bounce
+                        // or nested scrolling to make it appear to pass the editor bounds.
+                        isFillViewport = false
+                        clipChildren = true
+                        clipToPadding = true
+                        overScrollMode = android.view.View.OVER_SCROLL_NEVER
+                        isNestedScrollingEnabled = false
                         addView(
                             TextView(viewContext).apply {
-                                setTextColor(colors.onSurface.toArgb())
+                                setTextColor(colors.onSurface.copy(alpha = 1f).toArgb())
                                 textSize = 16f
-                                setPadding(0, 0, 0, 24)
+                                setPadding(0, 0, 0, 0)
                                 layoutParams = FrameLayout.LayoutParams(
                                     ViewGroup.LayoutParams.MATCH_PARENT,
                                     ViewGroup.LayoutParams.WRAP_CONTENT
@@ -152,7 +156,7 @@ internal fun MarkdownNoteEditor(
                 },
                 update = { scrollView ->
                     val textView = scrollView.getChildAt(0) as TextView
-                    textView.setTextColor(colors.onSurface.toArgb())
+                    textView.setTextColor(colors.onSurface.copy(alpha = 1f).toArgb())
 
                     // Re-render only when the Markdown source actually changes.
                     // Theme/recomposition updates should not parse the whole document again.
