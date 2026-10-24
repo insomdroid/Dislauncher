@@ -157,7 +157,9 @@ private data class LocalNote(
     /** Versioned structured document JSON; content is a searchable plain-text projection. */
     val documentJson: String = "",
     val labels: List<String> = emptyList(),
-    val color: String = "default"
+    val color: String = "default",
+    /** Canonical Markdown source for editing and direct .md export. */
+    val markdown: String = ""
 )
 
 private data class PendingNoteExport(val title: String, val document: NoteDocument, val labels: List<String>, val color: String)
@@ -209,9 +211,13 @@ private fun loadNotes(context: Context): List<LocalNote> {
             val savedDocument = o.optString("document")
             val decodedDocument = savedDocument.takeIf { it.isNotBlank() }
                 ?.let { NoteDocumentCodec.decode(it) }
-            val document = decodedDocument ?: NoteDocumentCodec.fromLegacyContent(oldContent)
+            val hasMarkdown = o.has("markdown")
+            val markdown = if (hasMarkdown) o.optString("markdown")
+                else NoteDocumentCodec.toMarkdown(decodedDocument ?: NoteDocumentCodec.fromLegacyContent(oldContent))
+            val document = if (hasMarkdown) NoteDocumentCodec.fromLegacyContent(markdown)
+                else decodedDocument ?: NoteDocumentCodec.fromLegacyContent(oldContent)
             val plainText = NoteDocumentCodec.plainText(document)
-            if (decodedDocument == null || oldContent != plainText) {
+            if (!hasMarkdown || decodedDocument == null || oldContent != plainText) {
                 needsMigration = true
             }
 
@@ -221,12 +227,12 @@ private fun loadNotes(context: Context): List<LocalNote> {
                 content = plainText,
                 updatedAt = o.optLong("updatedAt"),
                 pinned = o.optBoolean("pinned", false),
-                documentJson = decodedDocument?.let { savedDocument }
-                    ?: NoteDocumentCodec.encode(document),
+                documentJson = NoteDocumentCodec.encode(document),
                 labels = o.optJSONArray("labels")?.let { labels ->
                     (0 until labels.length()).map { labels.optString(it) }
                 }.orEmpty(),
-                color = o.optString("color", "default")
+                color = o.optString("color", "default"),
+                markdown = markdown
             )
         }.sortedWith(
             compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt }
@@ -248,6 +254,7 @@ private fun saveNotes(context: Context, notes: List<LocalNote>) {
     notes.forEach { note ->
         array.put(JSONObject().put("id", note.id).put("title", note.title)
             .put("content", note.content)
+            .put("markdown", note.markdown)
             .put("document", note.documentJson.takeIf { it.isNotBlank() }
                 ?: NoteDocumentCodec.encode(NoteDocumentCodec.fromLegacyContent(note.content)))
             .put("updatedAt", note.updatedAt).put("pinned", note.pinned)
@@ -544,6 +551,7 @@ private fun NotesTool(
     var selectedId by remember { mutableStateOf<String?>(null) }
     var title by remember { mutableStateOf("") }
     var document by remember { mutableStateOf(NoteDocument()) }
+    var markdownText by remember { mutableStateOf("") }
     var searchQuery by remember { mutableStateOf("") }
     var searchExpanded by remember { mutableStateOf(false) }
     var currentLabels by remember { mutableStateOf(setOf<String>()) }
@@ -567,28 +575,29 @@ private fun NotesTool(
     val scope = rememberCoroutineScope()
 
     fun plainText(doc: NoteDocument): String = NoteDocumentCodec.plainText(doc)
-    fun isEmpty(doc: NoteDocument): Boolean =
-        doc.blocks.all { block -> block.spans.all { it.text.isBlank() && it.imageUri == null } &&
-            block.type == NoteBlockType.PARAGRAPH }
+    fun isEmptyMarkdown(markdown: String): Boolean = markdown.isBlank()
     fun saveCurrent() {
         val id = selectedId ?: return
-        if (title.isBlank() && isEmpty(document)) {
+        if (title.isBlank() && isEmptyMarkdown(markdownText)) {
             if (notes.any { it.id == id }) {
                 notes = notes.filterNot { it.id == id }
                 saveNotes(context, notes)
             }
             return
         }
+        val parsedDocument = NoteDocumentCodec.fromLegacyContent(markdownText)
+        document = parsedDocument
         val pinned = notes.firstOrNull { it.id == id }?.pinned ?: false
         val current = LocalNote(
             id = id,
             title = title.trim(),
-            content = plainText(document),
+            content = plainText(parsedDocument),
             updatedAt = System.currentTimeMillis(),
             pinned = pinned,
-            documentJson = NoteDocumentCodec.encode(document),
+            documentJson = NoteDocumentCodec.encode(parsedDocument),
             labels = currentLabels.toList(),
-            color = currentColor
+            color = currentColor,
+            markdown = markdownText
         )
         notes = (notes.filterNot { it.id == id } + current)
             .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
@@ -599,9 +608,8 @@ private fun NotesTool(
         title = note.title
         val loadedDocument = NoteDocumentCodec.decode(note.documentJson)
             ?: NoteDocumentCodec.fromLegacyContent(note.content)
-        document = if (loadedDocument.blocks.isEmpty()) {
-            loadedDocument.copy(blocks = listOf(NoteBlock(id = UUID.randomUUID().toString(), type = NoteBlockType.PARAGRAPH)))
-        } else loadedDocument
+        markdownText = note.markdown.ifEmpty { NoteDocumentCodec.toMarkdown(loadedDocument) }
+        document = NoteDocumentCodec.fromLegacyContent(markdownText)
         currentLabels = note.labels.toSet()
         currentColor = note.color
         undoHistory = emptyList()
@@ -611,9 +619,8 @@ private fun NotesTool(
     fun createNote() {
         selectedId = UUID.randomUUID().toString()
         title = ""
-        document = NoteDocument(
-            blocks = listOf(NoteBlock(id = UUID.randomUUID().toString(), type = NoteBlockType.PARAGRAPH))
-        )
+        document = NoteDocument()
+        markdownText = ""
         currentLabels = emptySet()
         currentColor = "default"
         undoHistory = emptyList()
@@ -644,7 +651,8 @@ private fun NotesTool(
                         updatedAt = System.currentTimeMillis(),
                         documentJson = NoteDocumentCodec.encode(imported.document),
                         labels = imported.labels,
-                        color = imported.color
+                        color = imported.color,
+                        markdown = NoteDocumentCodec.toMarkdown(imported.document)
                     )
                     allLabels = allLabels + imported.labels
                     notesStore(context).edit()
@@ -678,25 +686,38 @@ private fun NotesTool(
         }
         pendingExport = null
     }
+
+    val markdownExportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/markdown")) { uri ->
+        if (uri != null) {
+            val markdownToExport = markdownText
+            scope.launch {
+                val result = withContext(Dispatchers.IO) {
+                    runCatching {
+                        context.contentResolver.openOutputStream(uri, "wt")?.bufferedWriter(Charsets.UTF_8)?.use {
+                            it.write(markdownToExport)
+                        } ?: error("Unable to write Markdown file")
+                    }
+                }
+                result.onSuccess { Toast.makeText(context, "Markdown exported", Toast.LENGTH_SHORT).show() }
+                    .onFailure { Toast.makeText(context, "Could not export Markdown: " + it.message.orEmpty(), Toast.LENGTH_LONG).show() }
+            }
+        }
+    }
     val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null && selectedId != null) runCatching {
             if (uri.scheme == "content") {
                 context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            val imageBlock = NoteBlock(
-                id = UUID.randomUUID().toString(),
-                type = NoteBlockType.PARAGRAPH,
-                spans = listOf(NoteInline(text = "", imageUri = uri.toString(), imageAlt = "Image"))
-            )
+            markdownText = markdownText.trimEnd() + "\n\n![Image](" + uri.toString() + ")"
+            document = NoteDocumentCodec.fromLegacyContent(markdownText)
             undoHistory = (undoHistory + document).takeLast(50)
             redoHistory = emptyList()
-            document = document.copy(blocks = document.blocks + imageBlock)
         }.onFailure {
             Toast.makeText(context, "Could not add image", Toast.LENGTH_LONG).show()
         }
     }
 
-    LaunchedEffect(selectedId, title, document) {
+    LaunchedEffect(selectedId, title, markdownText) {
         if (selectedId != null) {
             kotlinx.coroutines.delay(350)
             saveCurrent()
@@ -962,6 +983,14 @@ private fun NotesTool(
                             Icon(Icons.Outlined.MoreVert, contentDescription = "More note actions")
                         }
                         DropdownMenu(expanded = menuTarget == "editor", onDismissRequest = { menuTarget = null }) {
+                            DropdownMenuItem(text = { Text("Export Markdown (.md)") },
+                                leadingIcon = { Icon(Icons.Outlined.FileDownload, contentDescription = null) },
+                                onClick = {
+                                    saveCurrent()
+                                    val filename = title.ifBlank { "note" }.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim().ifBlank { "note" }
+                                    menuTarget = null
+                                    markdownExportLauncher.launch("$filename.md")
+                                })
                             DropdownMenuItem(text = { Text("Export note archive") },
                                 leadingIcon = { Icon(Icons.Outlined.FileDownload, contentDescription = null) },
                                 onClick = {
@@ -1004,13 +1033,14 @@ private fun NotesTool(
                         }
                     }
                 }
-                RichNoteEditor(
-                    document = document,
-                    onDocumentChange = { updated ->
-                        if (updated != document) {
+                MarkdownNoteEditor(
+                    value = markdownText,
+                    onValueChange = { updated ->
+                        if (updated != markdownText) {
                             undoHistory = (undoHistory + document).takeLast(50)
                             redoHistory = emptyList()
-                            document = updated
+                            markdownText = updated
+                            document = NoteDocumentCodec.fromLegacyContent(updated)
                         }
                     },
                     modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -1132,6 +1162,7 @@ private fun NotesTool(
                         selectedId = null
                         title = ""
                         document = NoteDocument()
+                        markdownText = ""
                         onEditingChanged(false)
                     }
                     deleteTarget = null

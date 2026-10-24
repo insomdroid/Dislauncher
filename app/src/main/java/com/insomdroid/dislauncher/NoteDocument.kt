@@ -197,6 +197,37 @@ internal object NoteDocumentCodec {
         }
     }
 
+    /** Serialize a structured note as portable Markdown. */
+    fun toMarkdown(document: NoteDocument): String {
+        fun escapeText(value: String): String = value.replace("\\", "\\\\").replace("*", "\\*").replace("_", "\\_").replace("~", "\\~").replace("`", "\\`").replace("[", "\\[").replace("]", "\\]")
+        fun inline(spans: List<NoteInline>): String = spans.joinToString("") { span ->
+            when {
+                span.imageUri != null -> "![" + span.imageAlt.ifBlank { span.text }.replace("]", "\\]") + "](" + span.imageUri + ")"
+                span.link != null -> "[" + escapeText(span.text) + "](" + span.link.replace(")", "%29") + ")"
+                else -> {
+                    var value = if (NoteMark.CODE in span.marks) "`" + span.text.replace("`", "\\`") + "`" else escapeText(span.text)
+                    if (NoteMark.BOLD in span.marks) value = "**" + value + "**"
+                    if (NoteMark.ITALIC in span.marks) value = "*" + value + "*"
+                    if (NoteMark.STRIKETHROUGH in span.marks) value = "~~" + value + "~~"
+                    if (NoteMark.UNDERLINE in span.marks) value = "<u>" + value + "</u>"
+                    value
+                }
+            }
+        }
+        return document.blocks.joinToString("\n\n") { block ->
+            val value = inline(block.spans)
+            when (block.type) {
+                NoteBlockType.HEADING -> "#".repeat(block.level.coerceIn(1, 6)) + " " + value
+                NoteBlockType.BULLET -> "  ".repeat(block.indentLevel) + "- " + value
+                NoteBlockType.NUMBERED -> "  ".repeat(block.indentLevel) + block.orderedIndex + ". " + value
+                NoteBlockType.CHECKLIST -> "  ".repeat(block.indentLevel) + "- [" + (if (block.checked) "x" else " ") + "] " + value
+                NoteBlockType.QUOTE -> value.lines().joinToString("\n") { "> " + it }
+                NoteBlockType.CODE -> { val code = block.spans.joinToString("") { it.text }; val fence = if (code.contains("```") ) "````" else "```"; fence + "\n" + code + "\n" + fence }
+                NoteBlockType.DIVIDER -> "---"
+                NoteBlockType.PARAGRAPH -> value
+            }
+        }
+    }
     fun encode(document: NoteDocument): String {
         val root = JSONObject().put("version", document.version)
         val blocks = JSONArray()
