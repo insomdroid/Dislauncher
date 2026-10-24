@@ -14,7 +14,7 @@ class NotesRichTextTest {
     @Test
     fun selectedTextCanReceiveRichFormatting() {
         val field = richFieldFromMarkdown("hello world")
-            .copy(selection = androidx.compose.ui.text.input.TextRange(6, 11))
+            .copy(selection = androidx.compose.ui.text.TextRange(6, 11))
         val formatted = applyRichMark(field, "bold")
         assertEquals("hello **world**", richFieldToMarkdown(formatted.annotatedString))
     }
@@ -22,7 +22,7 @@ class NotesRichTextTest {
     @Test
     fun markdownBlockPrefixesPreserveLineStructure() {
         val field = richFieldFromMarkdown("first\nsecond")
-            .copy(selection = androidx.compose.ui.text.input.TextRange(8))
+            .copy(selection = androidx.compose.ui.text.TextRange(8))
         assertEquals("first\n- second", applyBlockPrefix("first\nsecond", field, "- "))
     }
 }
