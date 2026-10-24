@@ -346,6 +346,8 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     var calculatorHistoryHasItems by remember { mutableStateOf(false) }
     var calculatorClearHistorySignal by remember { mutableStateOf(0) }
     var calendarMonth by remember { mutableStateOf(YearMonth.now()) }
+    var converterSearchExpanded by remember { mutableStateOf(false) }
+    var converterSearchQuery by remember { mutableStateOf("") }
     fun requestClose() = onBack()
     BackHandler(enabled = tool != BuiltInTool.NOTES || !notesEditing) {
         if (tool == BuiltInTool.CALCULATOR && calculatorShowingHistory) {
@@ -365,12 +367,22 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                 topBar = {
                     if (!(tool == BuiltInTool.NOTES)) TopAppBar(
                         title = {
-                            Text(
-                                title,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                            if (tool == BuiltInTool.UNIT_CONVERTER && converterSearchExpanded) {
+                                OutlinedTextField(
+                                    value = converterSearchQuery,
+                                    onValueChange = { converterSearchQuery = it },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true,
+                                    placeholder = { Text(builtInToolText("Search units and categories", "Cari satuan dan kategori")) }
+                                )
+                            } else {
+                                Text(
+                                    title,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         },
                         navigationIcon = {
                             IconButton(onClick = {
@@ -384,6 +396,20 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             }
                         },
                         actions = {
+                            if (tool == BuiltInTool.UNIT_CONVERTER) {
+                                if (converterSearchExpanded) {
+                                    IconButton(onClick = {
+                                        converterSearchQuery = ""
+                                        converterSearchExpanded = false
+                                    }) {
+                                        Icon(Icons.Outlined.Close, contentDescription = builtInToolText("Close search", "Tutup pencarian"))
+                                    }
+                                } else {
+                                    IconButton(onClick = { converterSearchExpanded = true }) {
+                                        Icon(Icons.Outlined.Search, contentDescription = builtInToolText("Search converter", "Cari konverter"))
+                                    }
+                                }
+                            }
                             if (tool == BuiltInTool.CALENDAR) {
                                 IconButton(onClick = { calendarMonth = calendarMonth.minusMonths(1) }) {
                                     Icon(Icons.Outlined.ArrowBack, contentDescription = builtInToolText("Previous month", "Bulan sebelumnya"))
@@ -451,7 +477,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             onMonthChange = { calendarMonth = it },
                             modifier = Modifier.fillMaxSize()
                         )
-                        BuiltInTool.UNIT_CONVERTER -> UnitConverterTool(Modifier.fillMaxSize())
+                        BuiltInTool.UNIT_CONVERTER -> UnitConverterTool(Modifier.fillMaxSize(), converterSearchQuery, { converterSearchQuery = it })
                     }
                     }
                 }
