@@ -18,8 +18,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.lifecycle.Lifecycle
@@ -66,6 +68,7 @@ internal fun CalendarAgenda(timeFormat: String, modifier: Modifier = Modifier) {
     var events by remember { mutableStateOf<List<CalendarAgendaEvent>>(emptyList()) }
     var loading by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
+    var pendingMeetingUrl by remember { mutableStateOf<String?>(null) }
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -147,7 +150,7 @@ internal fun CalendarAgenda(timeFormat: String, modifier: Modifier = Modifier) {
                                 "↗",
                                 color = secondary,
                                 fontSize = 13.sp,
-                                modifier = Modifier.clickable { openMeetingUrl(context, event.meetingUrl) }
+                                modifier = Modifier.clickable { pendingMeetingUrl = validateCalendarMeetingUrl(event.meetingUrl) }
                                     .padding(horizontal = 2.dp)
                             )
                         }
@@ -165,6 +168,31 @@ internal fun CalendarAgenda(timeFormat: String, modifier: Modifier = Modifier) {
             }
         }
     }
+    pendingMeetingUrl?.let { url ->
+        val host = runCatching { java.net.URI(url).host }.getOrNull().orEmpty()
+        AlertDialog(
+            onDismissRequest = { pendingMeetingUrl = null },
+            title = { Text("Open meeting link?") },
+            text = { Text("This event links to $host. Continue only if you trust this destination.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    pendingMeetingUrl = null
+                    openMeetingUrl(context, url)
+                }) { Text("Open link") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingMeetingUrl = null }) { Text("Cancel") }
+            }
+        )
+    }
+}
+
+internal fun validateCalendarMeetingUrl(raw: String?): String? {
+    if (raw.isNullOrBlank()) return null
+    val parsed = runCatching { java.net.URI(raw.trim()) }.getOrNull() ?: return null
+    if (!parsed.scheme.equals("https", ignoreCase = true)) return null
+    if (parsed.host.isNullOrBlank() || parsed.rawUserInfo != null) return null
+    return parsed.toASCIIString()
 }
 
 private fun hasCalendarReadPermission(context: Context): Boolean =
@@ -210,8 +238,9 @@ private fun readTodayCalendarEvents(context: Context): List<CalendarAgendaEvent>
                 val end = cursor.getLong(endIndex)
                 if (end < now) continue
                 val description = if (descriptionIndex >= 0) cursor.getString(descriptionIndex) else null
-                val url = Regex("https?://[^\\s<>\\\"']+", RegexOption.IGNORE_CASE)
+                val candidateUrl = Regex("https?://[^\\s<>\\\"']+", RegexOption.IGNORE_CASE)
                     .find(description.orEmpty())?.value?.trimEnd('.', ',', ')', ']', ';')
+                val url = validateCalendarMeetingUrl(candidateUrl)
                 events += CalendarAgendaEvent(
                     id = id,
                     title = cursor.getString(titleIndex)?.trim().takeUnless { it.isNullOrEmpty() } ?: "Untitled event",
