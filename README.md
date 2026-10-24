@@ -1,6 +1,6 @@
 # Dislauncher
 
-Dislauncher is a lightweight, text-first Android launcher designed to keep your Home screen calm and your apps close at hand. It combines a minimal interface with useful everyday tools, without making icons and visual effects the focus.
+Dislauncher is a lightweight Android launcher for a calm, text-first Home screen. Keep your favourite apps and everyday tools close at hand without making icons or visual effects the focus.
 
 ## Screenshots
 
@@ -15,14 +15,16 @@ Dislauncher is a lightweight, text-first Android launcher designed to keep your 
   <img src="Screenshot/Screenshot_20261022-221343_Dislauncher.png" alt="Dislauncher screenshot 8" width="22%" />
 </p>
 
-## Key features
+## Features
 
-- **Minimal Home screen:** clock, date, progress indicators, and favourite apps in a text-first layout.
-- **App drawer:** searchable alphabetical app list, favourites, folders, hidden apps, and compatible icon packs.
-- **Personalisation:** System, Light, Dark, and Black themes, Dynamic Color, accent colours, wallpapers, built-in fonts (Inter, Syne, Bricolage Grotesque, Doto, and Overpass Mono), custom fonts, and text sizing.
-- **Everyday tools:** built-in calendar and local reminders, structured rich-text notes, scientific calculator, unit converter, optional weather, and music controls.
-- **Useful shortcuts:** notification dots, app actions, and optional gestures for quick access to common tasks.
-- **Privacy-minded:** no account system, advertising SDK, or analytics SDK in the reviewed source. Optional features may request permissions or connect to external services.
+- **A calmer Home screen:** clock, date, progress indicators, and favourite apps in a clean text-first layout.
+- **App drawer:** search apps, browse alphabetically, and organise favourites, folders, and hidden apps. Supports compatible icon packs.
+- **Make it yours:** System, Light, Dark, and Black themes; Dynamic Color; accent colours; wallpapers; built-in and custom fonts; and text-size options.
+- **Rich-text Notes:** format text with headings, bold, italic, lists, checklists, quotes, links, and images. Search notes, pin important ones, switch between list and grid views, and import or export notes, including image archives.
+- **Calendar and reminders:** browse a monthly calendar, view the selected day's agenda, manage local tasks and reminders, and optionally show events from your device calendar.
+- **Scientific Calculator:** solve everyday and more advanced calculations, with calculation history.
+- **Unit Converter:** convert common units across categories such as length, mass, temperature, speed, and area.
+- **Everyday extras:** optional weather, music controls, notification dots, app shortcuts, and gestures for quick actions.
 
 ## Download
 
@@ -34,24 +36,9 @@ Get the latest APK from [GitHub Releases](https://github.com/insomdroid/Dislaunc
 
 Download only from the official release page. See [APK safety and updates](APK_SAFETY.md) for more information.
 
-## Tech stack
+## Privacy
 
-- Kotlin
-- Jetpack Compose and Material 3
-- Android SDK 36
-- Minimum Android version: Android 8.0 (API 26)
-
-To build a local debug APK:
-
-```sh
-./gradlew assembleDebug
-```
-
-See [BUILDING.md](BUILDING.md) for build requirements and release details.
-
-## Privacy and permissions
-
-Core launcher features can be used without enabling every optional permission. Weather is optional and sends approximate coordinates to Open-Meteo when enabled. Other optional access supports features such as calendar, reminders, notification dots, music controls, and double-tap-to-lock.
+Dislauncher does not require an account. Optional features may request permissions or use external services when enabled.
 
 - [Privacy and permissions](PRIVACY.md)
 - [APK safety and updates](APK_SAFETY.md)
@@ -62,13 +49,3 @@ Core launcher features can be used without enabling every optional permission. W
 - [Source code](https://github.com/insomdroid/Dislauncher)
 - [Report a bug or request a feature](https://github.com/insomdroid/Dislauncher/issues)
 - [Support the project](https://ko-fi.com/insomdroid)
-
-## Fonts and licensing
-
-Inter, Syne, Bricolage Grotesque, Doto, and Overpass Mono are bundled with the app. Font files are stored in the repository and decoded into Android resources during the local build, so builds do not download fonts from the network. The built-in font selection applies across the launcher interface.
-
-The bundled fonts are licensed under the SIL Open Font License 1.1. Copyright notices, source repositories, and the consolidated license text are in [FONT_LICENSES.txt](app/src/main/assets/licenses/FONT_LICENSES.txt). Syne and Bricolage Grotesque provide distinctive but usable sans-serif choices, while Doto offers an experimental display style, while Overpass Mono provides a restrained monospace option.
-
-## License
-
-Dislauncher source code is licensed under the [MIT License](LICENSE). Third-party fonts and dependencies remain under their respective licenses; the app's MIT license does not replace those terms.
