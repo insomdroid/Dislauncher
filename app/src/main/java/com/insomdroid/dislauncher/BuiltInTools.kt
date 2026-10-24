@@ -449,17 +449,7 @@ private fun NotesTool(
     var pendingExport by remember { mutableStateOf<Pair<String, NoteDocument>?>(null) }
     val scope = rememberCoroutineScope()
 
-    fun plainText(doc: NoteDocument): String = doc.blocks.joinToString("\n") { block ->
-        val text = block.spans.joinToString("") { it.text }
-        when (block.type) {
-            NoteBlockType.BULLET -> "• $text"
-            NoteBlockType.NUMBERED -> "${block.orderedIndex}. $text"
-            NoteBlockType.CHECKLIST -> "${if (block.checked) "☑" else "☐"} $text"
-            NoteBlockType.QUOTE -> "▏ $text"
-            NoteBlockType.DIVIDER -> "────────"
-            else -> text
-        }
-    }
+    fun plainText(doc: NoteDocument): String = NoteDocumentCodec.plainText(doc)
     fun isEmpty(doc: NoteDocument): Boolean =
         doc.blocks.all { block -> block.spans.all { it.text.isBlank() && it.imageUri == null } &&
             block.type == NoteBlockType.PARAGRAPH }
