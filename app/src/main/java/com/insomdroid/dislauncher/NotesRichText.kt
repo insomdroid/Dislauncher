@@ -72,6 +72,34 @@ internal fun richFieldToMarkdown(text: AnnotatedString): String {
     return result.toString()
 }
 
+internal fun applyRichMark(field: TextFieldValue, mark: String): TextFieldValue {
+    val start = field.selection.min.coerceIn(0, field.text.length)
+    val end = field.selection.max.coerceIn(start, field.text.length)
+    if (start == end) return field
+    val style = when (mark) {
+        "bold" -> SpanStyle(fontWeight = FontWeight.Bold)
+        "italic" -> SpanStyle(fontStyle = FontStyle.Italic)
+        "strike" -> SpanStyle(textDecoration = TextDecoration.LineThrough)
+        "code" -> SpanStyle(fontFamily = FontFamily.Monospace)
+        else -> return field
+    }
+    val styled = androidx.compose.ui.text.buildAnnotatedString {
+        append(field.annotatedString)
+        addStyle(style, start, end)
+    }
+    return field.copy(annotatedString = styled)
+}
+
+internal fun applyBlockPrefix(markdown: String, field: TextFieldValue, prefix: String): String {
+    val visibleStart = field.text.lastIndexOf('\n', (field.selection.min - 1).coerceAtLeast(0))
+        .let { if (it < 0) 0 else it + 1 }
+    val lineIndex = field.text.substring(0, visibleStart).count { it == '\n' }
+    val markdownLines = markdown.split('\n').toMutableList()
+    while (markdownLines.size <= lineIndex) markdownLines += ""
+    markdownLines[lineIndex] = prefix + markdownLines[lineIndex]
+    return markdownLines.joinToString("\n")
+}
+
 /**
  * Imports only the archive format produced by Dislauncher. Unknown files are ignored; unsafe
  * paths, excessive entry counts, and oversized expanded content are rejected.
