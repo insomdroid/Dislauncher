@@ -95,7 +95,7 @@ private val converterCategories = listOf(
         ConverterUnit(builtInToolText("Minute", "Menit"), "min", 60.0),
         ConverterUnit(builtInToolText("Hour", "Jam"), "h", 3600.0),
         ConverterUnit(builtInToolText("Day", "Hari"), "d", 86400.0)
-    ))
+    )),
     ConverterCategory(builtInToolText("Pressure", "Tekanan"), listOf(
         ConverterUnit("Pascal", "Pa", 1.0),
         ConverterUnit("Kilopascal", "kPa", 1000.0),
