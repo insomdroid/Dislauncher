@@ -549,8 +549,11 @@ private fun NotesTool(
     fun openNote(note: LocalNote) {
         selectedId = note.id
         title = note.title
-        document = NoteDocumentCodec.decode(note.documentJson)
+        val loadedDocument = NoteDocumentCodec.decode(note.documentJson)
             ?: NoteDocumentCodec.fromLegacyContent(note.content)
+        document = if (loadedDocument.blocks.isEmpty()) {
+            loadedDocument.copy(blocks = listOf(NoteBlock(id = UUID.randomUUID().toString(), type = NoteBlockType.PARAGRAPH)))
+        } else loadedDocument
         currentLabels = note.labels.toSet()
         currentColor = note.color
         undoHistory = emptyList()
@@ -560,7 +563,9 @@ private fun NotesTool(
     fun createNote() {
         selectedId = UUID.randomUUID().toString()
         title = ""
-        document = NoteDocument()
+        document = NoteDocument(
+            blocks = listOf(NoteBlock(id = UUID.randomUUID().toString(), type = NoteBlockType.PARAGRAPH))
+        )
         currentLabels = emptySet()
         currentColor = "default"
         undoHistory = emptyList()
