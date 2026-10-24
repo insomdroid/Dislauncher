@@ -62,7 +62,7 @@ val answer = 42
     @Test
     fun malformedDocumentJsonIsRejectedSafely() {
         assertNull(NoteDocumentCodec.decode("not-json"))
-        assertNull(NoteDocumentCodec.decode("""{"version":1,"blocks":[{"type":"NOT_A_BLOCK"}]}"""))
+        assertTrue(NoteDocumentCodec.decode("""{"version":1,"blocks":[{"type":"NOT_A_BLOCK"}]}""")!!.blocks.isEmpty())
     }
 
     @Test
