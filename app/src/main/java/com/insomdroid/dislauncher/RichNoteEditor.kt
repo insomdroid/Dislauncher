@@ -1,5 +1,8 @@
 package com.insomdroid.dislauncher
 
+import android.net.Uri
+import android.widget.ImageView
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CheckBox
@@ -173,6 +177,21 @@ internal fun RichNoteEditor(
                     }
                     if (block.type == NoteBlockType.DIVIDER) {
                         Surface(Modifier.weight(1f).height(1.dp).padding(vertical = 12.dp), color = MaterialTheme.colorScheme.outlineVariant) {}
+                    } else if (block.spans.any { it.imageUri != null }) {
+                        val imageUri = block.spans.firstNotNullOfOrNull { it.imageUri }
+                        if (imageUri != null) {
+                            AndroidView(
+                                factory = { viewContext ->
+                                    ImageView(viewContext).apply {
+                                        adjustViewBounds = true
+                                        scaleType = ImageView.ScaleType.FIT_CENTER
+                                        setImageURI(Uri.parse(imageUri))
+                                    }
+                                },
+                                update = { imageView -> imageView.setImageURI(Uri.parse(imageUri)) },
+                                modifier = Modifier.weight(1f).fillMaxWidth().height(180.dp)
+                            )
+                        }
                     } else {
                         val textStyle = when (block.type) {
                             NoteBlockType.HEADING -> MaterialTheme.typography.titleLarge
