@@ -21,8 +21,7 @@ import java.util.zip.ZipInputStream
  * Converts inline Markdown marks into styled editable text. The editor edits the styled text,
  * while persistence and interchange remain Markdown-compatible.
  */
-    val pattern = Regex("""(\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|~~(.+?)~~|(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)|`([^`]+)`)""")
-    val pattern = Regex("""(\\*\\*\\*(.+?)\\*\\*\\*|\\*\\*(.+?)\\*\\*|~~(.+?)~~|(?<!\\*)\\*(?!\\*)(.+?)(?<!\\*)\\*(?!\\*)|\u0060([^\u0060]+)\u0060)""")
+internal fun richFieldFromMarkdown(markdown: String) {
     val annotated = buildAnnotatedString {
         var cursor = 0
         pattern.findAll(markdown).forEach { match ->
