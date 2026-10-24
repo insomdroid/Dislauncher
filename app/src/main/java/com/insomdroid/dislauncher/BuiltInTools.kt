@@ -282,9 +282,14 @@ private fun writeNoteArchive(context: Context, destination: Uri, markdown: Strin
     ZipOutputStream(output.buffered()).use { zip ->
         val copiedImages = linkedMapOf<String, String>()
         var totalBytes = 0L
-        val pattern = Regex("""!\[([^\]]*)]\((?:<)?(content://[^)\s>]+)(?:>)?\)""")
+        val pattern = Regex("""!\[([^\]]*)]\((?:<)?((?:content|file)://[^)\s>]+)(?:>)?\)""")
         val portableMarkdown = pattern.replace(markdown) { match ->
             val uriText = match.groupValues[2]
+            if (uriText.startsWith("file://")) {
+                val allowedRoot = java.io.File(context.filesDir, "notes-import").canonicalFile
+                val candidate = java.io.File(Uri.parse(uriText).path.orEmpty()).canonicalFile
+                if (!candidate.path.startsWith(allowedRoot.path + java.io.File.separator)) return@replace match.value
+            }
             val path = copiedImages.getOrPut(uriText) {
                 val imageStream = context.contentResolver.openInputStream(Uri.parse(uriText))
                     ?: error("Could not read a local image referenced by this note")
@@ -555,7 +560,7 @@ private fun NotesTool(
             selectedId = note.id
             title = note.title
             body = note.content
-            bodyField = TextFieldValue(note.content)
+            bodyField = richFieldFromMarkdown(note.content)
             previewMode = false
             onEditingChanged(true)
         }.onFailure { Toast.makeText(context, "Could not import Markdown file", Toast.LENGTH_LONG).show() }
@@ -566,7 +571,7 @@ private fun NotesTool(
             val imported = readNoteArchive(context, input)
             val firstLine = imported.lineSequence().firstOrNull().orEmpty()
             val importedTitle = if (firstLine.startsWith("# ")) firstLine.removePrefix("# ").trim() else ""
-            val importedBody = if (importedTitle.isNotEmpty()) imported.substringAfter("\\n", "") else imported
+            val importedBody = if (importedTitle.isNotEmpty()) imported.substringAfter('\n', "") else imported
             val note = LocalNote(UUID.randomUUID().toString(), importedTitle, importedBody, System.currentTimeMillis(),
                 documentJson = NoteDocumentCodec.encode(NoteDocumentCodec.fromMarkdown(importedBody)))
             val updatedNotes = (notes + note).sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
@@ -632,7 +637,7 @@ private fun NotesTool(
         selectedId = note.id
         title = note.title
         body = note.content
-        bodyField = TextFieldValue(note.content)
+        bodyField = richFieldFromMarkdown(note.content)
         previewMode = false
         onEditingChanged(true)
     }
@@ -879,9 +884,9 @@ private fun NotesTool(
                     Box(Modifier.weight(1f).fillMaxWidth()) {
                         OutlinedTextField(
                             value = bodyField,
-                            onValueChange = { bodyField = it; body = it.text },
+                            onValueChange = { bodyField = it; body = richFieldToMarkdown(it.annotatedString) },
                             modifier = Modifier.fillMaxSize(),
-                            placeholder = { Text(builtInToolText("Write Markdown here…", "Tulis Markdown di sini…")) },
+                            placeholder = { Text(builtInToolText("Write something…", "Tulis sesuatu…")) },
                             minLines = 8, maxLines = Int.MAX_VALUE
                         )
                         Surface(
@@ -899,16 +904,16 @@ private fun NotesTool(
                                 IconButton(onClick = { body = applyBlockPrefix(body, bodyField, "# "); bodyField = richFieldFromMarkdown(body); saveCurrent() }) {
                                     Icon(Icons.Outlined.Title, contentDescription = builtInToolText("Heading", "Judul bagian"))
                                 }
-                                IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "**", "**"); body = bodyField.text; saveCurrent() }) {
+                                IconButton(onClick = { bodyField = applyRichMark(bodyField, "bold"); body = richFieldToMarkdown(bodyField.annotatedString); saveCurrent() }) {
                                     Icon(Icons.Outlined.FormatBold, contentDescription = builtInToolText("Bold", "Tebal"))
                                 }
-                                IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "*", "*"); body = bodyField.text; saveCurrent() }) {
+                                IconButton(onClick = { bodyField = applyRichMark(bodyField, "italic"); body = richFieldToMarkdown(bodyField.annotatedString); saveCurrent() }) {
                                     Icon(Icons.Outlined.FormatItalic, contentDescription = builtInToolText("Italic", "Miring"))
                                 }
-                                IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "~~", "~~"); body = bodyField.text; saveCurrent() }) {
+                                IconButton(onClick = { bodyField = applyRichMark(bodyField, "strike"); body = richFieldToMarkdown(bodyField.annotatedString); saveCurrent() }) {
                                     Icon(Icons.Outlined.FormatStrikethrough, contentDescription = builtInToolText("Strikethrough", "Coret"))
                                 }
-                                IconButton(onClick = { bodyField = markdownEdit(bodyField, body, "`", "`"); body = bodyField.text; saveCurrent() }) {
+                                IconButton(onClick = { bodyField = applyRichMark(bodyField, "code"); body = richFieldToMarkdown(bodyField.annotatedString); saveCurrent() }) {
                                     Icon(Icons.Outlined.Code, contentDescription = builtInToolText("Inline code", "Kode sebaris"))                                }
                                 IconButton(onClick = { body = applyBlockPrefix(body, bodyField, "- "); bodyField = richFieldFromMarkdown(body); saveCurrent() }) {
                                     Icon(Icons.Outlined.FormatListBulleted, contentDescription = builtInToolText("List", "Daftar"))
