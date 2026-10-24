@@ -161,7 +161,7 @@ private data class LocalNote(
     val content: String,
     val updatedAt: Long,
     val pinned: Boolean = false,
-    /** Versioned structured document JSON; content remains Markdown for backwards compatibility. */
+    /** Versioned structured document JSON; content is a searchable plain-text projection. */
     val documentJson: String = ""
 )
 
@@ -196,7 +196,7 @@ private fun loadNotes(context: Context): List<LocalNote> = runCatching {
         val savedDocument = o.optString("document")
         val documentJson = savedDocument.takeIf {
             it.isNotBlank() && NoteDocumentCodec.decode(it) != null
-        } ?: NoteDocumentCodec.encode(NoteDocumentCodec.fromMarkdown(content))
+        } ?: NoteDocumentCodec.encode(NoteDocumentCodec.fromLegacyContent(content))
         LocalNote(
             o.optString("id"), o.optString("title"), content, o.optLong("updatedAt"),
             o.optBoolean("pinned", false), documentJson
@@ -210,7 +210,7 @@ private fun saveNotes(context: Context, notes: List<LocalNote>) {
         array.put(JSONObject().put("id", note.id).put("title", note.title)
             .put("content", note.content)
             .put("document", note.documentJson.takeIf { it.isNotBlank() }
-                ?: NoteDocumentCodec.encode(NoteDocumentCodec.fromMarkdown(note.content)))
+                ?: NoteDocumentCodec.encode(NoteDocumentCodec.fromLegacyContent(note.content)))
             .put("updatedAt", note.updatedAt).put("pinned", note.pinned))
     }
     notesStore(context).edit().putString("notes_json", array.toString()).apply()
@@ -239,99 +239,6 @@ private fun releaseUnusedNoteImagePermissions(
             }
     }
 }
-
-private const val MAX_MARKDOWN_IMPORT_BYTES = 1_048_576
-
-/** Read user-selected Markdown with a byte limit before decoding it into a String. */
-private fun readMarkdownBounded(input: java.io.InputStream, maxBytes: Int): String {
-    input.use { stream ->
-        val result = java.io.ByteArrayOutputStream()
-        val buffer = ByteArray(8192)
-        while (true) {
-            val count = stream.read(buffer)
-            if (count < 0) break
-            if (result.size() + count > maxBytes) {
-                error("Markdown file exceeds the 1 MiB import limit")
-            }
-            result.write(buffer, 0, count)
-        }
-        return result.toByteArray().toString(Charsets.UTF_8)
-    }
-}
-
-/**
- * Creates a portable Markdown archive. Local content:// image references are copied into
- * images/ and rewritten to relative paths. Remote images are never downloaded.
- */
-private fun readImageBounded(input: java.io.InputStream, maxBytes: Int): ByteArray {
-    input.use { stream ->
-        val output = java.io.ByteArrayOutputStream()
-        val buffer = ByteArray(8192)
-        while (true) {
-            val count = stream.read(buffer)
-            if (count < 0) break
-            require(output.size() + count <= maxBytes) { "An image exceeds the 20 MiB export limit" }
-            output.write(buffer, 0, count)
-        }
-        return output.toByteArray()
-    }
-}
-
-private fun writeNoteArchive(context: Context, destination: Uri, markdown: String) {
-    val output = context.contentResolver.openOutputStream(destination) ?: error("Unable to open export destination")
-    ZipOutputStream(output.buffered()).use { zip ->
-        val copiedImages = linkedMapOf<String, String>()
-        var totalBytes = 0L
-        val pattern = Regex("""!\[([^\]]*)]\((?:<)?((?:content|file)://[^)\s>]+)(?:>)?\)""")
-        val portableMarkdown = pattern.replace(markdown) { match ->
-            val uriText = match.groupValues[2]
-            if (uriText.startsWith("file://")) {
-                val allowedRoot = java.io.File(context.filesDir, "notes-import").canonicalFile
-                val candidate = java.io.File(Uri.parse(uriText).path.orEmpty()).canonicalFile
-                if (!candidate.path.startsWith(allowedRoot.path + java.io.File.separator)) return@replace match.value
-            }
-            val path = copiedImages.getOrPut(uriText) {
-                val imageStream = context.contentResolver.openInputStream(Uri.parse(uriText))
-                    ?: error("Could not read a local image referenced by this note")
-                val bytes = readImageBounded(imageStream, 20 * 1024 * 1024)
-                totalBytes += bytes.size
-                require(totalBytes <= 100 * 1024 * 1024) { "Images exceed the 100 MiB export limit" }
-                val ext = Uri.parse(uriText).lastPathSegment?.substringAfterLast('.', "")?.lowercase(Locale.ROOT)
-                    ?.takeIf { it.matches(Regex("[a-z0-9]{1,8}")) } ?: "bin"
-                val entry = "images/image_${copiedImages.size + 1}.$ext"
-                zip.putNextEntry(ZipEntry(entry)); zip.write(bytes); zip.closeEntry()
-                entry
-            }
-            "![${match.groupValues[1]}]($path)"
-        }
-        zip.putNextEntry(ZipEntry("note.md")); zip.write(portableMarkdown.toByteArray(Charsets.UTF_8)); zip.closeEntry()
-        zip.putNextEntry(ZipEntry("README.txt"))
-        zip.write("Dislauncher note archive. note.md contains the note; images/ contains local image assets referenced with relative paths.".toByteArray(Charsets.UTF_8))
-        zip.closeEntry()
-    }
-}
-
-/** Remote image embeds are hidden in preview to avoid contacting third-party hosts from a note. */
-private fun markdownForSafePreview(markdown: String): String =
-    Regex("!\\[([^]]*)]\\(<?https?://[^)\\s>]+>?\\)", RegexOption.IGNORE_CASE)
-        .replace(markdown) { match ->
-            val description = match.groupValues[1].ifBlank { "External image" }
-            "[$description — external image hidden for privacy]"
-        }
-
-/** Match the Markdown preview's Android TextView to Dislauncher's selected font family. */
-private fun markdownPreviewTypeface(context: Context): android.graphics.Typeface {
-    val preferences = LauncherPreferences.load(context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE))
-    return when (preferences.fontMode) {
-        "dislauncher" -> androidx.core.content.res.ResourcesCompat.getFont(context, R.font.inter_variable)
-            ?: android.graphics.Typeface.DEFAULT
-        "custom" -> listOf("ttf", "otf")
-            .map { java.io.File(context.filesDir, "fonts/custom-font.$it") }
-            .firstOrNull { it.isFile && it.length() in 12L..MAX_CUSTOM_FONT_BYTES.toLong() }
-            ?.let { file -> runCatching { android.graphics.Typeface.createFromFile(file) }.getOrNull() }
-            ?: android.graphics.Typeface.DEFAULT
-        else -> android.graphics.Typeface.DEFAULT
-    }}
 
 private data class CalculatorHistoryEntry(
     val id: String,
@@ -591,7 +498,7 @@ private fun NotesTool(
         selectedId = note.id
         title = note.title
         document = NoteDocumentCodec.decode(note.documentJson)
-            ?: NoteDocumentCodec.fromMarkdown(note.content)
+            ?: NoteDocumentCodec.fromLegacyContent(note.content)
         undoHistory = emptyList()
         redoHistory = emptyList()
         onEditingChanged(true)
