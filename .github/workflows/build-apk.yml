@@ -50,7 +50,7 @@ concurrency:
 
 jobs:
   build:
-    name: Lint, test, and build debug-signed test APK
+    name: Lint, test, and build installable APK
     runs-on: ubuntu-latest
 
     steps:
@@ -76,25 +76,6 @@ jobs:
           echo "::error::No stable semantic release tag found (expected a tag like v1.2.0)."
           exit 1
 
-      - name: Configure production signing for installable main-branch APK
-        if: github.event_name != 'pull_request'
-        env:
-          KEYSTORE: ${{ secrets.KEYSTORE }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          : "${KEYSTORE:?Missing GitHub secret KEYSTORE}"
-          : "${KEY_ALIAS:?Missing GitHub secret KEY_ALIAS}"
-          : "${KEYSTORE_PASSWORD:?Missing GitHub secret KEYSTORE_PASSWORD}"
-          : "${KEY_PASSWORD:?Missing GitHub secret KEY_PASSWORD}"
-          KEYSTORE_FILE="$RUNNER_TEMP/dislauncher-production.jks"
-          printf '%s' "$KEYSTORE" | base64 --decode > "$KEYSTORE_FILE"
-          test -s "$KEYSTORE_FILE"
-          echo "RELEASE_STORE_FILE=$KEYSTORE_FILE" >> "$GITHUB_ENV"
-
       - name: Set up JDK 17
         uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad
         with:
@@ -109,19 +90,36 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6
 
-      - name: Run unit tests, Android lint, and build test APK
+      - name: Run unit tests, Android lint, and build APK
         env:
           APP_VERSION_NAME: "${{ steps.version.outputs.app_version_name }}"
           APP_BUILD_NUMBER: "${{ github.run_number }}"
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          BUILD_EVENT_NAME: "${{ github.event_name }}"
+          KEYSTORE: "${{ secrets.KEYSTORE }}"
+          KEY_ALIAS: "${{ secrets.KEY_ALIAS }}"
+          KEYSTORE_PASSWORD: "${{ secrets.KEYSTORE_PASSWORD }}"
+          KEY_PASSWORD: "${{ secrets.KEY_PASSWORD }}"
         shell: bash
         run: |
           set -euo pipefail
+
+          # PRs cannot access production secrets, so their APK is for CI only.
+          # Main-branch builds use the release key to allow in-place APK updates.
+          if [[ "$BUILD_EVENT_NAME" != "pull_request" ]]; then
+            : "${KEYSTORE:?Missing GitHub secret KEYSTORE}"
+            : "${KEY_ALIAS:?Missing GitHub secret KEY_ALIAS}"
+            : "${KEYSTORE_PASSWORD:?Missing GitHub secret KEYSTORE_PASSWORD}"
+            : "${KEY_PASSWORD:?Missing GitHub secret KEY_PASSWORD}"
+            KEYSTORE_FILE="$RUNNER_TEMP/dislauncher-release.jks"
+            trap 'rm -f "$KEYSTORE_FILE"' EXIT
+            printf '%s' "$KEYSTORE" | base64 --decode > "$KEYSTORE_FILE"
+            test -s "$KEYSTORE_FILE"
+            export RELEASE_STORE_FILE="$KEYSTORE_FILE"
+          fi
+
           ./gradlew testReleaseUnitTest lintRelease assembleRelease --stacktrace
 
-      - name: Upload installable APK artifact
+      - name: Upload APK artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: Dislauncher-${{ github.run_number }}
