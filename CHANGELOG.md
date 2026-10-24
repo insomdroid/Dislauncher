@@ -16,9 +16,6 @@ Keep release notes in English. The build copies this file into the APK; the app 
 - Refined the built-in tools to keep navigation, spacing, and typography consistent with Dislauncher's minimal design.
 - Preserved local-first storage for notes and reminders; device calendar access remains optional.
 
-#### Release checks
-- Production APK signing, checksum verification, CI tests, documentation review, and device regression checks must pass before this version is published.
-
 ## 1.2.1 | 23 October 2026
 #### Fixes
 - Fixed Dynamic Color settings so the manual accent option clearly indicates when system colors take precedence.
