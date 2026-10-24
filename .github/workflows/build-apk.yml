@@ -126,3 +126,12 @@ jobs:
           path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
+
+      - name: Upload Compose compiler reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: Compose-Compiler-Reports-${{ github.run_number }}
+          path: app/build/compose_compiler/**
+          if-no-files-found: warn
+          retention-days: 14
