@@ -32,6 +32,7 @@ class StructuredNoteArchiveImageTest {
         val imageBytes = byteArrayOf(0x89.toByte(), 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)
         sourceImage.writeBytes(imageBytes)
         val archive = File(context.cacheDir, "note-image-" + UUID.randomUUID() + ".zip")
+        var importedImage: File? = null
         try {
             val document = NoteDocument(
                 blocks = listOf(
@@ -49,11 +50,12 @@ class StructuredNoteArchiveImageTest {
             val imported = FileInputStream(archive).use { readStructuredNoteArchive(context, it) }
             val importedUri = Uri.parse(imported.document.blocks.single().spans.single().imageUri)
             assertEquals("file", importedUri.scheme)
-            val importedImage = File(importedUri.path!!)
+            importedImage = File(importedUri.path!!)
             assertTrue(importedImage.isFile)
             assertArrayEquals(imageBytes, importedImage.readBytes())
         } finally {
             archive.delete()
+            importedImage?.parentFile?.deleteRecursively()
             sourceDirectory.deleteRecursively()
         }
     }
