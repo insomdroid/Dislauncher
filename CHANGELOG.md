@@ -3,19 +3,23 @@
 This file is the single source of truth for the in-app What's New screen.
 Keep release notes in English. The build copies this file into the APK; the app reads it locally and does not need a network connection.
 
-## 1.3.0 | Unreleased
+## 1.3.1 | 24 October 2026
 #### What's New
-- **Redesigned Notes:** Switch between list and grid layouts, search note content, pin important notes, and work with Markdown formatting and preview.
-- **Structured note storage:** Added a versioned note model and Markdown import support to help preserve note content during migration.
-- **Notes export:** Export notes as Markdown files or as an archive containing the note and its locally referenced images.
-- **Redesigned Calendar:** Navigate a month view and see an agenda for the selected date.
-- **Combined agenda:** View device calendar events alongside Dislauncher tasks and reminders, including events that span multiple days.
-- **Bundled typography:** Choose Inter, Syne, Bricolage Grotesque, Doto, or Overpass Mono without downloading fonts separately.
+- **Redesigned Notes:** Improved the notes experience with structured rich-text editing, Markdown support, note search, and pinning.
+- **Portable Notes Archive:** Import and export notes using Markdown files or archives containing notes and their locally referenced images.
+- **Redesigned Calendar:** Browse a monthly calendar and view an agenda for the selected date.
+- **Combined Calendar Agenda:** View device calendar events alongside local tasks and reminders.
+- **Bundled Typography:** Choose Inter, Syne, Bricolage Grotesque, Doto, or Overpass Mono without downloading fonts separately.
 
 #### Improvements
-- Kept notes and local reminders stored on-device; device calendar access remains optional.
-- Refined the built-in Notes and Calendar flows while retaining Dislauncher's minimal visual style.
-- Updated the Kotlin compiler configuration and simplified the APK build workflow.
+- Refined the built-in Notes and Calendar layouts to maintain Dislauncher's minimal design.
+- Kept notes and local reminders stored on-device while making device calendar access optional.
+- Updated the Kotlin compiler configuration for compatibility with the current build setup.
+- Simplified the APK build workflow by removing unnecessary Compose compiler report generation and upload steps.
+
+#### Fixes
+- Fixed rich-text formatting so actions such as bold and italic correctly apply to selected text.
+- Improved build configuration compatibility with the selected Gradle and Kotlin toolchain.
 
 ## 1.2.1 | 23 October 2026
 #### Fixes
@@ -64,6 +68,7 @@ Keep release notes in English. The build copies this file into the APK; the app 
 - Customizable app icon appearance.
 - Built-in Calendar, Notes, and Calculator.
 - Personalization options and launcher settings.
+- Weather and media player integration.
 - Weather and media player integration.
 #### Improvements
 - Improved app drawer responsiveness and cached app icons to reduce repeated processing.
