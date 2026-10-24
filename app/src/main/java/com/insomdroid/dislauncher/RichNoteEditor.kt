@@ -268,9 +268,27 @@ internal fun RichNoteEditor(
             }
         }
     }
+    if (showLinkDialog) {
+        AlertDialog(
+            onDismissRequest = { showLinkDialog = false },
+            title = { Text("Insert link") },
+            text = {
+                OutlinedTextField(
+                    value = linkUrl,
+                    onValueChange = { linkUrl = it },
+                    label = { Text("URL") },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { applyLink(linkUrl) }, enabled = linkUrl.isNotBlank()) { Text("Apply") }
+            },
+            dismissButton = { TextButton(onClick = { showLinkDialog = false }) { Text("Cancel") } }
+        )
+    }
 }
 
-private fun fieldFromBlock(block: NoteBlock): TextFieldValue {
+private fun fieldFromBlock(block: NoteBlock, linkColor: androidx.compose.ui.graphics.Color): TextFieldValue {
     val annotated = buildAnnotatedString {
         block.spans.forEach { span ->
             val start = length
@@ -278,10 +296,18 @@ private fun fieldFromBlock(block: NoteBlock): TextFieldValue {
             val style = SpanStyle(
                 fontWeight = if (NoteMark.BOLD in span.marks) FontWeight.Bold else FontWeight.Normal,
                 fontStyle = if (NoteMark.ITALIC in span.marks) FontStyle.Italic else FontStyle.Normal,
-                textDecoration = if (NoteMark.STRIKETHROUGH in span.marks) TextDecoration.LineThrough else null,
-                fontFamily = if (NoteMark.CODE in span.marks) FontFamily.Monospace else FontFamily.Default
+                textDecoration = when {
+                    NoteMark.STRIKETHROUGH in span.marks && (NoteMark.UNDERLINE in span.marks || span.link != null) ->
+                        TextDecoration.combine(listOf(TextDecoration.LineThrough, TextDecoration.Underline))
+                    NoteMark.STRIKETHROUGH in span.marks -> TextDecoration.LineThrough
+                    NoteMark.UNDERLINE in span.marks || span.link != null -> TextDecoration.Underline
+                    else -> null
+                },
+                fontFamily = if (NoteMark.CODE in span.marks) FontFamily.Monospace else FontFamily.Default,
+                color = if (span.link != null) linkColor else androidx.compose.ui.graphics.Color.Unspecified
             )
-            if (span.marks.isNotEmpty()) addStyle(style, start, length)
+            if (span.marks.isNotEmpty() || span.link != null) addStyle(style, start, length)
+            if (span.link != null) addStringAnnotation("URL", span.link, start, length)
         }
     }
     return TextFieldValue(annotated, TextRange(annotated.length))
@@ -291,6 +317,10 @@ private fun spansFromField(field: TextFieldValue): List<NoteInline> {
     if (field.text.isEmpty()) return emptyList()
     val boundaries = sortedSetOf(0, field.text.length)
     field.annotatedString.spanStyles.forEach { range ->
+        boundaries += range.start.coerceIn(0, field.text.length)
+        boundaries += range.end.coerceIn(0, field.text.length)
+    }
+    field.annotatedString.getStringAnnotations("URL", 0, field.text.length).forEach { range ->
         boundaries += range.start.coerceIn(0, field.text.length)
         boundaries += range.end.coerceIn(0, field.text.length)
     }
@@ -304,9 +334,12 @@ private fun spansFromField(field: TextFieldValue): List<NoteInline> {
                 if (range.item.fontWeight == FontWeight.Bold) add(NoteMark.BOLD)
                 if (range.item.fontStyle == FontStyle.Italic) add(NoteMark.ITALIC)
                 if (range.item.textDecoration?.contains(TextDecoration.LineThrough) == true) add(NoteMark.STRIKETHROUGH)
+                if (range.item.textDecoration?.contains(TextDecoration.Underline) == true) add(NoteMark.UNDERLINE)
                 if (range.item.fontFamily == FontFamily.Monospace) add(NoteMark.CODE)
             }
         }.toSet()
-        NoteInline(field.text.substring(start, end), marks)
+        val link = field.annotatedString.getStringAnnotations("URL", start, end)
+            .firstOrNull { it.start <= start && it.end >= end }?.item
+        NoteInline(field.text.substring(start, end), marks, link = link)
     }
 }
