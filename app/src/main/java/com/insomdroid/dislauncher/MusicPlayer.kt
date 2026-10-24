@@ -293,6 +293,39 @@ private fun StatusBarNotification.toTrackedDotNotification(): TrackedDotNotifica
 
 internal class DislauncherNotificationListener : android.service.notification.NotificationListenerService() {
     private val trackedNotifications = linkedMapOf<String, TrackedDotNotification>()
+    private val dotRefreshHandler = Handler(Looper.getMainLooper())
+    private val dotRefreshLock = Any()
+    private var dotRefreshPending = false
+
+    private val dotRefreshRunnable = Runnable {
+        synchronized(dotRefreshLock) {
+            dotRefreshPending = false
+        }
+        refreshDotPackages()
+    }
+
+    /**
+     * Coalesces notification bursts into at most one dot-count recalculation per
+     * 300 ms window, while keeping the latest tracked notification state.
+     */
+    private fun scheduleDotRefresh() {
+        synchronized(dotRefreshLock) {
+            if (dotRefreshPending) return
+            dotRefreshPending = true
+            dotRefreshHandler.postDelayed(dotRefreshRunnable, DOT_REFRESH_COALESCE_MS)
+        }
+    }
+
+    private fun cancelScheduledDotRefresh() {
+        synchronized(dotRefreshLock) {
+            dotRefreshHandler.removeCallbacks(dotRefreshRunnable)
+            dotRefreshPending = false
+        }
+    }
+
+    private companion object {
+        const val DOT_REFRESH_COALESCE_MS = 300L
+    }
 
     override fun onListenerConnected() {
         super.onListenerConnected()
@@ -303,23 +336,25 @@ internal class DislauncherNotificationListener : android.service.notification.No
         synchronized(trackedNotifications) {
             trackedNotifications[sbn.key] = sbn.toTrackedDotNotification()
         }
-        refreshDotPackages()
+        scheduleDotRefresh()
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
         synchronized(trackedNotifications) {
             trackedNotifications.remove(sbn.key)
         }
-        refreshDotPackages()
+        scheduleDotRefresh()
     }
 
     override fun onListenerDisconnected() {
+        cancelScheduledDotRefresh()
         synchronized(trackedNotifications) { trackedNotifications.clear() }
         NotificationDotState.detach(this)
         super.onListenerDisconnected()
     }
 
     override fun onDestroy() {
+        cancelScheduledDotRefresh()
         synchronized(trackedNotifications) { trackedNotifications.clear() }
         NotificationDotState.detach(this)
         super.onDestroy()
