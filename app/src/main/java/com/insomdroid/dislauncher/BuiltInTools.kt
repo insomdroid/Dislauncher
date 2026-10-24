@@ -851,6 +851,7 @@ private fun CalculatorTool(
     val context = androidx.compose.ui.platform.LocalContext.current
     var expression by remember { mutableStateOf("") }
     var result by remember { mutableStateOf("") }
+    var scientificMode by remember { mutableStateOf(false) }
     var showClearHistoryDialog by remember { mutableStateOf(false) }
     var history by remember(context) { mutableStateOf(loadCalculatorHistory(context)) }
 
@@ -870,7 +871,7 @@ private fun CalculatorTool(
     )
 
     BoxWithConstraints(modifier = modifier) {
-        val keySize = minOf(72.dp, (maxWidth - 24.dp) / 4, (maxHeight - 190.dp) / 6)
+        val keySize = minOf(72.dp, (maxWidth - 24.dp) / 4, (maxHeight - if (scientificMode) 260.dp else 190.dp) / 6)
             .coerceAtLeast(36.dp)
 
         if (showHistory) {
@@ -913,6 +914,26 @@ private fun CalculatorTool(
             }
         } else {
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = { scientificMode = !scientificMode }) {
+                        Text(if (scientificMode) builtInToolText("Basic mode", "Mode dasar") else builtInToolText("Scientific", "Ilmiah"))
+                    }
+                    if (scientificMode) {
+                        listOf(
+                            "sin" to "sin(", "cos" to "cos(", "tan" to "tan(",
+                            "√" to "sqrt(", "ln" to "ln(", "log" to "log(",
+                            "xʸ" to "^", "π" to "π", "e" to "e"
+                        ).forEach { (label, token) ->
+                            TextButton(onClick = { expression += token; result = "" }) {
+                                Text(label, maxLines = 1, softWrap = false)
+                            }
+                        }
+                    }
+                }
                 Column(
                     Modifier.weight(1f).fillMaxWidth().padding(horizontal = 2.dp, vertical = 4.dp),
                     verticalArrangement = Arrangement.Bottom,
