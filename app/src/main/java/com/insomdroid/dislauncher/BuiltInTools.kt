@@ -228,8 +228,8 @@ private fun saveNotes(context: Context, notes: List<LocalNote>) {
     notesStore(context).edit().putString("notes_json", array.toString()).apply()
 }
 
-/** Release only image grants referenced by the deleted note and by no remaining note. */
-private fun releaseUnusedNoteImagePermissions(
+/** Release image grants and remove imported archive assets no longer referenced by any note. */
+private fun releaseUnusedNoteImageResources(
     context: Context,
     removedNote: LocalNote,
     remainingNotes: List<LocalNote>
@@ -239,6 +239,7 @@ private fun releaseUnusedNoteImagePermissions(
     val remainingUris = remainingNotes.flatMap { note ->
         NoteDocumentCodec.decode(note.documentJson)?.blocks.orEmpty().flatMap { it.spans }.mapNotNull { it.imageUri }
     }.toSet()
+
     context.contentResolver.persistedUriPermissions
         .filter { permission ->
             permission.isReadPermission &&
@@ -253,6 +254,25 @@ private fun releaseUnusedNoteImagePermissions(
                 )
             }
         }
+
+    val importRoot = java.io.File(context.filesDir, "notes-import").canonicalFile
+    val remainingFiles = remainingUris.mapNotNull { rawUri ->
+        val uri = android.net.Uri.parse(rawUri)
+        if (uri.scheme != "file") null
+        else uri.path?.let { java.io.File(it) }?.canonicalFile
+    }
+    removedUris.forEach { rawUri ->
+        val uri = android.net.Uri.parse(rawUri)
+        if (uri.scheme != "file") return@forEach
+        val imageFile = uri.path?.let { java.io.File(it) }?.canonicalFile ?: return@forEach
+        if (!imageFile.path.startsWith(importRoot.path + java.io.File.separator)) return@forEach
+        val archiveDirectory = imageFile.parentFile?.parentFile?.canonicalFile ?: return@forEach
+        if (!archiveDirectory.path.startsWith(importRoot.path + java.io.File.separator)) return@forEach
+        val stillReferenced = remainingFiles.any {
+            it.path.startsWith(archiveDirectory.path + java.io.File.separator)
+        }
+        if (!stillReferenced) archiveDirectory.deleteRecursively()
+    }
 }
 
 private data class CalculatorHistoryEntry(
@@ -346,6 +366,8 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     var calculatorHistoryHasItems by remember { mutableStateOf(false) }
     var calculatorClearHistorySignal by remember { mutableStateOf(0) }
     var calendarMonth by remember { mutableStateOf(YearMonth.now()) }
+    var converterSearchExpanded by remember { mutableStateOf(false) }
+    var converterSearchQuery by remember { mutableStateOf("") }
     fun requestClose() = onBack()
     BackHandler(enabled = tool != BuiltInTool.NOTES || !notesEditing) {
         if (tool == BuiltInTool.CALCULATOR && calculatorShowingHistory) {
@@ -365,12 +387,22 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                 topBar = {
                     if (!(tool == BuiltInTool.NOTES)) TopAppBar(
                         title = {
-                            Text(
-                                title,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                            if (tool == BuiltInTool.UNIT_CONVERTER && converterSearchExpanded) {
+                                OutlinedTextField(
+                                    value = converterSearchQuery,
+                                    onValueChange = { converterSearchQuery = it },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true,
+                                    placeholder = { Text(builtInToolText("Search units and categories", "Cari satuan dan kategori")) }
+                                )
+                            } else {
+                                Text(
+                                    title,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         },
                         navigationIcon = {
                             IconButton(onClick = {
@@ -384,6 +416,20 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             }
                         },
                         actions = {
+                            if (tool == BuiltInTool.UNIT_CONVERTER) {
+                                if (converterSearchExpanded) {
+                                    IconButton(onClick = {
+                                        converterSearchQuery = ""
+                                        converterSearchExpanded = false
+                                    }) {
+                                        Icon(Icons.Outlined.Close, contentDescription = builtInToolText("Close search", "Tutup pencarian"))
+                                    }
+                                } else {
+                                    IconButton(onClick = { converterSearchExpanded = true }) {
+                                        Icon(Icons.Outlined.Search, contentDescription = builtInToolText("Search converter", "Cari konverter"))
+                                    }
+                                }
+                            }
                             if (tool == BuiltInTool.CALENDAR) {
                                 IconButton(onClick = { calendarMonth = calendarMonth.minusMonths(1) }) {
                                     Icon(Icons.Outlined.ArrowBack, contentDescription = builtInToolText("Previous month", "Bulan sebelumnya"))
@@ -451,7 +497,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             onMonthChange = { calendarMonth = it },
                             modifier = Modifier.fillMaxSize()
                         )
-                        BuiltInTool.UNIT_CONVERTER -> UnitConverterTool(Modifier.fillMaxSize())
+                        BuiltInTool.UNIT_CONVERTER -> UnitConverterTool(Modifier.fillMaxSize(), converterSearchQuery)
                     }
                     }
                 }
@@ -523,8 +569,11 @@ private fun NotesTool(
     fun openNote(note: LocalNote) {
         selectedId = note.id
         title = note.title
-        document = NoteDocumentCodec.decode(note.documentJson)
+        val loadedDocument = NoteDocumentCodec.decode(note.documentJson)
             ?: NoteDocumentCodec.fromLegacyContent(note.content)
+        document = if (loadedDocument.blocks.isEmpty()) {
+            loadedDocument.copy(blocks = listOf(NoteBlock(id = UUID.randomUUID().toString(), type = NoteBlockType.PARAGRAPH)))
+        } else loadedDocument
         currentLabels = note.labels.toSet()
         currentColor = note.color
         undoHistory = emptyList()
@@ -534,7 +583,9 @@ private fun NotesTool(
     fun createNote() {
         selectedId = UUID.randomUUID().toString()
         title = ""
-        document = NoteDocument()
+        document = NoteDocument(
+            blocks = listOf(NoteBlock(id = UUID.randomUUID().toString(), type = NoteBlockType.PARAGRAPH))
+        )
         currentLabels = emptySet()
         currentColor = "default"
         undoHistory = emptyList()
@@ -1033,7 +1084,7 @@ private fun NotesTool(
                     val removed = notes.firstOrNull { it.id == target }
                     notes = notes.filterNot { it.id == target }
                     saveNotes(context, notes)
-                    removed?.let { releaseUnusedNoteImagePermissions(context, it, notes) }
+                    removed?.let { releaseUnusedNoteImageResources(context, it, notes) }
                     if (selectedId == target) {
                         selectedId = null
                         title = ""

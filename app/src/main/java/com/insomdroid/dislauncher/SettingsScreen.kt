@@ -44,10 +44,12 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -106,6 +108,7 @@ internal fun SettingsScreen(
     var openDialog by remember { mutableStateOf("") }
     var newFolderName by remember { mutableStateOf("") }
     var manageFolderName by remember { mutableStateOf<String?>(null) }
+    var manageAppsSection by remember { mutableStateOf("") }
     var wallpaperTarget by remember(preferences.wallpaperTarget) { mutableStateOf(preferences.wallpaperTarget) }
     var showRestartConfirmation by remember { mutableStateOf(false) }
     var detectedIconPacks by remember { mutableStateOf(iconPacks) }
@@ -587,26 +590,141 @@ internal fun SettingsScreen(
                     }
 
                     SettingsCategory.APPS -> {
+                        if (manageAppsSection.isBlank()) {
                         SettingsGroup(tr("Folders", "Folder")) {
                             SettingAction(
                                 tr("Manage folders", "Kelola folder"),
                                 preferences.appFolders.size.toString() + " " + tr("folders", "folder"),
                                 tr("Manage", "Kelola")
-                            ) { newFolderName = ""; openDialog = "folders" }
+                            ) { newFolderName = ""; manageFolderName = null; manageAppsSection = "folders" }
                         }
                         SettingsGroup(tr("Favourites", "Favorit")) {
                             SettingAction(
                                 tr("Manage favourites", "Kelola favorit"),
                                 favorites.size.toString() + "/6 " + tr("apps selected", "aplikasi dipilih"),
                                 tr("Manage", "Kelola")
-                            ) { openDialog = "favorites" }
+                            ) { manageAppsSection = "favorites" }
                         }
                         SettingsGroup(tr("Hidden apps", "Aplikasi tersembunyi")) {
                             SettingAction(
                                 tr("Manage hidden apps", "Kelola aplikasi tersembunyi"),
                                 hiddenApps.size.toString() + " " + tr("apps hidden", "aplikasi disembunyikan"),
                                 tr("Manage", "Kelola")
-                            ) { openDialog = "hidden" }
+                            ) { manageAppsSection = "hidden" }
+                        }
+                        }
+                        if (manageAppsSection.isNotBlank()) {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainerLow
+                            ) {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp)
+                                        .verticalScroll(rememberScrollState()).padding(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            when (manageAppsSection) {
+                                                "folders" -> tr("Manage folders", "Kelola folder")
+                                                "favorites" -> tr("Manage favourites", "Kelola favorit")
+                                                else -> tr("Manage hidden apps", "Kelola aplikasi tersembunyi")
+                                            },
+                                            style = MaterialTheme.typography.titleMedium,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        TextButton(onClick = { manageAppsSection = ""; manageFolderName = null }) {
+                                            Text(tr("Done", "Selesai"))
+                                        }
+                                    }
+                                    when (manageAppsSection) {
+                                        "folders" -> {
+                                            OutlinedTextField(
+                                                value = newFolderName,
+                                                onValueChange = { newFolderName = it.filterNot { ch -> ch == '\t' || ch == '\n' }.take(32) },
+                                                singleLine = true,
+                                                label = { Text(tr("New folder name", "Nama folder baru")) },
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
+                                            TextButton(
+                                                enabled = newFolderName.isNotBlank() &&
+                                                    preferences.appFolders.none { it.equals(newFolderName.trim(), ignoreCase = true) },
+                                                onClick = {
+                                                    val name = newFolderName.trim()
+                                                    if (name.isNotEmpty()) {
+                                                        onPreferencesChange(preferences.copy(appFolders = preferences.appFolders + name))
+                                                        manageFolderName = name
+                                                        newFolderName = ""
+                                                    }
+                                                },
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) { Text(tr("Create folder", "Buat folder")) }
+                                            preferences.appFolders.sortedBy { it.lowercase() }.forEach { folder ->
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(
+                                                        folder,
+                                                        modifier = Modifier.weight(1f).clickable { manageFolderName = folder },
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                    TextButton(onClick = { manageFolderName = folder }) { Text(tr("Manage", "Kelola")) }
+                                                    TextButton(onClick = {
+                                                        onPreferencesChange(preferences.copy(
+                                                            appFolders = preferences.appFolders - folder,
+                                                            folderAssignments = preferences.folderAssignments.filterNot {
+                                                                it.substringAfter('\t', "") == folder
+                                                            }.toSet()
+                                                        ))
+                                                        if (manageFolderName == folder) manageFolderName = null
+                                                    }) { Text(tr("Delete", "Hapus")) }
+                                                }
+                                            }
+                                            manageFolderName?.takeIf { it in preferences.appFolders }?.let { folder ->
+                                                HorizontalDivider()
+                                                Text(folder, style = MaterialTheme.typography.titleSmall)
+                                                apps.filter { !it.packageName.startsWith("internal:") }
+                                                    .sortedBy { it.label.lowercase() }.forEach { app ->
+                                                        val assigned = preferences.folderAssignments.any {
+                                                            it.startsWith(app.packageName + "\t") && it.substringAfter("\t", "") == folder
+                                                        }
+                                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                                            Text(app.label, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                                            Switch(checked = assigned, onCheckedChange = { enabled ->
+                                                                val withoutApp = preferences.folderAssignments.filterNot {
+                                                                    it.startsWith(app.packageName + "\t")
+                                                                }.toSet()
+                                                                val updated = if (enabled) withoutApp + (app.packageName + "\t" + folder) else withoutApp
+                                                                onPreferencesChange(preferences.copy(folderAssignments = updated))
+                                                            })
+                                                        }
+                                                    }
+                                            }
+                                        }
+                                        "favorites", "hidden" -> {
+                                            Text(
+                                                if (manageAppsSection == "favorites")
+                                                    tr("Switch apps on to show them in Home favourites.", "Aktifkan aplikasi agar tampil di favorit Home.")
+                                                else tr("Switch apps on to hide them from Home and the drawer.", "Aktifkan untuk menyembunyikan aplikasi dari Home dan app drawer."),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            apps.filter { !it.packageName.startsWith("internal:") }
+                                                .sortedBy { it.label.lowercase() }.forEach { app ->
+                                                    val checked = if (manageAppsSection == "favorites")
+                                                        app.packageName in favorites else app.packageName in hiddenApps
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Text(app.label, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                                        Switch(checked = checked, onCheckedChange = {
+                                                            if (manageAppsSection == "favorites") onToggleFavorite(app.packageName)
+                                                            else onToggleHidden(app.packageName)
+                                                        })
+                                                    }
+                                                }
+                                        }
+                                    }
+                                }
+                            }
                         }
                         SettingsGroup(tr("Built-in apps", "Aplikasi bawaan")) {
                             SettingToggle(
@@ -956,36 +1074,35 @@ internal fun SettingsScreen(
                             if (parts.size == 2 && parts[1] == folder) parts[0] else null
                         }.toSet()
                         Text(tr("Apps in this folder", "Aplikasi dalam folder"), style = MaterialTheme.typography.bodyMedium)
-                        val folderApps = apps.filter { it.packageName in assigned && !it.packageName.startsWith("internal:") }
+                        Text(tr("Apps in this folder", "Aplikasi dalam folder"), style = MaterialTheme.typography.bodyMedium)
+                        apps.filter { !it.packageName.startsWith("internal:") }
                             .sortedBy { it.label.lowercase() }
-                        if (folderApps.isEmpty()) Text(
-                            tr("No apps in this folder yet.", "Belum ada aplikasi di folder ini."),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        folderApps.forEach { app ->
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                                Text(app.label, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                TextButton(onClick = {
-                                    onPreferencesChange(preferences.copy(
-                                        folderAssignments = preferences.folderAssignments.filterNot { it.startsWith(app.packageName + "\t") }.toSet()
-                                    ))
-                                }) { Text(tr("Remove", "Keluarkan")) }
+                            .forEach { app ->
+                                val assignedToThisFolder = preferences.folderAssignments.any {
+                                    it.startsWith(app.packageName + "\t") && it.substringAfter("\t", "") == folder
+                                }
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        app.label,
+                                        modifier = Modifier.weight(1f),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Switch(
+                                        checked = assignedToThisFolder,
+                                        onCheckedChange = { enabled ->
+                                            val withoutExisting = preferences.folderAssignments
+                                                .filterNot { it.startsWith(app.packageName + "\t") }
+                                                .toSet()
+                                            val updated = if (enabled) withoutExisting + (app.packageName + "\t" + folder) else withoutExisting
+                                            onPreferencesChange(preferences.copy(folderAssignments = updated))
+                                        }
+                                    )
+                                }
                             }
-                        }
-                        Text(tr("Add apps", "Tambah aplikasi"), style = MaterialTheme.typography.bodyMedium)
-                        apps.filter { app ->
-                            !app.packageName.startsWith("internal:") && app.packageName !in assigned &&
-                                preferences.folderAssignments.none { it.startsWith(app.packageName + "\t") }
-                        }.sortedBy { it.label.lowercase() }.forEach { app ->
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                                Text(app.label, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                TextButton(onClick = {
-                                    onPreferencesChange(preferences.copy(
-                                        folderAssignments = preferences.folderAssignments + (app.packageName + "\t" + folder)
-                                    ))
-                                }) { Text(tr("Add", "Tambah")) }
-                            }
-                        }
                     }
                 }
             },

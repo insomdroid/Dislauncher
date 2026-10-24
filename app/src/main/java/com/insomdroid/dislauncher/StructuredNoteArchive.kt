@@ -38,14 +38,17 @@ internal fun writeStructuredNoteArchive(
     val output = context.contentResolver.openOutputStream(destination)
         ?: error("Unable to open export destination")
     ZipOutputStream(output.buffered()).use { zip ->
-        val imageEntries = linkedMapOf<String, ByteArray>()
+        // Keep only URI metadata in memory; stream image bytes directly into the ZIP to avoid
+        // holding up to 100 MiB of image data in RAM on low-memory devices.
+        val imageEntries = linkedMapOf<String, Uri>()
         val sourceEntries = linkedMapOf<String, String>()
-        var totalBytes = 0L
         val portableBlocks = document.blocks.map { block ->
             block.copy(spans = block.spans.map spanLoop@ { span ->
                 val source = span.imageUri ?: return@spanLoop span
                 val sourceUri = Uri.parse(source)
-                if (sourceUri.scheme !in setOf("content", "file")) return@spanLoop span
+                require(sourceUri.scheme in setOf("content", "file")) {
+                    "Only local images can be exported in a note archive"
+                }
                 if (sourceUri.scheme == "file") {
                     val allowedRoot = File(context.filesDir, "notes-import").canonicalFile
                     val candidate = File(sourceUri.path.orEmpty()).canonicalFile
@@ -54,14 +57,10 @@ internal fun writeStructuredNoteArchive(
                     }
                 }
                 val entry = sourceEntries[source] ?: run {
-                    val bytes = context.contentResolver.openInputStream(sourceUri)?.use { readBounded(it, MAX_NOTE_ARCHIVE_IMAGE_BYTES) }
-                        ?: error("Could not read a local image referenced by this note")
-                    totalBytes += bytes.size
-                    require(totalBytes <= MAX_NOTE_ARCHIVE_TOTAL_BYTES) { "Images exceed the 100 MiB export limit" }
                     val extension = sourceUri.lastPathSegment?.substringAfterLast('.', "")?.lowercase()
                         ?.takeIf { it.matches(Regex("[a-z0-9]{1,8}")) } ?: "bin"
                     val name = "images/image_${imageEntries.size + 1}.$extension"
-                    imageEntries[name] = bytes
+                    imageEntries[name] = sourceUri
                     sourceEntries[source] = name
                     name
                 }
@@ -78,12 +77,23 @@ internal fun writeStructuredNoteArchive(
             .put("document", JSONObject(NoteDocumentCodec.encode(portableDocument)))
         val documentBytes = root.toString().toByteArray(Charsets.UTF_8)
         require(documentBytes.size <= MAX_NOTE_DOCUMENT_BYTES) { "Note document exceeds the 2 MiB export limit" }
+        var totalBytes = documentBytes.size.toLong()
+        require(totalBytes <= MAX_NOTE_ARCHIVE_TOTAL_BYTES) { "Archive exceeds the 100 MiB export limit" }
         zip.putNextEntry(ZipEntry("note.json"))
         zip.write(documentBytes)
         zip.closeEntry()
-        imageEntries.forEach { (name, bytes) ->
+        imageEntries.forEach { (name, sourceUri) ->
             zip.putNextEntry(ZipEntry(name))
-            zip.write(bytes)
+            val imageInput = context.contentResolver.openInputStream(sourceUri)
+                ?: error("Could not read a local image referenced by this note")
+            imageInput.use {
+                totalBytes += copyBounded(
+                    input = it,
+                    output = zip,
+                    maxEntryBytes = MAX_NOTE_ARCHIVE_IMAGE_BYTES,
+                    maxTotalBytes = MAX_NOTE_ARCHIVE_TOTAL_BYTES - totalBytes
+                )
+            }
             zip.closeEntry()
         }
     }
@@ -91,6 +101,20 @@ internal fun writeStructuredNoteArchive(
 
 internal fun readStructuredNoteArchive(context: Context, input: InputStream): ImportedNoteArchive {
     val archiveRoot = File(context.filesDir, "notes-import/${UUID.randomUUID()}").canonicalFile
+    return try {
+        readStructuredNoteArchiveFromRoot(context, input, archiveRoot)
+    } catch (failure: Exception) {
+        // A rejected or malformed archive must not leave extracted images in app storage.
+        archiveRoot.deleteRecursively()
+        throw failure
+    }
+}
+
+private fun readStructuredNoteArchiveFromRoot(
+    context: Context,
+    input: InputStream,
+    archiveRoot: File
+): ImportedNoteArchive {
     val assets = linkedMapOf<String, File>()
     var documentBytes: ByteArray? = null
     var entryCount = 0
@@ -138,14 +162,34 @@ internal fun readStructuredNoteArchive(context: Context, input: InputStream): Im
     val encoded = root.optJSONObject("document")?.toString() ?: error("Archive has no structured document")
     val decoded = NoteDocumentCodec.decode(encoded) ?: error("Note document is invalid")
     val localDocument = decoded.copy(blocks = decoded.blocks.map { block ->
-        block.copy(spans = block.spans.map { span ->
-            val path = span.imageUri
-            val file = path?.let { assets[it] }
-            if (file != null) span.copy(imageUri = Uri.fromFile(file).toString()) else span
+        block.copy(spans = block.spans.map spanLoop@ { span ->
+            val path = span.imageUri ?: return@spanLoop span
+            val file = assets[path]
+                ?: error("Archive references a missing image or an image outside its assets directory")
+            span.copy(imageUri = Uri.fromFile(file).toString())
         })
     })
     val labels = root.optJSONArray("labels")?.let { array -> (0 until array.length()).map { array.optString(it) } }.orEmpty()
     return ImportedNoteArchive(title, localDocument, labels, root.optString("color", "default"))
+}
+
+private fun copyBounded(
+    input: InputStream,
+    output: ZipOutputStream,
+    maxEntryBytes: Int,
+    maxTotalBytes: Long
+): Long {
+    val buffer = ByteArray(8192)
+    var copied = 0L
+    while (true) {
+        val count = input.read(buffer)
+        if (count < 0) break
+        require(copied + count <= maxEntryBytes) { "An image exceeds the 20 MiB export limit" }
+        require(copied + count <= maxTotalBytes) { "Archive exceeds the 100 MiB export limit" }
+        output.write(buffer, 0, count)
+        copied += count
+    }
+    return copied
 }
 
 private fun readBounded(input: InputStream, maxBytes: Int): ByteArray {

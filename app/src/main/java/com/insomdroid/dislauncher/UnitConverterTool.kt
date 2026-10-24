@@ -135,9 +135,11 @@ internal fun formatConvertedValue(value: Double): String {
 }
 
 @Composable
-internal fun UnitConverterTool(modifier: Modifier = Modifier) {
+internal fun UnitConverterTool(
+    modifier: Modifier = Modifier,
+    categoryQuery: String
+) {
     var categoryIndex by remember { mutableStateOf(0) }
-    var categoryQuery by remember { mutableStateOf("") }
     var input by remember { mutableStateOf("1") }
     var fromIndex by remember { mutableStateOf(0) }
     var toIndex by remember { mutableStateOf(1) }
@@ -151,14 +153,6 @@ internal fun UnitConverterTool(modifier: Modifier = Modifier) {
         modifier = modifier.verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)
     ) {
-        OutlinedTextField(
-            value = categoryQuery,
-            onValueChange = { categoryQuery = it },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            placeholder = { Text(builtInToolText("Search units and categories", "Cari satuan dan kategori")) },
-            leadingIcon = { Text("⌕", style = MaterialTheme.typography.titleLarge) }
-        )
         Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),

@@ -23,10 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.ArrowDownward
-import androidx.compose.material.icons.outlined.ArrowUpward
-import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.CheckBox
 import androidx.compose.material.icons.outlined.ChevronLeft
@@ -40,12 +36,11 @@ import androidx.compose.material.icons.outlined.FormatQuote
 import androidx.compose.material.icons.outlined.FormatStrikethrough
 import androidx.compose.material.icons.outlined.FormatUnderlined
 import androidx.compose.material.icons.outlined.InsertLink
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.HorizontalRule
 import androidx.compose.material.icons.outlined.Title
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -64,6 +59,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.buildAnnotatedString
@@ -91,7 +87,6 @@ internal fun RichNoteEditor(
     var activeField by remember { mutableStateOf(TextFieldValue("")) }
     var showLinkDialog by remember { mutableStateOf(false) }
     var showFormattingTools by remember { mutableStateOf(false) }
-    var showAddMenu by remember { mutableStateOf(false) }
     var linkUrl by remember { mutableStateOf("") }
     val linkColor = MaterialTheme.colorScheme.primary
     val fields = remember { mutableStateMapOf<String, TextFieldValue>() }
@@ -177,33 +172,6 @@ internal fun RichNoteEditor(
         val id = activeBlockId ?: return
         updateBlock(id) { it.copy(indentLevel = (it.indentLevel + delta).coerceIn(0, 5)) }
     }
-    fun moveActiveBlock(delta: Int) {
-        val id = activeBlockId ?: return
-        val from = document.blocks.indexOfFirst { it.id == id }
-        if (from < 0) return
-        val to = (from + delta).coerceIn(0, document.blocks.lastIndex)
-        if (from == to) return
-        val reordered = document.blocks.toMutableList()
-        val block = reordered.removeAt(from)
-        reordered.add(to, block)
-        onDocumentChange(document.copy(blocks = reordered))
-    }
-    fun deleteActiveBlock() {
-        val id = activeBlockId ?: return
-        if (document.blocks.size <= 1) {
-            updateBlock(id) { it.copy(type = NoteBlockType.PARAGRAPH, spans = emptyList(), checked = false, indentLevel = 0) }
-            activeField = TextFieldValue("")
-            fields[id] = activeField
-            return
-        }
-        val index = document.blocks.indexOfFirst { it.id == id }
-        val remaining = document.blocks.filterNot { it.id == id }
-        onDocumentChange(document.copy(blocks = remaining))
-        val next = remaining.getOrNull(index.coerceAtMost(remaining.lastIndex)) ?: remaining.last()
-        activeBlockId = next.id
-        activeField = fieldFromBlock(next, linkColor)
-        fields[next.id] = activeField
-    }
     fun applyLink(url: String) {
         val id = activeBlockId ?: return
         val field = activeField
@@ -223,14 +191,6 @@ internal fun RichNoteEditor(
         showLinkDialog = false
         linkUrl = ""
     }
-    fun addBlock(type: NoteBlockType = NoteBlockType.PARAGRAPH) {
-        val block = NoteBlock(id = UUID.randomUUID().toString(), type = type)
-        onDocumentChange(document.copy(blocks = document.blocks + block))
-        activeBlockId = block.id
-        activeField = TextFieldValue("")
-        fields[block.id] = activeField
-    }
-
     Column(modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -334,15 +294,20 @@ internal fun RichNoteEditor(
                                     activeField = cursor
                                     fields[active.id] = cursor
                                 } else {
-                                    field = next
-                                    fields[block.id] = next
+                                    val previousField = field
+                                    val preservedSpans = preserveInlineMarks(block.spans, previousField.text, next.text)
+                                    val styledNext = fieldFromBlock(block.copy(spans = preservedSpans), linkColor)
+                                        .copy(selection = next.selection, composition = next.composition)
+                                    field = styledNext
+                                    fields[block.id] = styledNext
                                     activeBlockId = block.id
-                                    activeField = next
-                                    updateBlock(block.id) { it.copy(spans = spansFromField(next)) }
+                                    activeField = styledNext
+                                    updateBlock(block.id) { it.copy(spans = preservedSpans) }
                                 }
                             },
                             readOnly = readOnly,
                             textStyle = textStyle.copy(color = MaterialTheme.colorScheme.onSurface),
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                             modifier = Modifier.weight(1f).fillMaxWidth()
                                 .background(
                                     if (activeBlockId == block.id && !readOnly) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.background,
@@ -357,14 +322,6 @@ internal fun RichNoteEditor(
                                 inner()
                             }
                         )
-                    }
-                }
-            }
-            if (!readOnly) {
-                item {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
-                        IconButton(onClick = { addBlock() }) { Icon(Icons.Outlined.Add, "Add paragraph") }
-                        Text("Add block", Modifier.align(Alignment.CenterVertically).clickable { addBlock() }, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -398,9 +355,6 @@ internal fun RichNoteEditor(
                             IconButton(onClick = { changeIndent(-1) }) { Icon(Icons.Outlined.ChevronLeft, "Decrease indent") }
                             IconButton(onClick = { changeIndent(1) }) { Icon(Icons.Outlined.ChevronRight, "Increase indent") }
                             IconButton(onClick = { changeActiveType(NoteBlockType.DIVIDER) }) { Icon(Icons.Outlined.HorizontalRule, "Divider") }
-                            IconButton(onClick = { moveActiveBlock(-1) }) { Icon(Icons.Outlined.ArrowUpward, "Move block up") }
-                            IconButton(onClick = { moveActiveBlock(1) }) { Icon(Icons.Outlined.ArrowDownward, "Move block down") }
-                            IconButton(onClick = { deleteActiveBlock() }) { Icon(Icons.Outlined.DeleteOutline, "Delete block") }
                             IconButton(onClick = { showFormattingTools = false }) { Icon(Icons.Outlined.ChevronLeft, "Close formatting tools") }
                         }
                     } else {
@@ -409,23 +363,14 @@ internal fun RichNoteEditor(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box {
-                                TextButton(onClick = { showAddMenu = true }) {
-                                    Icon(Icons.Outlined.Add, contentDescription = null)
+                            if (onInsertImage != null) {
+                                TextButton(onClick = onInsertImage) {
+                                    Icon(Icons.Outlined.Image, contentDescription = null)
                                     Spacer(Modifier.size(6.dp))
-                                    Text("Add")
+                                    Text("Image")
                                 }
-                                DropdownMenu(expanded = showAddMenu, onDismissRequest = { showAddMenu = false }) {
-                                    DropdownMenuItem(text = { Text("Text block") }, onClick = { showAddMenu = false; addBlock() })
-                                    DropdownMenuItem(text = { Text("Heading") }, onClick = { showAddMenu = false; addBlock(NoteBlockType.HEADING) })
-                                    DropdownMenuItem(text = { Text("Checklist") }, onClick = { showAddMenu = false; addBlock(NoteBlockType.CHECKLIST) })
-                                    DropdownMenuItem(text = { Text("Bulleted list") }, onClick = { showAddMenu = false; addBlock(NoteBlockType.BULLET) })
-                                    DropdownMenuItem(text = { Text("Numbered list") }, onClick = { showAddMenu = false; addBlock(NoteBlockType.NUMBERED) })
-                                    DropdownMenuItem(text = { Text("Quote") }, onClick = { showAddMenu = false; addBlock(NoteBlockType.QUOTE) })
-                                    DropdownMenuItem(text = { Text("Code block") }, onClick = { showAddMenu = false; addBlock(NoteBlockType.CODE) })
-                                    DropdownMenuItem(text = { Text("Divider") }, onClick = { showAddMenu = false; addBlock(NoteBlockType.DIVIDER) })
-                                    if (onInsertImage != null) DropdownMenuItem(text = { Text("Image") }, onClick = { showAddMenu = false; onInsertImage() })
-                                }
+                            } else {
+                                Spacer(Modifier.size(1.dp))
                             }
                             TextButton(onClick = { showFormattingTools = true }) {
                                 Icon(Icons.Outlined.Edit, contentDescription = null)
@@ -458,6 +403,68 @@ internal fun RichNoteEditor(
     }
 }
 
+
+
+/**
+ * Preserve canonical Markdown-style marks while the user edits text. Compose may drop span
+ * styles around a changed selection (especially when a space is typed after formatted text),
+ * so map unchanged characters back to their original inline spans and let inserted characters
+ * inherit the formatting at the insertion point.
+ */
+private fun preserveInlineMarks(
+    source: List<NoteInline>,
+    oldText: String,
+    newText: String
+): List<NoteInline> {
+    if (newText.isEmpty()) return emptyList()
+    if (oldText == newText) return source
+
+    val oldChars = ArrayList<NoteInline>(oldText.length)
+    source.forEach { span ->
+        repeat(span.text.length) { index ->
+            oldChars += span.copy(text = span.text.substring(index, index + 1))
+        }
+    }
+    while (oldChars.size < oldText.length) oldChars += NoteInline(oldText[oldChars.size].toString())
+    if (oldChars.size > oldText.length) oldChars.subList(oldText.length, oldChars.size).clear()
+
+    var prefix = 0
+    val maxPrefix = minOf(oldText.length, newText.length)
+    while (prefix < maxPrefix && oldText[prefix] == newText[prefix]) prefix++
+
+    var suffix = 0
+    while (suffix < oldText.length - prefix && suffix < newText.length - prefix &&
+        oldText[oldText.length - 1 - suffix] == newText[newText.length - 1 - suffix]) {
+        suffix++
+    }
+
+    val mapped = arrayOfNulls<NoteInline>(newText.length)
+    for (i in 0 until prefix) mapped[i] = oldChars.getOrNull(i)
+    for (i in 0 until suffix) {
+        mapped[newText.length - 1 - i] = oldChars.getOrNull(oldText.length - 1 - i)
+    }
+
+    val inherited = oldChars.getOrNull((prefix - 1).coerceAtLeast(0))
+        ?: oldChars.getOrNull(prefix)
+        ?: NoteInline("")
+    for (i in prefix until (newText.length - suffix)) {
+        mapped[i] = inherited.copy(text = newText[i].toString(), imageUri = null, imageAlt = "")
+    }
+
+    val result = mutableListOf<NoteInline>()
+    mapped.forEachIndexed { index, item ->
+        val char = item?.copy(text = newText[index].toString(), imageUri = null, imageAlt = "")
+            ?: NoteInline(newText[index].toString())
+        val previous = result.lastOrNull()
+        if (previous != null && previous.marks == char.marks && previous.link == char.link &&
+            previous.imageUri == null && char.imageUri == null) {
+            result[result.lastIndex] = previous.copy(text = previous.text + char.text)
+        } else {
+            result += char
+        }
+    }
+    return result
+}
 
 private fun sourceSelectedHasMark(
     spans: List<NoteInline>,
