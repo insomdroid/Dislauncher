@@ -115,11 +115,9 @@ internal fun RichNoteEditor(
         val id = activeBlockId ?: return false
         return document.blocks.firstOrNull { it.id == id }?.type == type
     }
+    val activeToolbarColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
     fun toolbarButtonModifier(active: Boolean): Modifier =
-        if (active) Modifier.background(
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
-            RoundedCornerShape(8.dp)
-        ) else Modifier
+        if (active) Modifier.background(activeToolbarColor, RoundedCornerShape(8.dp)) else Modifier
 
     fun applyMark(mark: NoteMark) {
         val id = activeBlockId ?: return
