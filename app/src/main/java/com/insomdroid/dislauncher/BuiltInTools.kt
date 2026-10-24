@@ -1140,7 +1140,6 @@ private fun CalculatorTool(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         rowKeys.forEach { key ->
-                            {
                                 val operator = key in listOf("÷", "×", "−", "+", "=")
                                 val action: () -> Unit = {
                                     when (key) {
@@ -1195,7 +1194,6 @@ private fun CalculatorTool(
                                         Text(key, fontSize = labelSize, lineHeight = labelSize)
                                     }
                                 }
-                            }
                         }
                     }
                 }
