@@ -31,7 +31,8 @@ internal data class NoteBlock(
     val spans: List<NoteInline> = emptyList(),
     val level: Int = 1,
     val checked: Boolean = false,
-    val orderedIndex: Int = 1
+    val orderedIndex: Int = 1,
+    val indentLevel: Int = 0
 )
 
 internal data class NoteDocument(
@@ -185,7 +186,8 @@ internal object NoteDocumentCodec {
                 .put("spans", spans)
                 .put("level", block.level)
                 .put("checked", block.checked)
-                .put("orderedIndex", block.orderedIndex))
+                .put("orderedIndex", block.orderedIndex)
+                .put("indentLevel", block.indentLevel))
         }
         return root.put("blocks", blocks).toString()
     }
@@ -220,7 +222,8 @@ internal object NoteDocumentCodec {
                 spans = spans,
                 level = item.optInt("level", 1).coerceIn(1, 6),
                 checked = item.optBoolean("checked", false),
-                orderedIndex = item.optInt("orderedIndex", 1).coerceAtLeast(1)
+                orderedIndex = item.optInt("orderedIndex", 1).coerceAtLeast(1),
+                indentLevel = item.optInt("indentLevel", 0).coerceIn(0, 5)
             )
         }
         NoteDocument(version = version, blocks = blocks)
