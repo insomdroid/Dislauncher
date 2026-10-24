@@ -3,6 +3,7 @@ package com.insomdroid.dislauncher
 import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.widget.TextView
 import android.content.pm.PackageManager
 import android.os.Build
@@ -32,6 +33,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -131,6 +135,13 @@ import java.util.Date
 import java.text.SimpleDateFormat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
+import com.kizitonwose.calendar.compose.HorizontalCalendar
+import com.kizitonwose.calendar.compose.rememberCalendarState
+import com.kizitonwose.calendar.core.DayPosition
 import java.util.UUID
 
 internal enum class BuiltInTool { NOTES, CALCULATOR, CALENDAR, UNIT_CONVERTER }
@@ -149,7 +160,9 @@ private data class LocalNote(
     val title: String,
     val content: String,
     val updatedAt: Long,
-    val pinned: Boolean = false
+    val pinned: Boolean = false,
+    /** Versioned structured document JSON; content remains Markdown for backwards compatibility. */
+    val documentJson: String = ""
 )
 
 private data class LocalTask(
@@ -163,6 +176,15 @@ private data class LocalTask(
     val completed: Boolean = false
 )
 
+/** A single agenda row, sorted all-day first, timed items chronologically, then untimed tasks. */
+private data class CalendarAgendaItem(
+    val key: String,
+    val group: Int,
+    val timestamp: Long,
+    val event: DeviceCalendarEvent? = null,
+    val task: LocalTask? = null
+)
+
 private fun notesStore(context: Context) =
     context.getSharedPreferences("dislauncher_notes", Context.MODE_PRIVATE)
 
@@ -170,7 +192,15 @@ private fun loadNotes(context: Context): List<LocalNote> = runCatching {
     val array = JSONArray(notesStore(context).getString("notes_json", "[]") ?: "[]")
     (0 until array.length()).mapNotNull { i ->
         val o = array.optJSONObject(i) ?: return@mapNotNull null
-        LocalNote(o.optString("id"), o.optString("title"), o.optString("content"), o.optLong("updatedAt"), o.optBoolean("pinned", false))
+        val content = o.optString("content")
+        val savedDocument = o.optString("document")
+        val documentJson = savedDocument.takeIf {
+            it.isNotBlank() && NoteDocumentCodec.decode(it) != null
+        } ?: NoteDocumentCodec.encode(NoteDocumentCodec.fromMarkdown(content))
+        LocalNote(
+            o.optString("id"), o.optString("title"), content, o.optLong("updatedAt"),
+            o.optBoolean("pinned", false), documentJson
+        )
     }.filter { it.id.isNotBlank() }
 }.getOrDefault(emptyList()).sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
 
@@ -178,7 +208,10 @@ private fun saveNotes(context: Context, notes: List<LocalNote>) {
     val array = JSONArray()
     notes.forEach { note ->
         array.put(JSONObject().put("id", note.id).put("title", note.title)
-            .put("content", note.content).put("updatedAt", note.updatedAt).put("pinned", note.pinned))
+            .put("content", note.content)
+            .put("document", note.documentJson.takeIf { it.isNotBlank() }
+                ?: NoteDocumentCodec.encode(NoteDocumentCodec.fromMarkdown(note.content)))
+            .put("updatedAt", note.updatedAt).put("pinned", note.pinned))
     }
     notesStore(context).edit().putString("notes_json", array.toString()).apply()
 }
@@ -223,6 +256,53 @@ private fun readMarkdownBounded(input: java.io.InputStream, maxBytes: Int): Stri
             result.write(buffer, 0, count)
         }
         return result.toByteArray().toString(Charsets.UTF_8)
+    }
+}
+
+/**
+ * Creates a portable Markdown archive. Local content:// image references are copied into
+ * images/ and rewritten to relative paths. Remote images are never downloaded.
+ */
+private fun readImageBounded(input: java.io.InputStream, maxBytes: Int): ByteArray {
+    input.use { stream ->
+        val output = java.io.ByteArrayOutputStream()
+        val buffer = ByteArray(8192)
+        while (true) {
+            val count = stream.read(buffer)
+            if (count < 0) break
+            require(output.size() + count <= maxBytes) { "An image exceeds the 20 MiB export limit" }
+            output.write(buffer, 0, count)
+        }
+        return output.toByteArray()
+    }
+}
+
+private fun writeNoteArchive(context: Context, destination: Uri, markdown: String) {
+    val output = context.contentResolver.openOutputStream(destination) ?: error("Unable to open export destination")
+    ZipOutputStream(output.buffered()).use { zip ->
+        val copiedImages = linkedMapOf<String, String>()
+        var totalBytes = 0L
+        val pattern = Regex("""!\[([^\]]*)]\((?:<)?(content://[^)\s>]+)(?:>)?\)""")
+        val portableMarkdown = pattern.replace(markdown) { match ->
+            val uriText = match.groupValues[2]
+            val path = copiedImages.getOrPut(uriText) {
+                val imageStream = context.contentResolver.openInputStream(Uri.parse(uriText))
+                    ?: error("Could not read a local image referenced by this note")
+                val bytes = readImageBounded(imageStream, 20 * 1024 * 1024)
+                totalBytes += bytes.size
+                require(totalBytes <= 100 * 1024 * 1024) { "Images exceed the 100 MiB export limit" }
+                val ext = Uri.parse(uriText).lastPathSegment?.substringAfterLast('.', "")?.lowercase(Locale.ROOT)
+                    ?.takeIf { it.matches(Regex("[a-z0-9]{1,8}")) } ?: "bin"
+                val entry = "images/image_${copiedImages.size + 1}.$ext"
+                zip.putNextEntry(ZipEntry(entry)); zip.write(bytes); zip.closeEntry()
+                entry
+            }
+            "![${match.groupValues[1]}]($path)"
+        }
+        zip.putNextEntry(ZipEntry("note.md")); zip.write(portableMarkdown.toByteArray(Charsets.UTF_8)); zip.closeEntry()
+        zip.putNextEntry(ZipEntry("README.txt"))
+        zip.write("Dislauncher note archive. note.md contains the note; images/ contains local image assets referenced with relative paths.".toByteArray(Charsets.UTF_8))
+        zip.closeEntry()
     }
 }
 
@@ -455,6 +535,7 @@ private fun NotesTool(
     var body by remember { mutableStateOf("") }
     var bodyField by remember { mutableStateOf(TextFieldValue("")) }
     var searchQuery by remember { mutableStateOf("") }
+    var notesGridView by remember(context) { mutableStateOf(notesStore(context).getBoolean("grid_view", false)) }
     var previewMode by remember { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<String?>(null) }
     var noteMenuTarget by remember { mutableStateOf<String?>(null) }
@@ -479,12 +560,13 @@ private fun NotesTool(
             onEditingChanged(true)
         }.onFailure { Toast.makeText(context, "Could not import Markdown file", Toast.LENGTH_LONG).show() }
     }
-    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/markdown")) { uri ->
-        if (uri != null) runCatching {
-            context.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { it.write(exportContent) }
-                ?: error("Unable to write this file")
-            Toast.makeText(context, "Markdown exported", Toast.LENGTH_SHORT).show()
-        }.onFailure { Toast.makeText(context, "Could not export Markdown file", Toast.LENGTH_LONG).show() }
+    val exportScope = rememberCoroutineScope()
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+        if (uri != null) exportScope.launch {
+            val result = withContext(Dispatchers.IO) { runCatching { writeNoteArchive(context, uri, exportContent) } }
+            result.onSuccess { Toast.makeText(context, "Note archive exported", Toast.LENGTH_SHORT).show() }
+                .onFailure { Toast.makeText(context, "Could not export note archive: ${it.message.orEmpty()}", Toast.LENGTH_LONG).show() }
+        }
     }
     fun saveCurrent() {
         val id = selectedId ?: return
@@ -496,7 +578,10 @@ private fun NotesTool(
             return
         }
         val pinned = notes.firstOrNull { it.id == id }?.pinned ?: false
-        val current = LocalNote(id, title.trim(), body, System.currentTimeMillis(), pinned)
+        val current = LocalNote(
+            id, title.trim(), body, System.currentTimeMillis(), pinned,
+            NoteDocumentCodec.encode(NoteDocumentCodec.fromMarkdown(body))
+        )
         notes = (notes.filterNot { it.id == id } + current)
             .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
         saveNotes(context, notes)
@@ -539,7 +624,7 @@ private fun NotesTool(
     fun exportNote(noteTitle: String, noteBody: String) {
         exportContent = if (noteTitle.isBlank()) noteBody else "# $noteTitle\n\n$noteBody"
         val safeName = noteTitle.ifBlank { "note" }.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim().ifBlank { "note" }
-        exportLauncher.launch("$safeName.md")
+        exportLauncher.launch("$safeName.zip")
     }
 
     LaunchedEffect(backSignal) { if (backSignal > 0 && selectedId != null) closeEditor() }
@@ -562,6 +647,10 @@ private fun NotesTool(
                         singleLine = true,
                         shape = RoundedCornerShape(16.dp)
                     )
+                    TextButton(onClick = {
+                        notesGridView = !notesGridView
+                        notesStore(context).edit().putBoolean("grid_view", notesGridView).apply()
+                    }) { Text(if (notesGridView) "List" else "Grid") }
                     IconButton(
                         onClick = { importLauncher.launch(arrayOf("text/markdown", "text/plain", "application/octet-stream")) },
                         modifier = Modifier.size(48.dp)
@@ -574,28 +663,59 @@ private fun NotesTool(
                 }
                 if (visibleNotes.isEmpty()) {
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.padding(horizontal = 24.dp)
-                        ) {
-                            Icon(
-                                Icons.Outlined.NoteAdd,
-                                contentDescription = null,
-                                modifier = Modifier.size(36.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                if (searchQuery.isBlank()) "No notes yet" else "No matching notes",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                if (searchQuery.isBlank()) "Create a note to keep your thoughts in one place." else "Try a different search term.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
-                            )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(horizontal = 24.dp)) {
+                            Icon(Icons.Outlined.NoteAdd, contentDescription = null, modifier = Modifier.size(36.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(if (searchQuery.isBlank()) "No notes yet" else "No matching notes",
+                                style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                            Text(if (searchQuery.isBlank()) "Create a note to keep your thoughts in one place." else "Try a different search term.",
+                                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center)
+                        }
+                    }
+                } else if (notesGridView) {
+                    LazyVerticalGrid(columns = GridCells.Fixed(2), modifier = Modifier.weight(1f).fillMaxWidth(),
+                        contentPadding = PaddingValues(bottom = 88.dp), horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        gridItems(visibleNotes, key = { it.id }) { note ->
+                            Surface(modifier = Modifier.fillMaxWidth().heightIn(min = 132.dp).clickable { openNote(note) },
+                                shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                tonalElevation = 1.dp) {
+                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    if (note.pinned) Text("PINNED", style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary)
+                                    Row(verticalAlignment = Alignment.Top) {
+                                        Text(note.title.ifBlank { "Untitled note" }, modifier = Modifier.weight(1f),
+                                            style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                        Box {
+                                            IconButton(onClick = { noteMenuTarget = note.id }, modifier = Modifier.size(32.dp)) {
+                                                Icon(Icons.Outlined.MoreVert, contentDescription = builtInToolText("Note actions", "Aksi catatan"))
+                                            }
+                                            DropdownMenu(expanded = noteMenuTarget == note.id, onDismissRequest = { noteMenuTarget = null }) {
+                                                DropdownMenuItem(text = { Text(if (note.pinned) "Unpin note" else "Pin note") },
+                                                    leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null) },
+                                                    onClick = {
+                                                        notes = notes.map { if (it.id == note.id) it.copy(pinned = !it.pinned, updatedAt = System.currentTimeMillis()) else it }
+                                                            .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
+                                                        saveNotes(context, notes); noteMenuTarget = null
+                                                    })
+                                                DropdownMenuItem(text = { Text(builtInToolText("Delete", "Hapus")) },
+                                                    leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null) },
+                                                    onClick = { deleteTarget = note.id; noteMenuTarget = null })
+                                            }
+                                        }
+                                    }
+                                    Text(note.content.lineSequence().map { it.trimStart('#', ' ', '-', '*') }
+                                        .firstOrNull { it.isNotBlank() }.orEmpty().ifBlank { "No content" },
+                                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 4, overflow = TextOverflow.Ellipsis)
+                                    Spacer(Modifier.weight(1f))
+                                    Text(Instant.ofEpochMilli(note.updatedAt).atZone(ZoneId.systemDefault())
+                                        .format(DateTimeFormatter.ofPattern("d MMM, HH:mm", Locale.getDefault())),
+                                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
                         }
                     }
                 } else {
@@ -623,25 +743,17 @@ private fun NotesTool(
                                         IconButton(onClick = { noteMenuTarget = note.id }) {
                                             Icon(Icons.Outlined.MoreVert, contentDescription = builtInToolText("Note actions", "Aksi catatan"))
                                         }
-                                        DropdownMenu(
-                                            expanded = noteMenuTarget == note.id,
-                                            onDismissRequest = { noteMenuTarget = null }
-                                        ) {
-                                            DropdownMenuItem(
-                                                text = { Text(if (note.pinned) "Unpin note" else "Pin note") },
+                                        DropdownMenu(expanded = noteMenuTarget == note.id, onDismissRequest = { noteMenuTarget = null }) {
+                                            DropdownMenuItem(text = { Text(if (note.pinned) "Unpin note" else "Pin note") },
                                                 leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null) },
                                                 onClick = {
                                                     notes = notes.map { if (it.id == note.id) it.copy(pinned = !it.pinned) else it }
                                                         .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
-                                                    saveNotes(context, notes)
-                                                    noteMenuTarget = null
-                                                }
-                                            )
-                                            DropdownMenuItem(
-                                                text = { Text(builtInToolText("Delete", "Hapus")) },
+                                                    saveNotes(context, notes); noteMenuTarget = null
+                                                })
+                                            DropdownMenuItem(text = { Text(builtInToolText("Delete", "Hapus")) },
                                                 leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null) },
-                                                onClick = { deleteTarget = note.id; noteMenuTarget = null }
-                                            )
+                                                onClick = { deleteTarget = note.id; noteMenuTarget = null })
                                         }
                                     }
                                 }
@@ -679,11 +791,13 @@ private fun NotesTool(
                             Icon(Icons.Outlined.MoreVert, contentDescription = builtInToolText("More note actions", "Aksi catatan lainnya"))
                         }
                         DropdownMenu(expanded = editorMenuExpanded, onDismissRequest = { editorMenuExpanded = false }) {
-                            DropdownMenuItem(text = { Text(builtInToolText("Export Markdown", "Ekspor Markdown")) }, leadingIcon = { Icon(Icons.Outlined.FileDownload, contentDescription = null) }, onClick = {
+                            DropdownMenuItem(text = { Text(builtInToolText("Export note archive", "Ekspor arsip catatan")) }, leadingIcon = { Icon(Icons.Outlined.FileDownload, contentDescription = null) }, onClick = {
                                 editorMenuExpanded = false
                                 exportNote(title, body)
                             })
                             DropdownMenuItem(text = { Text(builtInToolText("Import Markdown", "Impor Markdown")) }, leadingIcon = { Icon(Icons.Outlined.FileOpen, contentDescription = null) }, onClick = {
+                                // Commit edits before the import callback switches the active note.
+                                saveCurrent()
                                 editorMenuExpanded = false
                                 importLauncher.launch(arrayOf("text/markdown", "text/plain", "application/octet-stream"))
                             })
@@ -1050,6 +1164,7 @@ private fun CalendarTool(
     }
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     var showEditor by remember { mutableStateOf(false) }
+    var editingTaskId by remember { mutableStateOf<String?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     var title by remember { mutableStateOf("") }
@@ -1063,6 +1178,8 @@ private fun CalendarTool(
     fun addTask(task: LocalTask, schedule: Boolean) {
         tasks = (tasks.filterNot { it.id == task.id } + task)
         saveTasks(context, tasks)
+        // Replacing a reminder must also replace its previously scheduled alarm.
+        cancelLocalReminder(context, task.id)
         if (schedule && task.type == "reminder" && task.reminderAt > System.currentTimeMillis()) {
             scheduleLocalReminder(context, task.id, task.title, task.reminderAt)
         }
@@ -1082,11 +1199,22 @@ private fun CalendarTool(
     }
 
     fun beginNewTask() {
+        editingTaskId = null
         title = ""
         type = "todo"
         date = selectedDate
         time = LocalTime.of(9, 0)
         priority = 2
+        showEditor = true
+    }
+
+    fun beginEditTask(task: LocalTask) {
+        editingTaskId = task.id
+        title = task.title
+        type = task.type
+        date = runCatching { LocalDate.parse(task.date) }.getOrDefault(selectedDate)
+        time = runCatching { LocalTime.parse(task.time) }.getOrDefault(LocalTime.of(9, 0))
+        priority = task.priority
         showEditor = true
     }
 
@@ -1100,10 +1228,41 @@ private fun CalendarTool(
     val firstDayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
     val weekDays = (0..6).map { firstDayOfWeek.plus(it.toLong()) }
     val taskDate = selectedDate.toString()
-    val dayEvents = deviceEvents.filter { Instant.ofEpochMilli(it.begin).atZone(ZoneId.systemDefault()).toLocalDate() == selectedDate }.sortedBy { it.begin }
+    val selectedDayStart = selectedDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    val selectedDayEnd = selectedDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    // Show multi-day events on every day they overlap, not only on their start date.
+    val dayEvents = deviceEvents.filter { it.begin < selectedDayEnd && it.end > selectedDayStart }
+        .sortedWith(compareBy<DeviceCalendarEvent> { if (it.allDay) 0 else 1 }.thenBy { it.begin })
     val dayTasks = tasks.filter { it.date == taskDate }
-        .sortedWith(compareBy<LocalTask> { it.completed }.thenByDescending { it.priority }
-            .thenBy { if (it.time.isBlank()) "99:99" else it.time })
+        .sortedWith(compareBy<LocalTask> { if (it.time.isBlank()) 2 else 1 }
+            .thenBy { it.time.ifBlank { "99:99" } }.thenBy { it.completed }.thenByDescending { it.priority })
+
+    // Interleave timed device events and local reminders by clock time. Keep all-day
+    // events first and untimed to-dos last, regardless of their stored priority.
+    val agendaItems = buildList {
+        dayEvents.forEach { event ->
+            add(CalendarAgendaItem(
+                key = "device-${event.id}-${event.begin}",
+                group = if (event.allDay) 0 else 1,
+                timestamp = event.begin,
+                event = event
+            ))
+        }
+        dayTasks.forEach { task ->
+            val timed = task.time.isNotBlank()
+            val timestamp = if (timed) runCatching {
+                LocalDate.parse(task.date).atTime(LocalTime.parse(task.time))
+                    .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            }.getOrDefault(Long.MAX_VALUE) else Long.MAX_VALUE
+            add(CalendarAgendaItem(
+                key = "task-${task.id}",
+                group = if (timed) 1 else 2,
+                timestamp = timestamp,
+                task = task
+            ))
+        }
+    }.sortedWith(compareBy<CalendarAgendaItem> { it.group }.thenBy { it.timestamp }
+        .thenBy { it.task?.completed ?: false }.thenByDescending { it.task?.priority ?: 0 })
 
     Box(modifier = modifier) {
     Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -1122,62 +1281,61 @@ private fun CalendarTool(
                     Text(if (Locale.getDefault().language == "id") "Hari ini" else "Today")
                 }
             }
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerLow
-        ) {
-            Column(Modifier.padding(horizontal = 8.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+        val calendarFirstDay = remember { WeekFields.of(Locale.getDefault()).firstDayOfWeek }
+        val calendarInitialMonth = remember { month }
+        val calendarStartMonth = remember { calendarInitialMonth.minusMonths(120) }
+        val calendarEndMonth = remember { calendarInitialMonth.plusMonths(120) }
+        val calendarState = rememberCalendarState(
+            startMonth = calendarStartMonth,
+            endMonth = calendarEndMonth,
+            firstVisibleMonth = calendarInitialMonth,
+            firstDayOfWeek = calendarFirstDay
+        )
+        LaunchedEffect(month) {
+            if (calendarState.firstVisibleMonth.yearMonth != month) calendarState.scrollToMonth(month)
+        }
+        LaunchedEffect(calendarState.firstVisibleMonth.yearMonth) {
+            val visibleMonth = calendarState.firstVisibleMonth.yearMonth
+            if (visibleMonth != month) onMonthChange(visibleMonth)
+        }
+        Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLow) {
+            Column(Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
                 Row(Modifier.fillMaxWidth()) {
-                    weekDays.forEach { weekDay ->
-                        Text(
-                            weekDay.getDisplayName(java.time.format.TextStyle.NARROW, Locale.getDefault()),
+                    (0..6).map { calendarFirstDay.plus(it.toLong()) }.forEach { weekDay ->
+                        Text(weekDay.getDisplayName(java.time.format.TextStyle.NARROW, Locale.getDefault()),
                             Modifier.weight(1f).padding(vertical = 4.dp), textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.labelMedium
-                        )
+                            color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
                     }
                 }
-                val firstOffset = (month.atDay(1).dayOfWeek.value - firstDayOfWeek.value + 7) % 7
-                val cells = List(firstOffset) { 0 } + (1..month.lengthOfMonth()).toList()
-                cells.chunked(7).forEach { week ->
-                    Row(Modifier.fillMaxWidth()) {
-                        week.forEach { day ->
-                            Box(Modifier.weight(1f).height(38.dp).padding(1.dp), contentAlignment = Alignment.Center) {
-                                if (day > 0) {
-                                    val dateValue = month.atDay(day)
-                                    val selected = dateValue == selectedDate
-                                    val today = dateValue == LocalDate.now()
-                                    val hasTasks = tasks.any { it.date == dateValue.toString() } ||
-                                        deviceEvents.any { Instant.ofEpochMilli(it.begin).atZone(ZoneId.systemDefault()).toLocalDate() == dateValue }
-                                    Column(
-                                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp))
-                                            .background(when {
-                                                selected -> MaterialTheme.colorScheme.primary
-                                                today -> MaterialTheme.colorScheme.secondaryContainer
-                                                else -> Color.Transparent
-                                            })
-                                            .clickable { selectedDate = dateValue },
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Center
-                                    ) {
-                                        Text(day.toString(), color = when {
-                                            selected -> MaterialTheme.colorScheme.onPrimary
-                                            today -> MaterialTheme.colorScheme.onSecondaryContainer
-                                            else -> MaterialTheme.colorScheme.onSurface
-                                        }, style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = if (selected || today) FontWeight.SemiBold else FontWeight.Normal)
-                                        Box(Modifier.padding(top = 2.dp).size(4.dp).clip(CircleShape)
-                                            .background(if (hasTasks) {
-                                                if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
-                                            } else Color.Transparent))
-                                    }
-                                }
-                            }
+                HorizontalCalendar(state = calendarState, dayContent = { day ->
+                    val dateValue = day.date
+                    if (day.position == DayPosition.MonthDate) {
+                        val selected = dateValue == selectedDate
+                        val today = dateValue == LocalDate.now()
+                        val dayStart = dateValue.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                        val dayEnd = dateValue.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                        val hasTasks = tasks.any { it.date == dateValue.toString() } ||
+                            deviceEvents.any { it.begin < dayEnd && it.end > dayStart }
+                        Column(modifier = Modifier.fillMaxWidth().height(38.dp).padding(1.dp)
+                            .clip(RoundedCornerShape(14.dp)).background(when {
+                                selected -> MaterialTheme.colorScheme.primary
+                                today -> MaterialTheme.colorScheme.secondaryContainer
+                                else -> Color.Transparent
+                            }).clickable { selectedDate = dateValue },
+                            horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                            Text(dateValue.dayOfMonth.toString(), color = when {
+                                selected -> MaterialTheme.colorScheme.onPrimary
+                                today -> MaterialTheme.colorScheme.onSecondaryContainer
+                                else -> MaterialTheme.colorScheme.onSurface
+                            }, style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = if (selected || today) FontWeight.SemiBold else FontWeight.Normal)
+                            Box(Modifier.padding(top = 2.dp).size(4.dp).clip(CircleShape).background(if (hasTasks) {
+                                if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
+                            } else Color.Transparent))
                         }
-                        repeat(7 - week.size) { Spacer(Modifier.weight(1f)) }
-                    }
-                }
+                    } else Box(Modifier.fillMaxWidth().height(38.dp))
+                })
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -1206,22 +1364,24 @@ private fun CalendarTool(
                 contentPadding = PaddingValues(bottom = 72.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                items(dayEvents, key = { "device-${it.id}-${it.begin}" }) { event ->
-                    Row(Modifier.fillMaxWidth().clickable { openDeviceCalendarEvent(context, event) }
-                        .padding(horizontal = 4.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(if (event.allDay) "All day" else SimpleDateFormat(
-                            if (android.text.format.DateFormat.is24HourFormat(context)) "HH:mm" else "h:mm a",
-                            Locale.getDefault()).format(Date(event.begin)),
-                            modifier = Modifier.width(72.dp), style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary)
-                        Box(Modifier.width(3.dp).height(34.dp).clip(RoundedCornerShape(2.dp))
-                            .background(MaterialTheme.colorScheme.tertiary))
-                        Text(event.title, modifier = Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.bodyLarge,
-                            maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    }
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
-                }
-                items(dayTasks, key = { "task-${it.id}" }) { task ->
+                items(agendaItems, key = { it.key }) { item ->
+                    val event = item.event
+                    val task = item.task
+                    if (event != null) {
+                        Row(Modifier.fillMaxWidth().clickable { openDeviceCalendarEvent(context, event) }
+                            .padding(horizontal = 4.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(if (event.allDay) builtInToolText("All day", "Sepanjang hari") else SimpleDateFormat(
+                                if (android.text.format.DateFormat.is24HourFormat(context)) "HH:mm" else "h:mm a",
+                                Locale.getDefault()).format(Date(event.begin)),
+                                modifier = Modifier.width(72.dp), style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary)
+                            Box(Modifier.width(3.dp).height(34.dp).clip(RoundedCornerShape(2.dp))
+                                .background(MaterialTheme.colorScheme.tertiary))
+                            Text(event.title, modifier = Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.bodyLarge,
+                                maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        }
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+                    } else if (task != null) {
                     Row(
                         Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -1235,7 +1395,8 @@ private fun CalendarTool(
                             Icon(Icons.Outlined.Notifications, contentDescription = builtInToolText("Reminder", "Pengingat"),
                                 tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 10.dp))
                         }
-                        Column(Modifier.weight(1f).padding(vertical = 2.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Column(Modifier.weight(1f).padding(vertical = 6.dp, horizontal = 4.dp),
+                            verticalArrangement = Arrangement.spacedBy(3.dp)) {
                             Text(task.title, style = MaterialTheme.typography.bodyLarge,
                                 textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None,
                                 color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface)
@@ -1249,6 +1410,10 @@ private fun CalendarTool(
                                     color = MaterialTheme.colorScheme.primary)
                             }
                         }
+                        IconButton(onClick = { beginEditTask(task) }) {
+                            Icon(Icons.Outlined.Edit, contentDescription = builtInToolText("Edit task", "Edit tugas"),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                         IconButton(onClick = { deleteTarget = task }) {
                             Icon(Icons.Outlined.DeleteOutline, contentDescription = builtInToolText("Delete task", "Hapus tugas"),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1257,6 +1422,7 @@ private fun CalendarTool(
                 }
             }
         }
+    }
     }
         FloatingActionButton(
             onClick = ::beginNewTask,
@@ -1269,7 +1435,7 @@ private fun CalendarTool(
     if (showEditor) {
         AlertDialog(
             onDismissRequest = { showEditor = false },
-            title = { Text(builtInToolText("New task", "Tugas baru")) },
+            title = { Text(if (editingTaskId == null) builtInToolText("New task", "Tugas baru") else builtInToolText("Edit task", "Edit tugas")) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedTextField(value = title, onValueChange = { title = it },
@@ -1356,10 +1522,19 @@ private fun CalendarTool(
                         if (type == "reminder" && at <= System.currentTimeMillis()) {
                             Toast.makeText(context, "Choose a future time for the reminder", Toast.LENGTH_SHORT).show()
                         } else {
-                            val task = LocalTask(UUID.randomUUID().toString(), title.trim(), type,
-                                date.toString(), if (type == "reminder") time.format(DateTimeFormatter.ofPattern("HH:mm")) else "",
-                                at, priority)
+                            val existing = editingTaskId?.let { id -> tasks.firstOrNull { it.id == id } }
+                            val task = LocalTask(
+                                id = editingTaskId ?: UUID.randomUUID().toString(),
+                                title = title.trim(),
+                                type = type,
+                                date = date.toString(),
+                                time = if (type == "reminder") time.format(DateTimeFormatter.ofPattern("HH:mm")) else "",
+                                reminderAt = at,
+                                priority = priority,
+                                completed = existing?.completed ?: false
+                            )
                             showEditor = false
+                            editingTaskId = null
                             val permissionMissing = Build.VERSION.SDK_INT >= 33 &&
                                 ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
                             if (type == "reminder" && permissionMissing) {
@@ -1372,7 +1547,7 @@ private fun CalendarTool(
                     }
                 }) { Text(builtInToolText("Save", "Simpan")) }
             },
-            dismissButton = { TextButton(onClick = { showEditor = false }) { Text(builtInToolText("Cancel", "Batal")) } }
+            dismissButton = { TextButton(onClick = { showEditor = false; editingTaskId = null }) { Text(builtInToolText("Cancel", "Batal")) } }
         )
     }
 

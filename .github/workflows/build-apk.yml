@@ -105,7 +105,7 @@ jobs:
           test -s "$KEYSTORE_FILE"
           export RELEASE_STORE_FILE="$KEYSTORE_FILE"
 
-          ./gradlew lintRelease assembleRelease --stacktrace
+          ./gradlew testReleaseUnitTest lintRelease assembleRelease --stacktrace
 
       - name: Upload test APK artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
