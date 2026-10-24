@@ -9,16 +9,16 @@ Dislauncher is an independent Android launcher. This note describes data handlin
 - No account or sign-in system.
 - No advertising or analytics SDK found in the reviewed source.
 - Launcher preferences, notes, reminders and selected custom fonts are stored locally.
-- Weather is optional. When enabled with location access, approximate coordinates are sent over HTTPS to Open-Meteo.
+- Weather is optional. When enabled with location access, approximate coordinates are sent over HTTPS to Open-Meteo; the Android Geocoder is also given the coordinates to resolve a locality name.
 - Calendar, notifications, notification access and Device Administrator are optional features.
 
 ## Data and network use
 
-Most settings and personal content remain in app-private storage or Android preferences and are not uploaded to a Dislauncher-operated server in the reviewed source. Uninstalling the app may remove local data; back up anything important first.
+Most settings and personal content remain in app-private storage or Android preferences and are not uploaded to a Dislauncher-operated server in the reviewed source. This storage is protected by Android's app sandbox, but the app does not add its own encryption layer to these local preferences and files. Uninstalling the app may remove local data; back up anything important first.
 
-Weather requests send latitude and longitude to the Open-Meteo forecast API. The provider also receives normal connection metadata, such as your IP address. Weather can be left disabled, and location access is not needed for ordinary app launching.
+Weather requests send latitude and longitude to the Open-Meteo forecast API. The provider also receives normal connection metadata, such as your IP address. To display a locality name, Dislauncher passes the same coordinates to Android's Geocoder API; the implementation and any network processing depend on the Android device and its configured geocoding provider. Weather can be left disabled, and location access is not needed for ordinary app launching.
 
-Notes are stored locally in a versioned structured rich-text format. Portable note archives contain a structured note document and any included local images; archive import enforces limits on entry count, per-entry size, total expanded size, document size, and accepted paths to reduce archive abuse and path traversal risk. Legacy text/Markdown content is migrated when opened. Links a user explicitly opens may contact their destination, and images selected through Android's document picker remain local URI references managed by Android permissions.
+Notes are stored locally in a versioned structured rich-text format. Portable note archives contain a structured note document and any included local images; archive import enforces limits on entry count, per-entry size, total expanded size, document size, and accepted paths to reduce archive abuse and path traversal risk. Legacy text/Markdown content is migrated when opened. Local notes, tasks, calculator history, weather cache, and preferences are not encrypted by an app-managed encryption layer. Android app-private storage and sandbox protections are not the same as application-level encryption. Automatic Android backup is disabled in the app manifest, so data may be lost on uninstall or device replacement unless exported separately. Links a user explicitly opens may contact their destination, and images selected through Android's document picker remain local URI references managed by Android permissions.
 
 See [Open-Meteo](https://open-meteo.com/) for information about the weather provider.
 
