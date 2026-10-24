@@ -123,7 +123,7 @@ internal fun readNoteArchive(context: Context, input: InputStream): String {
             require(!name.startsWith("/") && !name.split('/').any { it == ".." } && !name.contains(':')) {
                 "Archive contains an unsafe path"
             }
-            if (!entry.isDirectory && (name == "note.md" || (name.startsWith("images/") && name.count { it == '/' } == 1))) {
+            if (!entry.isDirectory && (name == "note.md" || name == "README.txt" || (name.startsWith("images/") && name.count { it == '/' } == 1))) {
                 val out = ByteArrayOutputStream()
                 val buffer = ByteArray(8192)
                 while (true) {
@@ -131,7 +131,7 @@ internal fun readNoteArchive(context: Context, input: InputStream): String {
                     if (count < 0) break
                     expandedTotal += count
                     require(expandedTotal <= 100L * 1024 * 1024) { "Archive expands beyond the 100 MiB limit" }
-                    val entryLimit = if (name == "note.md") 1_048_576 else 20 * 1024 * 1024
+                    val entryLimit = when (name) { "note.md" -> 1_048_576; "README.txt" -> 4096; else -> 20 * 1024 * 1024 }
                     require(out.size() + count <= entryLimit) {
                         if (name == "note.md") "Markdown exceeds the 1 MiB limit" else "An image exceeds the 20 MiB limit"
                     }
@@ -140,7 +140,7 @@ internal fun readNoteArchive(context: Context, input: InputStream): String {
                 if (name == "note.md") {
                     markdownBytes.reset()
                     markdownBytes.write(out.toByteArray())
-                } else {
+                } else if (name != "README.txt") {
                     val baseName = name.substringAfterLast('/').replace(Regex("[^A-Za-z0-9._-]"), "_")
                     require(baseName.isNotBlank() && baseName != "." && baseName != "..") { "Invalid image name" }
                     val target = File(imageRoot, "${UUID.randomUUID()}_${baseName}")
