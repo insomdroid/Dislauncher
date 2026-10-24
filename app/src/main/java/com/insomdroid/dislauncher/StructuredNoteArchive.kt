@@ -162,8 +162,8 @@ private fun readStructuredNoteArchiveFromRoot(
     val encoded = root.optJSONObject("document")?.toString() ?: error("Archive has no structured document")
     val decoded = NoteDocumentCodec.decode(encoded) ?: error("Note document is invalid")
     val localDocument = decoded.copy(blocks = decoded.blocks.map { block ->
-        block.copy(spans = block.spans.map { span ->
-            val path = span.imageUri ?: return@map span
+        block.copy(spans = block.spans.map spanLoop@ { span ->
+            val path = span.imageUri ?: return@spanLoop span
             val file = assets[path]
                 ?: error("Archive references a missing image or an image outside its assets directory")
             span.copy(imageUri = Uri.fromFile(file).toString())
