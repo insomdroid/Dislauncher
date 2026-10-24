@@ -111,7 +111,6 @@ internal fun RichNoteEditor(
         val source = spansFromField(field)
         val rebuilt = mutableListOf<NoteInline>()
         var offset = 0
-        val selectedSegments = mutableListOf<Pair<NoteInline, Boolean>>()
         source.forEach { span ->
             val spanStart = offset
             val spanEnd = offset + span.text.length
