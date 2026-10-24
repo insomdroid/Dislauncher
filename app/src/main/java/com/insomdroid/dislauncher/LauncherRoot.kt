@@ -707,6 +707,13 @@ internal fun DislauncherRoot() {
                             )
                         )
                     }
+                    if (preferences.homeWallpaperDim > 0) {
+                        Box(
+                            Modifier.fillMaxSize().background(
+                                Color.Black.copy(alpha = preferences.homeWallpaperDim.coerceIn(0, 100) / 100f)
+                            )
+                        )
+                    }
                 }
                 val wallpaperForeground = when (wallpaperIsLight) {
                     true -> Color(0xFF111111)
