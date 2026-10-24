@@ -91,7 +91,7 @@ internal fun readStructuredNoteArchive(context: Context, input: InputStream): Im
             val entry = zip.nextEntry ?: break
             entryCount++
             require(entryCount <= MAX_NOTE_ARCHIVE_ENTRIES) { "Archive contains too many entries" }
-            val name = entry.name.replace('\\\\', '/')
+            val name = entry.name.replace('\\', '/')
             require(!name.startsWith("/") && !name.contains(':') && !name.split('/').any { it == ".." }) {
                 "Archive contains an unsafe path"
             }
