@@ -186,32 +186,60 @@ private fun notesStore(context: Context) =
     context.getSharedPreferences("dislauncher_notes", Context.MODE_PRIVATE)
 
 private fun loadNotes(context: Context): List<LocalNote> {
-    val loaded = runCatching {
-        val array = JSONArray(notesStore(context).getString("notes_json", "[]") ?: "[]")
+    val store = notesStore(context)
+    val rawJson = store.getString("notes_json", "[]") ?: "[]"
+    var needsMigration = false
+    var safeToPersistMigration = true
+
+    // Never replace the stored notes with an empty list if the JSON itself is malformed.
+    val loaded = try {
+        val array = JSONArray(rawJson)
         (0 until array.length()).mapNotNull { i ->
-            val o = array.optJSONObject(i) ?: return@mapNotNull null
+            val o = array.optJSONObject(i) ?: run {
+                safeToPersistMigration = false
+                return@mapNotNull null
+            }
+            val id = o.optString("id")
+            if (id.isBlank()) {
+                safeToPersistMigration = false
+                return@mapNotNull null
+            }
+
             val oldContent = o.optString("content")
             val savedDocument = o.optString("document")
-            val document = savedDocument.takeIf {
-                it.isNotBlank() && NoteDocumentCodec.decode(it) != null
-            }?.let { NoteDocumentCodec.decode(it) }
-                ?: NoteDocumentCodec.fromLegacyContent(oldContent)
+            val decodedDocument = savedDocument.takeIf { it.isNotBlank() }
+                ?.let { NoteDocumentCodec.decode(it) }
+            val document = decodedDocument ?: NoteDocumentCodec.fromLegacyContent(oldContent)
+            val plainText = NoteDocumentCodec.plainText(document)
+            if (decodedDocument == null || oldContent != plainText) {
+                needsMigration = true
+            }
+
             LocalNote(
-                id = o.optString("id"),
+                id = id,
                 title = o.optString("title"),
-                content = NoteDocumentCodec.plainText(document),
+                content = plainText,
                 updatedAt = o.optLong("updatedAt"),
                 pinned = o.optBoolean("pinned", false),
-                documentJson = NoteDocumentCodec.encode(document),
-                labels = o.optJSONArray("labels")?.let { array -> (0 until array.length()).map { array.optString(it) } }.orEmpty(),
+                documentJson = decodedDocument?.let { savedDocument }
+                    ?: NoteDocumentCodec.encode(document),
+                labels = o.optJSONArray("labels")?.let { labels ->
+                    (0 until labels.length()).map { labels.optString(it) }
+                }.orEmpty(),
                 color = o.optString("color", "default")
             )
-        }.filter { it.id.isNotBlank() }
-    }.getOrDefault(emptyList()).sortedWith(
-        compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt }
-    )
-    // Persist the structured migration so future opens never need the legacy text parser.
-    saveNotes(context, loaded)
+        }.sortedWith(
+            compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt }
+        )
+    } catch (_: Exception) {
+        // Preserve the original value so malformed or partially-written data is not destroyed.
+        return emptyList()
+    }
+
+    // Migrate legacy notes once, and only when every stored entry was parsed safely.
+    if (needsMigration && safeToPersistMigration) {
+        saveNotes(context, loaded)
+    }
     return loaded
 }
 
