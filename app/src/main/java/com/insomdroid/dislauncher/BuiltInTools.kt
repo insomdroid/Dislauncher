@@ -830,12 +830,12 @@ private fun NotesTool(
                                 editorMenuExpanded = false
                                 importLauncher.launch(arrayOf("text/markdown", "text/plain", "application/octet-stream"))
                             })
-                            DropdownMenuItem(
                             DropdownMenuItem(text = { Text(builtInToolText("Import ZIP archive", "Impor arsip ZIP")) }, leadingIcon = { Icon(Icons.Outlined.FileOpen, contentDescription = null) }, onClick = {
                                 saveCurrent()
                                 editorMenuExpanded = false
                                 zipImportLauncher.launch(arrayOf("application/zip", "application/octet-stream"))
                             })
+                            DropdownMenuItem(
                                 text = { Text(builtInToolText("Delete note", "Hapus catatan")) },
                                 leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null) },
                                 onClick = { editorMenuExpanded = false; deleteTarget = selectedId }
