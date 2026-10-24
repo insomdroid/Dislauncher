@@ -583,6 +583,7 @@ private fun NotesTool(
             title = note.title
             body = note.content
             bodyField = richFieldFromMarkdown(note.content)
+            noteDocument = NoteDocumentCodec.decode(note.documentJson) ?: NoteDocumentCodec.fromMarkdown(note.content)
             previewMode = false
             onEditingChanged(true)
         }.onFailure { Toast.makeText(context, "Could not import note archive: ${it.message.orEmpty()}", Toast.LENGTH_LONG).show() }
@@ -627,10 +628,15 @@ private fun NotesTool(
     val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null && selectedId != null) runCatching {
             context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            val markdownImage = "![](<" + uri.toString() + ">)"
-            body = if (body.isBlank()) markdownImage else body + "\n\n" + markdownImage
-            bodyField = TextFieldValue(body, TextRange(body.length))
-            saveCurrent()        }.onFailure {
+            val imageBlock = NoteBlock(
+                id = UUID.randomUUID().toString(),
+                type = NoteBlockType.PARAGRAPH,
+                spans = listOf(NoteInline(text = "", imageUri = uri.toString(), imageAlt = "Image"))
+            )
+            noteDocument = noteDocument.copy(blocks = noteDocument.blocks + imageBlock)
+            body = NoteDocumentCodec.toMarkdown(noteDocument)
+            saveCurrent()
+        }.onFailure {
             Toast.makeText(context, "Could not add image", Toast.LENGTH_LONG).show()
         }
     }
