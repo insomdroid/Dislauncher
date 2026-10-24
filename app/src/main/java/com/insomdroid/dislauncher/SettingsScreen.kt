@@ -560,6 +560,7 @@ internal fun SettingsScreen(
                     }
 
                     SettingsCategory.APPS -> {
+                        if (manageAppsSection.isBlank()) {
                         SettingsGroup(tr("Folders", "Folder")) {
                             SettingAction(
                                 tr("Manage folders", "Kelola folder"),
@@ -580,6 +581,7 @@ internal fun SettingsScreen(
                                 hiddenApps.size.toString() + " " + tr("apps hidden", "aplikasi disembunyikan"),
                                 tr("Manage", "Kelola")
                             ) { manageAppsSection = "hidden" }
+                        }
                         }
                         if (manageAppsSection.isNotBlank()) {
                             Surface(
