@@ -11,6 +11,7 @@ internal data class LauncherPreferences(
     val wallpaperUri: String? = null,
     val wallpaperTarget: String = "both",
     val appDrawerWallpaperTransparency: Int = 0,
+    val homeWallpaperDim: Int = 0,
     val fontMode: String = "system",
     val customFontName: String? = null,
     val fontSize: String = "medium",
@@ -53,6 +54,7 @@ internal data class LauncherPreferences(
             .putString("wallpaper_uri", wallpaperUri)
             .putString("wallpaper_target", wallpaperTarget)
             .putInt("app_drawer_wallpaper_transparency", appDrawerWallpaperTransparency.coerceIn(0, 100))
+            .putInt("home_wallpaper_dim", homeWallpaperDim.coerceIn(0, 100))
             .putString("font_mode", fontMode)
             .putString("custom_font_name", customFontName)
             .putString("font_size", fontSize)
@@ -145,6 +147,7 @@ internal data class LauncherPreferences(
                 wallpaperTarget = (p.getString("wallpaper_target", "both") ?: "both")
                     .takeIf { it in setOf("home", "lock", "both") } ?: "both",
                 appDrawerWallpaperTransparency = p.getInt("app_drawer_wallpaper_transparency", 0).coerceIn(0, 100),
+                homeWallpaperDim = p.getInt("home_wallpaper_dim", 0).coerceIn(0, 100),
                 fontMode = normalizeFontMode(p.getString("font_mode", "system") ?: "system"),
                 customFontName = p.getString("custom_font_name", null)?.take(80),
                 fontSize = p.getString("font_size", "medium") ?: "medium",
@@ -172,8 +175,9 @@ internal data class LauncherPreferences(
                 swipeDownNotifications = p.getBoolean("swipe_down_notifications", true),
                 showCalendarShortcut = p.getBoolean("show_calendar_shortcut", true),
                 notificationDotsEnabled = p.getBoolean("notification_dots_enabled", false),
-                notificationDotColor = (p.getString("notification_dot_color", "white") ?: "white")
-                    .takeIf { it in setOf("white", "red", "orange", "blue", "purple") } ?: "white",
+                notificationDotColor = (p.getString("notification_dot_color", "default") ?: "default")
+                    .let { if (it == "white") "default" else it }
+                    .takeIf { it in setOf("default", "red", "yellow", "blue", "green", "purple", "orange", "pink") } ?: "default",
                 notificationDotPackages = p.getStringSet("notification_dot_packages", emptySet()).orEmpty().toSet(),
                 appFolders = p.getStringSet("app_folders", emptySet()).orEmpty().toSet(),
                 folderAssignments = p.getStringSet("folder_assignments", emptySet()).orEmpty().toSet()
