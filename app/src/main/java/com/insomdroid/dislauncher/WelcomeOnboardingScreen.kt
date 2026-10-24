@@ -331,7 +331,7 @@ internal fun WelcomeOnboardingScreen(
                             ) {
                                 if (currentPage == 0) {
                                     Image(
-                                        painter = painterResource(R.drawable.ic_launcher_foreground),
+                                        painter = painterResource(R.drawable.dislauncher_icon_foreground),
                                         contentDescription = "Dislauncher app icon",
                                         modifier = Modifier.size(96.dp)
                                     )
