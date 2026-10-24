@@ -782,11 +782,13 @@ private fun NotesTool(
                             Icon(Icons.Outlined.MoreVert, contentDescription = builtInToolText("More note actions", "Aksi catatan lainnya"))
                         }
                         DropdownMenu(expanded = editorMenuExpanded, onDismissRequest = { editorMenuExpanded = false }) {
-                            DropdownMenuItem(text = { Text(builtInToolText("Export Markdown", "Ekspor Markdown")) }, leadingIcon = { Icon(Icons.Outlined.FileDownload, contentDescription = null) }, onClick = {
+                            DropdownMenuItem(text = { Text(builtInToolText("Export note archive", "Ekspor arsip catatan")) }, leadingIcon = { Icon(Icons.Outlined.FileDownload, contentDescription = null) }, onClick = {
                                 editorMenuExpanded = false
                                 exportNote(title, body)
                             })
                             DropdownMenuItem(text = { Text(builtInToolText("Import Markdown", "Impor Markdown")) }, leadingIcon = { Icon(Icons.Outlined.FileOpen, contentDescription = null) }, onClick = {
+                                // Commit edits before the import callback switches the active note.
+                                saveCurrent()
                                 editorMenuExpanded = false
                                 importLauncher.launch(arrayOf("text/markdown", "text/plain", "application/octet-stream"))
                             })
