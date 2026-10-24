@@ -1423,6 +1423,7 @@ private fun CalendarTool(
             }
         }
     }
+    }
         FloatingActionButton(
             onClick = ::beginNewTask,
             modifier = Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 24.dp),
