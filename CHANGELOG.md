@@ -69,7 +69,6 @@ Keep release notes in English. The build copies this file into the APK; the app 
 - Built-in Calendar, Notes, and Calculator.
 - Personalization options and launcher settings.
 - Weather and media player integration.
-- Weather and media player integration.
 #### Improvements
 - Improved app drawer responsiveness and cached app icons to reduce repeated processing.
 - Refined Home screen spacing, layouts, gestures, and Settings.
