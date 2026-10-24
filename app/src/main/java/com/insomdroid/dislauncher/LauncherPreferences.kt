@@ -39,7 +39,7 @@ internal data class LauncherPreferences(
     val swipeDownNotifications: Boolean = true,
     val showCalendarShortcut: Boolean = true,
     val notificationDotsEnabled: Boolean = false,
-    val notificationDotColor: String = "white",
+    val notificationDotColor: String = "default",
     val notificationDotPackages: Set<String> = emptySet(),
     val appFolders: Set<String> = emptySet(),
     val folderAssignments: Set<String> = emptySet()
