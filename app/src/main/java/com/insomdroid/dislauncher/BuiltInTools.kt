@@ -259,12 +259,12 @@ private fun releaseUnusedNoteImageResources(
     val remainingFiles = remainingUris.mapNotNull { rawUri ->
         val uri = android.net.Uri.parse(rawUri)
         if (uri.scheme != "file") null
-        else uri.path?.let(::java.io.File)?.canonicalFile
+        else uri.path?.let { java.io.File(it) }?.canonicalFile
     }
     removedUris.forEach { rawUri ->
         val uri = android.net.Uri.parse(rawUri)
         if (uri.scheme != "file") return@forEach
-        val imageFile = uri.path?.let(::java.io.File)?.canonicalFile ?: return@forEach
+        val imageFile = uri.path?.let { java.io.File(it) }?.canonicalFile ?: return@forEach
         if (!imageFile.path.startsWith(importRoot.path + java.io.File.separator)) return@forEach
         val archiveDirectory = imageFile.parentFile?.parentFile?.canonicalFile ?: return@forEach
         if (!archiveDirectory.path.startsWith(importRoot.path + java.io.File.separator)) return@forEach
