@@ -105,21 +105,45 @@ internal fun RichNoteEditor(
         val start = field.selection.min.coerceIn(0, field.text.length)
         val end = field.selection.max.coerceIn(start, field.text.length)
         if (start == end) return
-        val style = when (mark) {
-            NoteMark.BOLD -> SpanStyle(fontWeight = FontWeight.Bold)
-            NoteMark.ITALIC -> SpanStyle(fontStyle = FontStyle.Italic)
-            NoteMark.STRIKETHROUGH -> SpanStyle(textDecoration = TextDecoration.LineThrough)
-            NoteMark.CODE -> SpanStyle(fontFamily = FontFamily.Monospace)
-            NoteMark.UNDERLINE -> SpanStyle(textDecoration = TextDecoration.Underline)
+
+        // Persist marks in the document model, not just as transient TextField styling.
+        // Splitting at the selection edges makes toggling reliable for mixed-format text.
+        val source = spansFromField(field)
+        val rebuilt = mutableListOf<NoteInline>()
+        var offset = 0
+        val selectedSegments = mutableListOf<Pair<NoteInline, Boolean>>()
+        source.forEach { span ->
+            val spanStart = offset
+            val spanEnd = offset + span.text.length
+            offset = spanEnd
+            val cuts = listOf(spanStart, start.coerceIn(spanStart, spanEnd), end.coerceIn(spanStart, spanEnd), spanEnd)
+                .distinct().sorted()
+            for (i in 0 until cuts.lastIndex) {
+                val a = cuts[i]
+                val b = cuts[i + 1]
+                if (a >= b) continue
+                val isSelected = a < end && b > start
+                val marks = span.marks.toMutableSet()
+                if (isSelected) {
+                    if (mark in marks) marks.remove(mark) else marks.add(mark)
+                }
+                val piece = NoteInline(span.text.substring(a - spanStart, b - spanStart), marks, span.link)
+                val previous = rebuilt.lastOrNull()
+                if (previous != null && previous.marks == piece.marks && previous.link == piece.link &&
+                    previous.imageUri == null && piece.imageUri == null) {
+                    rebuilt[rebuilt.lastIndex] = previous.copy(text = previous.text + piece.text)
+                } else {
+                    rebuilt += piece
+                }
+            }
         }
-        val styled = buildAnnotatedString {
-            append(field.annotatedString)
-            addStyle(style, start, end)
-        }
-        val next = field.copy(annotatedString = styled)
+        val nextBlockSpans = rebuilt
+        updateBlock(id) { it.copy(spans = nextBlockSpans) }
+        val nextBlock = document.blocks.firstOrNull { it.id == id }?.copy(spans = nextBlockSpans)
+            ?: NoteBlock(id = id, type = NoteBlockType.PARAGRAPH, spans = nextBlockSpans)
+        val next = fieldFromBlock(nextBlock, linkColor).copy(selection = field.selection)
         activeField = next
         fields[id] = next
-        updateBlock(id) { it.copy(spans = spansFromField(next)) }
     }
     fun changeActiveType(type: NoteBlockType) {
         val id = activeBlockId ?: document.blocks.lastOrNull()?.id ?: return
