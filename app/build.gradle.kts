@@ -142,6 +142,12 @@ android {
     }
 }
 
+// Generate compiler stability and performance metrics for inspection in CI artifacts.
+composeCompiler {
+    reportsDestination = layout.buildDirectory.dir("compose_compiler")
+    metricsDestination = layout.buildDirectory.dir("compose_compiler")
+}
+
 tasks.named("preBuild").configure {
     dependsOn(generateLauncherForeground, prepareChangelogAsset, generateBundledFonts)
 }
