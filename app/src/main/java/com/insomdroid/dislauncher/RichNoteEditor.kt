@@ -1,0 +1,262 @@
+package com.insomdroid.dislauncher
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.CheckBox
+import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.FormatBold
+import androidx.compose.material.icons.outlined.FormatItalic
+import androidx.compose.material.icons.outlined.FormatListBulleted
+import androidx.compose.material.icons.outlined.FormatListNumbered
+import androidx.compose.material.icons.outlined.FormatQuote
+import androidx.compose.material.icons.outlined.FormatStrikethrough
+import androidx.compose.material.icons.outlined.HorizontalRule
+import androidx.compose.material.icons.outlined.Title
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.dp
+import java.util.UUID
+
+/**
+ * Block-based note editor. NoteDocument is the editing source of truth; formatting controls
+ * mutate block types and inline marks rather than inserting visible markup characters.
+ */
+@Composable
+internal fun RichNoteEditor(
+    document: NoteDocument,
+    onDocumentChange: (NoteDocument) -> Unit,
+    modifier: Modifier = Modifier,
+    readOnly: Boolean = false,
+    onInsertImage: (() -> Unit)? = null
+) {
+    var activeBlockId by remember { mutableStateOf<String?>(null) }
+    var activeField by remember { mutableStateOf(TextFieldValue("")) }
+    val fields = remember { mutableStateMapOf<String, TextFieldValue>() }
+
+    fun updateBlock(blockId: String, transform: (NoteBlock) -> NoteBlock) {
+        onDocumentChange(document.copy(blocks = document.blocks.map { if (it.id == blockId) transform(it) else it }))
+    }
+    fun applyMark(mark: NoteMark) {
+        val id = activeBlockId ?: return
+        val field = activeField
+        val start = field.selection.min.coerceIn(0, field.text.length)
+        val end = field.selection.max.coerceIn(start, field.text.length)
+        if (start == end) return
+        val style = when (mark) {
+            NoteMark.BOLD -> SpanStyle(fontWeight = FontWeight.Bold)
+            NoteMark.ITALIC -> SpanStyle(fontStyle = FontStyle.Italic)
+            NoteMark.STRIKETHROUGH -> SpanStyle(textDecoration = TextDecoration.LineThrough)
+            NoteMark.CODE -> SpanStyle(fontFamily = FontFamily.Monospace)
+        }
+        val styled = buildAnnotatedString {
+            append(field.annotatedString)
+            addStyle(style, start, end)
+        }
+        val next = field.copy(annotatedString = styled)
+        activeField = next
+        fields[id] = next
+        updateBlock(id) { it.copy(spans = spansFromField(next)) }
+    }
+    fun changeActiveType(type: NoteBlockType) {
+        val id = activeBlockId ?: document.blocks.lastOrNull()?.id ?: return
+        updateBlock(id) { it.copy(type = type) }
+    }
+    fun addBlock(type: NoteBlockType = NoteBlockType.PARAGRAPH) {
+        val block = NoteBlock(id = UUID.randomUUID().toString(), type = type)
+        onDocumentChange(document.copy(blocks = document.blocks + block))
+        activeBlockId = block.id
+        activeField = TextFieldValue("")
+        fields[block.id] = activeField
+    }
+
+    Column(modifier.fillMaxSize()) {
+        if (!readOnly) {
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                shape = RoundedCornerShape(14.dp),
+                tonalElevation = 2.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { changeActiveType(NoteBlockType.HEADING) }) { Icon(Icons.Outlined.Title, "Heading") }
+                    IconButton(onClick = { applyMark(NoteMark.BOLD) }) { Icon(Icons.Outlined.FormatBold, "Bold") }
+                    IconButton(onClick = { applyMark(NoteMark.ITALIC) }) { Icon(Icons.Outlined.FormatItalic, "Italic") }
+                    IconButton(onClick = { applyMark(NoteMark.STRIKETHROUGH) }) { Icon(Icons.Outlined.FormatStrikethrough, "Strikethrough") }
+                    IconButton(onClick = { applyMark(NoteMark.CODE) }) { Icon(Icons.Outlined.Code, "Inline code") }
+                    IconButton(onClick = { changeActiveType(NoteBlockType.BULLET) }) { Icon(Icons.Outlined.FormatListBulleted, "Bulleted list") }
+                    IconButton(onClick = { changeActiveType(NoteBlockType.NUMBERED) }) { Icon(Icons.Outlined.FormatListNumbered, "Numbered list") }
+                    IconButton(onClick = { changeActiveType(NoteBlockType.QUOTE) }) { Icon(Icons.Outlined.FormatQuote, "Quote") }
+                    IconButton(onClick = { changeActiveType(NoteBlockType.CHECKLIST) }) { Icon(Icons.Outlined.CheckBox, "Checklist") }
+                    IconButton(onClick = { changeActiveType(NoteBlockType.DIVIDER) }) { Icon(Icons.Outlined.HorizontalRule, "Divider") }
+                    if (onInsertImage != null) {
+                        IconButton(onClick = onInsertImage) {
+                            Icon(Icons.Outlined.Add, "Insert attachment")
+                        }
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        LazyColumn(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            items(document.blocks, key = { it.id }) { block ->
+                val initial = remember(block.id) { fieldFromBlock(block) }
+                var field by remember(block.id) { mutableStateOf(initial) }
+                LaunchedEffect(block.spans, block.type, block.checked) {
+                    val fresh = fieldFromBlock(block)
+                    if (fresh.text != field.text || fresh.annotatedString.spanStyles != field.annotatedString.spanStyles) {
+                        field = fresh
+                        fields[block.id] = fresh
+                        if (activeBlockId == block.id) activeField = fresh
+                    }
+                }
+                Row(
+                    Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    when (block.type) {
+                        NoteBlockType.BULLET -> Text("•", Modifier.padding(end = 10.dp, top = 5.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        NoteBlockType.NUMBERED -> Text("${block.orderedIndex}.", Modifier.padding(end = 8.dp, top = 5.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        NoteBlockType.CHECKLIST -> Checkbox(
+                            checked = block.checked,
+                            onCheckedChange = { checked -> updateBlock(block.id) { it.copy(checked = checked) } },
+                            enabled = !readOnly,
+                            modifier = Modifier.size(36.dp)
+                        )
+                        NoteBlockType.QUOTE -> Text("▏", Modifier.padding(end = 8.dp), color = MaterialTheme.colorScheme.primary)
+                        NoteBlockType.DIVIDER -> Unit
+                        else -> Unit
+                    }
+                    if (block.type == NoteBlockType.DIVIDER) {
+                        Surface(Modifier.weight(1f).height(1.dp).padding(vertical = 12.dp), color = MaterialTheme.colorScheme.outlineVariant) {}
+                    } else {
+                        val textStyle = when (block.type) {
+                            NoteBlockType.HEADING -> MaterialTheme.typography.titleLarge
+                            NoteBlockType.CODE -> MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace)
+                            NoteBlockType.QUOTE -> MaterialTheme.typography.bodyLarge.copy(fontStyle = FontStyle.Italic)
+                            else -> MaterialTheme.typography.bodyLarge
+                        }
+                        BasicTextField(
+                            value = field,
+                            onValueChange = { next ->
+                                field = next
+                                fields[block.id] = next
+                                activeBlockId = block.id
+                                activeField = next
+                                updateBlock(block.id) { it.copy(spans = spansFromField(next)) }
+                            },
+                            readOnly = readOnly,
+                            textStyle = textStyle.copy(color = MaterialTheme.colorScheme.onSurface),
+                            modifier = Modifier.weight(1f).fillMaxWidth()
+                                .background(
+                                    if (activeBlockId == block.id && !readOnly) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.background,
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .padding(horizontal = 8.dp, vertical = 7.dp)
+                                .onFocusChanged { if (it.isFocused) { activeBlockId = block.id; activeField = field } },
+                            decorationBox = { inner ->
+                                if (field.text.isEmpty() && document.blocks.size == 1) {
+                                    Text("Write something…", color = MaterialTheme.colorScheme.onSurfaceVariant, style = textStyle)
+                                }
+                                inner()
+                            }
+                        )
+                    }
+                }
+            }
+            if (!readOnly) {
+                item {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+                        IconButton(onClick = { addBlock() }) { Icon(Icons.Outlined.Add, "Add paragraph") }
+                        Text("Add block", Modifier.align(Alignment.CenterVertically).clickable { addBlock() }, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun fieldFromBlock(block: NoteBlock): TextFieldValue {
+    val annotated = buildAnnotatedString {
+        block.spans.forEach { span ->
+            val start = length
+            append(span.text)
+            val style = SpanStyle(
+                fontWeight = if (NoteMark.BOLD in span.marks) FontWeight.Bold else FontWeight.Normal,
+                fontStyle = if (NoteMark.ITALIC in span.marks) FontStyle.Italic else FontStyle.Normal,
+                textDecoration = if (NoteMark.STRIKETHROUGH in span.marks) TextDecoration.LineThrough else null,
+                fontFamily = if (NoteMark.CODE in span.marks) FontFamily.Monospace else FontFamily.Default
+            )
+            if (span.marks.isNotEmpty()) addStyle(style, start, length)
+        }
+    }
+    return TextFieldValue(annotated, TextRange(annotated.length))
+}
+
+private fun spansFromField(field: TextFieldValue): List<NoteInline> {
+    if (field.text.isEmpty()) return emptyList()
+    val boundaries = sortedSetOf(0, field.text.length)
+    field.annotatedString.spanStyles.forEach { range ->
+        boundaries += range.start.coerceIn(0, field.text.length)
+        boundaries += range.end.coerceIn(0, field.text.length)
+    }
+    val points = boundaries.toList()
+    return (0 until points.lastIndex).mapNotNull { index ->
+        val start = points[index]
+        val end = points[index + 1]
+        if (start >= end) return@mapNotNull null
+        val marks = field.annotatedString.spanStyles.filter { it.start <= start && it.end >= end }.flatMap { range ->
+            buildList {
+                if (range.item.fontWeight == FontWeight.Bold) add(NoteMark.BOLD)
+                if (range.item.fontStyle == FontStyle.Italic) add(NoteMark.ITALIC)
+                if (range.item.textDecoration?.contains(TextDecoration.LineThrough) == true) add(NoteMark.STRIKETHROUGH)
+                if (range.item.fontFamily == FontFamily.Monospace) add(NoteMark.CODE)
+            }
+        }.toSet()
+        NoteInline(field.text.substring(start, end), marks)
+    }
+}
