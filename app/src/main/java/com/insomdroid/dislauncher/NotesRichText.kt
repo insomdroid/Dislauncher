@@ -21,7 +21,7 @@ import java.util.zip.ZipInputStream
  * Converts inline Markdown marks into styled editable text. The editor edits the styled text,
  * while persistence and interchange remain Markdown-compatible.
  */
-internal fun richFieldFromMarkdown(markdown: String) {
+internal fun richFieldFromMarkdown(markdown: String): TextFieldValue {
     val pattern = Regex("""(\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|~~(.+?)~~|(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)|`([^`]+)`)""")
     val annotated = buildAnnotatedString {
         var cursor = 0
@@ -117,6 +117,9 @@ internal fun readNoteArchive(context: Context, input: InputStream): String {
             entryCount++
             require(entryCount <= 256) { "Archive contains too many entries" }
             val name = entry.name.replace('\\', '/')
+            val allowedEntry = name == "note.md" || name == "README.txt" || name == "images" || name == "images/" ||
+                (name.startsWith("images/") && name.count { it == '/' } == 1)
+            require(allowedEntry) { "Archive contains an unsupported file: $name" }
             require(!name.startsWith("/") && !name.split('/').any { it == ".." } && !name.contains(':')) {
                 "Archive contains an unsafe path"
             }
