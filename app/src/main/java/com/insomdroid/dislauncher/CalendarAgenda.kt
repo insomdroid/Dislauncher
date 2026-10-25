@@ -58,7 +58,7 @@ private data class CalendarAgendaEvent(
 )
 
 @Composable
-internal fun CalendarAgenda(timeFormat: String, modifier: Modifier = Modifier) {
+internal fun CalendarAgenda(timeFormat: String, compact: Boolean = false, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val primary = MaterialTheme.colorScheme.onBackground
@@ -89,81 +89,105 @@ internal fun CalendarAgenda(timeFormat: String, modifier: Modifier = Modifier) {
             loading = false
         } else {
             loading = true
-            events = withContext(Dispatchers.IO) { readTodayCalendarEvents(context) }
+            events = withContext(Dispatchers.IO) { readUpcomingCalendarEvents(context) }
             loading = false
         }
     }
-    Column(
-        modifier = modifier.widthIn(max = 150.dp).padding(top = 3.dp, bottom = 3.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp)
-    ) {
-        when {
-            !hasPermission -> {
-                Text(
-                    "ALLOW CALENDAR ACCESS",
-                    color = primary,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.clickable {
-                        permissionLauncher.launch(Manifest.permission.READ_CALENDAR)
-                    }.padding(vertical = 5.dp)
-                )
+    if (compact) {
+        val label = when {
+            !hasPermission -> "Allow Calendar"
+            loading -> "Calendar…"
+            events.isEmpty() -> "No Event"
+            else -> events.first().title
+        }
+        Text(
+            label,
+            color = if (events.isEmpty() || !hasPermission || loading) secondary else primary,
+            fontSize = 12.sp,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis,
+            modifier = modifier.clickable {
+                if (!hasPermission) permissionLauncher.launch(Manifest.permission.READ_CALENDAR)
+                else if (events.isEmpty()) {
+                    openCalendar(context)
+                    refreshKey++
+                } else openCalendarEvent(context, events.first())
             }
-            loading -> Text("Loading calendar…", color = secondary, fontSize = 11.sp)
-            events.isEmpty() -> {
-                Text(
-                    "No upcoming events",
-                    color = secondary,
-                    fontSize = 11.sp,
-                    modifier = Modifier.clickable {
-                        openCalendar(context)
-                        refreshKey++
-                    }.padding(vertical = 3.dp)
-                )
-            }
-            else -> {
-                val visibleEvents = if (expanded) events.take(5) else events.take(1)
-                visibleEvents.forEachIndexed { index, event ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            eventTime(context, event, timeFormat),
-                            color = secondary,
-                            fontSize = 10.sp,
-                            maxLines = 1,
-                            modifier = Modifier.width(72.dp).clickable { openCalendarEvent(context, event) }
-                        )
-                        Text(
-                            event.title,
-                            color = primary,
-                            fontSize = 12.sp,
-                            fontWeight = if (index == 0) FontWeight.Medium else FontWeight.Normal,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f).clickable { openCalendarEvent(context, event) }
-                        )
-                        if (!event.meetingUrl.isNullOrBlank()) {
-                            Spacer(Modifier.width(6.dp))
+        )
+    } else {
+        Column(
+            modifier = modifier.widthIn(max = 150.dp).padding(top = 3.dp, bottom = 3.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            when {
+                !hasPermission -> {
+                    Text(
+                        "ALLOW CALENDAR ACCESS",
+                        color = primary,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.clickable {
+                            permissionLauncher.launch(Manifest.permission.READ_CALENDAR)
+                        }.padding(vertical = 5.dp)
+                    )
+                }
+                loading -> Text("Loading calendar…", color = secondary, fontSize = 11.sp)
+                events.isEmpty() -> {
+                    Text(
+                        "No upcoming events",
+                        color = secondary,
+                        fontSize = 11.sp,
+                        modifier = Modifier.clickable {
+                            openCalendar(context)
+                            refreshKey++
+                        }.padding(vertical = 3.dp)
+                    )
+                }
+                else -> {
+                    val visibleEvents = if (expanded) events.take(5) else events.take(1)
+                    visibleEvents.forEachIndexed { index, event ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Text(
-                                "↗",
+                                eventTime(context, event, timeFormat),
                                 color = secondary,
-                                fontSize = 13.sp,
-                                modifier = Modifier.clickable { pendingMeetingUrl = validateCalendarMeetingUrl(event.meetingUrl) }
-                                    .padding(horizontal = 2.dp)
+                                fontSize = 10.sp,
+                                maxLines = 1,
+                                modifier = Modifier.width(72.dp).clickable { openCalendarEvent(context, event) }
                             )
+                            Text(
+                                event.title,
+                                color = primary,
+                                fontSize = 12.sp,
+                                fontWeight = if (index == 0) FontWeight.Medium else FontWeight.Normal,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f).clickable { openCalendarEvent(context, event) }
+                            )
+                            if (!event.meetingUrl.isNullOrBlank()) {
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    "↗",
+                                    color = secondary,
+                                    fontSize = 13.sp,
+                                    modifier = Modifier.clickable { pendingMeetingUrl = validateCalendarMeetingUrl(event.meetingUrl) }
+                                        .padding(horizontal = 2.dp)
+                                )
+                            }
                         }
                     }
-                }
-                if (events.size > 1) {
-                    Text(
-                        if (expanded) "SHOW LESS" else "SHOW ${(events.size - 1).coerceAtMost(4)} MORE",
-                        color = secondary,
-                        fontSize = 9.sp,
-                        letterSpacing = 0.5.sp,
-                        modifier = Modifier.clickable { expanded = !expanded }.padding(vertical = 3.dp)
-                    )
+                    if (events.size > 1) {
+                        Text(
+                            if (expanded) "SHOW LESS" else "SHOW ${(events.size - 1).coerceAtMost(4)} MORE",
+                            color = secondary,
+                            fontSize = 9.sp,
+                            letterSpacing = 0.5.sp,
+                            modifier = Modifier.clickable { expanded = !expanded }.padding(vertical = 3.dp)
+                        )
+                    }
                 }
             }
         }
@@ -199,7 +223,7 @@ private fun hasCalendarReadPermission(context: Context): Boolean =
     ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) ==
         PackageManager.PERMISSION_GRANTED
 
-private fun readTodayCalendarEvents(context: Context): List<CalendarAgendaEvent> {
+private fun readUpcomingCalendarEvents(context: Context): List<CalendarAgendaEvent> {
     if (!hasCalendarReadPermission(context)) return emptyList()
     val calendar = java.util.Calendar.getInstance(TimeZone.getDefault())
     calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
@@ -207,7 +231,7 @@ private fun readTodayCalendarEvents(context: Context): List<CalendarAgendaEvent>
     calendar.set(java.util.Calendar.SECOND, 0)
     calendar.set(java.util.Calendar.MILLISECOND, 0)
     val startMillis = calendar.timeInMillis
-    calendar.add(java.util.Calendar.DAY_OF_YEAR, 1)
+    calendar.add(java.util.Calendar.DAY_OF_YEAR, 7)
     val endMillis = calendar.timeInMillis
     val uriBuilder = CalendarContract.Instances.CONTENT_URI.buildUpon()
     ContentUris.appendId(uriBuilder, startMillis)
