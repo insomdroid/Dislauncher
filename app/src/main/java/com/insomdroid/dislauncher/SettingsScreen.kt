@@ -418,7 +418,7 @@ internal fun SettingsScreen(
                                     "syne" to "Syne",
                                     "bricolage_grotesque" to "Bricolage Grotesque",
                                     "doto" to "Doto",
-                                    "overpass_mono" to "Overpass Mono",
+                                    "geist_mono" to "Geist Mono",
                                     "custom" to tr("Custom", "Kustom")
                                 )
                             ) { value ->
