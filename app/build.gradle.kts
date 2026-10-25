@@ -32,8 +32,21 @@ val parsedVersion = Regex("^(\\d+)\\.(\\d+)\\.(\\d+)$").matchEntire(releaseTag)
 val developmentVersionName = System.getenv("APP_VERSION_NAME")?.takeIf { it.isNotBlank() }
     ?: "1.2.0-dev.0"
 val developmentBuildNumber = System.getenv("APP_BUILD_NUMBER")?.toIntOrNull() ?: 0
-val appVersionName = parsedVersion?.value ?: developmentVersionName
-val appVersionCode = (parsedVersion?.value ?: developmentVersionName)
+// F-Droid can supply deterministic version values as Gradle project properties.
+// Both properties must be supplied together; ordinary CI and release versioning is unchanged.
+val fdroidVersionName = providers.gradleProperty("fdroidVersionName").orNull
+    ?.takeIf { it.isNotBlank() }
+val fdroidVersionCodeProperty = providers.gradleProperty("fdroidVersionCode").orNull
+val fdroidVersionCode = fdroidVersionCodeProperty?.toIntOrNull()
+require(fdroidVersionCodeProperty == null || fdroidVersionCode != null) {
+    "fdroidVersionCode must be a valid integer"
+}
+require((fdroidVersionName == null) == (fdroidVersionCodeProperty == null)) {
+    "fdroidVersionName and fdroidVersionCode must be supplied together"
+}
+
+val appVersionName = fdroidVersionName ?: parsedVersion?.value ?: developmentVersionName
+val appVersionCode = fdroidVersionCode ?: (parsedVersion?.value ?: developmentVersionName)
     .let { versionName ->
         val version = Regex("^(\\d+)\\.(\\d+)\\.(\\d+)(?:-.*)?$").matchEntire(versionName)
             ?: error("Invalid app version name: $versionName")
