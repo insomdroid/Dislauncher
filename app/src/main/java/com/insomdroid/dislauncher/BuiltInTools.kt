@@ -37,6 +37,38 @@ import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.ArrowForward
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.FileDownload
+import androidx.compose.material.icons.outlined.FileOpen
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.NoteAdd
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Title
+import androidx.compose.material.icons.outlined.ViewList
+import androidx.compose.material.icons.outlined.ViewModule
+import androidx.compose.material.icons.outlined.FormatBold
+import androidx.compose.material.icons.outlined.FormatItalic
+import androidx.compose.material.icons.outlined.FormatStrikethrough
+import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.FormatListNumbered
+import androidx.compose.material.icons.outlined.FormatQuote
+import androidx.compose.material.icons.outlined.HorizontalRule
+import androidx.compose.material.icons.outlined.FormatListBulleted
+import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.material.icons.outlined.InsertLink
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -51,6 +83,8 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -414,7 +448,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                                     else -> requestClose()
                                 }
                             }) {
-                                DislauncherIcon(icon = "arrow_back", contentDescription = builtInToolText("Back", "Kembali"))
+                                Icon(Icons.Outlined.ArrowBack, contentDescription = builtInToolText("Back", "Kembali"))
                             }
                         },
                         actions = {
@@ -424,20 +458,20 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                                         converterSearchQuery = ""
                                         converterSearchExpanded = false
                                     }) {
-                                        DislauncherIcon(icon = "close", contentDescription = builtInToolText("Close search", "Tutup pencarian"))
+                                        Icon(Icons.Outlined.Close, contentDescription = builtInToolText("Close search", "Tutup pencarian"))
                                     }
                                 } else {
                                     IconButton(onClick = { converterSearchExpanded = true }) {
-                                        DislauncherIcon(icon = "search", contentDescription = builtInToolText("Search converter", "Cari konverter"))
+                                        Icon(Icons.Outlined.Search, contentDescription = builtInToolText("Search converter", "Cari konverter"))
                                     }
                                 }
                             }
                             if (tool == BuiltInTool.CALENDAR) {
                                 IconButton(onClick = { calendarMonth = calendarMonth.minusMonths(1) }) {
-                                    DislauncherIcon(icon = "arrow_back", contentDescription = builtInToolText("Previous month", "Bulan sebelumnya"))
+                                    Icon(Icons.Outlined.ArrowBack, contentDescription = builtInToolText("Previous month", "Bulan sebelumnya"))
                                 }
                                 IconButton(onClick = { calendarMonth = calendarMonth.plusMonths(1) }) {
-                                    DislauncherIcon(icon = "arrow_forward", contentDescription = builtInToolText("Next month", "Bulan berikutnya"))
+                                    Icon(Icons.Outlined.ArrowForward, contentDescription = builtInToolText("Next month", "Bulan berikutnya"))
                                 }
                             }
                             if (tool == BuiltInTool.CALCULATOR && !calculatorShowingHistory) {
@@ -451,11 +485,11 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                                         onClick = { calculatorClearHistorySignal++ },
                                         enabled = calculatorHistoryHasItems
                                     ) {
-                                        DislauncherIcon(icon = "delete", contentDescription = builtInToolText("Clear calculator history", "Hapus riwayat kalkulator"))
+                                        Icon(Icons.Outlined.DeleteOutline, contentDescription = builtInToolText("Clear calculator history", "Hapus riwayat kalkulator"))
                                     }
                                 } else {
                                     IconButton(onClick = { calculatorShowingHistory = true }) {
-                                        DislauncherIcon(icon = "history", contentDescription = builtInToolText("Open calculator history", "Buka riwayat kalkulator"))
+                                        Icon(Icons.Outlined.History, contentDescription = builtInToolText("Open calculator history", "Buka riwayat kalkulator"))
                                     }
                                 }
                             }
@@ -714,7 +748,7 @@ private fun NotesTool(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     IconButton(onClick = onBackRequested) {
-                        DislauncherIcon(icon = "arrow_back", contentDescription = builtInToolText("Back", "Kembali"))
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = builtInToolText("Back", "Kembali"))
                     }
                     if (searchExpanded) {
                         OutlinedTextField(
@@ -726,7 +760,7 @@ private fun NotesTool(
                             shape = RoundedCornerShape(14.dp),
                             trailingIcon = {
                                 IconButton(onClick = { searchQuery = ""; searchExpanded = false }) {
-                                    DislauncherIcon(icon = "close", contentDescription = "Close search")
+                                    Icon(Icons.Outlined.Close, contentDescription = "Close search")
                                 }
                             }
                         )
@@ -734,7 +768,7 @@ private fun NotesTool(
                         Text("Notes", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.SemiBold, maxLines = 1)
                         IconButton(onClick = { searchExpanded = true }) {
-                            DislauncherIcon(icon = "search", contentDescription = "Search notes")
+                            Icon(Icons.Outlined.Search, contentDescription = "Search notes")
                         }
                     }
                     IconButton(onClick = {
@@ -742,23 +776,23 @@ private fun NotesTool(
                         context.getSharedPreferences("dislauncher_notes", Context.MODE_PRIVATE)
                             .edit().putBoolean("grid_view", gridView).apply()
                     }) {
-                        DislauncherIcon(icon = if (gridView) "view_list" else "view_module",
+                        Icon(if (gridView) Icons.Outlined.ViewList else Icons.Outlined.ViewModule,
                             contentDescription = if (gridView) "Switch to list view" else "Switch to grid view")
                     }
                     Box {
                         IconButton(onClick = { menuTarget = "home" }) {
-                            DislauncherIcon(icon = "more_vert", contentDescription = "Notes options")
+                            Icon(Icons.Outlined.MoreVert, contentDescription = "Notes options")
                         }
                         DropdownMenu(expanded = menuTarget == "home", onDismissRequest = { menuTarget = null }) {
                             DropdownMenuItem(text = { Text(if (pinnedOnly) "Show all notes" else "Pinned notes") },
-                                leadingIcon = { DislauncherIcon(icon = "push_pin", contentDescription = null, size = 20.dp, modifier = Modifier.size(20.dp)) },
+                                leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null, modifier = Modifier.size(20.dp)) },
                                 onClick = { pinnedOnly = !pinnedOnly; menuTarget = null })
                             DropdownMenuItem(text = { Text(if (sortByTitle) "Sort by modified" else "Sort by title") },
                                 onClick = { sortByTitle = !sortByTitle; menuTarget = null })
                             DropdownMenuItem(text = { Text("Manage labels") },
                                 onClick = { menuTarget = null; showLabelManager = true })
                             DropdownMenuItem(text = { Text("Import note archive") },
-                                leadingIcon = { DislauncherIcon(icon = "file_open", contentDescription = null, size = 20.dp, modifier = Modifier.size(20.dp)) },
+                                leadingIcon = { Icon(Icons.Outlined.FileOpen, contentDescription = null, modifier = Modifier.size(20.dp)) },
                                 onClick = { menuTarget = null; importLauncher.launch(arrayOf("application/zip", "application/octet-stream")) })
                         }
                     }
@@ -778,7 +812,7 @@ private fun NotesTool(
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.padding(horizontal = 24.dp)) {
-                            DislauncherIcon(icon = "note_add", contentDescription = null, size = 24.dp, modifier = Modifier.size(24.dp),
+                            Icon(Icons.Outlined.NoteAdd, contentDescription = null, modifier = Modifier.size(38.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(if (searchQuery.isBlank() && !pinnedOnly) "No notes yet" else "No matching notes",
                                 style = MaterialTheme.typography.titleMedium)
@@ -819,23 +853,23 @@ private fun NotesTool(
                             ) {
                                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        if (note.pinned) DislauncherIcon(icon = "push_pin", contentDescription = "Pinned",
+                                        if (note.pinned) Icon(Icons.Outlined.PushPin, contentDescription = "Pinned",
                                             tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(15.dp))
                                         Text(note.title.ifBlank { "Untitled note" }, modifier = Modifier.weight(1f),
                                             style = MaterialTheme.typography.titleMedium, color = noteCardContentColor, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                         Box {
                                             IconButton(onClick = { menuTarget = note.id }, modifier = Modifier.size(28.dp)) {
-                                                DislauncherIcon(icon = "more_vert", contentDescription = "Note actions")
+                                                Icon(Icons.Outlined.MoreVert, contentDescription = "Note actions")
                                             }
                                             DropdownMenu(expanded = menuTarget == note.id, onDismissRequest = { menuTarget = null }) {
                                                 DropdownMenuItem(text = { Text(if (note.pinned) "Unpin" else "Pin") },
-                                                    leadingIcon = { DislauncherIcon(icon = "push_pin", contentDescription = null, size = 20.dp, modifier = Modifier.size(20.dp)) },
+                                                    leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null, modifier = Modifier.size(20.dp)) },
                                                     onClick = {
                                                         notes = notes.map { if (it.id == note.id) it.copy(pinned = !it.pinned) else it }
                                                         saveNotes(context, notes); menuTarget = null
                                                     })
                                                 DropdownMenuItem(text = { Text("Delete") },
-                                                    leadingIcon = { DislauncherIcon(icon = "delete", contentDescription = null, size = 20.dp, modifier = Modifier.size(20.dp)) },
+                                                    leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null, modifier = Modifier.size(20.dp)) },
                                                     onClick = { deleteTarget = note.id; menuTarget = null })
                                             }
                                         }
@@ -869,7 +903,7 @@ private fun NotesTool(
                             ) {
                                 Column(Modifier.weight(1f).padding(end = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        if (note.pinned) DislauncherIcon(icon = "push_pin", contentDescription = "Pinned",
+                                        if (note.pinned) Icon(Icons.Outlined.PushPin, contentDescription = "Pinned",
                                             tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
                                         Text(note.title.ifBlank { "Untitled note" }, style = MaterialTheme.typography.titleMedium,
                                             maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -885,17 +919,17 @@ private fun NotesTool(
                                 }
                                 Box {
                                     IconButton(onClick = { menuTarget = note.id }) {
-                                        DislauncherIcon(icon = "more_vert", contentDescription = "Note actions")
+                                        Icon(Icons.Outlined.MoreVert, contentDescription = "Note actions")
                                     }
                                     DropdownMenu(expanded = menuTarget == note.id, onDismissRequest = { menuTarget = null }) {
                                         DropdownMenuItem(text = { Text(if (note.pinned) "Unpin" else "Pin") },
-                                            leadingIcon = { DislauncherIcon(icon = "push_pin", contentDescription = null, size = 20.dp, modifier = Modifier.size(20.dp)) },
+                                            leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null, modifier = Modifier.size(20.dp)) },
                                             onClick = {
                                                 notes = notes.map { if (it.id == note.id) it.copy(pinned = !it.pinned) else it }
                                                 saveNotes(context, notes); menuTarget = null
                                             })
                                         DropdownMenuItem(text = { Text("Delete") },
-                                            leadingIcon = { DislauncherIcon(icon = "delete", contentDescription = null, size = 20.dp, modifier = Modifier.size(20.dp)) },
+                                            leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null, modifier = Modifier.size(20.dp)) },
                                             onClick = { deleteTarget = note.id; menuTarget = null })
                                     }
                                 }
@@ -910,11 +944,11 @@ private fun NotesTool(
                 modifier = Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 24.dp),
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            ) { DislauncherIcon(icon = "note_add", contentDescription = "New note") }
+            ) { Icon(Icons.Outlined.NoteAdd, contentDescription = "New note") }
         } else {
             Column(Modifier.fillMaxSize().imePadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBackRequested) { DislauncherIcon(icon = "arrow_back", contentDescription = "Back") }
+                    IconButton(onClick = onBackRequested) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Back") }
                     IconButton(
                         onClick = {
                             if (undoHistory.isNotEmpty()) {
@@ -924,7 +958,7 @@ private fun NotesTool(
                             }
                         },
                         enabled = undoHistory.isNotEmpty()
-                    ) { DislauncherIcon(icon = "history", contentDescription = "Undo") }
+                    ) { Icon(Icons.Outlined.History, contentDescription = "Undo") }
                     IconButton(
                         onClick = {
                             if (redoHistory.isNotEmpty()) {
@@ -934,7 +968,7 @@ private fun NotesTool(
                             }
                         },
                         enabled = redoHistory.isNotEmpty()
-                    ) { DislauncherIcon(icon = "arrow_forward", contentDescription = "Redo") }
+                    ) { Icon(Icons.Outlined.ArrowForward, contentDescription = "Redo") }
                     Spacer(Modifier.weight(1f))
                     val pinned = notes.firstOrNull { it.id == selectedId }?.pinned == true
                     IconButton(onClick = {
@@ -942,16 +976,16 @@ private fun NotesTool(
                             .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
                         saveNotes(context, notes)
                     }) {
-                        DislauncherIcon(icon = "push_pin", contentDescription = if (pinned) "Unpin note" else "Pin note",
+                        Icon(Icons.Outlined.PushPin, contentDescription = if (pinned) "Unpin note" else "Pin note",
                             tint = if (pinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Box {
                         IconButton(onClick = { menuTarget = "editor" }) {
-                            DislauncherIcon(icon = "more_vert", contentDescription = "More note actions")
+                            Icon(Icons.Outlined.MoreVert, contentDescription = "More note actions")
                         }
                         DropdownMenu(expanded = menuTarget == "editor", onDismissRequest = { menuTarget = null }) {
                             DropdownMenuItem(text = { Text("Export Markdown (.md)") },
-                                leadingIcon = { DislauncherIcon(icon = "file_download", contentDescription = null, size = 20.dp, modifier = Modifier.size(20.dp)) },
+                                leadingIcon = { Icon(Icons.Outlined.FileDownload, contentDescription = null, modifier = Modifier.size(20.dp)) },
                                 onClick = {
                                     saveCurrent()
                                     val filename = title.ifBlank { "note" }.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim().ifBlank { "note" }
@@ -959,7 +993,7 @@ private fun NotesTool(
                                     markdownExportLauncher.launch("$filename.md")
                                 })
                             DropdownMenuItem(text = { Text("Export note archive") },
-                                leadingIcon = { DislauncherIcon(icon = "file_download", contentDescription = null, size = 20.dp, modifier = Modifier.size(20.dp)) },
+                                leadingIcon = { Icon(Icons.Outlined.FileDownload, contentDescription = null, modifier = Modifier.size(20.dp)) },
                                 onClick = {
                                     saveCurrent()
                                     pendingExport = PendingNoteExport(title, document, currentLabels.toList(), currentColor)
@@ -972,10 +1006,10 @@ private fun NotesTool(
                             DropdownMenuItem(text = { Text("Note color") },
                                 onClick = { menuTarget = null; showColorPicker = true })
                             DropdownMenuItem(text = { Text("Insert image") },
-                                leadingIcon = { DislauncherIcon(icon = "image", contentDescription = null, size = 20.dp, modifier = Modifier.size(20.dp)) },
+                                leadingIcon = { Icon(Icons.Outlined.Image, contentDescription = null, modifier = Modifier.size(20.dp)) },
                                 onClick = { menuTarget = null; imageLauncher.launch(arrayOf("image/*")) })
                             DropdownMenuItem(text = { Text("Delete note") },
-                                leadingIcon = { DislauncherIcon(icon = "delete", contentDescription = null, size = 20.dp, modifier = Modifier.size(20.dp)) },
+                                leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null, modifier = Modifier.size(20.dp)) },
                                 onClick = { deleteTarget = selectedId; menuTarget = null })
                         }
                     }
@@ -1656,7 +1690,7 @@ private fun CalendarTool(
                                 saveTasks(context, tasks)
                             })
                         } else {
-                            DislauncherIcon(icon = "notifications", contentDescription = builtInToolText("Reminder", "Pengingat"),
+                            Icon(Icons.Outlined.Notifications, contentDescription = builtInToolText("Reminder", "Pengingat"),
                                 tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 10.dp))
                         }
                         Column(Modifier.weight(1f).padding(vertical = 6.dp, horizontal = 4.dp),
@@ -1675,11 +1709,11 @@ private fun CalendarTool(
                             }
                         }
                         IconButton(onClick = { beginEditTask(task) }) {
-                            DislauncherIcon(icon = "edit", contentDescription = builtInToolText("Edit task", "Edit tugas"),
+                            Icon(Icons.Outlined.Edit, contentDescription = builtInToolText("Edit task", "Edit tugas"),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         IconButton(onClick = { deleteTarget = task }) {
-                            DislauncherIcon(icon = "delete", contentDescription = builtInToolText("Delete task", "Hapus tugas"),
+                            Icon(Icons.Outlined.DeleteOutline, contentDescription = builtInToolText("Delete task", "Hapus tugas"),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
@@ -1693,7 +1727,7 @@ private fun CalendarTool(
             modifier = Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 24.dp),
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        ) { DislauncherIcon(icon = "add", contentDescription = builtInToolText("Add task", "Tambah tugas")) }
+        ) { Icon(Icons.Outlined.Add, contentDescription = builtInToolText("Add task", "Tambah tugas")) }
     }
 
     if (showEditor) {
@@ -1733,13 +1767,13 @@ private fun CalendarTool(
                         }
                     }
                     TextButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
-                        DislauncherIcon(icon = "event", contentDescription = null)
+                        Icon(Icons.Outlined.Event, contentDescription = null)
                         Spacer(Modifier.size(8.dp))
                         Text(date.format(DateTimeFormatter.ofPattern("d MMM yyyy", Locale.getDefault())))
                     }
                     if (type == "reminder") {
                         TextButton(onClick = { showTimePicker = true }, modifier = Modifier.fillMaxWidth()) {
-                            DislauncherIcon(icon = "schedule", contentDescription = null)
+                            Icon(Icons.Outlined.Schedule, contentDescription = null)
                             Spacer(Modifier.size(8.dp))
                             Text(time.format(DateTimeFormatter.ofPattern("HH:mm")))
                         }
