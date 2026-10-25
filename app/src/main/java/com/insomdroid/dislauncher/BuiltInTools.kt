@@ -778,7 +778,7 @@ private fun NotesTool(
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.padding(horizontal = 24.dp)) {
-                            DislauncherIcon(icon = "note_add", contentDescription = null, size = 38.dp, modifier = Modifier.size(38.dp),
+                            DislauncherIcon(icon = "note_add", contentDescription = null, size = 24.dp, modifier = Modifier.size(24.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(if (searchQuery.isBlank() && !pinnedOnly) "No notes yet" else "No matching notes",
                                 style = MaterialTheme.typography.titleMedium)
