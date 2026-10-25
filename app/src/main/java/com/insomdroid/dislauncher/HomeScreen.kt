@@ -28,9 +28,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.DragIndicator
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.OutlinedTextField
@@ -381,11 +385,11 @@ internal fun HomeScreen(
                         }
                     }
                     if (movingFavoriteId == itemId) {
-                        DislauncherIcon(
-                            icon = "drag_indicator",
+                        Icon(
+                            imageVector = Icons.Outlined.DragIndicator,
                             contentDescription = "Reorder favourite",
                             tint = secondaryText.copy(alpha = 0.82f),
-                            size = 20.dp, modifier = Modifier.padding(start = 8.dp).size(20.dp)
+                            modifier = Modifier.padding(start = 8.dp).size(20.dp)
                                 .pointerInput(itemId) {
                                     detectDragGestures(
                                         onDragStart = {
@@ -517,8 +521,8 @@ internal fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                DislauncherIcon(
-                            icon = "settings",
+                Icon(
+                    imageVector = Icons.Outlined.Settings,
                     contentDescription = "Dislauncher Settings",
                     tint = secondaryText,
                     modifier = Modifier.size(24.dp)
