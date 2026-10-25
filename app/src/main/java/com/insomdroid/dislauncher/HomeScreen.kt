@@ -2,6 +2,7 @@ package com.insomdroid.dislauncher
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.content.Context
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
