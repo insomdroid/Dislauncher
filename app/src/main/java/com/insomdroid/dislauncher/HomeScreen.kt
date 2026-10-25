@@ -3,6 +3,9 @@ package com.insomdroid.dislauncher
 import android.Manifest
 import android.content.pm.PackageManager
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.telephony.TelephonyManager
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -11,7 +14,6 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -75,7 +77,7 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun HomeScreen(
     apps: List<LauncherApp>,
@@ -109,6 +111,7 @@ internal fun HomeScreen(
     var now by remember { mutableStateOf(LocalTime.now()) }
     var batteryPercent by remember { mutableStateOf<Int?>(null) }
     var batteryCharging by remember { mutableStateOf(false) }
+    var networkLabel by remember { mutableStateOf(readNetworkLabel(context)) }
     var weatherInfo by remember { mutableStateOf(cachedWeather) }
     var weatherStatus by remember { mutableStateOf("Tap to allow location") }
     val today = LocalDate.now()
@@ -152,6 +155,7 @@ internal fun HomeScreen(
             val delayUntilNextMinute = 60_000L - (System.currentTimeMillis() % 60_000L)
             delay(delayUntilNextMinute.coerceAtLeast(1L))
             now = LocalTime.now()
+            networkLabel = readNetworkLabel(context)
             if (preferences.showBattery) {
                 val batteryState = readBatteryState(context)
                 batteryPercent = batteryState.percent
@@ -253,44 +257,45 @@ internal fun HomeScreen(
         val showStatusWidgets = preferences.showWeather || preferences.showBattery || preferences.showCalendarShortcut
         if (showStatusWidgets) {
             Spacer(Modifier.height(HomeDesign.headerToStatus))
-            FlowRow(
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(HomeDesign.statusRowGap),
-                itemVerticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                if (preferences.showBattery) {
-                    Text(
-                        (if (batteryCharging) "+" else "") + (batteryPercent?.let { "$it%" } ?: "--%"),
-                        color = primaryText,
-                        fontSize = 12.sp,
-                        maxLines = 1
-                    )
-                }
-                if (preferences.showWeather) {
-                    val hasLocation = ContextCompat.checkSelfPermission(
-                        context, Manifest.permission.ACCESS_COARSE_LOCATION
-                    ) == PackageManager.PERMISSION_GRANTED
-                    val weatherText = weatherInfo?.let {
-                        "${it.temperature} ${it.condition.lowercase(Locale.getDefault())}"
-                    } ?: weatherStatus.ifBlank {
-                        if (!hasLocation) "Tap to allow location" else ""
+                val statusParts = buildList {
+                    if (preferences.showBattery) {
+                        add((if (batteryCharging) "+" else "") + (batteryPercent?.let { "$it%" } ?: "--%"))
                     }
+                    add(networkLabel)
+                    if (preferences.showWeather) {
+                        val hasLocation = ContextCompat.checkSelfPermission(
+                            context, Manifest.permission.ACCESS_COARSE_LOCATION
+                        ) == PackageManager.PERMISSION_GRANTED
+                        val weatherText = weatherInfo?.let {
+                            "${it.temperature} ${it.condition.lowercase(Locale.getDefault())}"
+                        } ?: weatherStatus.ifBlank {
+                            if (!hasLocation) "Tap to allow location" else ""
+                        }
+                        if (weatherText.isNotBlank()) add(weatherText)
+                    }
+                }
+                statusParts.forEachIndexed { index, part ->
+                    if (index > 0) Text("·", color = secondaryText, fontSize = 12.sp, maxLines = 1)
                     Text(
-                        weatherText,
+                        part,
                         color = primaryText,
                         fontSize = 12.sp,
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.widthIn(max = 210.dp)
-                            .clickable { onOpenWeather(weatherInfo ?: cachedWeather) }
+                        modifier = Modifier.widthIn(max = if (preferences.showWeather && index == statusParts.lastIndex) 100.dp else 64.dp)
                     )
                 }
                 if (preferences.showCalendarShortcut) {
                     CalendarAgenda(
                         preferences.timeFormat,
-                        modifier = Modifier.widthIn(max = 148.dp)
+                        compact = true,
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
@@ -539,5 +544,28 @@ internal fun HomeScreen(
             }
         }
         Spacer(Modifier.height(14.dp))
+    }
+}
+
+
+private fun readNetworkLabel(context: Context): String {
+    val connectivity = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        ?: return "Mobile"
+    val network = connectivity.activeNetwork ?: return "Offline"
+    val capabilities = connectivity.getNetworkCapabilities(network) ?: return "Offline"
+    if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) return "Wi-Fi"
+    if (!capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) return "Offline"
+
+    val telephony = context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
+        ?: return "Mobile"
+    return try {
+        when (telephony.dataNetworkType) {
+            TelephonyManager.NETWORK_TYPE_NR -> "5G"
+            TelephonyManager.NETWORK_TYPE_LTE -> "LTE"
+            TelephonyManager.NETWORK_TYPE_IWLAN -> "Wi-Fi"
+            else -> "Mobile"
+        }
+    } catch (_: SecurityException) {
+        "Mobile"
     }
 }
