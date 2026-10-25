@@ -1026,7 +1026,7 @@ private fun NotesTool(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = "TITLE",
+                            text = builtInToolText("NOTE TITLE", "JUDUL CATATAN"),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             letterSpacing = 1.sp
@@ -1042,9 +1042,9 @@ private fun NotesTool(
                             decorationBox = { inner ->
                                 if (title.isBlank()) {
                                     Text(
-                                        "Title",
-                                        style = MaterialTheme.typography.headlineSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        builtInToolText("Add a note title…", "Tambahkan judul catatan…"),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f)
                                     )
                                 }
                                 inner()
@@ -1061,19 +1061,27 @@ private fun NotesTool(
                         }
                     }
                 }
-                MarkdownNoteEditor(
-                    value = markdownText,
-                    onValueChange = { updated ->
-                        if (updated != markdownText) {
-                            undoHistory = (undoHistory + document).takeLast(50)
-                            redoHistory = emptyList()
-                            markdownText = updated
-                            document = NoteDocumentCodec.fromLegacyContent(updated)
-                        }
-                    },
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                    onInsertImage = { imageLauncher.launch(arrayOf("image/*")) }
-                )
+                Surface(
+                    modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                ) {
+                    MarkdownNoteEditor(
+                        value = markdownText,
+                        onValueChange = { updated ->
+                            if (updated != markdownText) {
+                                undoHistory = (undoHistory + document).takeLast(50)
+                                redoHistory = emptyList()
+                                markdownText = updated
+                                document = NoteDocumentCodec.fromLegacyContent(updated)
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize().padding(vertical = 2.dp),
+                        onInsertImage = { imageLauncher.launch(arrayOf("image/*")) }
+                    )
+                }
             }
         }
     }
