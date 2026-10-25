@@ -28,13 +28,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.DragIndicator
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.OutlinedTextField
@@ -385,8 +381,8 @@ internal fun HomeScreen(
                         }
                     }
                     if (movingFavoriteId == itemId) {
-                        Icon(
-                            imageVector = Icons.Outlined.DragIndicator,
+                        DislauncherIcon(
+                            icon = "drag_indicator",
                             contentDescription = "Reorder favourite",
                             tint = secondaryText.copy(alpha = 0.82f),
                             modifier = Modifier.padding(start = 8.dp).size(20.dp)
@@ -521,8 +517,8 @@ internal fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.Settings,
+                DislauncherIcon(
+                            icon = "settings",
                     contentDescription = "Dislauncher Settings",
                     tint = secondaryText,
                     modifier = Modifier.size(24.dp)
