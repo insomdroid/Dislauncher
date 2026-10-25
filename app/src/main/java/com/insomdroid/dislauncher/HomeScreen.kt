@@ -385,7 +385,7 @@ internal fun HomeScreen(
                             icon = "drag_indicator",
                             contentDescription = "Reorder favourite",
                             tint = secondaryText.copy(alpha = 0.82f),
-                            modifier = Modifier.padding(start = 8.dp).size(20.dp)
+                            size = 20.dp, modifier = Modifier.padding(start = 8.dp).size(20.dp)
                                 .pointerInput(itemId) {
                                     detectDragGestures(
                                         onDragStart = {
