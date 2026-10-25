@@ -236,7 +236,7 @@ internal fun DislauncherTheme(
             "syne" -> variableFont(R.font.syne_variable)
             "bricolage_grotesque" -> variableFont(R.font.bricolage_grotesque_variable)
             "doto" -> variableFont(R.font.doto_variable)
-            "overpass_mono" -> variableFont(R.font.overpass_mono_variable)
+            "geist_mono" -> variableFont(R.font.geist_mono_variable)
             "custom" -> {
                 val fontFile = listOf("ttf", "otf")
                     .map { File(context.filesDir, "fonts/custom-font.$it") }
