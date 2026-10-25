@@ -1142,7 +1142,7 @@ private fun SettingsCategoryRow(
                 overflow = TextOverflow.Ellipsis
             )
         }
-        Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
     }
 }
 
