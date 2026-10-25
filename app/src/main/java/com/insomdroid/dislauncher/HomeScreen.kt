@@ -280,7 +280,6 @@ internal fun HomeScreen(
                     }
                 }
                 statusParts.forEachIndexed { index, part ->
-                    if (index > 0) Text("·", color = secondaryText, fontSize = 12.sp, maxLines = 1)
                     Text(
                         part,
                         color = primaryText,
