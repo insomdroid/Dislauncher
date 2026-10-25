@@ -26,10 +26,24 @@ They must be provided together. Example for the current source release:
 
 This avoids relying on GitHub Actions environment variables or release-tag detection when a third-party build service builds a fixed source commit. Normal development and tagged release versioning remains unchanged when these properties are absent.
 
+## Dependency and asset review
+
+The first-pass direct dependency review found no advertising, analytics or Firebase/Google Play Services SDK declarations. Licenses checked from upstream project pages include:
+
+- `com.kizitonwose.calendar:compose:2.9.1` — MIT.
+- `io.noties.markwon:core:4.6.2` — Apache-2.0.
+- AndroidX and Jetpack Compose dependencies — Apache-2.0 family licenses.
+- `org.json:json:20260814` is test-only; Maven Central currently reports this release as public domain. Older releases used the incompatible “Good, not Evil” JSON license, so do not downgrade this test dependency to an older release.
+- JUnit and Robolectric are test-only dependencies and should be checked in the actual F-Droid dependency/build scan.
+
+The repository contains `gradle/wrapper/gradle-wrapper.jar`. It is build tooling, not an application runtime dependency, but the F-Droid recipe may need to remove it from the build checkout with `scandelete` if the scanner reports it. Do not remove the wrapper from the upstream project solely for this reason.
+
+The font notice documents the five bundled families under SIL OFL 1.1. The actual font binaries have not yet been independently compared with upstream release artifacts. Logo and screenshot files appear to be project assets, but their provenance/license is not explicitly documented separately; confirm this before submitting.
+
 ## Checks still required before submission
 
 1. Run the build and `fdroid lint`/metadata validation using the current F-Droid build-server toolchain.
-2. Confirm all direct and transitive dependencies are accepted by F-Droid and their licenses are compatible.
+2. Complete a dependency-tree scan for all transitives and verify the resolved artifacts/licenses in the F-Droid build environment.
 3. Verify the provenance and license of each bundled font file and confirm first-party logo/screenshot rights.
 4. Add an icon and phone screenshots to the F-Droid metadata when preparing the submission.
 5. Create and test the actual metadata entry in the `fdroiddata` repository; this upstream file is only supporting documentation.
