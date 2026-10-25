@@ -19,7 +19,7 @@ Dislauncher is a lightweight Android launcher for a calm, text-first Home screen
 
 - **A calmer Home screen:** clock, date, progress indicators, and favourite apps in a clean text-first layout.
 - **App drawer:** search apps, browse alphabetically, and organise favourites, folders, and hidden apps. Supports compatible icon packs.
-- **Make it yours:** System, Light, Dark, and Black themes; Dynamic Color; accent colours; wallpapers; built-in fonts (Inter Variable, Syne, Bricolage Grotesque, Doto, and Geist Mono) and custom fonts; and text-size options.
+- **Make it yours:** System, Light, Dark, and Black themes; Dynamic Color; accent colours; wallpapers; built-in fonts (Inter Variable, Syne, Bricolage Grotesque, Doto, and Geist Mono) and custom fonts; and text-size options. Bundled font license notices are included in `app/src/main/assets/licenses/FONT_LICENSES.txt`.
 - **Rich-text Notes:** format text with headings, bold, italic, lists, checklists, quotes, links, and images. Search notes, pin important ones, switch between list and grid views, and import or export notes, including image archives.
 - **Calendar and reminders:** browse a monthly calendar, view the selected day's agenda, manage local tasks and reminders, and optionally show events from your device calendar.
 - **Scientific Calculator:** solve everyday and more advanced calculations, with calculation history.
