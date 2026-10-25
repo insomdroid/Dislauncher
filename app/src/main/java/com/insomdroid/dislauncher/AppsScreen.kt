@@ -53,8 +53,8 @@ import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.SwapHoriz
-import androidx.compose.material.icons.filled.Search as SearchIcon
-import androidx.compose.material.icons.filled.Settings as SettingsIcon
+import androidx.compose.material.icons.outlined.Search as SearchIcon
+import androidx.compose.material.icons.outlined.Settings as SettingsIcon
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -388,10 +388,10 @@ internal fun AppsScreen(
                         ) {
                             if (preferences.showAppIcons) {
                                 Icon(
-                                    imageVector = Icons.Filled.SettingsIcon,
+                                    imageVector = Icons.Outlined.SettingsIcon,
                                     contentDescription = null,
                                     tint = mainText,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(24.dp)
                                 )
                                 Spacer(Modifier.width(9.dp))
                             }
@@ -584,10 +584,10 @@ internal fun AppsScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Filled.SearchIcon,
+                    imageVector = Icons.Outlined.SearchIcon,
                     contentDescription = "Search apps",
                     tint = searchColor,
-                    modifier = Modifier.size(19.dp)
+                    modifier = Modifier.size(20.dp)
                 )
                 Spacer(Modifier.width(10.dp))
                 Box(
