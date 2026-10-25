@@ -1,0 +1,1 @@
+Redesigned Notes with rich-text editing, search, pinning and portable Markdown/image archives. Redesigned Calendar with monthly view and combined agenda for device events, tasks and reminders. Added bundled font choices and fixed rich-text selection formatting.
