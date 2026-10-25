@@ -451,7 +451,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                                         onClick = { calculatorClearHistorySignal++ },
                                         enabled = calculatorHistoryHasItems
                                     ) {
-                                        DislauncherIcon(icon = "delete_outline", contentDescription = builtInToolText("Clear calculator history", "Hapus riwayat kalkulator"))
+                                        DislauncherIcon(icon = "delete", contentDescription = builtInToolText("Clear calculator history", "Hapus riwayat kalkulator"))
                                     }
                                 } else {
                                     IconButton(onClick = { calculatorShowingHistory = true }) {
@@ -835,7 +835,7 @@ private fun NotesTool(
                                                         saveNotes(context, notes); menuTarget = null
                                                     })
                                                 DropdownMenuItem(text = { Text("Delete") },
-                                                    leadingIcon = { DislauncherIcon(icon = "delete_outline", contentDescription = null, size = 20.dp, modifier = Modifier.size(20.dp)) },
+                                                    leadingIcon = { DislauncherIcon(icon = "delete", contentDescription = null, size = 20.dp, modifier = Modifier.size(20.dp)) },
                                                     onClick = { deleteTarget = note.id; menuTarget = null })
                                             }
                                         }
@@ -895,7 +895,7 @@ private fun NotesTool(
                                                 saveNotes(context, notes); menuTarget = null
                                             })
                                         DropdownMenuItem(text = { Text("Delete") },
-                                            leadingIcon = { DislauncherIcon(icon = "delete_outline", contentDescription = null, size = 20.dp, modifier = Modifier.size(20.dp)) },
+                                            leadingIcon = { DislauncherIcon(icon = "delete", contentDescription = null, size = 20.dp, modifier = Modifier.size(20.dp)) },
                                             onClick = { deleteTarget = note.id; menuTarget = null })
                                     }
                                 }
@@ -975,7 +975,7 @@ private fun NotesTool(
                                 leadingIcon = { DislauncherIcon(icon = "image", contentDescription = null, size = 20.dp, modifier = Modifier.size(20.dp)) },
                                 onClick = { menuTarget = null; imageLauncher.launch(arrayOf("image/*")) })
                             DropdownMenuItem(text = { Text("Delete note") },
-                                leadingIcon = { DislauncherIcon(icon = "delete_outline", contentDescription = null, size = 20.dp, modifier = Modifier.size(20.dp)) },
+                                leadingIcon = { DislauncherIcon(icon = "delete", contentDescription = null, size = 20.dp, modifier = Modifier.size(20.dp)) },
                                 onClick = { deleteTarget = selectedId; menuTarget = null })
                         }
                     }
@@ -1679,7 +1679,7 @@ private fun CalendarTool(
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         IconButton(onClick = { deleteTarget = task }) {
-                            DislauncherIcon(icon = "delete_outline", contentDescription = builtInToolText("Delete task", "Hapus tugas"),
+                            DislauncherIcon(icon = "delete", contentDescription = builtInToolText("Delete task", "Hapus tugas"),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
