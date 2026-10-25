@@ -1130,7 +1130,7 @@ private fun SettingsCategoryRow(
                 overflow = TextOverflow.Ellipsis
             )
         }
-        DislauncherIcon(icon = "chevron_right", contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, size = 20.dp, size = 20.dp, modifier = Modifier.size(20.dp))
+        DislauncherIcon(icon = "chevron_right", contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, size = 20.dp, modifier = Modifier.size(20.dp))
     }
 }
 
