@@ -27,7 +27,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Gesture
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -53,6 +64,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -199,8 +211,8 @@ internal fun SettingsScreen(
                             }
                         }
                     ) {
-                        DislauncherIcon(
-                            icon = "arrow_back",
+                        Icon(
+                            imageVector = Icons.Outlined.ArrowBack,
                             contentDescription = tr("Back", "Kembali")
                         )
                     }
@@ -232,17 +244,17 @@ internal fun SettingsScreen(
                     modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
                 )
                 val categories = listOf(
-                    Triple(SettingsCategory.APPEARANCE, "palette", tr("Appearance", "Tampilan")) to
+                    Triple(SettingsCategory.APPEARANCE, Icons.Outlined.Palette, tr("Appearance", "Tampilan")) to
                         tr("Theme, wallpaper, fonts and app icons", "Tema, wallpaper, font, dan ikon aplikasi"),
-                    Triple(SettingsCategory.HOME, "home", tr("Home screen", "Layar utama")) to
+                    Triple(SettingsCategory.HOME, Icons.Outlined.Home, tr("Home screen", "Layar utama")) to
                         tr("Home elements, widgets and formats", "Elemen Home, widget, dan format"),
-                    Triple(SettingsCategory.APPS, "apps", tr("Apps", "Aplikasi")) to
+                    Triple(SettingsCategory.APPS, Icons.Outlined.Apps, tr("Apps", "Aplikasi")) to
                         tr("Favourites, hidden apps and app drawer", "Favorit, aplikasi tersembunyi, dan app drawer"),
-                    Triple(SettingsCategory.GESTURES, "gesture", tr("Gestures", "Gestur")) to
+                    Triple(SettingsCategory.GESTURES, Icons.Outlined.Gesture, tr("Gestures", "Gestur")) to
                         tr("Quick actions for the Home screen", "Aksi cepat pada layar utama"),
-                    Triple(SettingsCategory.ACCESS, "security", tr("Permissions and access", "Izin dan akses")) to
+                    Triple(SettingsCategory.ACCESS, Icons.Outlined.Security, tr("Permissions and access", "Izin dan akses")) to
                         tr("Check access required by features", "Periksa akses yang diperlukan fitur"),
-                    Triple(SettingsCategory.ABOUT, "info", tr("About", "Tentang")) to
+                    Triple(SettingsCategory.ABOUT, Icons.Outlined.Info, tr("About", "Tentang")) to
                         tr("Version and project information", "Versi dan informasi proyek")
                 )
                 categories.forEachIndexed { index, entry ->
@@ -1096,7 +1108,7 @@ internal fun SettingsScreen(
 
 @Composable
 private fun SettingsCategoryRow(
-    icon: String,
+    icon: ImageVector,
     title: String,
     description: String,
     onClick: () -> Unit
@@ -1114,8 +1126,8 @@ private fun SettingsCategoryRow(
                 .padding(horizontal = 13.dp, vertical = 10.dp),
             contentAlignment = Alignment.Center
         ) {
-            DislauncherIcon(
-                icon = icon,
+            Icon(
+                imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -1130,7 +1142,7 @@ private fun SettingsCategoryRow(
                 overflow = TextOverflow.Ellipsis
             )
         }
-        DislauncherIcon(icon = "chevron_right", contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, size = 20.dp, modifier = Modifier.size(20.dp))
+        Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
     }
 }
 
