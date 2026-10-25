@@ -29,8 +29,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.DragIndicator
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.DragIndicator
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -386,10 +386,10 @@ internal fun HomeScreen(
                     }
                     if (movingFavoriteId == itemId) {
                         Icon(
-                            imageVector = Icons.Filled.DragIndicator,
+                            imageVector = Icons.Outlined.DragIndicator,
                             contentDescription = "Reorder favourite",
                             tint = secondaryText.copy(alpha = 0.82f),
-                            modifier = Modifier.padding(start = 8.dp).size(24.dp)
+                            modifier = Modifier.padding(start = 8.dp).size(20.dp)
                                 .pointerInput(itemId) {
                                     detectDragGestures(
                                         onDragStart = {
@@ -522,10 +522,10 @@ internal fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Filled.Settings,
+                    imageVector = Icons.Outlined.Settings,
                     contentDescription = "Dislauncher Settings",
                     tint = secondaryText,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(24.dp)
                 )
                 Text(
                     text = "Dislauncher Settings",
