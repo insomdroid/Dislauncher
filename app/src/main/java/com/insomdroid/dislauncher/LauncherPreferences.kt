@@ -24,6 +24,7 @@ internal data class LauncherPreferences(
     val showAlphabetIndex: Boolean = true,
     val autoLaunchKeyboard: Boolean = false,
     val showBattery: Boolean = true,
+    val showNetworkInfo: Boolean = true,
     val showDayProgress: Boolean = true,
     val showYearProgress: Boolean = true,
     val showClock: Boolean = true,
@@ -67,6 +68,7 @@ internal data class LauncherPreferences(
             .putBoolean("show_alphabet_index", showAlphabetIndex)
             .putBoolean("auto_launch_keyboard", autoLaunchKeyboard)
             .putBoolean("show_battery", showBattery)
+            .putBoolean("show_network_info", showNetworkInfo)
             .putBoolean("show_day_progress", showDayProgress)
             .putBoolean("show_year_progress", showYearProgress)
             .putBoolean("show_clock", showClock)
@@ -161,6 +163,7 @@ internal data class LauncherPreferences(
                 showAlphabetIndex = p.getBoolean("show_alphabet_index", true),
                 autoLaunchKeyboard = p.getBoolean("auto_launch_keyboard", false),
                 showBattery = p.getBoolean("show_battery", true),
+                showNetworkInfo = p.getBoolean("show_network_info", true),
                 showDayProgress = p.getBoolean("show_day_progress", true),
                 showYearProgress = p.getBoolean("show_year_progress", true),
                 showClock = p.getBoolean("show_clock", true),

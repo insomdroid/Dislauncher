@@ -249,9 +249,9 @@ internal fun SettingsScreen(
                     Triple(SettingsCategory.APPEARANCE, Icons.Outlined.Palette, tr("Appearance", "Tampilan")) to
                         tr("Theme, wallpaper, fonts and app icons", "Tema, wallpaper, font, dan ikon aplikasi"),
                     Triple(SettingsCategory.HOME, Icons.Outlined.Home, tr("Home screen", "Layar utama")) to
-                        tr("Home elements, widgets and formats", "Elemen Home, widget, dan format"),
+                        tr("Home information, indicators and formats", "Info Home, indikator, dan format"),
                     Triple(SettingsCategory.APPS, Icons.Outlined.Apps, tr("Apps", "Aplikasi")) to
-                        tr("Favourites, hidden apps and app drawer", "Favorit, aplikasi tersembunyi, dan app drawer"),
+                        tr("Folders, app visibility and app drawer", "Folder, visibilitas aplikasi, dan laci aplikasi"),
                     Triple(SettingsCategory.GESTURES, Icons.Outlined.Gesture, tr("Gestures", "Gestur")) to
                         tr("Quick actions for the Home screen", "Aksi cepat pada layar utama"),
                     Triple(SettingsCategory.ACCESS, Icons.Outlined.Security, tr("Permissions and access", "Izin dan akses")) to
@@ -489,7 +489,7 @@ internal fun SettingsScreen(
                     }
 
                     SettingsCategory.HOME -> {
-                        SettingsGroup(tr("Home elements", "Elemen Home")) {
+                        SettingsGroup(tr("Home elements", "Elemen layar utama")) {
                             SettingToggle(tr("Show status bar", "Tampilkan status bar"), "", !preferences.hideStatusBar) {
                                 onPreferencesChange(preferences.copy(hideStatusBar = !it))
                             }
@@ -509,7 +509,12 @@ internal fun SettingsScreen(
                                 preferences.showSettingsButton
                             ) { onPreferencesChange(preferences.copy(showSettingsButton = it)) }
                         }
-                        SettingsGroup(tr("Widgets and indicators", "Widget dan indikator")) {
+                        SettingsGroup(tr("Information and indicators", "Informasi dan indikator")) {
+                            SettingToggle(
+                                tr("Network info", "Info jaringan"),
+                                tr("Show the current network connection on the Home status row.", "Tampilkan koneksi jaringan saat ini pada baris info Home."),
+                                preferences.showNetworkInfo
+                            ) { onPreferencesChange(preferences.copy(showNetworkInfo = it)) }
                             SettingToggle(tr("Calendar agenda", "Agenda kalender"), "", preferences.showCalendarShortcut) {
                                 onPreferencesChange(preferences.copy(showCalendarShortcut = it))
                             }
@@ -535,7 +540,7 @@ internal fun SettingsScreen(
                                 preferences.showYearProgress
                             ) { onPreferencesChange(preferences.copy(showYearProgress = it)) }
                         }
-                        SettingsGroup(tr("Notification dots", "Notification dot")) {
+                        SettingsGroup(tr("Notification dots", "Titik notifikasi")) {
                             SettingToggle(
                                 tr("Show notification dots", "Tampilkan notification dot"),
                                 tr(
@@ -572,7 +577,7 @@ internal fun SettingsScreen(
                                 onPreferencesChange(preferences.copy(notificationDotColor = color))
                             }
                         }
-                        SettingsGroup(tr("Format", "Format")) {
+                        SettingsGroup(tr("Display formats", "Format tampilan")) {
                             ChoiceRow(
                                 tr("Time format", "Format waktu"),
                                 preferences.timeFormat,
@@ -591,7 +596,7 @@ internal fun SettingsScreen(
                     }
 
                     SettingsCategory.APPS -> {
-                        SettingsGroup(tr("Folders", "Folder")) {
+                        SettingsGroup(tr("Manage apps", "Kelola aplikasi")) {
                             SettingAction(
                                 tr("Manage folders", "Kelola folder"),
                                 preferences.appFolders.size.toString() + " " + tr("folders", "folder"),
@@ -601,29 +606,30 @@ internal fun SettingsScreen(
                                 manageFolderName = null
                                 openDialog = "folders"
                             }
-                        }
-                        SettingsGroup(tr("Favourites", "Favorit")) {
                             SettingAction(
                                 tr("Manage favourites", "Kelola favorit"),
                                 favorites.size.toString() + "/6 " + tr("apps selected", "aplikasi dipilih"),
                                 tr("Manage", "Kelola")
                             ) { openDialog = "favorites" }
-                        }
-                        SettingsGroup(tr("Hidden apps", "Aplikasi tersembunyi")) {
                             SettingAction(
                                 tr("Manage hidden apps", "Kelola aplikasi tersembunyi"),
                                 hiddenApps.size.toString() + " " + tr("apps hidden", "aplikasi disembunyikan"),
                                 tr("Manage", "Kelola")
                             ) { openDialog = "hidden" }
                         }
-                        SettingsGroup(tr("Built-in apps", "Aplikasi bawaan")) {
+                        SettingsGroup(tr("App visibility", "Visibilitas aplikasi")) {
                             SettingToggle(
                                 tr("Show built-in apps", "Tampilkan aplikasi bawaan"),
                                 tr("Show Calculator, Calendar, Notes and Unit Converter in a dedicated row above the app list.", "Tampilkan Kalkulator, Kalender, Catatan, dan Konverter Satuan dalam baris khusus di atas daftar aplikasi."),
                                 preferences.showBuiltInApps
                             ) { onPreferencesChange(preferences.copy(showBuiltInApps = it)) }
+                            SettingToggle(
+                                tr("Show system apps", "Tampilkan aplikasi sistem"),
+                                "",
+                                !preferences.hideSystemApps
+                            ) { onPreferencesChange(preferences.copy(hideSystemApps = !it)) }
                         }
-                        SettingsGroup(tr("App drawer", "App drawer")) {
+                        SettingsGroup(tr("App drawer", "Laci aplikasi")) {
                             SettingToggle(
                                 tr("Show search bar", "Tampilkan kolom pencarian"),
                                 "",
@@ -639,11 +645,6 @@ internal fun SettingsScreen(
                                 tr("Focus search when the app drawer opens.", "Fokus ke pencarian saat app drawer dibuka."),
                                 preferences.autoLaunchKeyboard
                             ) { onPreferencesChange(preferences.copy(autoLaunchKeyboard = it)) }
-                            SettingToggle(
-                                tr("Show system apps", "Tampilkan aplikasi sistem"),
-                                "",
-                                !preferences.hideSystemApps
-                            ) { onPreferencesChange(preferences.copy(hideSystemApps = !it)) }
                             if (preferences.wallpaperMode == "image") {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -723,14 +724,6 @@ internal fun SettingsScreen(
                             ) {
                                 if (!adminActive) onDoubleTapLockChange(true)
                             }
-                            SettingAction(
-                                tr("Default launcher", "Launcher default"),
-                                if (defaultLauncher) tr("Dislauncher is the default Home app", "Dislauncher adalah aplikasi Home default")
-                                else tr("Another Home app is selected", "Aplikasi Home lain sedang dipilih"),
-                                tr("Open settings", "Buka setelan")
-                            ) {
-                                openSystemPage(Intent(Settings.ACTION_HOME_SETTINGS))
-                            }
                         }
                         SettingsGroup(tr("Android permissions", "Izin Android")) {
                             SettingAction(
@@ -748,7 +741,15 @@ internal fun SettingsScreen(
                                 ::openAppPermissionSettings
                             )
                         }
-                        SettingsGroup(tr("System", "Sistem")) {
+                        SettingsGroup(tr("System and launcher", "Sistem dan launcher")) {
+                            SettingAction(
+                                tr("Default launcher", "Launcher default"),
+                                if (defaultLauncher) tr("Dislauncher is the default Home app", "Dislauncher adalah aplikasi Home default")
+                                else tr("Another Home app is selected", "Aplikasi Home lain sedang dipilih"),
+                                tr("Open settings", "Buka setelan")
+                            ) {
+                                openSystemPage(Intent(Settings.ACTION_HOME_SETTINGS))
+                            }
                             SettingAction(
                                 tr("Android settings", "Setelan Android"),
                                 tr("Open device settings.", "Buka setelan perangkat."),

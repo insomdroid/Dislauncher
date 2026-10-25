@@ -254,7 +254,7 @@ internal fun HomeScreen(
             onOpenCalendar = { openCalendar(context) }
         )
 
-        val showStatusWidgets = preferences.showWeather || preferences.showBattery || preferences.showCalendarShortcut
+        val showStatusWidgets = preferences.showWeather || preferences.showBattery || preferences.showNetworkInfo || preferences.showCalendarShortcut
         if (showStatusWidgets) {
             Spacer(Modifier.height(HomeDesign.headerToStatus))
             Row(
@@ -262,11 +262,11 @@ internal fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val statusParts = buildList {
+                val statusParts = buildList<Pair<String, Boolean>> {
                     if (preferences.showBattery) {
-                        add((if (batteryCharging) "+" else "") + (batteryPercent?.let { "$it%" } ?: "--%"))
+                        add(((if (batteryCharging) "+" else "") + (batteryPercent?.let { "$it%" } ?: "--%")) to false)
                     }
-                    add(networkLabel)
+                    if (preferences.showNetworkInfo) add(networkLabel to false)
                     if (preferences.showWeather) {
                         val hasLocation = ContextCompat.checkSelfPermission(
                             context, Manifest.permission.ACCESS_COARSE_LOCATION
@@ -276,18 +276,18 @@ internal fun HomeScreen(
                         } ?: weatherStatus.ifBlank {
                             if (!hasLocation) "Tap to allow location" else ""
                         }
-                        if (weatherText.isNotBlank()) add(weatherText)
+                        if (weatherText.isNotBlank()) add(weatherText to true)
                     }
                 }
-                statusParts.forEachIndexed { index, part ->
+                statusParts.forEach { part ->
                     Text(
-                        part,
+                        part.first,
                         color = primaryText,
                         fontSize = 12.sp,
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = if (preferences.showWeather && index == statusParts.lastIndex) {
+                        modifier = if (part.second) {
                             Modifier.widthIn(max = 100.dp).clickable { onOpenWeather(weatherInfo ?: cachedWeather) }
                         } else {
                             Modifier.widthIn(max = 64.dp)
