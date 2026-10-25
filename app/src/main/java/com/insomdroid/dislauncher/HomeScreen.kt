@@ -571,6 +571,6 @@ private fun readNetworkLabel(context: Context): String {
             else -> "Mobile"
         }
     } catch (_: SecurityException) {
-        "Mobile"
+        "LTE/5G"
     }
 }
