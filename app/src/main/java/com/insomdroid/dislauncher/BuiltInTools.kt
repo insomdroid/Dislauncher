@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.text.BasicTextField
@@ -784,14 +785,14 @@ private fun NotesTool(
                         }
                         DropdownMenu(expanded = menuTarget == "home", onDismissRequest = { menuTarget = null }) {
                             DropdownMenuItem(text = { Text(if (pinnedOnly) "Show all notes" else "Pinned notes") },
-                                leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null) },
+                                leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null, modifier = Modifier.size(20.dp)) },
                                 onClick = { pinnedOnly = !pinnedOnly; menuTarget = null })
                             DropdownMenuItem(text = { Text(if (sortByTitle) "Sort by modified" else "Sort by title") },
                                 onClick = { sortByTitle = !sortByTitle; menuTarget = null })
                             DropdownMenuItem(text = { Text("Manage labels") },
                                 onClick = { menuTarget = null; showLabelManager = true })
                             DropdownMenuItem(text = { Text("Import note archive") },
-                                leadingIcon = { Icon(Icons.Outlined.FileOpen, contentDescription = null) },
+                                leadingIcon = { Icon(Icons.Outlined.FileOpen, contentDescription = null, modifier = Modifier.size(20.dp)) },
                                 onClick = { menuTarget = null; importLauncher.launch(arrayOf("application/zip", "application/octet-stream")) })
                         }
                     }
@@ -862,13 +863,13 @@ private fun NotesTool(
                                             }
                                             DropdownMenu(expanded = menuTarget == note.id, onDismissRequest = { menuTarget = null }) {
                                                 DropdownMenuItem(text = { Text(if (note.pinned) "Unpin" else "Pin") },
-                                                    leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null) },
+                                                    leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null, modifier = Modifier.size(20.dp)) },
                                                     onClick = {
                                                         notes = notes.map { if (it.id == note.id) it.copy(pinned = !it.pinned) else it }
                                                         saveNotes(context, notes); menuTarget = null
                                                     })
                                                 DropdownMenuItem(text = { Text("Delete") },
-                                                    leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null) },
+                                                    leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null, modifier = Modifier.size(20.dp)) },
                                                     onClick = { deleteTarget = note.id; menuTarget = null })
                                             }
                                         }
@@ -922,13 +923,13 @@ private fun NotesTool(
                                     }
                                     DropdownMenu(expanded = menuTarget == note.id, onDismissRequest = { menuTarget = null }) {
                                         DropdownMenuItem(text = { Text(if (note.pinned) "Unpin" else "Pin") },
-                                            leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null) },
+                                            leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null, modifier = Modifier.size(20.dp)) },
                                             onClick = {
                                                 notes = notes.map { if (it.id == note.id) it.copy(pinned = !it.pinned) else it }
                                                 saveNotes(context, notes); menuTarget = null
                                             })
                                         DropdownMenuItem(text = { Text("Delete") },
-                                            leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null) },
+                                            leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null, modifier = Modifier.size(20.dp)) },
                                             onClick = { deleteTarget = note.id; menuTarget = null })
                                     }
                                 }
@@ -984,7 +985,7 @@ private fun NotesTool(
                         }
                         DropdownMenu(expanded = menuTarget == "editor", onDismissRequest = { menuTarget = null }) {
                             DropdownMenuItem(text = { Text("Export Markdown (.md)") },
-                                leadingIcon = { Icon(Icons.Outlined.FileDownload, contentDescription = null) },
+                                leadingIcon = { Icon(Icons.Outlined.FileDownload, contentDescription = null, modifier = Modifier.size(20.dp)) },
                                 onClick = {
                                     saveCurrent()
                                     val filename = title.ifBlank { "note" }.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim().ifBlank { "note" }
@@ -992,7 +993,7 @@ private fun NotesTool(
                                     markdownExportLauncher.launch("$filename.md")
                                 })
                             DropdownMenuItem(text = { Text("Export note archive") },
-                                leadingIcon = { Icon(Icons.Outlined.FileDownload, contentDescription = null) },
+                                leadingIcon = { Icon(Icons.Outlined.FileDownload, contentDescription = null, modifier = Modifier.size(20.dp)) },
                                 onClick = {
                                     saveCurrent()
                                     pendingExport = PendingNoteExport(title, document, currentLabels.toList(), currentColor)
@@ -1005,25 +1006,52 @@ private fun NotesTool(
                             DropdownMenuItem(text = { Text("Note color") },
                                 onClick = { menuTarget = null; showColorPicker = true })
                             DropdownMenuItem(text = { Text("Insert image") },
-                                leadingIcon = { Icon(Icons.Outlined.Image, contentDescription = null) },
+                                leadingIcon = { Icon(Icons.Outlined.Image, contentDescription = null, modifier = Modifier.size(20.dp)) },
                                 onClick = { menuTarget = null; imageLauncher.launch(arrayOf("image/*")) })
                             DropdownMenuItem(text = { Text("Delete note") },
-                                leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null) },
+                                leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null, modifier = Modifier.size(20.dp)) },
                                 onClick = { deleteTarget = selectedId; menuTarget = null })
                         }
                     }
                 }
-                BasicTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
-                    singleLine = true,
-                    textStyle = MaterialTheme.typography.headlineSmall.copy(color = MaterialTheme.colorScheme.onSurface),
-                    decorationBox = { inner ->
-                        if (title.isBlank()) Text("Title", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        inner()
+                Surface(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = "TITLE",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            letterSpacing = 1.sp
+                        )
+                        BasicTextField(
+                            value = title,
+                            onValueChange = { title = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.headlineSmall.copy(
+                                color = MaterialTheme.colorScheme.onSurface
+                            ),
+                            decorationBox = { inner ->
+                                if (title.isBlank()) {
+                                    Text(
+                                        "Title",
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                inner()
+                            }
+                        )
                     }
-                )
+                }
                 if (currentLabels.isNotEmpty()) {
                     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         currentLabels.sorted().forEach { label ->
