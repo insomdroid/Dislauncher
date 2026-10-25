@@ -234,7 +234,7 @@ internal fun SettingsScreen(
                     configuration.screenWidthDp >= 600 -> 24.dp
                     else -> 20.dp
                 }),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (showChangelog) {
                 ChangelogScreen()
@@ -259,7 +259,7 @@ internal fun SettingsScreen(
                     Triple(SettingsCategory.ABOUT, Icons.Outlined.Info, tr("About", "Tentang")) to
                         tr("Version and project information", "Versi dan informasi proyek")
                 )
-                categories.forEachIndexed { index, entry ->
+                categories.forEach { entry ->
                     val (category, icon, title) = entry.first
                     SettingsCategoryRow(
                         icon = icon,
@@ -267,9 +267,6 @@ internal fun SettingsScreen(
                         description = entry.second,
                         onClick = { selectedCategory = category }
                     )
-                    if (index < categories.lastIndex) {
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
-                    }
                 }
             } else {
                 when (selectedCategory) {
@@ -720,9 +717,13 @@ internal fun SettingsScreen(
                                 tr("Device admin", "Admin perangkat"),
                                 if (adminActive) tr("Active", "Aktif")
                                 else tr("Not active · needed to lock the screen", "Belum aktif · diperlukan untuk mengunci layar"),
-                                if (adminActive) tr("Active", "Aktif") else tr("Activate", "Aktifkan")
+                                tr("Manage", "Kelola")
                             ) {
-                                if (!adminActive) onDoubleTapLockChange(true)
+                                if (!adminActive) {
+                                    onDoubleTapLockChange(true)
+                                } else {
+                                    openSystemPage(Intent(Settings.ACTION_SECURITY_SETTINGS))
+                                }
                             }
                         }
                         SettingsGroup(tr("Android permissions", "Izin Android")) {
@@ -1117,9 +1118,10 @@ private fun SettingsCategoryRow(
     onClick: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().heightIn(min = 76.dp)
+        modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)
+            .clip(RoundedCornerShape(12.dp))
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(vertical = 12.dp),
+            .padding(horizontal = 8.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {

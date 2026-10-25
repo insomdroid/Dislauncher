@@ -110,7 +110,7 @@ internal fun ChoiceRow(
     options: List<Pair<String, String>>,
     onSelected: (String) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -134,8 +134,8 @@ internal fun SettingsGroup(
     content: @Composable ColumnScope.() -> Unit
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
             title,
@@ -164,10 +164,10 @@ internal fun SettingToggle(
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)
+        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
             .clip(RoundedCornerShape(8.dp))
             .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
-            .padding(horizontal = 8.dp, vertical = 8.dp),
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(
@@ -197,10 +197,10 @@ internal fun SettingAction(
     onClick: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)
+        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
             .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 8.dp),
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(
