@@ -159,7 +159,8 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.material:material-icons-extended")
+    // Google Material Symbols Outlined; replaces the legacy Material Icons set.
+    implementation("dev.vicart:compose-material-symbols:1.1.6")
     implementation("com.kizitonwose.calendar:compose:2.9.1")
     implementation("io.noties.markwon:core:4.6.2")
 
