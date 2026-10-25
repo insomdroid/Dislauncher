@@ -1,0 +1,22 @@
+Dislauncher is a minimalist, text-first Home screen for Android. It keeps app access simple while offering useful everyday tools without requiring an account.
+
+FEATURES
+
+• Minimal Home screen and app drawer
+• Customise themes, accent colours, fonts, icons and wallpapers
+• Built-in Notes with rich-text editing, search, pinning, Markdown import/export and portable archives
+• Monthly Calendar and agenda combining local tasks/reminders with optional device calendar events
+• Calculator and unit converter
+• Optional weather, media controls, notification dots, app shortcuts and gestures
+
+PRIVACY
+
+• No account required
+• No advertising or analytics SDKs identified in the reviewed source
+• Notes, reminders and preferences are stored locally
+• Calendar and notification access are optional
+• Weather is optional; when enabled, approximate coordinates are sent to Open-Meteo over HTTPS
+• Automatic Android backup is disabled, so export important notes before uninstalling or changing devices
+
+Dislauncher is free and open-source software. Source code, release notes and issue reporting are available at:
+https://github.com/insomdroid/Dislauncher
