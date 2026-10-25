@@ -1691,7 +1691,8 @@ private fun CalendarTool(
                             })
                         } else {
                             Icon(Icons.Outlined.Notifications, contentDescription = builtInToolText("Reminder", "Pengingat"),
-                                tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 10.dp))
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 10.dp).size(20.dp))
                         }
                         Column(Modifier.weight(1f).padding(vertical = 6.dp, horizontal = 4.dp),
                             verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -1710,11 +1711,11 @@ private fun CalendarTool(
                         }
                         IconButton(onClick = { beginEditTask(task) }) {
                             Icon(Icons.Outlined.Edit, contentDescription = builtInToolText("Edit task", "Edit tugas"),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                         }
                         IconButton(onClick = { deleteTarget = task }) {
                             Icon(Icons.Outlined.DeleteOutline, contentDescription = builtInToolText("Delete task", "Hapus tugas"),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                         }
                     }
                 }
@@ -1767,13 +1768,13 @@ private fun CalendarTool(
                         }
                     }
                     TextButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
-                        Icon(Icons.Outlined.Event, contentDescription = null)
+                        Icon(Icons.Outlined.Event, contentDescription = null, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.size(8.dp))
                         Text(date.format(DateTimeFormatter.ofPattern("d MMM yyyy", Locale.getDefault())))
                     }
                     if (type == "reminder") {
                         TextButton(onClick = { showTimePicker = true }, modifier = Modifier.fillMaxWidth()) {
-                            Icon(Icons.Outlined.Schedule, contentDescription = null)
+                            Icon(Icons.Outlined.Schedule, contentDescription = null, modifier = Modifier.size(20.dp))
                             Spacer(Modifier.size(8.dp))
                             Text(time.format(DateTimeFormatter.ofPattern("HH:mm")))
                         }
