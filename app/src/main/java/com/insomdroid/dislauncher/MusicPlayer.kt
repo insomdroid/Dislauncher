@@ -20,8 +20,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.outlined.Pause
+import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -225,7 +225,7 @@ internal fun MusicPlayerWidget(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    imageVector = if (playing) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
                     contentDescription = if (playing) "Pause" else "Play",
                     tint = foreground,
                     modifier = Modifier.size(20.dp)
