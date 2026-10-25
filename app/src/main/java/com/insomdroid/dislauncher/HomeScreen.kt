@@ -5,7 +5,6 @@ import android.content.pm.PackageManager
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.telephony.TelephonyManager
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -561,16 +560,7 @@ private fun readNetworkLabel(context: Context): String {
     if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) return "Wi-Fi"
     if (!capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) return "Offline"
 
-    val telephony = context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
-        ?: return "Mobile"
-    return try {
-        when (telephony.dataNetworkType) {
-            TelephonyManager.NETWORK_TYPE_NR -> "5G"
-            TelephonyManager.NETWORK_TYPE_LTE -> "LTE"
-            TelephonyManager.NETWORK_TYPE_IWLAN -> "Wi-Fi"
-            else -> "Mobile"
-        }
-    } catch (_: SecurityException) {
-        "LTE/5G"
-    }
+    // Avoid READ_PHONE_STATE: the launcher only needs a privacy-friendly
+    // indication of the active transport, not the cellular radio generation.
+    return "Mobile"
 }
