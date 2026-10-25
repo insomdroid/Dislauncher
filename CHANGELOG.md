@@ -1,5 +1,19 @@
 # Dislauncher Changelog
 
+## 1.3.3 | 25 October 2026
+#### What's New
+- **Geist Mono:** Replaced Overpass Mono with the more compact Geist Mono font, bundled locally for offline use.
+- **Network Information:** Added a setting to show or hide network information on the Home screen.
+
+#### Improvements
+- Refined Settings category spacing, option layout, and action states for a more consistent interface.
+- Simplified the Home screen status row and removed unnecessary separators.
+- Improved organization of Home, Apps, and Access settings.
+
+#### Fixes
+- Fixed a missing Compose import that prevented the updated Settings screen from compiling.
+- Corrected the weather widget's click target and improved the network status label's permission handling.
+
 This file is the single source of truth for the in-app What's New screen.
 Keep release notes in English. The build copies this file into the APK; the app reads it locally and does not need a network connection.
 
