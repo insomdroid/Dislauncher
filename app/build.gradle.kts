@@ -26,9 +26,9 @@ val releaseTag = (
 val parsedVersion = Regex("^(\\d+)\\.(\\d+)\\.(\\d+)$").matchEntire(releaseTag)
 
 // Reserve 10,000 versionCode values per patch version.
-// A production release uses the final slot of its patch range. Development builds
-// use the next patch-range slot plus the workflow run number: this lets a dev APK
-// upgrade the current release, while the next patch release can upgrade that dev APK.
+// A stable release uses the final slot. Development builds use their GitHub run number
+// within the next patch version's range, so each main build upgrades the previous build
+// and the eventual stable release upgrades the development APK without an uninstall.
 val developmentVersionName = System.getenv("APP_VERSION_NAME")?.takeIf { it.isNotBlank() }
     ?: "1.2.0-dev.0"
 val developmentBuildNumber = System.getenv("APP_BUILD_NUMBER")?.toIntOrNull() ?: 0
@@ -47,7 +47,7 @@ val appVersionCode = (parsedVersion?.value ?: developmentVersionName)
             require(developmentBuildNumber in 0..9_998) {
                 "Development build number must be between 0 and 9998"
             }
-            baseCode + 10_000 + developmentBuildNumber
+            baseCode + developmentBuildNumber
         }
     }
 
