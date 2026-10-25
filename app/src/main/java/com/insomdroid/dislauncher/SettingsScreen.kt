@@ -214,7 +214,8 @@ internal fun SettingsScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.ArrowBack,
-                            contentDescription = tr("Back", "Kembali")
+                            contentDescription = tr("Back", "Kembali"),
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 },
@@ -1130,7 +1131,8 @@ private fun SettingsCategoryRow(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp)
             )
         }
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
