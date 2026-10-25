@@ -142,6 +142,7 @@ internal fun HomeScreen(
         if (!isActive || !hostResumed) return@LaunchedEffect
 
         now = LocalTime.now()
+        networkLabel = readNetworkLabel(context)
         if (preferences.showBattery) {
             val batteryState = readBatteryState(context)
             batteryPercent = batteryState.percent
@@ -288,7 +289,11 @@ internal fun HomeScreen(
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.widthIn(max = if (preferences.showWeather && index == statusParts.lastIndex) 100.dp else 64.dp)
+                        modifier = if (preferences.showWeather && index == statusParts.lastIndex) {
+                            Modifier.widthIn(max = 100.dp).clickable { onOpenWeather(weatherInfo ?: cachedWeather) }
+                        } else {
+                            Modifier.widthIn(max = 64.dp)
+                        }
                     )
                 }
                 if (preferences.showCalendarShortcut) {
