@@ -751,14 +751,14 @@ private fun NotesTool(
                         }
                         DropdownMenu(expanded = menuTarget == "home", onDismissRequest = { menuTarget = null }) {
                             DropdownMenuItem(text = { Text(if (pinnedOnly) "Show all notes" else "Pinned notes") },
-                                leadingIcon = { DislauncherIcon(icon = "push_pin", contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                leadingIcon = { DislauncherIcon(icon = "push_pin", contentDescription = null, size = 20.dp, size = 20.dp, modifier = Modifier.size(20.dp)) },
                                 onClick = { pinnedOnly = !pinnedOnly; menuTarget = null })
                             DropdownMenuItem(text = { Text(if (sortByTitle) "Sort by modified" else "Sort by title") },
                                 onClick = { sortByTitle = !sortByTitle; menuTarget = null })
                             DropdownMenuItem(text = { Text("Manage labels") },
                                 onClick = { menuTarget = null; showLabelManager = true })
                             DropdownMenuItem(text = { Text("Import note archive") },
-                                leadingIcon = { DislauncherIcon(icon = "file_open", contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                leadingIcon = { DislauncherIcon(icon = "file_open", contentDescription = null, size = 20.dp, size = 20.dp, modifier = Modifier.size(20.dp)) },
                                 onClick = { menuTarget = null; importLauncher.launch(arrayOf("application/zip", "application/octet-stream")) })
                         }
                     }
@@ -778,7 +778,7 @@ private fun NotesTool(
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.padding(horizontal = 24.dp)) {
-                            DislauncherIcon(icon = "note_add", contentDescription = null, modifier = Modifier.size(38.dp),
+                            DislauncherIcon(icon = "note_add", contentDescription = null, size = 38.dp, size = 38.dp, modifier = Modifier.size(38.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(if (searchQuery.isBlank() && !pinnedOnly) "No notes yet" else "No matching notes",
                                 style = MaterialTheme.typography.titleMedium)
@@ -829,13 +829,13 @@ private fun NotesTool(
                                             }
                                             DropdownMenu(expanded = menuTarget == note.id, onDismissRequest = { menuTarget = null }) {
                                                 DropdownMenuItem(text = { Text(if (note.pinned) "Unpin" else "Pin") },
-                                                    leadingIcon = { DislauncherIcon(icon = "push_pin", contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                                    leadingIcon = { DislauncherIcon(icon = "push_pin", contentDescription = null, size = 20.dp, size = 20.dp, modifier = Modifier.size(20.dp)) },
                                                     onClick = {
                                                         notes = notes.map { if (it.id == note.id) it.copy(pinned = !it.pinned) else it }
                                                         saveNotes(context, notes); menuTarget = null
                                                     })
                                                 DropdownMenuItem(text = { Text("Delete") },
-                                                    leadingIcon = { DislauncherIcon(icon = "delete_outline", contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                                    leadingIcon = { DislauncherIcon(icon = "delete_outline", contentDescription = null, size = 20.dp, size = 20.dp, modifier = Modifier.size(20.dp)) },
                                                     onClick = { deleteTarget = note.id; menuTarget = null })
                                             }
                                         }
@@ -889,13 +889,13 @@ private fun NotesTool(
                                     }
                                     DropdownMenu(expanded = menuTarget == note.id, onDismissRequest = { menuTarget = null }) {
                                         DropdownMenuItem(text = { Text(if (note.pinned) "Unpin" else "Pin") },
-                                            leadingIcon = { DislauncherIcon(icon = "push_pin", contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                            leadingIcon = { DislauncherIcon(icon = "push_pin", contentDescription = null, size = 20.dp, size = 20.dp, modifier = Modifier.size(20.dp)) },
                                             onClick = {
                                                 notes = notes.map { if (it.id == note.id) it.copy(pinned = !it.pinned) else it }
                                                 saveNotes(context, notes); menuTarget = null
                                             })
                                         DropdownMenuItem(text = { Text("Delete") },
-                                            leadingIcon = { DislauncherIcon(icon = "delete_outline", contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                            leadingIcon = { DislauncherIcon(icon = "delete_outline", contentDescription = null, size = 20.dp, size = 20.dp, modifier = Modifier.size(20.dp)) },
                                             onClick = { deleteTarget = note.id; menuTarget = null })
                                     }
                                 }
@@ -951,7 +951,7 @@ private fun NotesTool(
                         }
                         DropdownMenu(expanded = menuTarget == "editor", onDismissRequest = { menuTarget = null }) {
                             DropdownMenuItem(text = { Text("Export Markdown (.md)") },
-                                leadingIcon = { DislauncherIcon(icon = "file_download", contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                leadingIcon = { DislauncherIcon(icon = "file_download", contentDescription = null, size = 20.dp, size = 20.dp, modifier = Modifier.size(20.dp)) },
                                 onClick = {
                                     saveCurrent()
                                     val filename = title.ifBlank { "note" }.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim().ifBlank { "note" }
@@ -959,7 +959,7 @@ private fun NotesTool(
                                     markdownExportLauncher.launch("$filename.md")
                                 })
                             DropdownMenuItem(text = { Text("Export note archive") },
-                                leadingIcon = { DislauncherIcon(icon = "file_download", contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                leadingIcon = { DislauncherIcon(icon = "file_download", contentDescription = null, size = 20.dp, size = 20.dp, modifier = Modifier.size(20.dp)) },
                                 onClick = {
                                     saveCurrent()
                                     pendingExport = PendingNoteExport(title, document, currentLabels.toList(), currentColor)
@@ -972,10 +972,10 @@ private fun NotesTool(
                             DropdownMenuItem(text = { Text("Note color") },
                                 onClick = { menuTarget = null; showColorPicker = true })
                             DropdownMenuItem(text = { Text("Insert image") },
-                                leadingIcon = { DislauncherIcon(icon = "image", contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                leadingIcon = { DislauncherIcon(icon = "image", contentDescription = null, size = 20.dp, size = 20.dp, modifier = Modifier.size(20.dp)) },
                                 onClick = { menuTarget = null; imageLauncher.launch(arrayOf("image/*")) })
                             DropdownMenuItem(text = { Text("Delete note") },
-                                leadingIcon = { DislauncherIcon(icon = "delete_outline", contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                leadingIcon = { DislauncherIcon(icon = "delete_outline", contentDescription = null, size = 20.dp, size = 20.dp, modifier = Modifier.size(20.dp)) },
                                 onClick = { deleteTarget = selectedId; menuTarget = null })
                         }
                     }
