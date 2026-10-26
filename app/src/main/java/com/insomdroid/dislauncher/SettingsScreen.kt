@@ -570,7 +570,7 @@ internal fun SettingsScreen(
                                     "purple" to tr("Purple", "Ungu"),
                                     "orange" to tr("Orange", "Oranye"),
                                     "pink" to tr("Pink", "Merah muda")
-                                )
+                                ),
                                 description = tr(
                                     "Choose the color used for notification dots.",
                                     "Pilih warna untuk titik notifikasi."
@@ -587,7 +587,6 @@ internal fun SettingsScreen(
                                     "system" to tr("System", "Sistem"),
                                     "12" to "12 " + tr("hour", "jam"),
                                     "24" to "24 " + tr("hour", "jam")
-                                )
                                 ),
                                 description = tr(
                                     "Choose how the Home clock displays time.",
