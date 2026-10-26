@@ -36,6 +36,15 @@ Get the latest APK from [GitHub Releases](https://github.com/insomdroid/Dislaunc
 
 Download only from the official release page. See [APK safety and updates](APK_SAFETY.md) for more information.
 
+### Nightly builds
+
+Nightly is a preview version of Dislauncher that may include the newest changes before they're part of an official release. It's useful if you want to try recent improvements early, but some things may not work as expected.
+
+- **Want the more stable version?** Download the APK from [GitHub Releases](https://github.com/insomdroid/Dislauncher/releases/latest).
+- **Want to try the newest changes?** Visit [Dislauncher Nightly on GitHub Actions](https://github.com/insomdroid/Dislauncher/actions/workflows/build-apk.yml), open a successful run, and download the APK from its **Artifacts** section. You may need to sign in to GitHub.
+- Nightly builds are temporary downloads and may be replaced by newer builds. They are not official stable releases.
+
+
 ## Privacy
 
 Dislauncher does not require an account. Optional features may request permissions or use external services when enabled.
