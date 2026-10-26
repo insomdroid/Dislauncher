@@ -28,57 +28,44 @@ import java.io.File
 
 
 /**
- * Build a complete set of Material 3 accent roles from a tonal ramp.
- * The neutral background/surface roles are retained from the selected theme.
+ * Apply one solid base color to every accent role. Neutral surfaces remain
+ * controlled by the selected theme, while accent colors are never faded.
  */
-private fun createTonalAccentScheme(
-    neutral: androidx.compose.material3.ColorScheme,
-    seed: Color,
-    isDark: Boolean
-): androidx.compose.material3.ColorScheme {
-    fun tone(lightTone: Int, darkTone: Int) = tonalColor(seed, if (isDark) darkTone else lightTone)
-    val primary = tone(40, 80)
-    val onPrimary = tone(100, 20)
-    val primaryContainer = tone(90, 30)
-    val onPrimaryContainer = tone(10, 90)
-    val secondary = tone(35, 80)
-    val onSecondary = tone(100, 20)
-    val secondaryContainer = tone(92, 30)
-    val onSecondaryContainer = tone(10, 90)
-    val tertiary = tone(30, 70)
-    val onTertiary = tone(100, 10)
-    val tertiaryContainer = tone(88, 25)
-    val onTertiaryContainer = tone(10, 90)
-    return neutral.copy(
-        primary = primary,
-        onPrimary = onPrimary,
-        primaryContainer = primaryContainer,
-        onPrimaryContainer = onPrimaryContainer,
-        inversePrimary = tone(80, 40),
-        secondary = secondary,
-        onSecondary = onSecondary,
-        secondaryContainer = secondaryContainer,
-        onSecondaryContainer = onSecondaryContainer,
-        tertiary = tertiary,
-        onTertiary = onTertiary,
-        tertiaryContainer = tertiaryContainer,
-        onTertiaryContainer = onTertiaryContainer,
-        surfaceTint = primary
-    )
+internal fun accentColorForPreset(preset: String): Color? = when (preset) {
+    "red" -> Color(0xFFF44336)
+    "yellow" -> Color(0xFFFFEB3B)
+    "blue" -> Color(0xFF2196F3)
+    "green" -> Color(0xFF4CAF50)
+    "purple" -> Color(0xFF9C27B0)
+    "orange" -> Color(0xFFFF9800)
+    "pink" -> Color(0xFFE91E63)
+    else -> null
 }
 
-private fun tonalColor(seed: Color, tone: Int): Color {
-    val t = tone.coerceIn(0, 100) / 100f
-    fun channel(value: Float): Float = if (t < 0.5f) {
-        value * (t * 2f)
+private fun createSolidAccentScheme(
+    neutral: androidx.compose.material3.ColorScheme,
+    accent: Color
+): androidx.compose.material3.ColorScheme {
+    val onAccent = if (accent == Color(0xFFFFEB3B) || accent == Color(0xFFFF9800)) {
+        Color(0xFF111111)
     } else {
-        value + (1f - value) * ((t - 0.5f) * 2f)
+        Color.White
     }
-    return Color(
-        red = channel(seed.red),
-        green = channel(seed.green),
-        blue = channel(seed.blue),
-        alpha = 1f
+    return neutral.copy(
+        primary = accent,
+        onPrimary = onAccent,
+        primaryContainer = accent,
+        onPrimaryContainer = onAccent,
+        inversePrimary = accent,
+        secondary = accent,
+        onSecondary = onAccent,
+        secondaryContainer = accent,
+        onSecondaryContainer = onAccent,
+        tertiary = accent,
+        onTertiary = onAccent,
+        tertiaryContainer = accent,
+        onTertiaryContainer = onAccent,
+        surfaceTint = accent
     )
 }
 
@@ -184,17 +171,8 @@ internal fun DislauncherTheme(
         surfaceContainerHigh = neutralScheme.surfaceContainerHigh,
         surfaceContainerHighest = neutralScheme.surfaceContainerHighest
     )
-    val accentSeed = when (preferences.accentPreset) {
-        "red" -> Color(0xFFBA1A1A)
-        "yellow" -> Color(0xFF795900)
-        "blue" -> Color(0xFF005AC1)
-        "green" -> Color(0xFF386A20)
-        "purple" -> Color(0xFF6750A4)
-        "orange" -> Color(0xFF8B5000)
-        "pink" -> Color(0xFF9C4168)
-        else -> null
-    }
-    val manualAccentScheme = accentSeed?.let { createTonalAccentScheme(neutralScheme, it, isDark) }
+    val accentSeed = accentColorForPreset(preferences.accentPreset)
+    val manualAccentScheme = accentSeed?.let { createSolidAccentScheme(neutralScheme, it) }
     val colorScheme = when {
         useDynamicColor -> dynamicAccentScheme
         manualAccentScheme != null -> manualAccentScheme
