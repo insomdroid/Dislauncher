@@ -11,7 +11,6 @@ internal object HomeDesign {
     val clockToDate = 2.dp
     val headerToStatus = 2.dp
     val statusToMusic = 2.dp
-    val statusRowGap = 4.dp
     val progressLineGap = 4.dp
     val progressLabelGap = 5.dp
     val progressTrackWidth = 0.40f
