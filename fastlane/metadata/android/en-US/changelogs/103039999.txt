@@ -1,5 +1,0 @@
-Dislauncher v1.3.3
-- Replaced Overpass Mono with the more compact Geist Mono font, bundled for offline use.
-- Added a setting to show or hide network information on the Home screen.
-- Refined Settings layout and Home screen status information.
-- Fixed weather widget interaction and network status permission handling.
