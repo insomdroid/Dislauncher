@@ -1,0 +1,4 @@
+Dislauncher v1.3.3
+- Updated launcher system icons and interface consistency.
+- Improved built-in Notes and Calendar experiences.
+- Includes fixes and maintenance updates from this release.
