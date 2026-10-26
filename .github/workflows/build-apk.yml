@@ -83,7 +83,7 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6
 
-      - name: Run unit tests, Android lint, and build APK
+      - name: Run Android lint and build APK
         env:
           APP_VERSION_NAME: "${{ steps.version.outputs.app_version_name }}"
           APP_BUILD_NUMBER: "${{ github.run_number }}"
