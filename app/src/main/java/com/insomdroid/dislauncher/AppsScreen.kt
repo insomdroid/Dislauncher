@@ -271,7 +271,13 @@ internal fun AppsScreen(
                                         Icon(
                                             imageVector = toolIcon,
                                             contentDescription = app.label,
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            // Keep built-in tool glyphs visibly distinct from their neutral icon circles
+                                            // even if a device's dynamic theme supplies unexpected icon colors.
+                                            tint = if (isDark) {
+                                                androidx.compose.ui.graphics.Color(0xFFD9D9D9)
+                                            } else {
+                                                androidx.compose.ui.graphics.Color(0xFF222222)
+                                            },
                                             modifier = Modifier.size(18.dp)
                                         )
                                     }
