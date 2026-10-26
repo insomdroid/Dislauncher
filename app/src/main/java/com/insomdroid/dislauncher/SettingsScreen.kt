@@ -488,7 +488,7 @@ internal fun SettingsScreen(
 
                     SettingsCategory.HOME -> {
                         SettingsGroup(tr("Home elements", "Elemen layar utama")) {
-                            SettingToggle(tr("Show status bar", "Tampilkan status bar"), "", !preferences.hideStatusBar) {
+                            SettingToggle(tr("Show status bar", "Tampilkan status bar"), tr("Show Android status icons at the top of the screen.", "Tampilkan ikon status Android di bagian atas layar."), !preferences.hideStatusBar) {
                                 onPreferencesChange(preferences.copy(hideStatusBar = !it))
                             }
                             SettingToggle(
@@ -513,7 +513,7 @@ internal fun SettingsScreen(
                                 tr("Show the current network connection on the Home status row.", "Tampilkan koneksi jaringan saat ini pada baris info Home."),
                                 preferences.showNetworkInfo
                             ) { onPreferencesChange(preferences.copy(showNetworkInfo = it)) }
-                            SettingToggle(tr("Calendar agenda", "Agenda kalender"), "", preferences.showCalendarShortcut) {
+                            SettingToggle(tr("Calendar agenda", "Agenda kalender"), tr("Show the next calendar event on the Home screen.", "Tampilkan acara kalender berikutnya di layar utama."), preferences.showCalendarShortcut) {
                                 onPreferencesChange(preferences.copy(showCalendarShortcut = it))
                             }
                             SettingToggle(
@@ -521,10 +521,10 @@ internal fun SettingsScreen(
                                 tr("Shows the active track and media controls.", "Menampilkan lagu aktif dan kontrol media."),
                                 preferences.showMusic
                             ) { onPreferencesChange(preferences.copy(showMusic = it)) }
-                            SettingToggle(tr("Weather", "Cuaca"), "", preferences.showWeather) {
+                            SettingToggle(tr("Weather", "Cuaca"), tr("Show current weather and temperature on Home.", "Tampilkan cuaca dan suhu saat ini di Home."), preferences.showWeather) {
                                 onPreferencesChange(preferences.copy(showWeather = it))
                             }
-                            SettingToggle(tr("Battery percentage", "Persentase baterai"), "", preferences.showBattery) {
+                            SettingToggle(tr("Battery percentage", "Persentase baterai"), tr("Show the current battery level as a percentage.", "Tampilkan tingkat baterai saat ini dalam persen."), preferences.showBattery) {
                                 onPreferencesChange(preferences.copy(showBattery = it))
                             }
                             SettingToggle(
@@ -555,7 +555,7 @@ internal fun SettingsScreen(
                             SettingAction(
                                 tr("Choose apps", "Pilih aplikasi"),
                                 preferences.notificationDotPackages.size.toString() + " " +
-                                    tr("apps selected", "aplikasi dipilih"),
+                                    tr("apps selected · Choose which apps show a dot.", "aplikasi dipilih · Pilih aplikasi yang menampilkan titik."),
                                 tr("Choose", "Pilih")
                             ) { openDialog = "notificationdots" }
                             ChoiceRow(
@@ -571,6 +571,10 @@ internal fun SettingsScreen(
                                     "orange" to tr("Orange", "Oranye"),
                                     "pink" to tr("Pink", "Merah muda")
                                 )
+                                description = tr(
+                                    "Choose the color used for notification dots.",
+                                    "Pilih warna untuk titik notifikasi."
+                                )
                             ) { color ->
                                 onPreferencesChange(preferences.copy(notificationDotColor = color))
                             }
@@ -584,11 +588,20 @@ internal fun SettingsScreen(
                                     "12" to "12 " + tr("hour", "jam"),
                                     "24" to "24 " + tr("hour", "jam")
                                 )
+                                ),
+                                description = tr(
+                                    "Choose how the Home clock displays time.",
+                                    "Pilih cara jam Home menampilkan waktu."
+                                )
                             ) { onPreferencesChange(preferences.copy(timeFormat = it)) }
                             ChoiceRow(
                                 tr("Temperature unit", "Satuan suhu"),
                                 preferences.weatherUnit,
-                                listOf("C" to "°C", "F" to "°F")
+                                listOf("C" to "°C", "F" to "°F"),
+                                description = tr(
+                                    "Choose Celsius or Fahrenheit for weather.",
+                                    "Pilih Celsius atau Fahrenheit untuk cuaca."
+                                )
                             ) { onPreferencesChange(preferences.copy(weatherUnit = it)) }
                         }
                     }
