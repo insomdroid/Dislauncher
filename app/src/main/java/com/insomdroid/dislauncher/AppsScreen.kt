@@ -159,6 +159,9 @@ internal fun AppsScreen(
     var scrubberScrollJob by remember { mutableStateOf<Job?>(null) }
     val firstIndexByLetter = remember(filtered, filteredBuiltIns, preferences.showBuiltInApps, preferences.appFolders, searching) {
         val result = linkedMapOf<String, Int>()
+        // A dedicated top marker returns to the start of the list, including
+        // Built-in Tools and folders before the installed apps.
+        result["↑"] = 0
         // Built-in tools occupy one horizontal row in the first list item.
         val installedAppsOffset = (if (filteredBuiltIns.isNotEmpty() || (preferences.showBuiltInApps && !searching)) 1 else 0) +
             filteredFolders.size
@@ -170,7 +173,7 @@ internal fun AppsScreen(
         result
     }
     val alphabetLetters = remember(firstIndexByLetter) {
-        allAlphabetLetters.filter { it in firstIndexByLetter }
+        listOf("↑") + allAlphabetLetters.filter { it in firstIndexByLetter }
     }
     val scrollToLetter: (String, Boolean) -> Unit = { letter, animated ->
         firstIndexByLetter[letter]?.let { index ->
@@ -433,7 +436,10 @@ internal fun AppsScreen(
                 }
 
             }
-            if (preferences.showAlphabetIndex && !searching && filtered.isNotEmpty()) {
+            if (
+                preferences.showAlphabetIndex && !searching &&
+                (filtered.isNotEmpty() || filteredBuiltIns.isNotEmpty() || filteredFolders.isNotEmpty())
+            ) {
                 BoxWithConstraints(
                     modifier = Modifier.align(Alignment.BottomEnd)
                         .padding(bottom = 48.dp)
