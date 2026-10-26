@@ -17,14 +17,14 @@ Dislauncher is a lightweight Android launcher for a calm, text-first Home screen
 
 ## Features
 
-- **A calmer Home screen:** clock, date, progress indicators, and favourite apps in a clean text-first layout.
-- **App drawer:** search apps, browse alphabetically, and organise favourites, folders, and hidden apps. Supports compatible icon packs.
-- **Make it yours:** System, Light, Dark, and Black themes; Dynamic Color; accent colours; wallpapers; built-in fonts (Inter Variable, Syne, Bricolage Grotesque, Doto, and Geist Mono) and custom fonts; and text-size options. Bundled font license notices are included in `app/src/main/assets/licenses/FONT_LICENSES.txt`.
-- **Rich-text Notes:** format text with headings, bold, italic, lists, checklists, quotes, links, and images. Search notes, pin important ones, switch between list and grid views, and import or export notes, including image archives.
-- **Calendar and reminders:** browse a monthly calendar, view the selected day's agenda, manage local tasks and reminders, and optionally show events from your device calendar.
-- **Scientific Calculator:** solve everyday and more advanced calculations, with calculation history.
-- **Unit Converter:** convert common units across categories such as length, mass, temperature, speed, and area.
-- **Everyday extras:** optional weather, music controls, notification dots, app shortcuts, and gestures for quick actions.
+- **Text-first Home screen:** see the time, date, day and year progress, and your favourite apps at a glance.
+- **App drawer:** quickly find apps, browse alphabetically, and organise favourites, folders, and hidden apps. Compatible icon packs are supported.
+- **Personalisation:** choose a theme, accent colour, wallpaper, font, and text size to make Dislauncher feel like yours.
+- **Markdown Notes:** write and organise notes, preview Markdown, search and pin important notes, use list or grid view, add images, and import or export notes.
+- **Calendar and reminders:** view a monthly calendar and daily agenda, and manage tasks, reminders, and optional events from your device calendar.
+- **Scientific Calculator:** handle everyday and advanced calculations and revisit previous results.
+- **Unit Converter:** convert common measurements, including length, mass, temperature, speed, and area.
+- **Useful extras:** optional weather, music controls, notification dots, app shortcuts, and gestures for quick actions.
 
 ## Download
 
