@@ -108,10 +108,20 @@ internal fun ChoiceRow(
     title: String,
     selected: String,
     options: List<Pair<String, String>>,
+    description: String = "",
     onSelected: (String) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+        if (description.isNotBlank()) {
+            Text(
+                description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
