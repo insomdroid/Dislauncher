@@ -140,7 +140,7 @@ jobs:
             Dislauncher-${{ steps.validate.outputs.release_tag }}.apk
             Dislauncher-${{ steps.validate.outputs.release_tag }}.apk.sha256
           if-no-files-found: error
-          retention-days: 3
+          retention-days: 1
 
   publish:
     name: Publish GitHub Release
