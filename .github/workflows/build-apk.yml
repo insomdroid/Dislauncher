@@ -118,4 +118,4 @@ jobs:
           name: Dislauncher-${{ github.run_number }}
           path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 1
