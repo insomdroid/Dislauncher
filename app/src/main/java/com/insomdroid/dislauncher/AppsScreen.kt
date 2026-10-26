@@ -83,6 +83,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -155,6 +156,7 @@ internal fun AppsScreen(
     val searchColor = if (searchFocused || query.isNotEmpty()) mainText else secondary.copy(alpha = 0.65f)
     val allAlphabetLetters = remember { ('A'..'Z').map(Char::toString) + "#" }
     var scrubberProgress by remember { mutableStateOf<Float?>(null) }
+    var scrubberScrollJob by remember { mutableStateOf<Job?>(null) }
     val firstIndexByLetter = remember(filtered, filteredBuiltIns, preferences.showBuiltInApps, preferences.appFolders, searching) {
         val result = linkedMapOf<String, Int>()
         // Built-in tools occupy one horizontal row in the first list item.
@@ -170,9 +172,17 @@ internal fun AppsScreen(
     val alphabetLetters = remember(firstIndexByLetter) {
         allAlphabetLetters.filter { it in firstIndexByLetter }
     }
-    val scrollToLetter: (String) -> Unit = { letter ->
+    val scrollToLetter: (String, Boolean) -> Unit = { letter, animated ->
         firstIndexByLetter[letter]?.let { index ->
-            scope.launch { listState.animateScrollToItem(index) }
+            // Cancel the previous request so rapid scrubbing cannot queue competing scrolls.
+            scrubberScrollJob?.cancel()
+            scrubberScrollJob = scope.launch {
+                if (animated) {
+                    listState.animateScrollToItem(index)
+                } else {
+                    listState.scrollToItem(index)
+                }
+            }
         }
     }
     BackHandler(enabled = searchFocused || searching) {
@@ -183,6 +193,12 @@ internal fun AppsScreen(
     }
     LaunchedEffect(query, filtered) {
         if (searching) listState.scrollToItem(0)
+    }
+    LaunchedEffect(isActive, searching) {
+        if (!isActive || searching) {
+            scrubberScrollJob?.cancel()
+            scrubberProgress = null
+        }
     }
     var selectedApp by remember { mutableStateOf<LauncherApp?>(null) }
     var renamingApp by remember { mutableStateOf<LauncherApp?>(null) }
@@ -459,7 +475,7 @@ internal fun AppsScreen(
                                     modifier = Modifier.width(24.dp).fillMaxHeight()
                                         .offset(x = -animatedOffset)
                                         .clickable(enabled = letter in firstIndexByLetter) {
-                                            scrollToLetter(letter)
+                                            scrollToLetter(letter, animated = true)
                                         },
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -504,7 +520,7 @@ internal fun AppsScreen(
                                     var lastLetter = letterAt(down.position.y)
                                     scrubberProgress = (down.position.y / size.height.coerceAtLeast(1))
                                         .coerceIn(0f, 1f)
-                                    scrollToLetter(lastLetter)
+                                    scrollToLetter(lastLetter, animated = false)
                                     var pointerDown = true
                                     while (pointerDown) {
                                         val event = awaitPointerEvent(PointerEventPass.Initial)
@@ -519,7 +535,7 @@ internal fun AppsScreen(
                                             val nextLetter = letterAt(change.position.y)
                                             if (nextLetter != lastLetter) {
                                                 lastLetter = nextLetter
-                                                scrollToLetter(nextLetter)
+                                                scrollToLetter(nextLetter, animated = false)
                                             }
                                             change.consume()
                                         }
