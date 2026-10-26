@@ -475,7 +475,7 @@ internal fun AppsScreen(
                                     modifier = Modifier.width(24.dp).fillMaxHeight()
                                         .offset(x = -animatedOffset)
                                         .clickable(enabled = letter in firstIndexByLetter) {
-                                            scrollToLetter(letter, animated = true)
+                                            scrollToLetter(letter, true)
                                         },
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -520,7 +520,7 @@ internal fun AppsScreen(
                                     var lastLetter = letterAt(down.position.y)
                                     scrubberProgress = (down.position.y / size.height.coerceAtLeast(1))
                                         .coerceIn(0f, 1f)
-                                    scrollToLetter(lastLetter, animated = false)
+                                    scrollToLetter(lastLetter, false)
                                     var pointerDown = true
                                     while (pointerDown) {
                                         val event = awaitPointerEvent(PointerEventPass.Initial)
@@ -535,7 +535,7 @@ internal fun AppsScreen(
                                             val nextLetter = letterAt(change.position.y)
                                             if (nextLetter != lastLetter) {
                                                 lastLetter = nextLetter
-                                                scrollToLetter(nextLetter, animated = false)
+                                                scrollToLetter(nextLetter, false)
                                             }
                                             change.consume()
                                         }
