@@ -68,6 +68,16 @@ jobs:
             APK="app/build/outputs/apk/release/app-release.apk"
           fi
           test -f "$APK"
-          BADGING="$(aapt dump badging "$APK")"
+          AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt"
+          if [[ ! -x "$AAPT" ]]; then
+            AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt -perm -u+x -print -quit)"
+          fi
+          if [[ -z "$AAPT" || ! -x "$AAPT" ]]; then
+            echo "::error::Android SDK aapt executable was not found under $ANDROID_HOME/build-tools"
+            find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name 'aapt*' -print || true
+            exit 1
+          fi
+          echo "Using Android build-tools executable: $AAPT"
+          BADGING="$("$AAPT" dump badging "$APK")"
           echo "$BADGING" | grep -F "package: name='com.insomdroid.dislauncher' versionCode='103039999' versionName='1.3.3'"
           echo "Recipe source built successfully. APK is checked locally in this job and is not uploaded."
