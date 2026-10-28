@@ -1,5 +1,14 @@
 # Dislauncher Changelog
 
+## 1.3.4 | 28 October 2026
+#### Improvements
+- Improved the app drawer alphabet scrubber's responsiveness and added a direct target for the top of the app list.
+- Standardized accent presets and notification-dot colors for more consistent theme rendering.
+- Added optional descriptions to Settings choices and Home screen settings.
+
+#### Fixes
+- Fixed built-in tool icon contrast in Light mode.
+
 ## 1.3.3 | 25 October 2026
 #### What's New
 - **Geist Mono:** Replaced Overpass Mono with the more compact Geist Mono font, bundled locally for offline use.
