@@ -68,27 +68,30 @@ jobs:
           curl --fail --silent --show-error --location \
             https://repo.maven.apache.org/maven2/com/atlassian/commonmark/commonmark/0.13.0/commonmark-0.13.0.pom \
             --output commonmark-0.13.0.pom
+          curl --fail --silent --show-error --location \
+            https://repo.maven.apache.org/maven2/com/atlassian/commonmark/commonmark-parent/0.13.0/commonmark-parent-0.13.0.pom \
+            --output commonmark-parent-0.13.0.pom
           python3 - <<'PY'
           import xml.etree.ElementTree as ET
           from pathlib import Path
 
-          root = ET.parse(Path("commonmark-0.13.0.pom")).getroot()
           ns = {"m": "http://maven.apache.org/POM/4.0.0"}
-          licenses = [
-              (node.findtext("m:name", default="", namespaces=ns) +
-               " " +
-               node.findtext("m:url", default="", namespaces=ns)).strip()
-              for node in root.findall("./m:licenses/m:license", ns)
-          ]
-          parent = root.find("m:parent", ns)
-          if not licenses and parent is not None:
-              parent_group = parent.findtext("m:groupId", default="", namespaces=ns)
-              parent_artifact = parent.findtext("m:artifactId", default="", namespaces=ns)
-              parent_version = parent.findtext("m:version", default="", namespaces=ns)
-              print(f"Artifact POM inherits license metadata from {parent_group}:{parent_artifact}:{parent_version}.")
-              raise SystemExit("No license declared in artifact POM; verify parent POM explicitly.")
-          print("CommonMark POM licenses:", licenses)
-          normalized = " ".join(licenses).lower()
+          def licenses(path):
+              root = ET.parse(Path(path)).getroot()
+              return [
+                  (node.findtext("m:name", default="", namespaces=ns) +
+                   " " +
+                   node.findtext("m:url", default="", namespaces=ns)).strip()
+                  for node in root.findall("./m:licenses/m:license", ns)
+              ]
+
+          found = licenses("commonmark-0.13.0.pom")
+          source = "artifact POM"
+          if not found:
+              found = licenses("commonmark-parent-0.13.0.pom")
+              source = "parent POM"
+          print(f"CommonMark license metadata ({source}):", found)
+          normalized = " ".join(found).lower()
           if "bsd" not in normalized or "2-clause" not in normalized:
               raise SystemExit("Expected BSD 2-Clause license metadata for commonmark 0.13.0.")
           print("CommonMark 0.13.0 license metadata verified as BSD 2-Clause.")
