@@ -94,8 +94,10 @@ android {
         applicationId = "com.insomdroid.dislauncher"
         minSdk = 26
         targetSdk = 36
-        versionCode = appVersionCode
-        versionName = appVersionName
+        // Keep literal release values here so F-Droid can discover them without evaluating Gradle.
+        // CI overrides the packaged version through androidComponents below.
+        versionCode = 103039999
+        versionName = "1.3.3"
     }
 
     signingConfigs {
@@ -163,4 +165,16 @@ dependencies {
     implementation("com.kizitonwose.calendar:compose:2.9.1")
     implementation("io.noties.markwon:core:4.6.2")
 
+}
+
+
+// F-Droid reads literal defaultConfig version values from source. Keep CI's existing
+// release-tag and nightly versioning behavior by overriding the generated variant outputs.
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.outputs.forEach { output ->
+            output.versionCode.set(appVersionCode)
+            output.versionName.set(appVersionName)
+        }
+    }
 }
