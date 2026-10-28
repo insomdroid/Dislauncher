@@ -29,8 +29,9 @@ val parsedVersion = Regex("^(\\d+)\\.(\\d+)\\.(\\d+)$").matchEntire(releaseTag)
 // A stable release uses the final slot. Development builds use their GitHub run number
 // within the next patch version's range, so each main build upgrades the previous build
 // and the eventual stable release upgrades the development APK without an uninstall.
+// Outside GitHub Actions (including F-Droid builds), fall back to the latest stable release.
 val developmentVersionName = System.getenv("APP_VERSION_NAME")?.takeIf { it.isNotBlank() }
-    ?: "1.2.0-dev.0"
+    ?: "1.3.3"
 val developmentBuildNumber = System.getenv("APP_BUILD_NUMBER")?.toIntOrNull() ?: 0
 val appVersionName = parsedVersion?.value ?: developmentVersionName
 val appVersionCode = (parsedVersion?.value ?: developmentVersionName)
@@ -41,7 +42,7 @@ val appVersionCode = (parsedVersion?.value ?: developmentVersionName)
         val baseCode = major.toInt() * 100_000_000 +
             minor.toInt() * 1_000_000 +
             patch.toInt() * 10_000
-        if (parsedVersion != null) {
+        if (parsedVersion != null || !versionName.contains("-")) {
             baseCode + 9_999
         } else {
             require(developmentBuildNumber in 0..9_998) {
