@@ -4,6 +4,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("com.github.jk1.dependency-license-report") version "3.1.4"
 }
 
 val releaseStoreFile = System.getenv("RELEASE_STORE_FILE")
