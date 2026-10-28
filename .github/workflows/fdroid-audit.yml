@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'app/build.gradle.kts'
+      - 'app/src/main/assets/licenses/**'
       - 'build.gradle.kts'
       - 'settings.gradle.kts'
       - 'gradle/**'
@@ -108,6 +109,8 @@ jobs:
           root = Path(".")
           required = [
               root / "LICENSE",
+              root / "app/src/main/assets/licenses/FONT_LICENSES.txt",
+              root / "app/src/main/assets/licenses/THIRD_PARTY_NOTICES.txt",
               root / "fastlane/metadata/android/en-US/title.txt",
               root / "fastlane/metadata/android/en-US/short_description.txt",
               root / "fastlane/metadata/android/en-US/full_description.txt",
@@ -134,7 +137,12 @@ jobs:
           if code.group(1) != "103039999" or name.group(1) != "1.3.3":
               raise SystemExit(f"Unexpected F-Droid fallback version: {name.group(1)} / {code.group(1)}")
 
-          print(f"Metadata checks passed; found {len(screenshots)} screenshots; fallback version {name.group(1)} ({code.group(1)}).")
+          notices = (root / "app/src/main/assets/licenses/THIRD_PARTY_NOTICES.txt").read_text()
+          for marker in ("KIZITONWOSE CALENDAR", "COMMONMARK JAVA", "APACHE LICENSE 2.0"):
+              if marker not in notices:
+                  raise SystemExit(f"Third-party notice missing section: {marker}")
+
+          print(f"Metadata and bundled license notices passed; found {len(screenshots)} screenshots; fallback version {name.group(1)} ({code.group(1)}).")
           PY
 
       - name: Upload resolved dependency report
