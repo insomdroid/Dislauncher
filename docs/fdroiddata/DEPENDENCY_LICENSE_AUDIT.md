@@ -33,7 +33,7 @@ License references:
 
 ## Items still requiring human/source-level verification
 
-1. **Artwork rights:** the launcher icon and screenshots are present in the repository and wired into Fastlane metadata, but the repository does not yet contain a clear explicit provenance/license statement for those images. The maintainer must confirm that the art/screenshots are original or otherwise redistributable and document that basis before submission.
+1. **Artwork rights:** the maintainer confirms that the phone screenshots were captured on their own phone. They are not third-party promotional screenshots. This provenance is documented here; the screenshot files are already wired into Fastlane metadata. The launcher icon is a separate asset: its authorship/source and redistribution rights still need to be confirmed and documented before submission.
 2. **Full license automation:** the successful Gradle report enumerates resolved coordinates but is not itself a machine-readable license report. The licenses above are a preliminary review of direct dependencies and the main transitive families, not a signed-off scan of every transitive artifact's POM/license file. F-Droid maintainers will perform their own review.
 3. **F-Droid build:** no `fdroid build` or official F-Droid CI run has been performed. The recipe at `docs/fdroiddata/metadata/com.insomdroid.dislauncher.yml` is a draft for the separate `fdroiddata` repository, not a submitted merge request.
 4. **Update checking:** the draft currently uses `UpdateCheckMode: Static` because the existing `v1.3.3` tag predates the literal Gradle version values. Revisit automatic tag-based updates after a future stable release tag contains those values.
@@ -41,4 +41,4 @@ License references:
 
 ## Current conclusion
 
-No obvious non-free advertising, analytics, or Google Play Services dependency was found in the resolved Gradle graphs, and the primary libraries/assets reviewed have permissive or redistributable licenses. This is a **preliminary pass**, not yet a complete F-Droid compliance sign-off. The artwork provenance, remaining transitive-license verification, F-Droid build test, and official `fdroiddata` submission remain outstanding.
+No obvious non-free advertising, analytics, or Google Play Services dependency was found in the resolved Gradle graphs, and the primary libraries/assets reviewed have permissive or redistributable licenses. This is a **preliminary pass**, not yet a complete F-Droid compliance sign-off. The launcher-icon provenance, remaining transitive-license verification, F-Droid build test, and official `fdroiddata` submission remain outstanding.
