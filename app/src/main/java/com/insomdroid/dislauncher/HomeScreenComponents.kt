@@ -114,7 +114,7 @@ internal fun HomeHeader(
             if (preferences.showClock) {
                 Column(verticalArrangement = Arrangement.spacedBy(0.dp), modifier = clockModifier) {
                     Text(hourPart, color = primaryText, fontSize = HomeDesign.clockSize * 1.15f, lineHeight = HomeDesign.clockLineHeight * 1.08f, letterSpacing = (-0.6).sp, fontWeight = FontWeight.Light, fontFamily = dotMatrixFont, maxLines = 1, softWrap = false)
-                    Text(minutePart, color = primaryText, fontSize = HomeDesign.clockSize * 0.9f, lineHeight = HomeDesign.clockLineHeight * 0.88f, letterSpacing = (-0.6).sp, fontWeight = FontWeight.Light, fontFamily = dotMatrixFont, maxLines = 1, softWrap = false)
+                    Text(minutePart, color = primaryText, fontSize = HomeDesign.clockSize * 1.15f, lineHeight = HomeDesign.clockLineHeight * 1.08f, letterSpacing = (-0.6).sp, fontWeight = FontWeight.Light, fontFamily = dotMatrixFont, maxLines = 1, softWrap = false)
                 }
             }
             if (preferences.showDate) { Spacer(Modifier.height(4.dp)); Text(shortDate, color = secondaryText, fontSize = HomeDesign.dateSize, lineHeight = HomeDesign.dateLineHeight, fontFamily = interFont, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = dateModifier) }
