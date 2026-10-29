@@ -262,7 +262,7 @@ internal fun AppsScreen(
                                     "internal:calculator" -> androidx.compose.material.icons.Icons.Outlined.Calculate
                                     "internal:calendar" -> androidx.compose.material.icons.Icons.Outlined.CalendarMonth
                                     "internal:converter" -> androidx.compose.material.icons.Icons.Outlined.SwapHoriz
-                                    "internal:books" -> androidx.compose.material.icons.Icons.Outlined.MenuBook
+                                    "internal:books" -> androidx.compose.material.icons.Icons.Outlined.Description
                                     else -> androidx.compose.material.icons.Icons.Outlined.Description
                                 }
                                 Column(

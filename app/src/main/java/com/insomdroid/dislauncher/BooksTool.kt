@@ -257,7 +257,6 @@ internal fun BooksTool(onBack: () -> Unit) {
     var bookContent by remember { mutableStateOf<BookContent?>(null) }
     var currentPage by remember { mutableStateOf(0) }
     var fontSize by remember { mutableStateOf(20f) }
-    var readingTheme by remember { mutableStateOf("system") }
     var showMenu by remember { mutableStateOf(false) }
     var menuSection by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }
@@ -322,17 +321,8 @@ internal fun BooksTool(onBack: () -> Unit) {
         }
     }
 
-    val bg = when (readingTheme) {
-        "light" -> androidx.compose.ui.graphics.Color(0xFFF6F3EA)
-        "dark" -> androidx.compose.ui.graphics.Color(0xFF171717)
-        "sepia" -> androidx.compose.ui.graphics.Color(0xFFF0E2C4)
-        else -> MaterialTheme.colorScheme.background
-    }
-    val fg = when (readingTheme) {
-        "light", "sepia" -> androidx.compose.ui.graphics.Color(0xFF25231F)
-        "dark" -> androidx.compose.ui.graphics.Color(0xFFE8E4DC)
-        else -> MaterialTheme.colorScheme.onBackground
-    }
+    val bg = MaterialTheme.colorScheme.background
+    val fg = MaterialTheme.colorScheme.onBackground
 
     if (selectedBook == null) {
         Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 20.dp, vertical = 12.dp)) {
@@ -440,9 +430,6 @@ internal fun BooksTool(onBack: () -> Unit) {
                         TextButton(onClick = { menuSection = "bookmarks"; showMenu = false }, modifier = Modifier.fillMaxWidth()) { Text("Bookmarks", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start) }
                         Text("Text size", style = MaterialTheme.typography.labelLarge)
                         Slider(value = fontSize, onValueChange = { fontSize = it }, valueRange = 15f..30f)
-                        TextButton(onClick = { readingTheme = when (readingTheme) { "system" -> "light"; "light" -> "sepia"; "sepia" -> "dark"; else -> "system" } }, modifier = Modifier.fillMaxWidth()) {
-                            Text("Theme: ${readingTheme.replaceFirstChar { it.uppercase() }}", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
-                        }
                         Text("Tap left or right edge to turn pages.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
