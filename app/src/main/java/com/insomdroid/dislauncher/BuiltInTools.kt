@@ -436,9 +436,9 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     }
     val title = when (tool) {
         BuiltInTool.NOTES -> "Notes"
-        BuiltInTool.CALCULATOR -> if (calculatorShowingHistory) "History" else "Calculator"
-        BuiltInTool.CALENDAR -> "Calendar"
-        BuiltInTool.UNIT_CONVERTER -> "Unit Converter"
+        BuiltInTool.CALCULATOR -> if (calculatorShowingHistory) "History" else "Calc"
+        BuiltInTool.CALENDAR -> "Cal"
+        BuiltInTool.UNIT_CONVERTER -> "Conv"
     }
     Scaffold(
                 containerColor = MaterialTheme.colorScheme.background,
