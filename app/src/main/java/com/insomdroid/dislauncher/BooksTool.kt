@@ -353,18 +353,44 @@ internal fun BooksTool(onBack: () -> Unit) {
                     }
                 }
             } else {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    books.forEach { book ->
-                        Row(
-                            Modifier.fillMaxWidth().clickable { selectedBook = book }.padding(vertical = 14.dp, horizontal = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text(book.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                Text("${book.type.uppercase()} · ${if (book.position == 0) "Not started" else "Continue reading"}",
-                                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (gridView) {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(books, key = { it.id }) { book ->
+                            Surface(
+                                modifier = Modifier.fillMaxWidth().clickable { selectedBook = book },
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainer
+                            ) {
+                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text(book.title, style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                                    Text("${book.type.uppercase()} · ${if (book.position == 0) "Not started" else "Continue reading"}",
+                                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                        IconButton(onClick = { pendingDelete = book }) { Icon(Icons.Outlined.DeleteOutline, contentDescription = "Remove book") }
+                                    }
+                                }
                             }
-                            IconButton(onClick = { pendingDelete = book }) { Icon(Icons.Outlined.DeleteOutline, contentDescription = "Remove book") }
+                        }
+                    }
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        books.forEach { book ->
+                            Row(
+                                Modifier.fillMaxWidth().clickable { selectedBook = book }.padding(vertical = 14.dp, horizontal = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text(book.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                    Text("${book.type.uppercase()} · ${if (book.position == 0) "Not started" else "Continue reading"}",
+                                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                IconButton(onClick = { pendingDelete = book }) { Icon(Icons.Outlined.DeleteOutline, contentDescription = "Remove book") }
+                            }
                         }
                     }
                 }
