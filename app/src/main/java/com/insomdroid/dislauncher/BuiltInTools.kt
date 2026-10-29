@@ -237,6 +237,17 @@ private fun loadNotes(context: Context): List<LocalNote> {
 }
 
 private fun saveNotes(context: Context, notes: List<LocalNote>) {
+    // Do not replace recoverable user data if the current store contains malformed entries.
+    val existingRaw = notesStore(context).getString("notes_json", "[]") ?: "[]"
+    val existingStoreIsSafe = runCatching {
+        val existing = JSONArray(existingRaw)
+        (0 until existing.length()).all { index ->
+            val item = existing.optJSONObject(index)
+            item != null && item.optString("id").isNotBlank()
+        }
+    }.getOrDefault(false)
+    if (!existingStoreIsSafe) return
+
     val array = JSONArray()
     notes.forEach { note ->
         array.put(JSONObject().put("id", note.id).put("title", note.title)
@@ -355,6 +366,27 @@ private fun loadTasks(context: Context): List<LocalTask> = runCatching {
 }.getOrDefault(emptyList())
 
 private fun saveTasks(context: Context, tasks: List<LocalTask>) {
+    val store = tasksStore(context)
+    val existingRaw = store.getString("tasks_json", "[]") ?: "[]"
+    val existingStoreIsSafe = runCatching {
+        val existing = JSONArray(existingRaw)
+        (0 until existing.length()).all { index ->
+            val item = existing.optJSONObject(index)
+            item != null && item.optString("id").isNotBlank() && item.optString("date").isNotBlank()
+        }
+    }.getOrDefault(false)
+    if (!existingStoreIsSafe) {
+        Toast.makeText(
+            context,
+            builtInToolText(
+                "Calendar data could not be saved because existing data is invalid. Original data was preserved.",
+                "Data kalender tidak dapat disimpan karena data lama tidak valid. Data asli tetap dipertahankan."
+            ),
+            Toast.LENGTH_LONG
+        ).show()
+        return
+    }
+
     val array = JSONArray()
     tasks.forEach { task ->
         array.put(JSONObject().put("id", task.id).put("title", task.title)
@@ -362,7 +394,7 @@ private fun saveTasks(context: Context, tasks: List<LocalTask>) {
             .put("reminderAt", task.reminderAt).put("priority", task.priority)
             .put("completed", task.completed))
     }
-    tasksStore(context).edit().putString("tasks_json", array.toString()).apply()
+    store.edit().putString("tasks_json", array.toString()).apply()
 }
 
 private fun priorityLabel(priority: Int): String = when (Locale.getDefault().language) {
