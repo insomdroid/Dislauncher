@@ -126,7 +126,7 @@ internal fun MarkdownNoteEditor(
                         val lineStart = if (cursor == 0) 0 else text.lastIndexOf('\n', cursor - 1) + 1
                         val lineEnd = text.indexOf('\n', cursor).let { if (it < 0) text.length else it }
                         val line = text.substring(lineStart, lineEnd)
-                        val match = Regex("^(\s*)([-*+]\\s+|\\d+[.)]\\s+)(.*)$").matchEntire(line)
+                        val match = Regex("^(\\s*)([-*+]\\s+|\\d+[.)]\\s+)(.*)$").matchEntire(line)
                             ?: return@onPreviewKeyEvent false
                         val indent = match.groupValues[1]
                         val marker = match.groupValues[2]
