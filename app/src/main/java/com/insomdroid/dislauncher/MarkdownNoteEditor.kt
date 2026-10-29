@@ -35,6 +35,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import io.noties.markwon.Markwon
 
 /** Markdown-native editor. The Markdown source is canonical; preview is rendered locally. */
@@ -111,7 +116,37 @@ internal fun MarkdownNoteEditor(
                     field = it
                     onValueChange(it.text)
                 },
-                modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+                modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)
+                    .onPreviewKeyEvent { event ->
+                        if (event.type != KeyEventType.KeyDown || event.key != Key.Enter || !field.selection.collapsed) {
+                            return@onPreviewKeyEvent false
+                        }
+                        val text = field.text
+                        val cursor = field.selection.min.coerceIn(0, text.length)
+                        val lineStart = if (cursor == 0) 0 else text.lastIndexOf('\n', cursor - 1) + 1
+                        val lineEnd = text.indexOf('\n', cursor).let { if (it < 0) text.length else it }
+                        val line = text.substring(lineStart, lineEnd)
+                        val match = Regex("^(\s*)([-*+]\\s+|\\d+[.)]\\s+)(.*)$").matchEntire(line)
+                            ?: return@onPreviewKeyEvent false
+                        val indent = match.groupValues[1]
+                        val marker = match.groupValues[2]
+                        val content = match.groupValues[3]
+                        if (content.isBlank()) {
+                            val nextText = text.removeRange(lineStart, lineEnd)
+                            field = TextFieldValue(nextText, selection = TextRange(lineStart))
+                            onValueChange(nextText)
+                        } else {
+                            val nextMarker = if (marker.trimStart().firstOrNull()?.isDigit() == true) {
+                                val number = Regex("\\d+").find(marker)?.value?.toIntOrNull() ?: 1
+                                marker.replace(Regex("\\d+"), (number + 1).toString())
+                            } else marker
+                            val insertion = "\n" + indent + nextMarker
+                            val nextText = text.replaceRange(cursor, cursor, insertion)
+                            field = TextFieldValue(nextText, selection = TextRange(cursor + insertion.length))
+                            onValueChange(nextText)
+                        }
+                        true
+                    },
                 textStyle = MaterialTheme.typography.bodyLarge.copy(
                     color = colors.onSurface,
                     fontFamily = FontFamily.Monospace
