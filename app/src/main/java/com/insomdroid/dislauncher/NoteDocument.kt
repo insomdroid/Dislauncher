@@ -185,7 +185,7 @@ internal object NoteDocumentCodec {
                 g[8].isNotEmpty() -> result += NoteInline(unescape(g[8]), setOf(NoteMark.BOLD))
                 g[9].isNotEmpty() -> result += NoteInline(unescape(g[9]), setOf(NoteMark.STRIKETHROUGH))
                 g[10].isNotEmpty() -> result += NoteInline(unescape(g[10]), setOf(NoteMark.ITALIC))
-                g[11].isNotEmpty() -> result += NoteInline(unescape(g[11]), setOf(NoteMark.CODE))
+                g[11].isNotEmpty() -> result += NoteInline(g[11].replace("\\`", "`"), setOf(NoteMark.CODE))
             }
             cursor = match.range.last + 1
         }
