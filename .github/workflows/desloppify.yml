@@ -58,6 +58,9 @@ jobs:
       - name: Scan full repository
         run: desloppify scan --path .
 
+      - name: Refresh scan after initial issue reconciliation
+        run: desloppify scan
+
       - name: Show next prioritized task
         run: desloppify next
 
