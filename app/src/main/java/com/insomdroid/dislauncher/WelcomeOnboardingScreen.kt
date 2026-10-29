@@ -4,9 +4,11 @@ import android.Manifest
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.content.pm.PackageManager
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.core.app.ActivityCompat
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -39,6 +41,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -80,6 +83,8 @@ internal fun WelcomeOnboardingScreen(
     var page by remember { mutableStateOf(0) }
     var selectedFavorites by remember { mutableStateOf(favorites.toSet()) }
     var permissionRefresh by remember { mutableStateOf(0) }
+    var permissionDialogPermission by remember { mutableStateOf<String?>(null) }
+    var permissionDialogSettings by remember { mutableStateOf(false) }
     val pageCount = 6
 
     DisposableEffect(lifecycleOwner) {
@@ -102,6 +107,37 @@ internal fun WelcomeOnboardingScreen(
     val calendarPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { permissionRefresh++ }
+
+    fun launchOptionalPermission(permission: String) {
+        context.getSharedPreferences("dislauncher_permissions", Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean("requested_$permission", true)
+            .apply()
+        when (permission) {
+            Manifest.permission.ACCESS_COARSE_LOCATION -> locationPermissionLauncher.launch(permission)
+            Manifest.permission.READ_CALENDAR -> calendarPermissionLauncher.launch(permission)
+        }
+    }
+
+    fun requestOptionalPermission(permission: String) {
+        if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
+            permissionRefresh++
+            return
+        }
+        val activity = context as? android.app.Activity
+        val requestedBefore = context.getSharedPreferences(
+            "dislauncher_permissions", Context.MODE_PRIVATE
+        ).getBoolean("requested_$permission", false)
+        if (activity != null && ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)) {
+            permissionDialogSettings = false
+            permissionDialogPermission = permission
+        } else if (requestedBefore) {
+            permissionDialogSettings = true
+            permissionDialogPermission = permission
+        } else {
+            launchOptionalPermission(permission)
+        }
+    }
 
     fun skipOnboarding() {
         val orderedApps = prioritizeNonSystemApps(apps).distinctBy { it.packageName }
@@ -198,9 +234,7 @@ internal fun WelcomeOnboardingScreen(
                                 granted = locationGranted,
                                 actionLabel = "Allow",
                                 onClick = {
-                                    locationPermissionLauncher.launch(
-                                        Manifest.permission.ACCESS_COARSE_LOCATION
-                                    )
+                                    requestOptionalPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
                                 }
                             )
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
@@ -209,7 +243,7 @@ internal fun WelcomeOnboardingScreen(
                                 description = "Read calendar events to show today's upcoming appointments on Home.",
                                 granted = calendarGranted,
                                 actionLabel = "Allow",
-                                onClick = { calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR) }
+                                onClick = { requestOptionalPermission(Manifest.permission.READ_CALENDAR) }
                             )
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
                             PermissionActionRow(
@@ -460,6 +494,54 @@ internal fun WelcomeOnboardingScreen(
                 }
             }
         }
+    }
+
+    permissionDialogPermission?.let { permission ->
+        val isLocation = permission == Manifest.permission.ACCESS_COARSE_LOCATION
+        AlertDialog(
+            onDismissRequest = { permissionDialogPermission = null },
+            title = {
+                Text(
+                    if (permissionDialogSettings) "Permission needs Settings" else "Why this permission?"
+                )
+            },
+            text = {
+                Text(
+                    when {
+                        permissionDialogSettings ->
+                            "Android has stopped showing the permission prompt. To enable ${if (isLocation) "weather location" else "calendar agenda"}, open Dislauncher in system settings and grant access there."
+                        isLocation ->
+                            "Dislauncher uses approximate location only to retrieve local weather. It does not need precise location."
+                        else ->
+                            "Dislauncher reads calendar events only to show upcoming appointments in the Home agenda."
+                    }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (permissionDialogSettings) {
+                        runCatching {
+                            context.startActivity(
+                                Intent(
+                                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                    Uri.fromParts("package", context.packageName, null)
+                                )
+                            )
+                        }
+                    } else {
+                        launchOptionalPermission(permission)
+                    }
+                    permissionDialogPermission = null
+                }) {
+                    Text(if (permissionDialogSettings) "Open Settings" else "Continue")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { permissionDialogPermission = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
