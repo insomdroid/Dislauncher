@@ -1668,7 +1668,7 @@ private fun CalendarTool(
         }
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(if (selectedDate == LocalDate.now()) (if (Locale.getDefault().language == "id") "Hari ini" else "Today") else selectedDate.format(dateFormatter),
+                Text(if (selectedDate == LocalDate.now()) "Today" else selectedDate.format(dateFormatter),
                     style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
                 Text(buildString {
                     if (dayEvents.isNotEmpty()) append(dayEvents.size).append(if (dayEvents.size == 1) " event" else " events")
@@ -1941,11 +1941,11 @@ private fun CalendarTool(
                 TextButton(onClick = {
                     time = LocalTime.of(timePickerState.hour, timePickerState.minute)
                     showTimePicker = false
-                }) { Text(if (Locale.getDefault().language == "id") "Pilih" else "Select") }
+                }) { Text("Select") }
             },
             dismissButton = {
                 TextButton(onClick = { showTimePicker = false }) {
-                    Text(if (Locale.getDefault().language == "id") "Batal" else "Cancel")
+                    Text("Cancel")
                 }
             }
         )
