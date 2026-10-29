@@ -116,6 +116,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # GitHub-hosted runners may expose KVM without granting the runner user access.
+          # This permission change is isolated to the disposable CI runner.
+          if [[ -e /dev/kvm ]]; then
+            sudo chmod 666 /dev/kvm
+          fi
+          if [[ ! -r /dev/kvm || ! -w /dev/kvm ]]; then
+            echo "::error::KVM is unavailable or not accessible; x86_64 emulator cannot start."
+            ls -l /dev/kvm || true
+            exit 1
+          fi
           # Keep AVD creation and emulator lookup on the same explicit path.
           export ANDROID_AVD_HOME="$HOME/.android/avd"
           mkdir -p "$ANDROID_AVD_HOME"
