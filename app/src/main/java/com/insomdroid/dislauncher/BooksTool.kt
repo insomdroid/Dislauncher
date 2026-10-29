@@ -266,6 +266,7 @@ internal fun BooksTool(onBack: () -> Unit) {
     var error by remember { mutableStateOf<String?>(null) }
     var pdfBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var pendingDelete by remember { mutableStateOf<BookEntry?>(null) }
+    var gridView by remember { mutableStateOf(false) }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
@@ -337,7 +338,10 @@ internal fun BooksTool(onBack: () -> Unit) {
         Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Back") }
-                Text("Reader", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+                Text("Reader", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+                if (books.isNotEmpty()) IconButton(onClick = { gridView = !gridView }) {
+                    Icon(if (gridView) Icons.Outlined.ViewList else Icons.Outlined.ViewModule, contentDescription = if (gridView) "List view" else "Grid view")
+                }
                 IconButton(onClick = { picker.launch(arrayOf("application/epub+zip", "application/pdf", "text/plain", "application/octet-stream")) }) {
                     Icon(Icons.Outlined.Add, contentDescription = "Add book")
                 }
