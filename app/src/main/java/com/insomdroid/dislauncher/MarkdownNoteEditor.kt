@@ -112,9 +112,40 @@ internal fun MarkdownNoteEditor(
             }
             BasicTextField(
                 value = field,
-                onValueChange = {
-                    field = it
-                    onValueChange(it.text)
+                onValueChange = { incoming ->
+                    val previous = field
+                    val cursorAfterNewline = incoming.selection.min
+                    val insertedNewline = incoming.text.length == previous.text.length + 1 &&
+                        cursorAfterNewline > 0 && incoming.text.getOrNull(cursorAfterNewline - 1) == '\n'
+                    if (insertedNewline && previous.selection.collapsed) {
+                        val cursorBeforeNewline = previous.selection.min.coerceIn(0, previous.text.length)
+                        val lineStart = if (cursorBeforeNewline == 0) 0 else previous.text.lastIndexOf('\n', cursorBeforeNewline - 1) + 1
+                        val line = previous.text.substring(lineStart, cursorBeforeNewline)
+                        val match = Regex("^(\\s*)([-*+]\\s+|\\d+[.)]\\s+)(.*)$").matchEntire(line)
+                        if (match != null) {
+                            val indent = match.groupValues[1]
+                            val marker = match.groupValues[2]
+                            val content = match.groupValues[3]
+                            if (content.isBlank()) {
+                                val nextText = incoming.text.removeRange(lineStart, cursorBeforeNewline)
+                                field = TextFieldValue(nextText, selection = TextRange(lineStart))
+                                onValueChange(nextText)
+                            } else {
+                                val nextMarker = if (marker.trimStart().firstOrNull()?.isDigit() == true) {
+                                    val number = Regex("\\d+").find(marker)?.value?.toIntOrNull() ?: 1
+                                    marker.replace(Regex("\\d+"), (number + 1).toString())
+                                } else marker
+                                val continuation = indent + nextMarker
+                                val insertionPoint = cursorAfterNewline
+                                val nextText = incoming.text.replaceRange(insertionPoint, insertionPoint, continuation)
+                                field = TextFieldValue(nextText, selection = TextRange(insertionPoint + continuation.length))
+                                onValueChange(nextText)
+                            }
+                            return@BasicTextField
+                        }
+                    }
+                    field = incoming
+                    onValueChange(incoming.text)
                 },
                 modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)
                     .onPreviewKeyEvent { event ->
