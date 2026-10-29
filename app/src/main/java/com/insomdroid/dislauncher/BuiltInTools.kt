@@ -47,7 +47,7 @@ import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.FileOpen
-import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.automirrored.outlined.Undo
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.NoteAdd
 import androidx.compose.material.icons.outlined.MoreVert
@@ -980,7 +980,7 @@ private fun NotesTool(
                             }
                         },
                         enabled = undoHistory.isNotEmpty()
-                    ) { Icon(Icons.Outlined.History, contentDescription = "Undo") }
+                    ) { Icon(Icons.AutoMirrored.Outlined.Undo, contentDescription = "Undo") }
                     IconButton(
                         onClick = {
                             if (redoHistory.isNotEmpty()) {
@@ -1560,7 +1560,7 @@ private fun CalendarTool(
                     Text(if (showWeekView) builtInToolText("Month", "Bulan") else builtInToolText("Week", "Minggu"))
                 }
                 TextButton(onClick = { onMonthChange(YearMonth.now()); selectedDate = LocalDate.now() }) {
-                    Text(if (Locale.getDefault().language == "id") "Hari ini" else "Today")
+                    Text("Today")
                 }
             }
         val calendarFirstDay = remember { WeekFields.of(Locale.getDefault()).firstDayOfWeek }
@@ -1809,7 +1809,7 @@ private fun CalendarTool(
                             Text(time.format(DateTimeFormatter.ofPattern("HH:mm")))
                         }
                     }
-                    Text(if (Locale.getDefault().language == "id") "Prioritas" else "Priority", style = MaterialTheme.typography.labelLarge)
+                    Text("Priority", style = MaterialTheme.typography.labelLarge)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         (1..3).forEach { level ->
                             val label = priorityLabel(level)
@@ -1899,7 +1899,7 @@ private fun CalendarTool(
                         title = null,
                         headline = {
                             Text(
-                                if (Locale.getDefault().language == "id") "Pilih tanggal" else "Select date",
+                                "Select date",
                                 style = MaterialTheme.typography.titleLarge,
                                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
                             )
@@ -1911,7 +1911,7 @@ private fun CalendarTool(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         TextButton(onClick = { showDatePicker = false }) {
-                            Text(if (Locale.getDefault().language == "id") "Batal" else "Cancel")
+                            Text("Cancel")
                         }
                         TextButton(onClick = {
                             datePickerState.selectedDateMillis?.let { millis ->
@@ -1919,7 +1919,7 @@ private fun CalendarTool(
                             }
                             showDatePicker = false
                         }) {
-                            Text(if (Locale.getDefault().language == "id") "Pilih" else "Select")
+                            Text("Select")
                         }
                     }
                 }
@@ -1935,7 +1935,7 @@ private fun CalendarTool(
         )
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
-            title = { Text(if (Locale.getDefault().language == "id") "Pilih waktu" else "Select time") },
+            title = { Text("Select time") },
             text = { TimePicker(state = timePickerState) },
             confirmButton = {
                 TextButton(onClick = {
