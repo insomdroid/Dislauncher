@@ -328,7 +328,7 @@ internal fun BooksTool(onBack: () -> Unit) {
         Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 20.dp, vertical = 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Back") }
-                Text("Books", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+                Text("Reader", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
                 IconButton(onClick = { picker.launch(arrayOf("application/epub+zip", "application/pdf", "text/plain", "application/octet-stream")) }) {
                     Icon(Icons.Outlined.Add, contentDescription = "Add book")
                 }
