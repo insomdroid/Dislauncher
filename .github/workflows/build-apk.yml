@@ -116,12 +116,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Keep AVD creation and emulator lookup on the same explicit path.
+          export ANDROID_AVD_HOME="$HOME/.android/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
           echo "no" | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd \
             --force --name dislauncher-ci \
+            --path "$ANDROID_AVD_HOME/dislauncher-ci.avd" \
             --package "system-images;android-35;google_apis;x86_64" \
             --device pixel_2
+          "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" list avd
+          test -f "$ANDROID_AVD_HOME/dislauncher-ci.avd/config.ini"
           "$ANDROID_HOME/emulator/emulator" -avd dislauncher-ci \
-            -no-window -no-audio -no-boot-anim -no-snapshot -wipe-data \
+            -no-snapshot-load -no-window -no-audio -no-boot-anim -no-snapshot -wipe-data \
             -gpu swiftshader_indirect > "$RUNNER_TEMP/dislauncher-emulator.log" 2>&1 &
           if ! timeout 90s adb wait-for-device; then
             cat "$RUNNER_TEMP/dislauncher-emulator.log"
