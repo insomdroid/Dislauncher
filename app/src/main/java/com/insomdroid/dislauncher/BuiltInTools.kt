@@ -397,9 +397,10 @@ private fun saveTasks(context: Context, tasks: List<LocalTask>) {
     store.edit().putString("tasks_json", array.toString()).apply()
 }
 
-private fun priorityLabel(priority: Int): String = when (Locale.getDefault().language) {
-    "id" -> when (priority) { 1 -> "Rendah"; 3 -> "Tinggi"; else -> "Sedang" }
-    else -> when (priority) { 1 -> "Low"; 3 -> "High"; else -> "Medium" }
+private fun priorityLabel(priority: Int): String = when (priority) {
+    1 -> "Low"
+    3 -> "High"
+    else -> "Medium"
 }
 
 @Composable
