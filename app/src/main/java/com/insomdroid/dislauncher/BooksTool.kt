@@ -51,6 +51,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -320,7 +321,12 @@ internal fun BooksTool(onBack: () -> Unit) {
 
     LaunchedEffect(currentPage, selectedBook?.id) {
         if (selectedBook != null && bookContent?.pdfFile == null) {
-            if (pageDirection > 0) pageScrollState.scrollTo(0) else pageScrollState.scrollTo(pageScrollState.maxValue)
+            withFrameNanos { }
+            if (pageDirection > 0) {
+                pageScrollState.scrollTo(0)
+            } else {
+                pageScrollState.scrollTo(pageScrollState.maxValue)
+            }
         }
     }
 
