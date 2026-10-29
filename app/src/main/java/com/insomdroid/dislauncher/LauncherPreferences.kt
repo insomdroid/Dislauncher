@@ -32,6 +32,7 @@ internal data class LauncherPreferences(
     val showWeather: Boolean = true,
     val weatherUnit: String = "C",
     val timeFormat: String = "system",
+    val clockStyle: String = "dot_matrix",
     val showSettingsButton: Boolean = true,
     val showMusic: Boolean = true,
     val hideSystemApps: Boolean = false,
@@ -76,6 +77,7 @@ internal data class LauncherPreferences(
             .putBoolean("show_weather", showWeather)
             .putString("weather_unit", weatherUnit)
             .putString("time_format", timeFormat)
+            .putString("clock_style", normalizeClockStyle(clockStyle))
             .putBoolean("show_settings_button", showSettingsButton)
             .putBoolean("show_music", showMusic)
             .putBoolean("hide_system_apps", hideSystemApps)
@@ -98,6 +100,11 @@ internal data class LauncherPreferences(
             "dark" -> "dark"
             "black" -> "black"
             else -> "system"
+        }
+
+        private fun normalizeClockStyle(value: String): String = when (value) {
+            "dot_matrix", "compact", "date_focus", "split", "editorial", "digital" -> value
+            else -> "dot_matrix"
         }
 
         private fun normalizeFontMode(value: String): String = when (value) {
@@ -169,6 +176,7 @@ internal data class LauncherPreferences(
                 showWeather = p.getBoolean("show_weather", true),
                 weatherUnit = normalizeWeatherUnit(p.getString("weather_unit", "C") ?: "C"),
                 timeFormat = normalizeTimeFormat(p.getString("time_format", "system") ?: "system"),
+                clockStyle = normalizeClockStyle(p.getString("clock_style", "dot_matrix") ?: "dot_matrix"),
                 showSettingsButton = p.getBoolean("show_settings_button", true),
                 showMusic = p.getBoolean("show_music", true),
                 hideSystemApps = p.getBoolean("hide_system_apps", false),

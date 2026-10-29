@@ -499,6 +499,22 @@ internal fun SettingsScreen(
                                 tr("Tap the date to open the calendar.", "Ketuk tanggal untuk membuka kalender."),
                                 preferences.showDate
                             ) { onPreferencesChange(preferences.copy(showDate = it)) }
+                            ChoiceRow(
+                                tr("Clock style", "Gaya jam"),
+                                preferences.clockStyle,
+                                listOf(
+                                    "dot_matrix" to tr("Dot Matrix Large", "Dot Matrix Besar"),
+                                    "compact" to tr("Dot Matrix Compact", "Dot Matrix Ringkas"),
+                                    "date_focus" to tr("Date Focus", "Fokus Tanggal"),
+                                    "split" to tr("Split Layout", "Dua Kolom"),
+                                    "editorial" to tr("Editorial Date", "Tanggal Editorial"),
+                                    "digital" to tr("Digital Watch", "Jam Digital")
+                                ),
+                                description = tr(
+                                    "Change the Home clock and date layout. Uses your selected built-in font and stays left-aligned.",
+                                    "Ubah tata letak jam dan tanggal di Home. Menggunakan font bawaan yang dipilih dan tetap rata kiri."
+                                )
+                            ) { onPreferencesChange(preferences.copy(clockStyle = it)) }
                             SettingToggle(
                                 tr("Show Settings button", "Tampilkan tombol Setelan"),
                                 tr("When hidden, long-press empty Home space to open Settings.", "Jika disembunyikan, tekan lama area kosong Home untuk membuka Setelan."),
