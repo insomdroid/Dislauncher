@@ -40,6 +40,7 @@ import androidx.compose.material.icons.outlined.ViewModule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
@@ -347,8 +348,13 @@ internal fun BooksTool(onBack: () -> Unit) {
                 if (books.isNotEmpty()) IconButton(onClick = { gridView = !gridView }) {
                     Icon(if (gridView) Icons.Outlined.ViewList else Icons.Outlined.ViewModule, contentDescription = if (gridView) "List view" else "Grid view")
                 }
-                IconButton(onClick = { picker.launch(arrayOf("application/epub+zip", "application/pdf", "text/plain", "application/octet-stream")) }) {
-                    Icon(Icons.Outlined.Add, contentDescription = "Add book")
+                FilledTonalButton(
+                    onClick = { picker.launch(arrayOf("application/epub+zip", "application/pdf", "text/plain", "application/octet-stream")) },
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Add book")
                 }
             }
             Text("Your library", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium,
