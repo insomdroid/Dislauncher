@@ -3,7 +3,6 @@ package com.insomdroid.dislauncher
 import android.app.Activity
 import android.app.admin.DevicePolicyManager
 import android.app.WallpaperManager
-import android.os.Build
 import android.content.ComponentName
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -49,6 +48,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -360,12 +360,12 @@ internal fun DislauncherRoot() {
                 }
             }
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            context.registerReceiver(packageReceiver, packageFilter, Context.RECEIVER_NOT_EXPORTED)
-        } else {
-            @Suppress("DEPRECATION")
-            context.registerReceiver(packageReceiver, packageFilter)
-        }
+        ContextCompat.registerReceiver(
+            context,
+            packageReceiver,
+            packageFilter,
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
         onDispose {
             refreshJob?.cancel()
             context.unregisterReceiver(packageReceiver)
