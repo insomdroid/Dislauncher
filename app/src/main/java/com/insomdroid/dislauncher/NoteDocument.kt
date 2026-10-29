@@ -49,7 +49,7 @@ internal object NoteDocumentCodec {
     private val bulletPattern = Regex("^\\s*[-*+]\\s+(.+)$")
     private val numberedPattern = Regex("^\\s*(\\d+)[.)]\\s+(.+)$")
     private val checklistPattern = Regex("^\\s*[-*+]\\s+\\[([ xX])]\\s+(.+)$")
-    private val inlinePattern = Regex("""!\[([^\]]*)\]\((?:<)?([^)>]+)(?:>)?\)|\[([^\]]+)\]\((https?://[^)]+)\)|\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|~~(.+?)~~|\*(.+?)\*|`([^`]+)`""")
+    private val inlinePattern = Regex("""\\(.)|<u>(.+?)</u>|!\[([^\]]*)\]\((?:<)?([^)>]+)(?:>)?\)|\[([^\]]+)\]\((https?://[^)]+)\)|\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|~~(.+?)~~|\*(.+?)\*|`([^`]+)`""")
 
     fun fromLegacyContent(markdown: String): NoteDocument {
         if (markdown.isBlank()) return NoteDocument()
@@ -57,7 +57,11 @@ internal object NoteDocumentCodec {
         val blocks = mutableListOf<NoteBlock>()
         var index = 0
         fun add(type: NoteBlockType, text: String = "", level: Int = 1, checked: Boolean = false, orderedIndex: Int = 1) {
-            val parsed = if (text.isEmpty()) emptyList() else parseInline(text)
+            val parsed = when {
+                text.isEmpty() -> emptyList()
+                type == NoteBlockType.CODE -> listOf(NoteInline(text))
+                else -> parseInline(text)
+            }
             if (parsed.none { it.imageUri != null }) {
                 blocks += NoteBlock(
                     id = "b${blocks.size + 1}",
@@ -167,17 +171,19 @@ internal object NoteDocumentCodec {
             if (match.range.first > cursor) result += NoteInline(text.substring(cursor, match.range.first))
             val g = match.groupValues
             when {
+                g[1].isNotEmpty() -> result += NoteInline(g[1])
+                g[2].isNotEmpty() -> result += NoteInline(g[2], setOf(NoteMark.UNDERLINE))
                 match.value.startsWith("![") -> result += NoteInline(
-                    text = g[1],
-                    imageUri = g[2],
-                    imageAlt = g[1]
+                    text = g[3],
+                    imageUri = g[4],
+                    imageAlt = g[3]
                 )
-                match.value.startsWith("[") -> result += NoteInline(text = g[3], link = g[4])
-                g[5].isNotEmpty() -> result += NoteInline(g[5], setOf(NoteMark.BOLD, NoteMark.ITALIC))
-                g[6].isNotEmpty() -> result += NoteInline(g[6], setOf(NoteMark.BOLD))
-                g[7].isNotEmpty() -> result += NoteInline(g[7], setOf(NoteMark.STRIKETHROUGH))
-                g[8].isNotEmpty() -> result += NoteInline(g[8], setOf(NoteMark.ITALIC))
-                g[9].isNotEmpty() -> result += NoteInline(g[9], setOf(NoteMark.CODE))
+                match.value.startsWith("[") -> result += NoteInline(text = g[5], link = g[6])
+                g[7].isNotEmpty() -> result += NoteInline(g[7], setOf(NoteMark.BOLD, NoteMark.ITALIC))
+                g[8].isNotEmpty() -> result += NoteInline(g[8], setOf(NoteMark.BOLD))
+                g[9].isNotEmpty() -> result += NoteInline(g[9], setOf(NoteMark.STRIKETHROUGH))
+                g[10].isNotEmpty() -> result += NoteInline(g[10], setOf(NoteMark.ITALIC))
+                g[11].isNotEmpty() -> result += NoteInline(g[11], setOf(NoteMark.CODE))
             }
             cursor = match.range.last + 1
         }
