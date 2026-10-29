@@ -127,7 +127,7 @@ internal fun MarkdownNoteEditor(
                             val marker = match.groupValues[2]
                             val content = match.groupValues[3]
                             if (content.isBlank()) {
-                                val nextText = incoming.text.removeRange(lineStart, cursorBeforeNewline)
+                                val nextText = incoming.text.removeRange(lineStart, cursorBeforeNewline + 1)
                                 field = TextFieldValue(nextText, selection = TextRange(lineStart))
                                 onValueChange(nextText)
                             } else {
