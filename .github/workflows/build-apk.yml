@@ -126,7 +126,7 @@ jobs:
           adb wait-for-device
           booted=false
           for attempt in $(seq 1 60); do
-            if [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\\r')" == "1" ]]; then
+            if [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]]; then
               booted=true
               break
             fi
@@ -156,7 +156,7 @@ jobs:
             sleep 15
             adb shell dumpsys meminfo com.insomdroid.dislauncher > build/runtime-profile/meminfo.txt
             adb shell dumpsys gfxinfo com.insomdroid.dislauncher framestats > build/runtime-profile/gfxinfo-framestats.txt
-            adb logcat -d -t 4000 | grep -E 'FATAL EXCEPTION|ANR in|Process: com\\.insomdroid\\.dislauncher' > build/runtime-profile/crash-signatures.txt
+            adb logcat -d -t 4000 | grep -E 'FATAL EXCEPTION|ANR in|Process: com\.insomdroid\.dislauncher' > build/runtime-profile/crash-signatures.txt
           fi
           if [[ -f "$RUNNER_TEMP/dislauncher-emulator.log" ]]; then
             cp "$RUNNER_TEMP/dislauncher-emulator.log" build/runtime-profile/emulator.log
@@ -167,7 +167,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: Dislauncher-Runtime-Profile-\${{ github.run_number }}
+          name: Dislauncher-Runtime-Profile-${{ github.run_number }}
           path: build/runtime-profile/
           if-no-files-found: warn
           retention-days: 7
