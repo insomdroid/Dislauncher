@@ -502,26 +502,6 @@ internal fun SettingsScreen(
                                 tr("Tap the date to open the calendar.", "Ketuk tanggal untuk membuka kalender."),
                                 preferences.showDate
                             ) { onPreferencesChange(preferences.copy(showDate = it)) }
-                            ChoiceRow(
-                                tr("Clock style", "Gaya jam"),
-                                preferences.clockStyle,
-                                listOf(
-                                    "default" to tr("Dislauncher Default", "Bawaan Dislauncher"),
-                                    "dot_matrix" to tr("Dot Matrix Large", "Dot Matrix Besar"),
-                                    "compact" to tr("Dot Matrix Compact", "Dot Matrix Ringkas"),
-                                    "date_focus" to tr("Date Focus", "Fokus Tanggal"),
-                                    "split" to tr("Split Layout", "Dua Kolom"),
-                                    "editorial" to tr("Editorial Date", "Tanggal Editorial"),
-                                    "digital" to tr("Digital Watch", "Jam Digital"),
-                                    "vertical_stack" to tr("Vertical Stack", "Susunan Vertikal"),
-                                    "binary_dot_minimal" to tr("Binary Dot Minimal", "Titik Biner Minimal"),
-                                    "dual_bar" to tr("Dual Bar Clock", "Jam Dua Batang")
-                                ),
-                                description = tr(
-                                    "Preview the Home clock and date layout. Styles use their designated bundled fonts, independent of your global font choice.",
-                                    "Lihat pratinjau tata letak jam dan tanggal Home. Setiap gaya memakai font bawaan khusus, terlepas dari pilihan font global."
-                                )
-                            ) { onPreferencesChange(preferences.copy(clockStyle = it)) }
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -556,6 +536,26 @@ internal fun SettingsScreen(
                                     onOpenCalendar = {}
                                 )
                             }
+                            ChoiceRow(
+                                tr("Clock style", "Gaya jam"),
+                                preferences.clockStyle,
+                                listOf(
+                                    "default" to tr("Dislauncher Default", "Bawaan Dislauncher"),
+                                    "compact" to tr("Dot Matrix Compact", "Dot Matrix Ringkas"),
+                                    "date_focus" to tr("Date Focus", "Fokus Tanggal"),
+                                    "split" to tr("Split Layout", "Dua Kolom"),
+                                    "editorial" to tr("Editorial Date", "Tanggal Editorial"),
+                                    "digital" to tr("Digital Watch", "Jam Digital"),
+                                    "vertical_stack" to tr("Vertical Stack", "Susunan Vertikal"),
+                                    "binary_dot_minimal" to tr("Binary Dot Minimal", "Titik Biner Minimal"),
+                                    "dual_bar" to tr("Dual Bar Clock", "Jam Dua Batang"),
+                                    "text_clock" to tr("Text Clock", "Jam Teks")
+                                ),
+                                description = tr(
+                                    "Choose how the clock and date look.",
+                                    "Pilih tampilan jam dan tanggal."
+                                )
+                            ) { onPreferencesChange(preferences.copy(clockStyle = it)) }
                             SettingToggle(
                                 tr("Show Settings button", "Tampilkan tombol Setelan"),
                                 tr("When hidden, long-press empty Home space to open Settings.", "Jika disembunyikan, tekan lama area kosong Home untuk membuka Setelan."),

@@ -82,13 +82,13 @@ internal fun HomeHeader(
             }
             if (preferences.showClock) { Spacer(Modifier.height(4.dp)); Text(timeText, color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = interFont, maxLines=1, modifier=clockModifier) }
         }
-        "split" -> Row(verticalAlignment=Alignment.CenterVertically, horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-            if (preferences.showClock) Column(modifier=Modifier.weight(1f)) {
+        "split" -> Row(verticalAlignment=Alignment.CenterVertically, horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+            if (preferences.showClock) Column {
                 Text(timeText, color=primaryText, fontSize=HomeDesign.clockSize, lineHeight=HomeDesign.clockLineHeight, letterSpacing=(-0.6).sp, fontWeight=FontWeight.Light, fontFamily = dotMatrixFont, maxLines=1, softWrap=false, modifier=clockModifier)
                 Text(day.uppercase(locale), color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = interFont, maxLines=1, overflow=TextOverflow.Ellipsis)
             }
             if (preferences.showClock && preferences.showDate) Box(Modifier.width(1.dp).height(42.dp).background(secondaryText.copy(alpha=0.45f)))
-            if (preferences.showDate) Column(modifier=Modifier.weight(1f)) {
+            if (preferences.showDate) Column {
                 Text(today.dayOfMonth.toString(), color=primaryText, fontSize=HomeDesign.clockSize, lineHeight=HomeDesign.clockLineHeight, fontWeight=FontWeight.Light, fontFamily = dotMatrixFont, maxLines=1, modifier=dateModifier)
                 Text(today.format(DateTimeFormatter.ofPattern("MMM yyyy", locale)).uppercase(locale), color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = interFont, maxLines=1, overflow=TextOverflow.Ellipsis, modifier=dateModifier)
             }
@@ -106,7 +106,7 @@ internal fun HomeHeader(
         }
         "digital" -> {
             if (preferences.showDate) Text(shortDate.uppercase(locale), color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = interFont, maxLines=1, overflow=TextOverflow.Ellipsis, modifier=dateModifier)
-            if (preferences.showClock) { Spacer(Modifier.height(4.dp)); Text(timeText, color=primaryText, fontSize=HomeDesign.clockSize, lineHeight=HomeDesign.clockLineHeight, letterSpacing=(-0.6).sp, fontWeight=FontWeight.Light, fontFamily = geistMonoFont, maxLines=1, softWrap=false, modifier=clockModifier); Spacer(Modifier.height(4.dp)); Box(Modifier.fillMaxWidth(HomeDesign.progressTrackWidth).height(1.dp).background(secondaryText.copy(alpha=0.45f))) }
+            if (preferences.showClock) { Spacer(Modifier.height(4.dp)); Box(Modifier.fillMaxWidth(HomeDesign.progressTrackWidth).height(1.dp).background(secondaryText.copy(alpha=0.45f))); Spacer(Modifier.height(4.dp)); Text(timeText, color=primaryText, fontSize=HomeDesign.clockSize, lineHeight=HomeDesign.clockLineHeight, letterSpacing=(-0.6).sp, fontWeight=FontWeight.Light, fontFamily = geistMonoFont, maxLines=1, softWrap=false, modifier=clockModifier); Spacer(Modifier.height(4.dp)); Box(Modifier.fillMaxWidth(HomeDesign.progressTrackWidth).height(1.dp).background(secondaryText.copy(alpha=0.45f))) }
         }
         "vertical_stack" -> {
             val hourPart = timeText.substringBefore(":").trim()
@@ -134,9 +134,23 @@ internal fun HomeHeader(
             }
             if (preferences.showDate) { Spacer(Modifier.height(4.dp)); Text(shortDate, color = secondaryText, fontSize = HomeDesign.dateSize, lineHeight = HomeDesign.dateLineHeight, fontFamily = interFont, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = dateModifier) }
         }
-        "dot_matrix" -> {
-            if (preferences.showClock) Text(timeText, color=primaryText, fontSize=HomeDesign.clockSize, lineHeight=HomeDesign.clockLineHeight, letterSpacing=(-0.6).sp, fontWeight=FontWeight.Light, fontFamily = dotMatrixFont, maxLines=1, softWrap=false, modifier=clockModifier)
-            if (preferences.showDate) { Spacer(Modifier.height(HomeDesign.clockToDate)); Text(dateText, color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = interFont, maxLines=1, overflow=TextOverflow.Ellipsis, modifier=dateModifier) }
+        "text_clock" -> {
+            val hourWord = numberWord(if (now.hour % 12 == 0) 12 else now.hour % 12)
+            val minuteWord = numberWord(now.minute)
+            if (preferences.showClock) {
+                Text(hourWord, color=primaryText, fontSize=HomeDesign.clockSize * 0.78f, lineHeight=HomeDesign.clockLineHeight * 0.82f, fontWeight=FontWeight.Medium, fontFamily=dotMatrixFont, maxLines=1, softWrap=false, modifier=clockModifier)
+            }
+            if (preferences.showDate) {
+                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment=Alignment.CenterVertically, horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                    Box(Modifier.width(28.dp).height(1.dp).background(secondaryText.copy(alpha=0.65f)))
+                    Text(today.format(DateTimeFormatter.ofPattern("d MMM yyyy", locale)), color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily=interFont, maxLines=1, modifier=dateModifier)
+                }
+            }
+            if (preferences.showClock) {
+                Spacer(Modifier.height(4.dp))
+                Text(minuteWord, color=primaryText, fontSize=HomeDesign.clockSize * 0.78f, lineHeight=HomeDesign.clockLineHeight * 0.82f, fontWeight=FontWeight.Medium, fontFamily=dotMatrixFont, maxLines=1, softWrap=false, modifier=clockModifier)
+            }
         }
         else -> {
             if (preferences.showDate) Text(day.uppercase(locale), color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = interFont, maxLines=1, overflow=TextOverflow.Ellipsis, modifier=dateModifier)
@@ -151,6 +165,17 @@ internal fun HomeHeader(
             if (preferences.showYearProgress) Spacer(Modifier.height(HomeDesign.progressLineGap))
             ProgressLine(label="Day in progress", percent=(now.toSecondOfDay()*100f/86400f).toInt(), primaryText=primaryText, secondaryText=secondaryText, fill=MaterialTheme.colorScheme.primary, track=if(isDark) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerHighest)
         }
+    }
+}
+
+private fun numberWord(value: Int): String {
+    val units = listOf("Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen")
+    val tens = listOf("", "", "Twenty", "Thirty", "Forty", "Fifty")
+    return when {
+        value < 0 -> ""
+        value < 20 -> units[value]
+        value < 60 -> tens[value / 10] + if (value % 10 == 0) "" else " " + units[value % 10]
+        else -> value.toString()
     }
 }
 
