@@ -54,4 +54,30 @@ class NoteDocumentCodecTest {
         assertEquals(code, parsed.blocks.single().spans.joinToString("") { it.text })
         assertTrue(parsed.blocks.single().spans.none { it.marks.isNotEmpty() })
     }
+    @Test
+    fun markdownRoundTripPreservesEscapesInsideFormatting() {
+        val document = NoteDocument(
+            blocks = listOf(
+                NoteBlock(
+                    id = "p1",
+                    type = NoteBlockType.PARAGRAPH,
+                    spans = listOf(
+                        NoteInline("bold * star", setOf(NoteMark.BOLD)),
+                        NoteInline(" "),
+                        NoteInline("code ` tick", setOf(NoteMark.CODE))
+                    )
+                )
+            )
+        )
+
+        val parsed = NoteDocumentCodec.fromLegacyContent(NoteDocumentCodec.toMarkdown(document))
+        val spans = parsed.blocks.single().spans
+
+        assertEquals("bold * star", spans[0].text)
+        assertEquals(setOf(NoteMark.BOLD), spans[0].marks)
+        assertEquals(" ", spans[1].text)
+        assertEquals("code ` tick", spans[2].text)
+        assertEquals(setOf(NoteMark.CODE), spans[2].marks)
+    }
+
 }
