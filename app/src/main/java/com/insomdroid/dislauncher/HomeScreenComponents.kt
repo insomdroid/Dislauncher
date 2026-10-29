@@ -108,6 +108,32 @@ internal fun HomeHeader(
             if (preferences.showDate) Text(shortDate.uppercase(locale), color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = interFont, maxLines=1, overflow=TextOverflow.Ellipsis, modifier=dateModifier)
             if (preferences.showClock) { Spacer(Modifier.height(4.dp)); Text(timeText, color=primaryText, fontSize=HomeDesign.clockSize, lineHeight=HomeDesign.clockLineHeight, letterSpacing=(-0.6).sp, fontWeight=FontWeight.Light, fontFamily = geistMonoFont, maxLines=1, softWrap=false, modifier=clockModifier); Spacer(Modifier.height(4.dp)); Box(Modifier.fillMaxWidth(HomeDesign.progressTrackWidth).height(1.dp).background(secondaryText.copy(alpha=0.45f))) }
         }
+        "vertical_stack" -> {
+            val hourPart = timeText.substringBefore(":").trim()
+            val minutePart = timeText.substringAfter(":", "").take(2)
+            if (preferences.showClock) {
+                Column(verticalArrangement = Arrangement.spacedBy(0.dp), modifier = clockModifier) {
+                    Text(hourPart, color = primaryText, fontSize = HomeDesign.clockSize * 0.9f, lineHeight = HomeDesign.clockLineHeight * 0.88f, letterSpacing = (-0.6).sp, fontWeight = FontWeight.Light, fontFamily = dotMatrixFont, maxLines = 1, softWrap = false)
+                    Text(minutePart, color = primaryText, fontSize = HomeDesign.clockSize * 0.9f, lineHeight = HomeDesign.clockLineHeight * 0.88f, letterSpacing = (-0.6).sp, fontWeight = FontWeight.Light, fontFamily = dotMatrixFont, maxLines = 1, softWrap = false)
+                }
+            }
+            if (preferences.showDate) { Spacer(Modifier.height(4.dp)); Text(shortDate, color = secondaryText, fontSize = HomeDesign.dateSize, lineHeight = HomeDesign.dateLineHeight, fontFamily = interFont, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = dateModifier) }
+        }
+        "binary_dot_minimal" -> {
+            if (preferences.showClock) {
+                Text(timeText, color = secondaryText, fontSize = HomeDesign.dateSize, lineHeight = HomeDesign.dateLineHeight, fontFamily = interFont, maxLines = 1, softWrap = false, modifier = clockModifier)
+                Spacer(Modifier.height(6.dp))
+                BinaryDotClock(hour = now.hour, minute = now.minute, activeColor = MaterialTheme.colorScheme.primary, inactiveColor = secondaryText.copy(alpha = 0.24f))
+            }
+        }
+        "dual_bar" -> {
+            if (preferences.showClock) {
+                Text(timeText, color = secondaryText, fontSize = HomeDesign.dateSize, lineHeight = HomeDesign.dateLineHeight, fontFamily = interFont, maxLines = 1, softWrap = false, modifier = clockModifier)
+                Spacer(Modifier.height(6.dp))
+                DualBarClock(hour = now.hour, minute = now.minute, activeColor = MaterialTheme.colorScheme.primary, inactiveColor = secondaryText.copy(alpha = 0.24f))
+            }
+            if (preferences.showDate) { Spacer(Modifier.height(4.dp)); Text(shortDate, color = secondaryText, fontSize = HomeDesign.dateSize, lineHeight = HomeDesign.dateLineHeight, fontFamily = interFont, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = dateModifier) }
+        }
         "dot_matrix" -> {
             if (preferences.showClock) Text(timeText, color=primaryText, fontSize=HomeDesign.clockSize, lineHeight=HomeDesign.clockLineHeight, letterSpacing=(-0.6).sp, fontWeight=FontWeight.Light, fontFamily = dotMatrixFont, maxLines=1, softWrap=false, modifier=clockModifier)
             if (preferences.showDate) { Spacer(Modifier.height(HomeDesign.clockToDate)); Text(dateText, color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = interFont, maxLines=1, overflow=TextOverflow.Ellipsis, modifier=dateModifier) }
@@ -124,6 +150,53 @@ internal fun HomeHeader(
         if (preferences.showDayProgress) {
             if (preferences.showYearProgress) Spacer(Modifier.height(HomeDesign.progressLineGap))
             ProgressLine(label="Day in progress", percent=(now.toSecondOfDay()*100f/86400f).toInt(), primaryText=primaryText, secondaryText=secondaryText, fill=MaterialTheme.colorScheme.primary, track=if(isDark) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerHighest)
+        }
+    }
+}
+
+@Composable
+private fun BinaryDotClock(hour: Int, minute: Int, activeColor: Color, inactiveColor: Color) {
+    Canvas(modifier = Modifier.width(88.dp).height(24.dp)) {
+        val dotRadius = 2.4.dp.toPx()
+        val gap = 4.5.dp.toPx()
+        val rowGap = 8.dp.toPx()
+        val hourBits = hour.coerceIn(0, 23).toString(2).padStart(5, '0')
+        val minuteBits = minute.coerceIn(0, 59).toString(2).padStart(6, '0')
+        val rows = listOf(hourBits, minuteBits)
+        rows.forEachIndexed { rowIndex, bits ->
+            val y = dotRadius + rowIndex * (dotRadius * 2 + rowGap)
+            val startX = if (rowIndex == 0) 0f else 0f
+            bits.forEachIndexed { index, bit ->
+                val x = startX + dotRadius + index * (dotRadius * 2 + gap)
+                drawCircle(if (bit == '1') activeColor else inactiveColor, dotRadius, Offset(x, y))
+            }
+        }
+    }
+}
+
+@Composable
+private fun DualBarClock(hour: Int, minute: Int, activeColor: Color, inactiveColor: Color) {
+    Canvas(modifier = Modifier.width(94.dp).height(34.dp)) {
+        val barWidth = 4.dp.toPx()
+        val gap = 3.dp.toPx()
+        val groupGap = 10.dp.toPx()
+        val maxHeight = size.height
+        val baseline = size.height
+        val hourBits = hour.coerceIn(0, 23).toString(2).padStart(5, '0')
+        val minuteBits = minute.coerceIn(0, 59).toString(2).padStart(6, '0')
+        var x = 0f
+        listOf(hourBits, minuteBits).forEachIndexed { groupIndex, bits ->
+            bits.forEach { bit ->
+                val barHeight = if (bit == '1') maxHeight else maxHeight * 0.22f
+                drawRoundRect(
+                    color = if (bit == '1') activeColor else inactiveColor,
+                    topLeft = Offset(x, baseline - barHeight),
+                    size = androidx.compose.ui.geometry.Size(barWidth, barHeight),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(barWidth / 2f)
+                )
+                x += barWidth + gap
+            }
+            if (groupIndex == 0) x += groupGap - gap
         }
     }
 }

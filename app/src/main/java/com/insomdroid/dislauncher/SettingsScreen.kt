@@ -512,7 +512,10 @@ internal fun SettingsScreen(
                                     "date_focus" to tr("Date Focus", "Fokus Tanggal"),
                                     "split" to tr("Split Layout", "Dua Kolom"),
                                     "editorial" to tr("Editorial Date", "Tanggal Editorial"),
-                                    "digital" to tr("Digital Watch", "Jam Digital")
+                                    "digital" to tr("Digital Watch", "Jam Digital"),
+                                    "vertical_stack" to tr("Vertical Stack", "Susunan Vertikal"),
+                                    "binary_dot_minimal" to tr("Binary Dot Minimal", "Titik Biner Minimal"),
+                                    "dual_bar" to tr("Dual Bar Clock", "Jam Dua Batang")
                                 ),
                                 description = tr(
                                     "Preview the Home clock and date layout. Styles use their designated bundled fonts, independent of your global font choice.",
