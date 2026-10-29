@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -256,6 +257,8 @@ internal fun BooksTool(onBack: () -> Unit) {
     var selectedBook by remember { mutableStateOf<BookEntry?>(null) }
     var bookContent by remember { mutableStateOf<BookContent?>(null) }
     var currentPage by remember { mutableStateOf(0) }
+    var pageDirection by remember { mutableStateOf(1) }
+    val pageScrollState = rememberScrollState()
     var fontSize by remember { mutableStateOf(20f) }
     var showMenu by remember { mutableStateOf(false) }
     var menuSection by remember { mutableStateOf("") }
@@ -308,6 +311,12 @@ internal fun BooksTool(onBack: () -> Unit) {
         }
     }
 
+    LaunchedEffect(currentPage, selectedBook?.id) {
+        if (selectedBook != null && bookContent?.pdfFile == null) {
+            if (pageDirection > 0) pageScrollState.scrollTo(0) else pageScrollState.scrollTo(pageScrollState.maxValue)
+        }
+    }
+
     LaunchedEffect(selectedBook?.id, currentPage, bookContent?.pdfFile) {
         val file = bookContent?.pdfFile ?: return@LaunchedEffect
         pdfBitmap = withContext(Dispatchers.IO) { runCatching { renderPdfPage(file, currentPage) }.getOrNull() }
@@ -325,7 +334,7 @@ internal fun BooksTool(onBack: () -> Unit) {
     val fg = MaterialTheme.colorScheme.onBackground
 
     if (selectedBook == null) {
-        Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 20.dp, vertical = 12.dp)) {
+        Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Back") }
                 Text("Reader", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
@@ -363,7 +372,7 @@ internal fun BooksTool(onBack: () -> Unit) {
         }
     } else {
         val book = selectedBook!!
-        Box(Modifier.fillMaxSize().background(bg)) {
+        Box(Modifier.fillMaxSize().background(bg).statusBarsPadding()) {
             Column(Modifier.fillMaxSize()) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = { selectedBook = null; bookContent = null; pdfBitmap = null }) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Library", tint = fg) }
@@ -383,8 +392,8 @@ internal fun BooksTool(onBack: () -> Unit) {
                         detectTapGestures { offset ->
                             val x = offset.x / size.width
                             when {
-                                x < 0.22f -> if (currentPage > 0) { currentPage--; saveProgress(currentPage) }
-                                x > 0.78f -> if (bookContent != null && currentPage < bookContent!!.pages.lastIndex) { currentPage++; saveProgress(currentPage) }
+                                x < 0.22f -> if (currentPage > 0) { pageDirection = -1; currentPage--; saveProgress(currentPage) }
+                                x > 0.78f -> if (bookContent != null && currentPage < bookContent!!.pages.lastIndex) { pageDirection = 1; currentPage++; saveProgress(currentPage) }
                                 else -> showMenu = !showMenu
                             }
                         }
@@ -401,7 +410,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                         )
                         else -> Text(
                             bookContent!!.pages.getOrElse(currentPage) { "" },
-                            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp, vertical = 28.dp),
+                            modifier = Modifier.fillMaxSize().verticalScroll(pageScrollState).padding(horizontal = 28.dp, vertical = 28.dp),
                             color = fg, fontSize = fontSize.sp, lineHeight = (fontSize * 1.55f).sp,
                             fontFamily = FontFamily.Serif
                         )
@@ -455,6 +464,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                             Column(Modifier.verticalScroll(rememberScrollState())) {
                                 entries.forEach { (label, position) ->
                                     Text(label, modifier = Modifier.fillMaxWidth().clickable {
+                                        pageDirection = if (position >= currentPage) 1 else -1
                                         currentPage = position.coerceIn(0, bookContent?.pages?.lastIndex ?: 0)
                                         saveProgress(currentPage)
                                         menuSection = ""
