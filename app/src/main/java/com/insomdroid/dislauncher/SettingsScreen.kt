@@ -685,7 +685,7 @@ internal fun SettingsScreen(
                         SettingsGroup(tr("App visibility", "Visibilitas aplikasi")) {
                             SettingToggle(
                                 tr("Show built-in apps", "Tampilkan aplikasi bawaan"),
-                                tr("Show Calculator, Calendar, Notes, Unit Converter and Books in a dedicated row above the app list.", "Tampilkan Kalkulator, Kalender, Catatan, Konverter Satuan, dan Books dalam baris khusus di atas daftar aplikasi."),
+                                tr("Show Calc, Cal, Notes, Conv and Reader in a dedicated row above the app list.", "Tampilkan Calc, Cal, Catatan, Conv, dan Reader dalam baris khusus di atas daftar aplikasi."),
                                 preferences.showBuiltInApps
                             ) { onPreferencesChange(preferences.copy(showBuiltInApps = it)) }
                             SettingToggle(
