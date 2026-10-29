@@ -3,8 +3,6 @@ package com.insomdroid.dislauncher
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.service.notification.NotificationListenerService
-import android.service.notification.StatusBarNotification
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
