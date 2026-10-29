@@ -516,26 +516,34 @@ internal fun DislauncherRoot() {
         controller.show(WindowInsetsCompat.Type.navigationBars())
     }
 
+    // Pixel sampling is bounded, but still avoid repeating it on unrelated recompositions.
+    val systemBarIconAppearance = remember(
+        wallpaperImage.value,
+        preferences.wallpaperMode,
+        preferences.wallpaperColor,
+        isDark
+    ) {
+        val solidWallpaperColor = if (preferences.wallpaperMode == "solid") {
+            runCatching {
+                android.graphics.Color.parseColor(preferences.wallpaperColor)
+            }.getOrNull()
+        } else null
+        val image = if (preferences.wallpaperMode == "image") wallpaperImage.value else null
+        val darkStatusIcons = solidWallpaperColor?.let {
+            android.graphics.Color.luminance(it) > 0.45f
+        } ?: image?.let { wallpaperEdgeUsesDarkIcons(it, topEdge = true) } ?: !isDark
+        val darkNavigationIcons = solidWallpaperColor?.let {
+            android.graphics.Color.luminance(it) > 0.45f
+        } ?: image?.let { wallpaperEdgeUsesDarkIcons(it, topEdge = false) } ?: !isDark
+        darkStatusIcons to darkNavigationIcons
+    }
+
     SideEffect {
         val activity = context as? Activity
         if (activity != null) {
             val controller = WindowCompat.getInsetsController(activity.window, view)
-            // Solid wallpapers can intentionally differ from the selected theme.
-            // Choose system-bar icon contrast from the actual solid background when available.
-            val solidWallpaperColor = if (preferences.wallpaperMode == "solid") {
-                runCatching {
-                    android.graphics.Color.parseColor(preferences.wallpaperColor)
-                }.getOrNull()
-            } else null
-            val image = if (preferences.wallpaperMode == "image") wallpaperImage.value else null
-            val useDarkStatusBarIcons = solidWallpaperColor?.let {
-                android.graphics.Color.luminance(it) > 0.45f
-            } ?: image?.let { wallpaperEdgeUsesDarkIcons(it, topEdge = true) } ?: !isDark
-            val useDarkNavigationBarIcons = solidWallpaperColor?.let {
-                android.graphics.Color.luminance(it) > 0.45f
-            } ?: image?.let { wallpaperEdgeUsesDarkIcons(it, topEdge = false) } ?: !isDark
-            controller.isAppearanceLightStatusBars = useDarkStatusBarIcons
-            controller.isAppearanceLightNavigationBars = useDarkNavigationBarIcons
+            controller.isAppearanceLightStatusBars = systemBarIconAppearance.first
+            controller.isAppearanceLightNavigationBars = systemBarIconAppearance.second
         }
     }
 
