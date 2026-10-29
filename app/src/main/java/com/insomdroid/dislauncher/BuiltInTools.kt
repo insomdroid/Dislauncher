@@ -124,7 +124,7 @@ import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.DayPosition
 import java.util.UUID
 
-internal enum class BuiltInTool { NOTES, CALCULATOR, CALENDAR, UNIT_CONVERTER }
+internal enum class BuiltInTool { NOTES, CALCULATOR, CALENDAR, UNIT_CONVERTER, BOOKS }
 
 internal const val EXTRA_BUILT_IN_TOOL = "com.insomdroid.dislauncher.BUILT_IN_TOOL"
 
@@ -412,6 +412,10 @@ private fun priorityColor(priority: Int): Color = when (priority) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
+    if (tool == BuiltInTool.BOOKS) {
+        BooksTool(onBack = onBack)
+        return
+    }
     val context = androidx.compose.ui.platform.LocalContext.current
     var notesEditing by remember { mutableStateOf(false) }
     var notesBackSignal by remember { mutableStateOf(0) }

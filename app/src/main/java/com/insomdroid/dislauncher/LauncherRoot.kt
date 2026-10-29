@@ -420,7 +420,8 @@ internal fun DislauncherRoot() {
             LauncherApp("internal:calculator", "", "Calculator", true),
             LauncherApp("internal:calendar", "", "Calendar", true),
             LauncherApp("internal:converter", "", "Converter", true),
-            LauncherApp("internal:notes", "", "Notes", true)
+            LauncherApp("internal:notes", "", "Notes", true),
+            LauncherApp("internal:books", "", "Books", true)
         )
     }
     val wallpaperImage = produceState<androidx.compose.ui.graphics.ImageBitmap?>(
@@ -788,6 +789,7 @@ internal fun DislauncherRoot() {
                                     "internal:calculator" -> launchBuiltInTool(context, BuiltInTool.CALCULATOR)
                                     "internal:calendar" -> launchBuiltInTool(context, BuiltInTool.CALENDAR)
                                     "internal:converter" -> launchBuiltInTool(context, BuiltInTool.UNIT_CONVERTER)
+                                    "internal:books" -> launchBuiltInTool(context, BuiltInTool.BOOKS)
                                     else -> launchApp(context, app)
                                 }
                             },
