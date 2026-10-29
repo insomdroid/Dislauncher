@@ -1,7 +1,6 @@
 package com.insomdroid.dislauncher
 
 import androidx.compose.ui.unit.dp
-import java.util.Locale
 
 /** Shared spacing rhythm for the built-in tools. */
 internal object BuiltInToolSpacing {
@@ -20,5 +19,4 @@ internal object BuiltInToolDesign {
 }
 
 /** Follow the device language while keeping English as the fallback. */
-internal fun builtInToolText(english: String, indonesian: String): String =
-    if (Locale.getDefault().language == "id") indonesian else english
+internal fun builtInToolText(english: String, indonesian: String): String = english
