@@ -39,6 +39,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.graphics.Color
@@ -210,6 +211,10 @@ internal fun DislauncherRoot() {
         }
     }
 
+    // Keep long-lived package receiver callbacks in sync with the latest Compose state.
+    val latestApps = rememberUpdatedState(apps)
+    val latestSyncAvailableFavorites = rememberUpdatedState<(List<LauncherApp>) -> Unit>(::syncAvailableFavorites)
+
     fun toggleFavorite(packageName: String) {
         if (packageName !in favorites && favorites.size >= MAX_PINNED_APPS) {
             android.widget.Toast.makeText(
@@ -348,9 +353,9 @@ internal fun DislauncherRoot() {
                         appNameOverrides[app.packageName]?.let { app.copy(label = it) } ?: app
                     }
                     // Remove stale favourites for apps that are no longer launchable.
-                    syncAvailableFavorites(refreshed)
-                    // Preserve the current list instance when the visible app data is unchanged.
-                    if (apps != refreshed) apps = refreshed
+                    latestSyncAvailableFavorites.value(refreshed)
+                    // Read the current list, not the list captured when the receiver was registered.
+                    if (latestApps.value != refreshed) apps = refreshed
                     iconPacks = withContext(Dispatchers.IO) { findIconPacks(context) }
                 }
             }
