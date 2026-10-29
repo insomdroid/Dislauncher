@@ -1,4 +1,5 @@
 name: Dislauncher Nightly
+# Nightly pipeline intentionally excludes emulator and automated test stages.
 
 on:
   push:
