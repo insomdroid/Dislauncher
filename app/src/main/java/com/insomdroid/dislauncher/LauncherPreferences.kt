@@ -141,21 +141,19 @@ internal data class LauncherPreferences(
             }
             return LauncherPreferences(
                 themeMode = normalizeThemeMode(p.getString("theme_mode", "system") ?: "system"),
-                wallpaperMode = (p.getString("wallpaper_mode", "default") ?: "default").let { if (it == "image") "image" else "default" },
-                wallpaperColor = (p.getString("wallpaper_color", "#202124") ?: "#202124").take(9),
-                accentPreset = (p.getString("accent_preset", "default") ?: "default")
-                    .takeIf { it in setOf("default", "red", "yellow", "blue", "green", "purple", "orange", "pink") } ?: "default",
+                wallpaperMode = normalizeWallpaperMode(p.getString("wallpaper_mode", "default") ?: "default"),
+                wallpaperColor = normalizeWallpaperColor(p.getString("wallpaper_color", "#202124") ?: "#202124"),
+                accentPreset = normalizeAccentPreset(p.getString("accent_preset", "default") ?: "default"),
                 dynamicColor = p.getBoolean("dynamic_color", false),
                 wallpaperUri = p.getString("wallpaper_uri", null)?.take(2048),
-                wallpaperTarget = (p.getString("wallpaper_target", "both") ?: "both")
-                    .takeIf { it in setOf("home", "lock", "both") } ?: "both",
+                wallpaperTarget = normalizeWallpaperTarget(p.getString("wallpaper_target", "both") ?: "both"),
                 appDrawerWallpaperTransparency = p.getInt("app_drawer_wallpaper_transparency", 0).coerceIn(0, 100),
                 homeWallpaperDim = p.getInt("home_wallpaper_dim", 0).coerceIn(0, 100),
                 fontMode = normalizeFontMode(p.getString("font_mode", "system") ?: "system"),
                 customFontName = p.getString("custom_font_name", null)?.take(80),
-                fontSize = p.getString("font_size", "medium") ?: "medium",
+                fontSize = normalizeFontSize(p.getString("font_size", "medium") ?: "medium"),
                 iconPack = p.getString("icon_pack", "system") ?: "system",
-                iconShape = p.getString("icon_shape", "original")?.takeIf { it in setOf("original", "circle", "outline_square", "filled_square", "filled_rectangle") } ?: "original",
+                iconShape = normalizeIconShape(p.getString("icon_shape", "original") ?: "original"),
                 showAppIcons = p.getBoolean("show_app_icons", false),
                 showBuiltInApps = p.getBoolean("show_built_in_apps", true),
                 hideStatusBar = p.getBoolean("hide_status_bar", false),
@@ -169,8 +167,8 @@ internal data class LauncherPreferences(
                 showClock = p.getBoolean("show_clock", true),
                 showDate = p.getBoolean("show_date", true),
                 showWeather = p.getBoolean("show_weather", true),
-                weatherUnit = p.getString("weather_unit", "C") ?: "C",
-                timeFormat = p.getString("time_format", "system") ?: "system",
+                weatherUnit = normalizeWeatherUnit(p.getString("weather_unit", "C") ?: "C"),
+                timeFormat = normalizeTimeFormat(p.getString("time_format", "system") ?: "system"),
                 showSettingsButton = p.getBoolean("show_settings_button", true),
                 showMusic = p.getBoolean("show_music", true),
                 hideSystemApps = p.getBoolean("hide_system_apps", false),
@@ -179,9 +177,9 @@ internal data class LauncherPreferences(
                 swipeDownNotifications = p.getBoolean("swipe_down_notifications", true),
                 showCalendarShortcut = p.getBoolean("show_calendar_shortcut", true),
                 notificationDotsEnabled = p.getBoolean("notification_dots_enabled", false),
-                notificationDotColor = (p.getString("notification_dot_color", "default") ?: "default")
-                    .let { if (it == "white") "default" else it }
-                    .takeIf { it in setOf("default", "red", "yellow", "blue", "green", "purple", "orange", "pink") } ?: "default",
+                notificationDotColor = normalizeNotificationDotColor(
+                    p.getString("notification_dot_color", "default") ?: "default"
+                ),
                 notificationDotPackages = p.getStringSet("notification_dot_packages", emptySet()).orEmpty().toSet(),
                 appFolders = p.getStringSet("app_folders", emptySet()).orEmpty().toSet(),
                 folderAssignments = p.getStringSet("folder_assignments", emptySet()).orEmpty().toSet()

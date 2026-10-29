@@ -1,7 +1,5 @@
 package com.insomdroid.dislauncher
 
-import android.Manifest
-import android.content.pm.PackageManager
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -65,7 +63,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -183,9 +180,7 @@ internal fun HomeScreen(
             return@LaunchedEffect
         }
         val usableCache = cachedWeather?.let { convertWeatherUnit(it, preferences.weatherUnit) }
-        val hasLocation = ContextCompat.checkSelfPermission(
-            context, Manifest.permission.ACCESS_COARSE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
+        val hasLocation = hasWeatherLocationPermission(context)
         if (!hasLocation) {
             weatherInfo = usableCache
             weatherStatus = if (usableCache == null && preferences.showWeather) "Tap to allow location" else ""
@@ -267,9 +262,7 @@ internal fun HomeScreen(
                     }
                     if (preferences.showNetworkInfo) add(networkLabel to false)
                     if (preferences.showWeather) {
-                        val hasLocation = ContextCompat.checkSelfPermission(
-                            context, Manifest.permission.ACCESS_COARSE_LOCATION
-                        ) == PackageManager.PERMISSION_GRANTED
+                        val hasLocation = hasWeatherLocationPermission(context)
                         val weatherText = weatherInfo?.let {
                             "${it.temperature} ${it.condition.lowercase(Locale.getDefault())}"
                         } ?: weatherStatus.ifBlank {

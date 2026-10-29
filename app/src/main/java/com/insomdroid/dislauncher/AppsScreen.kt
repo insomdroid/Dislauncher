@@ -653,14 +653,7 @@ internal fun AppsScreen(
     }
     selectedFolder?.let { folder ->
         val folderApps = remember(apps, preferences.folderAssignments, folder) {
-            val assignedPackages = preferences.folderAssignments.mapNotNull { assignment ->
-                val separator = assignment.indexOf('\t')
-                if (separator > 0 && assignment.substring(separator + 1) == folder) {
-                    assignment.substring(0, separator)
-                } else {
-                    null
-                }
-            }.toSet()
+            val assignedPackages = assignedPackagesForFolder(preferences.folderAssignments, folder)
             apps.filter { app ->
                 !app.packageName.startsWith("internal:") && app.packageName in assignedPackages
             }.sortedBy { it.label.lowercase(Locale.getDefault()) }
