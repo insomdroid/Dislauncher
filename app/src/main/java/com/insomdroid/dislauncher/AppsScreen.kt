@@ -122,7 +122,8 @@ internal fun AppsScreen(
         "internal:calendar" to 0,
         "internal:notes" to 1,
         "internal:calculator" to 2,
-        "internal:converter" to 3
+        "internal:converter" to 3,
+        "internal:books" to 4
     )
     val filteredBuiltIns = remember(apps, query, preferences.showBuiltInApps) {
         if (!preferences.showBuiltInApps) emptyList() else apps.filter {
@@ -261,6 +262,7 @@ internal fun AppsScreen(
                                     "internal:calculator" -> androidx.compose.material.icons.Icons.Outlined.Calculate
                                     "internal:calendar" -> androidx.compose.material.icons.Icons.Outlined.CalendarMonth
                                     "internal:converter" -> androidx.compose.material.icons.Icons.Outlined.SwapHoriz
+                                    "internal:books" -> androidx.compose.material.icons.Icons.Outlined.MenuBook
                                     else -> androidx.compose.material.icons.Icons.Outlined.Description
                                 }
                                 Column(
