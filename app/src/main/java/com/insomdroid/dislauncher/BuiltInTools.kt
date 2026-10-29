@@ -775,7 +775,7 @@ private fun NotesTool(
                             modifier = Modifier.weight(1f),
                             placeholder = { Text("Search notes") },
                             singleLine = true,
-                            shape = RoundedCornerShape(14.dp),
+                            shape = RoundedCornerShape(BuiltInToolDesign.controlCornerRadius),
                             trailingIcon = {
                                 IconButton(onClick = { searchQuery = ""; searchExpanded = false }) {
                                     Icon(Icons.Outlined.Close, contentDescription = "Close search")
@@ -1271,13 +1271,13 @@ private fun CalculatorTool(
                     LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(history, key = { it.id }) { entry ->
                             Surface(
-                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).clickable {
+                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(BuiltInToolDesign.cardCornerRadius)).clickable {
                                     expression = entry.expression
                                     result = entry.result
                                     onShowHistoryChange(false)
                                 },
                                 color = MaterialTheme.colorScheme.surfaceContainerLow,
-                                shape = RoundedCornerShape(16.dp)
+                                shape = RoundedCornerShape(BuiltInToolDesign.cardCornerRadius)
                             ) {
                                 Column(
                                     Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
@@ -1388,12 +1388,12 @@ private fun CalculatorTool(
                                 }
                                 val labelSize = (keySize.value / 2.35f).coerceIn(18f, 28f).sp
                                 if (operator) {
-                                    Button(onClick = action, modifier = Modifier.size(keySize), shape = RoundedCornerShape(18.dp),
+                                    Button(onClick = action, modifier = Modifier.size(keySize), shape = RoundedCornerShape(BuiltInToolDesign.calculatorKeyCornerRadius),
                                         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
                                         Text(key, fontSize = labelSize, lineHeight = labelSize)
                                     }
                                 } else {
-                                    FilledTonalButton(onClick = action, modifier = Modifier.size(keySize), shape = RoundedCornerShape(18.dp),
+                                    FilledTonalButton(onClick = action, modifier = Modifier.size(keySize), shape = RoundedCornerShape(BuiltInToolDesign.calculatorKeyCornerRadius),
                                         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
                                         Text(key, fontSize = labelSize, lineHeight = labelSize)
                                     }
@@ -1577,7 +1577,7 @@ private fun CalendarTool(
             if (visibleMonth != month) onMonthChange(visibleMonth)
         }
         if (showWeekView) {
-            Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp),
+            Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(BuiltInToolDesign.cardCornerRadius),
                 color = MaterialTheme.colorScheme.surfaceContainerLow) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -1591,7 +1591,7 @@ private fun CalendarTool(
                         val hasItems = tasks.any { it.date == dayDate.toString() } ||
                             deviceEvents.any { it.begin < dayEnd && it.end > dayStart }
                         Column(
-                            Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(when {
+                            Modifier.weight(1f).clip(RoundedCornerShape(BuiltInToolDesign.controlCornerRadius)).background(when {
                                 selected -> MaterialTheme.colorScheme.primary
                                 today -> MaterialTheme.colorScheme.secondaryContainer
                                 else -> Color.Transparent
@@ -1621,7 +1621,7 @@ private fun CalendarTool(
                 }
             }
         } else {
-            Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp),
+            Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(BuiltInToolDesign.cardCornerRadius),
             color = MaterialTheme.colorScheme.surfaceContainerLow) {
             Column(Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
                 Row(Modifier.fillMaxWidth()) {
@@ -1641,7 +1641,7 @@ private fun CalendarTool(
                         val hasTasks = tasks.any { it.date == dateValue.toString() } ||
                             deviceEvents.any { it.begin < dayEnd && it.end > dayStart }
                         Column(modifier = Modifier.fillMaxWidth().height(38.dp).padding(1.dp)
-                            .clip(RoundedCornerShape(14.dp)).background(when {
+                            .clip(RoundedCornerShape(BuiltInToolDesign.controlCornerRadius)).background(when {
                                 selected -> MaterialTheme.colorScheme.primary
                                 today -> MaterialTheme.colorScheme.secondaryContainer
                                 else -> Color.Transparent

@@ -238,7 +238,7 @@ internal fun UnitConverterTool(
                         toIndex = oldFrom
                     }
                 },
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(BuiltInToolDesign.cardCornerRadius),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh
             ) {
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 18.dp)) {
@@ -273,7 +273,7 @@ private fun ConverterDropdown(
     Box(modifier = modifier) {
         Surface(
             modifier = Modifier.fillMaxWidth().clickable { expanded = true; query = "" },
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(BuiltInToolDesign.cardCornerRadius),
             color = MaterialTheme.colorScheme.surfaceContainerLow,
             contentColor = MaterialTheme.colorScheme.onSurface
         ) {

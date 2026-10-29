@@ -142,14 +142,11 @@ internal fun HomeHeader(
                 Text(hourWord, color=primaryText, fontSize=HomeDesign.clockSize * 0.78f, lineHeight=HomeDesign.clockLineHeight * 0.82f, fontWeight=FontWeight.Medium, fontFamily=dotMatrixFont, maxLines=1, softWrap=false, modifier=clockModifier)
             }
             if (preferences.showDate) {
-                Spacer(Modifier.height(4.dp))
-                Row(verticalAlignment=Alignment.CenterVertically, horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-                    Box(Modifier.width(28.dp).height(1.dp).background(secondaryText.copy(alpha=0.65f)))
-                    Text(today.format(DateTimeFormatter.ofPattern("d MMM yyyy", locale)), color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily=interFont, maxLines=1, modifier=dateModifier)
-                }
+                Spacer(Modifier.height(1.dp))
+                Text(today.format(DateTimeFormatter.ofPattern("d MMM yyyy", locale)), color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily=interFont, maxLines=1, modifier=dateModifier)
             }
             if (preferences.showClock) {
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(1.dp))
                 Text(minuteWord, color=primaryText, fontSize=HomeDesign.clockSize * 0.78f, lineHeight=HomeDesign.clockLineHeight * 0.82f, fontWeight=FontWeight.Medium, fontFamily=dotMatrixFont, maxLines=1, softWrap=false, modifier=clockModifier)
             }
         }
@@ -218,7 +215,7 @@ private fun DualBarClock(hour: Int, minute: Int, activeColor: Color, inactiveCol
                 color = activeColor,
                 topLeft = Offset(x, baseline - barHeight),
                 size = androidx.compose.ui.geometry.Size(barWidth, barHeight),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(barWidth / 2f)
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(0f)
             )
             drawRoundRect(
                 color = inactiveColor,

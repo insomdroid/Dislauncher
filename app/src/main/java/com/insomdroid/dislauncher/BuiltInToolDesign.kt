@@ -9,6 +9,16 @@ internal object BuiltInToolSpacing {
     val compact = 6.dp
 }
 
+/**
+ * Shared shape language for built-in tools: restrained corners, no decorative pill cards.
+ * Pills remain appropriate for compact filters and status labels.
+ */
+internal object BuiltInToolDesign {
+    val cardCornerRadius = 8.dp
+    val controlCornerRadius = 6.dp
+    val calculatorKeyCornerRadius = 8.dp
+}
+
 /** Follow the device language while keeping English as the fallback. */
 internal fun builtInToolText(english: String, indonesian: String): String =
     if (Locale.getDefault().language == "id") indonesian else english
