@@ -49,7 +49,7 @@ internal object NoteDocumentCodec {
     private val bulletPattern = Regex("^\\s*[-*+]\\s+(.+)$")
     private val numberedPattern = Regex("^\\s*(\\d+)[.)]\\s+(.+)$")
     private val checklistPattern = Regex("^\\s*[-*+]\\s+\\[([ xX])]\\s+(.+)$")
-    private val inlinePattern = Regex("""\\(.)|<u>(.+?)</u>|!\[([^\]]*)\]\((?:<)?([^)>]+)(?:>)?\)|\[([^\]]+)\]\((https?://[^)]+)\)|\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|~~(.+?)~~|\*(.+?)\*|`([^`]+)`""")
+    private val inlinePattern = Regex("""\\(.)|<u>(.+?)</u>|!\[((?:\\.|[^\]])*)\]\((?:<)?([^)>]+)(?:>)?\)|\[([^\]]+)\]\((https?://[^)]+)\)|\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|~~(.+?)~~|\*(.+?)\*|`((?:\\.|[^`])+)`""")
 
     fun fromLegacyContent(markdown: String): NoteDocument {
         if (markdown.isBlank()) return NoteDocument()
@@ -165,6 +165,8 @@ internal object NoteDocumentCodec {
 
     private fun parseInline(text: String): List<NoteInline> {
         if (text.isEmpty()) return emptyList()
+        fun unescape(value: String): String =
+            Regex("""\\(.)""").replace(value) { match -> match.groupValues[1] }
         val result = mutableListOf<NoteInline>()
         var cursor = 0
         inlinePattern.findAll(text).forEach { match ->
@@ -172,18 +174,18 @@ internal object NoteDocumentCodec {
             val g = match.groupValues
             when {
                 g[1].isNotEmpty() -> result += NoteInline(g[1])
-                g[2].isNotEmpty() -> result += NoteInline(g[2], setOf(NoteMark.UNDERLINE))
+                g[2].isNotEmpty() -> result += NoteInline(unescape(g[2]), setOf(NoteMark.UNDERLINE))
                 match.value.startsWith("![") -> result += NoteInline(
-                    text = g[3],
+                    text = unescape(g[3]),
                     imageUri = g[4],
-                    imageAlt = g[3]
+                    imageAlt = unescape(g[3])
                 )
-                match.value.startsWith("[") -> result += NoteInline(text = g[5], link = g[6])
-                g[7].isNotEmpty() -> result += NoteInline(g[7], setOf(NoteMark.BOLD, NoteMark.ITALIC))
-                g[8].isNotEmpty() -> result += NoteInline(g[8], setOf(NoteMark.BOLD))
-                g[9].isNotEmpty() -> result += NoteInline(g[9], setOf(NoteMark.STRIKETHROUGH))
-                g[10].isNotEmpty() -> result += NoteInline(g[10], setOf(NoteMark.ITALIC))
-                g[11].isNotEmpty() -> result += NoteInline(g[11], setOf(NoteMark.CODE))
+                match.value.startsWith("[") -> result += NoteInline(text = unescape(g[5]), link = g[6])
+                g[7].isNotEmpty() -> result += NoteInline(unescape(g[7]), setOf(NoteMark.BOLD, NoteMark.ITALIC))
+                g[8].isNotEmpty() -> result += NoteInline(unescape(g[8]), setOf(NoteMark.BOLD))
+                g[9].isNotEmpty() -> result += NoteInline(unescape(g[9]), setOf(NoteMark.STRIKETHROUGH))
+                g[10].isNotEmpty() -> result += NoteInline(unescape(g[10]), setOf(NoteMark.ITALIC))
+                g[11].isNotEmpty() -> result += NoteInline(unescape(g[11]), setOf(NoteMark.CODE))
             }
             cursor = match.range.last + 1
         }
