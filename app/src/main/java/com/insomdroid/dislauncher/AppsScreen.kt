@@ -147,6 +147,9 @@ internal fun AppsScreen(
             .filter { it.contains(query.trim(), ignoreCase = true) }
             .sortedBy { it.lowercase(Locale.getDefault()) }
     }
+    val sortedFolders = remember(preferences.appFolders) {
+        preferences.appFolders.sortedBy { it.lowercase(Locale.getDefault()) }
+    }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val keyboard = LocalSoftwareKeyboardController.current
@@ -649,11 +652,19 @@ internal fun AppsScreen(
         }
     }
     selectedFolder?.let { folder ->
-        val folderApps = apps.filter { app ->
-            preferences.folderAssignments.any { assignment ->
-                assignment.startsWith(app.packageName + "\t") && assignment.substringAfter("\t", "") == folder
-            } && !app.packageName.startsWith("internal:")
-        }.sortedBy { it.label.lowercase(Locale.getDefault()) }
+        val folderApps = remember(apps, preferences.folderAssignments, folder) {
+            val assignedPackages = preferences.folderAssignments.mapNotNull { assignment ->
+                val separator = assignment.indexOf('\t')
+                if (separator > 0 && assignment.substring(separator + 1) == folder) {
+                    assignment.substring(0, separator)
+                } else {
+                    null
+                }
+            }.toSet()
+            apps.filter { app ->
+                !app.packageName.startsWith("internal:") && app.packageName in assignedPackages
+            }.sortedBy { it.label.lowercase(Locale.getDefault()) }
+        }
         ModalBottomSheet(
             onDismissRequest = { selectedFolder = null }
         ) {
@@ -751,7 +762,7 @@ internal fun AppsScreen(
                     if (preferences.appFolders.isEmpty()) {
                         Text("No folders yet. Create one below.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     } else {
-                        preferences.appFolders.sortedBy { it.lowercase(Locale.getDefault()) }.forEach { folder ->
+                        sortedFolders.forEach { folder ->
                             TextButton(
                                 onClick = {
                                     val assignment = app.packageName + "\t" + folder
