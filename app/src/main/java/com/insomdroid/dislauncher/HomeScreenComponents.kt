@@ -113,7 +113,7 @@ internal fun HomeHeader(
             val minutePart = timeText.substringAfter(":", "").take(2)
             if (preferences.showClock) {
                 Column(verticalArrangement = Arrangement.spacedBy(0.dp), modifier = clockModifier) {
-                    Text(hourPart, color = primaryText, fontSize = HomeDesign.clockSize * 0.9f, lineHeight = HomeDesign.clockLineHeight * 0.88f, letterSpacing = (-0.6).sp, fontWeight = FontWeight.Light, fontFamily = dotMatrixFont, maxLines = 1, softWrap = false)
+                    Text(hourPart, color = primaryText, fontSize = HomeDesign.clockSize * 1.15f, lineHeight = HomeDesign.clockLineHeight * 1.08f, letterSpacing = (-0.6).sp, fontWeight = FontWeight.Light, fontFamily = dotMatrixFont, maxLines = 1, softWrap = false)
                     Text(minutePart, color = primaryText, fontSize = HomeDesign.clockSize * 0.9f, lineHeight = HomeDesign.clockLineHeight * 0.88f, letterSpacing = (-0.6).sp, fontWeight = FontWeight.Light, fontFamily = dotMatrixFont, maxLines = 1, softWrap = false)
                 }
             }
@@ -130,7 +130,7 @@ internal fun HomeHeader(
             if (preferences.showClock) {
                 Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     DualBarClock(hour = now.hour, minute = now.minute, activeColor = MaterialTheme.colorScheme.primary, inactiveColor = secondaryText.copy(alpha = 0.24f))
-                    Text(timeText, color = secondaryText, fontSize = HomeDesign.dateSize, lineHeight = HomeDesign.dateLineHeight, fontFamily = interFont, maxLines = 1, softWrap = false, modifier = clockModifier)
+                    Text(timeText, color = secondaryText, fontSize = HomeDesign.dateSize, lineHeight = HomeDesign.dateLineHeight, fontFamily = dotMatrixFont, maxLines = 1, softWrap = false, modifier = clockModifier)
                 }
             }
             if (preferences.showDate) { Spacer(Modifier.height(4.dp)); Text(shortDate, color = secondaryText, fontSize = HomeDesign.dateSize, lineHeight = HomeDesign.dateLineHeight, fontFamily = interFont, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = dateModifier) }
@@ -191,7 +191,7 @@ private fun BinaryDotClock(hour: Int, minute: Int, activeColor: Color, inactiveC
             val startX = if (rowIndex == 0) 0f else 0f
             bits.forEachIndexed { index, bit ->
                 val x = startX + dotRadius + index * (dotRadius * 2 + gap)
-                drawCircle(if (bit == '1') activeColor else inactiveColor, dotRadius, Offset(x, y))
+                drawRect(color = if (bit == '1') activeColor else inactiveColor, topLeft = Offset(x - dotRadius, y - dotRadius), size = androidx.compose.ui.geometry.Size(dotRadius * 2, dotRadius * 2))
             }
         }
     }
