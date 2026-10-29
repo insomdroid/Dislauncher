@@ -8,7 +8,6 @@ import android.provider.CalendarContract
 import android.Manifest
 import android.widget.Toast
 import androidx.core.content.ContextCompat
-import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
