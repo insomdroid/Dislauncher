@@ -154,7 +154,7 @@ internal fun AppsScreen(
     val focusRequester = remember { FocusRequester() }
     var searchFocused by remember { mutableStateOf(false) }
     val searchColor = if (searchFocused || query.isNotEmpty()) mainText else secondary.copy(alpha = 0.65f)
-    val allAlphabetLetters = remember { ('A'..'Z').map(Char::toString) + "#" }
+    val allAlphabetLetters = remember { listOf("#") + ('A'..'Z').map(Char::toString) }
     var scrubberProgress by remember { mutableStateOf<Float?>(null) }
     var scrubberScrollJob by remember { mutableStateOf<Job?>(null) }
     val firstIndexByLetter = remember(filtered, filteredBuiltIns, preferences.showBuiltInApps, preferences.appFolders, searching) {
