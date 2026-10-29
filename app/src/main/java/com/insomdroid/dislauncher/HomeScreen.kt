@@ -174,8 +174,9 @@ internal fun HomeScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    LaunchedEffect(preferences.showWeather, preferences.weatherUnit, cachedWeather, isActive) {
-        if (!isActive) return@LaunchedEffect
+    LaunchedEffect(preferences.showWeather, preferences.weatherUnit, cachedWeather, isActive, hostResumed) {
+        // Stop weather work when this Activity is paused; resume refreshes through this effect.
+        if (!isActive || !hostResumed) return@LaunchedEffect
         if (!preferences.showWeather) {
             weatherInfo = null
             currentSolarInfoChange(null)
