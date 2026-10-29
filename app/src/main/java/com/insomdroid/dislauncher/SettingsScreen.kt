@@ -64,6 +64,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
@@ -74,6 +75,8 @@ import kotlinx.coroutines.withContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import java.time.LocalDate
+import java.time.LocalTime
 import kotlin.math.roundToInt
 
 private enum class SettingsCategory {
@@ -503,6 +506,7 @@ internal fun SettingsScreen(
                                 tr("Clock style", "Gaya jam"),
                                 preferences.clockStyle,
                                 listOf(
+                                    "default" to tr("Dislauncher Default", "Bawaan Dislauncher"),
                                     "dot_matrix" to tr("Dot Matrix Large", "Dot Matrix Besar"),
                                     "compact" to tr("Dot Matrix Compact", "Dot Matrix Ringkas"),
                                     "date_focus" to tr("Date Focus", "Fokus Tanggal"),
@@ -511,10 +515,44 @@ internal fun SettingsScreen(
                                     "digital" to tr("Digital Watch", "Jam Digital")
                                 ),
                                 description = tr(
-                                    "Change the Home clock and date layout. Uses your selected built-in font and stays left-aligned.",
-                                    "Ubah tata letak jam dan tanggal di Home. Menggunakan font bawaan yang dipilih dan tetap rata kiri."
+                                    "Preview the Home clock and date layout. Styles use their designated bundled fonts, independent of your global font choice.",
+                                    "Lihat pratinjau tata letak jam dan tanggal Home. Setiap gaya memakai font bawaan khusus, terlepas dari pilihan font global."
                                 )
                             ) { onPreferencesChange(preferences.copy(clockStyle = it)) }
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
+                                    .padding(16.dp)
+                            ) {
+                                Text(
+                                    tr("Preview", "Pratinjau"),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(Modifier.height(12.dp))
+                                HomeHeader(
+                                    preferences = preferences.copy(
+                                        showClock = true,
+                                        showDate = true,
+                                        showYearProgress = false,
+                                        showDayProgress = false
+                                    ),
+                                    timeText = "09:41",
+                                    dateText = LocalDate.now().format(
+                                        java.time.format.DateTimeFormatter.ofPattern("EEEE, d MMMM", java.util.Locale.getDefault())
+                                    ),
+                                    today = LocalDate.now(),
+                                    now = LocalTime.of(9, 41),
+                                    isDark = preferences.themeMode == "dark" || preferences.themeMode == "black",
+                                    fontFamily = FontFamily.Default,
+                                    primaryText = MaterialTheme.colorScheme.onSurface,
+                                    secondaryText = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    onOpenClock = {},
+                                    onOpenCalendar = {}
+                                )
+                            }
                             SettingToggle(
                                 tr("Show Settings button", "Tampilkan tombol Setelan"),
                                 tr("When hidden, long-press empty Home space to open Settings.", "Jika disembunyikan, tekan lama area kosong Home untuk membuka Setelan."),

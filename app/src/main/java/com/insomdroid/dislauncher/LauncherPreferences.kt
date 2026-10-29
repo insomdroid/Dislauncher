@@ -103,7 +103,7 @@ internal data class LauncherPreferences(
         }
 
         private fun normalizeClockStyle(value: String): String = when (value) {
-            "dot_matrix", "compact", "date_focus", "split", "editorial", "digital" -> value
+            "default", "dot_matrix", "compact", "date_focus", "split", "editorial", "digital" -> value
             else -> "dot_matrix"
         }
 
