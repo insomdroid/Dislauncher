@@ -417,11 +417,11 @@ internal fun DislauncherRoot() {
     }
     val drawerApps = remember(visibleApps) {
         visibleApps + listOf(
-            LauncherApp("internal:calculator", "", "Calculator", true),
-            LauncherApp("internal:calendar", "", "Calendar", true),
-            LauncherApp("internal:converter", "", "Converter", true),
+            LauncherApp("internal:calculator", "", "Calc", true),
+            LauncherApp("internal:calendar", "", "Cal", true),
+            LauncherApp("internal:converter", "", "Conv", true),
             LauncherApp("internal:notes", "", "Notes", true),
-            LauncherApp("internal:books", "", "Books", true)
+            LauncherApp("internal:books", "", "Reader", true)
         )
     }
     val wallpaperImage = produceState<androidx.compose.ui.graphics.ImageBitmap?>(
