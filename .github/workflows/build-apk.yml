@@ -1,0 +1,122 @@
+name: Dislauncher Nightly
+# Nightly pipeline intentionally excludes emulator and automated test stages.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/**'
+      - 'CHANGELOG.md'
+      - 'Screenshot/Minimalist Dislauncher Logo on Black.png'
+      - 'gradle/**'
+      - 'gradlew'
+      - 'gradlew.bat'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - '.github/workflows/build-apk.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'app/**'
+      - 'CHANGELOG.md'
+      - 'Screenshot/Minimalist Dislauncher Logo on Black.png'
+      - 'gradle/**'
+      - 'gradlew'
+      - 'gradlew.bat'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - '.github/workflows/build-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Nightly lint and build installable APK
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository and release tags
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve development version from latest stable release
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r tag; do
+            if [[ "$tag" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+              major="${BASH_REMATCH[1]}"
+              minor="${BASH_REMATCH[2]}"
+              patch="$((10#${BASH_REMATCH[3]} + 1))"
+              version="${major}.${minor}.${patch}"
+              echo "app_version_name=${version}-dev.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+              echo "Building development version ${version}-dev.${GITHUB_RUN_NUMBER}"
+              exit 0
+            fi
+          done < <(git tag --list 'v*' --sort=-v:refname)
+          echo "::error::No stable semantic release tag found (expected a tag like v1.2.0)."
+          exit 1
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
+        with:
+          packages: "platform-tools platforms;android-36 build-tools;36.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6
+
+      - name: Run Android lint and build APK
+        env:
+          APP_VERSION_NAME: "${{ steps.version.outputs.app_version_name }}"
+          APP_BUILD_NUMBER: "${{ github.run_number }}"
+          BUILD_EVENT_NAME: "${{ github.event_name }}"
+          KEYSTORE: "${{ secrets.KEYSTORE }}"
+          KEY_ALIAS: "${{ secrets.KEY_ALIAS }}"
+          KEYSTORE_PASSWORD: "${{ secrets.KEYSTORE_PASSWORD }}"
+          KEY_PASSWORD: "${{ secrets.KEY_PASSWORD }}"
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # PRs cannot access production secrets, so their APK is for CI only.
+          # Main-branch builds use the release key to allow in-place APK updates.
+          if [[ "$BUILD_EVENT_NAME" != "pull_request" ]]; then
+            : "${KEYSTORE:?Missing GitHub secret KEYSTORE}"
+            : "${KEY_ALIAS:?Missing GitHub secret KEY_ALIAS}"
+            : "${KEYSTORE_PASSWORD:?Missing GitHub secret KEYSTORE_PASSWORD}"
+            : "${KEY_PASSWORD:?Missing GitHub secret KEY_PASSWORD}"
+            KEYSTORE_FILE="$RUNNER_TEMP/dislauncher-release.jks"
+            trap 'rm -f "$KEYSTORE_FILE"' EXIT
+            printf '%s' "$KEYSTORE" | base64 --decode > "$KEYSTORE_FILE"
+            test -s "$KEYSTORE_FILE"
+            export RELEASE_STORE_FILE="$KEYSTORE_FILE"
+          fi
+
+          ./gradlew testReleaseUnitTest lintRelease assembleRelease --stacktrace
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: Dislauncher-Nightly-${{ github.run_number }}
+          path: app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 1

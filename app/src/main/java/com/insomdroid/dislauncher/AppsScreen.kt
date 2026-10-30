@@ -1,0 +1,818 @@
+package com.insomdroid.dislauncher
+
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Calculate
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.SwapHoriz
+import androidx.compose.material.icons.outlined.Search as SearchIcon
+import androidx.compose.material.icons.outlined.Settings as SettingsIcon
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.activity.compose.BackHandler
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.exp
+
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@Composable
+internal fun AppsScreen(
+    apps: List<LauncherApp>,
+    favorites: Set<String>,
+    query: String,
+    onQueryChange: (String) -> Unit,
+    preferences: LauncherPreferences,
+    isDark: Boolean,
+    isActive: Boolean,
+    fontFamily: FontFamily,
+    onLaunch: (LauncherApp) -> Unit,
+    onToggleFavorite: (String) -> Unit,
+    onToggleHidden: (String) -> Unit,
+    onRenameApp: (String, String) -> Unit,
+    onPreferencesChange: (LauncherPreferences) -> Unit,
+    onOpenSettings: () -> Unit
+) {
+    val background = if (preferences.wallpaperMode == "image") {
+        MaterialTheme.colorScheme.background.copy(
+            alpha = preferences.appDrawerWallpaperTransparency.coerceIn(0, 100) / 100f
+        )
+    } else MaterialTheme.colorScheme.background
+    val mainText = MaterialTheme.colorScheme.onBackground
+    val secondary = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.62f)
+    val searching = query.isNotBlank()
+    // Keep Dislauncher's own tools in a dedicated section so they cannot get lost
+    // among installed apps or be affected by the system-app visibility preference.
+    val builtInOrder = mapOf(
+        "internal:calendar" to 0,
+        "internal:notes" to 1,
+        "internal:calculator" to 2,
+        "internal:converter" to 3,
+        "internal:books" to 4
+    )
+    val filteredBuiltIns = remember(apps, query, preferences.showBuiltInApps) {
+        if (!preferences.showBuiltInApps) emptyList() else apps.filter {
+            it.packageName.startsWith("internal:") &&
+                it.label.contains(query.trim(), ignoreCase = true)
+        }.sortedWith(
+            compareBy<LauncherApp> { builtInOrder[it.packageName] ?: Int.MAX_VALUE }
+                .thenBy { it.label.lowercase(Locale.getDefault()) }
+        )
+    }
+    val showSettingsEntry = "Dislauncher Settings".contains(query.trim(), ignoreCase = true)
+    val filtered = remember(apps, query) {
+        apps.filter {
+            !it.packageName.startsWith("internal:") &&
+                it.label.contains(query.trim(), ignoreCase = true)
+        }.sortedBy { it.label.lowercase(Locale.getDefault()) }
+    }
+    // Folders participate in app-drawer search by their names, just like apps.
+    // With an empty query, show every folder; while searching, show matching folders.
+    val filteredFolders = remember(preferences.appFolders, query) {
+        preferences.appFolders
+            .filter { it.contains(query.trim(), ignoreCase = true) }
+            .sortedBy { it.lowercase(Locale.getDefault()) }
+    }
+    val sortedFolders = remember(preferences.appFolders) {
+        preferences.appFolders.sortedBy { it.lowercase(Locale.getDefault()) }
+    }
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    val keyboard = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+    val focusRequester = remember { FocusRequester() }
+    var searchFocused by remember { mutableStateOf(false) }
+    val searchColor = if (searchFocused || query.isNotEmpty()) mainText else secondary.copy(alpha = 0.65f)
+    val allAlphabetLetters = remember { listOf("#") + ('A'..'Z').map(Char::toString) }
+    var scrubberProgress by remember { mutableStateOf<Float?>(null) }
+    var scrubberScrollJob by remember { mutableStateOf<Job?>(null) }
+    val firstIndexByLetter = remember(filtered, filteredBuiltIns, preferences.showBuiltInApps, preferences.appFolders, searching) {
+        val result = linkedMapOf<String, Int>()
+        // A dedicated top marker returns to the start of the list, including
+        // Built-in Tools and folders before the installed apps.
+        result["↑"] = 0
+        // Built-in tools occupy one horizontal row in the first list item.
+        val installedAppsOffset = (if (filteredBuiltIns.isNotEmpty() || (preferences.showBuiltInApps && !searching)) 1 else 0) +
+            filteredFolders.size
+        filtered.forEachIndexed { index, app ->
+            val letter = app.label.firstOrNull()?.uppercaseChar()?.toString()
+                ?.takeIf { it in allAlphabetLetters } ?: "#"
+            if (letter !in result) result[letter] = installedAppsOffset + index
+        }
+        result
+    }
+    val alphabetLetters = remember(firstIndexByLetter) {
+        listOf("↑") + allAlphabetLetters.filter { it in firstIndexByLetter }
+    }
+    val scrollToLetter: (String, Boolean) -> Unit = { letter, animated ->
+        firstIndexByLetter[letter]?.let { index ->
+            // Cancel the previous request so rapid scrubbing cannot queue competing scrolls.
+            scrubberScrollJob?.cancel()
+            scrubberScrollJob = scope.launch {
+                if (animated) {
+                    listState.animateScrollToItem(index)
+                } else {
+                    listState.scrollToItem(index)
+                }
+            }
+        }
+    }
+    BackHandler(enabled = searchFocused || searching) {
+        keyboard?.hide()
+        focusManager.clearFocus(force = true)
+        searchFocused = false
+        if (query.isNotEmpty()) onQueryChange("")
+    }
+    LaunchedEffect(query, filtered) {
+        if (searching) listState.scrollToItem(0)
+    }
+    LaunchedEffect(isActive, searching) {
+        if (!isActive || searching) {
+            scrubberScrollJob?.cancel()
+            scrubberProgress = null
+        }
+    }
+    var selectedApp by remember { mutableStateOf<LauncherApp?>(null) }
+    var renamingApp by remember { mutableStateOf<LauncherApp?>(null) }
+    var renameValue by remember { mutableStateOf("") }
+    var selectedFolder by remember { mutableStateOf<String?>(null) }
+    var selectedFolderApp by remember { mutableStateOf<LauncherApp?>(null) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(isActive, preferences.autoLaunchKeyboard, preferences.showSearchBar) {
+        if (isActive && preferences.autoLaunchKeyboard && preferences.showSearchBar) {
+            delay(180L)
+            runCatching { focusRequester.requestFocus() }
+            keyboard?.show()
+        }
+    }
+
+    Column(
+        modifier = Modifier.fillMaxSize().background(background)
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .padding(start = 16.dp, end = 14.dp, top = 4.dp, bottom = 8.dp)
+    ) {
+        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize().padding(
+                    end = if (preferences.showAlphabetIndex && !searching) 15.dp else 0.dp
+                ),
+                contentPadding = PaddingValues(bottom = 16.dp, top = 2.dp),
+                verticalArrangement = if (searching) Arrangement.Bottom else Arrangement.Top
+            ) {
+                if (
+                    filtered.isEmpty() && filteredBuiltIns.isEmpty() &&
+                    (apps.isEmpty() || !showSettingsEntry)
+                ) {
+                    item(key = "empty-app-list") {
+                        Text(
+                            if (apps.isEmpty()) "Loading apps…" else "No matching apps",
+                            color = secondary,
+                            fontSize = 13.sp,
+                            modifier = Modifier.padding(vertical = 18.dp)
+                        )
+                    }
+                }
+                if (filteredBuiltIns.isNotEmpty() || (preferences.showBuiltInApps && !searching)) {
+                    item(key = "built-in-apps-row") {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(18.dp),
+                            // Align each item's fixed 36.dp icon area to the same top edge.
+                            // Keep built-in icons aligned to the same top edge.
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            filteredBuiltIns.forEach { app ->
+                                val toolIcon = when (app.packageName) {
+                                    "internal:calculator" -> androidx.compose.material.icons.Icons.Outlined.Calculate
+                                    "internal:calendar" -> androidx.compose.material.icons.Icons.Outlined.CalendarMonth
+                                    "internal:converter" -> androidx.compose.material.icons.Icons.Outlined.SwapHoriz
+                                    "internal:books" -> androidx.compose.material.icons.Icons.Outlined.Description
+                                    else -> androidx.compose.material.icons.Icons.Outlined.Description
+                                }
+                                Column(
+                                    modifier = Modifier.weight(1f).heightIn(min = 56.dp).clip(RoundedCornerShape(10.dp))
+                                        .clickable { onLaunch(app) }.padding(vertical = 8.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier.size(36.dp).clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = toolIcon,
+                                            contentDescription = app.label,
+                                            // Keep built-in tool glyphs visibly distinct from their neutral icon circles
+                                            // even if a device's dynamic theme supplies unexpected icon colors.
+                                            tint = if (isDark) {
+                                                androidx.compose.ui.graphics.Color(0xFFD9D9D9)
+                                            } else {
+                                                androidx.compose.ui.graphics.Color(0xFF222222)
+                                            },
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Text(
+                                        app.label,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = 10.sp,
+                                        lineHeight = 12.sp,
+                                        fontFamily = fontFamily,
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                if (filteredFolders.isNotEmpty()) {
+                    items(filteredFolders, key = { "folder-$it" }) { folder ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+                                .clip(RoundedCornerShape(8.dp)).clickable { selectedFolder = folder }
+                                .padding(horizontal = 8.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Folder,
+                                contentDescription = null,
+                                tint = mainText,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.width(9.dp))
+                            Text(
+                                folder,
+                                color = mainText,
+                                fontSize = 25.sp,
+                                lineHeight = 32.sp,
+                                fontFamily = fontFamily,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
+                items(filtered, key = { it.packageName }) { app ->
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+                                .clip(RoundedCornerShape(8.dp)).combinedClickable(
+                                    onClick = { onLaunch(app) },
+                                    onLongClick = { if (!app.packageName.startsWith("internal:")) selectedApp = app }
+                                ).padding(horizontal = 8.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (preferences.showAppIcons) {
+                                AppIcon(app, preferences.iconPack, size = 18.dp, iconShape = preferences.iconShape)
+                                Spacer(Modifier.width(9.dp))
+                            }
+                            Text(
+                                app.label,
+                                color = mainText,
+                                fontSize = 25.sp,
+                                lineHeight = 32.sp,
+                                fontFamily = fontFamily,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                                    .padding(start = if (preferences.showAppIcons) 0.dp else 20.dp)
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = selectedApp?.packageName == app.packageName,
+                            onDismissRequest = { selectedApp = null }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Open") },
+                                onClick = { selectedApp = null; onLaunch(app) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Rename") },
+                                onClick = {
+                                    renameValue = app.label
+                                    renamingApp = app
+                                    selectedApp = null
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Text(if (app.packageName in favorites) "Remove from favourites" else "Add to favourites")
+                                },
+                                onClick = { selectedApp = null; onToggleFavorite(app.packageName) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Add to Folders") },
+                                onClick = { selectedFolderApp = app; selectedApp = null }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Hide from launcher") },
+                                onClick = { selectedApp = null; onToggleHidden(app.packageName) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("App info") },
+                                onClick = {
+                                    selectedApp = null
+                                    openApplicationInfo(context, app)
+                                }
+                            )
+                            if (!app.isSystem) {
+                                DropdownMenuItem(
+                                    text = { Text("Uninstall") },
+                                    onClick = {
+                                        selectedApp = null
+                                        requestUninstall(context, app)
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+                if (showSettingsEntry) {
+                    item(key = "dislauncher-settings-entry") {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable(onClick = onOpenSettings)
+                                .padding(horizontal = 8.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (preferences.showAppIcons) {
+                                Icon(
+                                    imageVector = Icons.Outlined.SettingsIcon,
+                                    contentDescription = null,
+                                    tint = mainText,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(Modifier.width(9.dp))
+                            }
+                            Text(
+                                "Dislauncher Settings",
+                                color = mainText,
+                                fontSize = 25.sp,
+                                lineHeight = 32.sp,
+                                fontFamily = fontFamily,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                                    .padding(start = if (preferences.showAppIcons) 0.dp else 20.dp)
+                            )
+                        }
+                    }
+                }
+
+            }
+            if (
+                preferences.showAlphabetIndex && !searching &&
+                (filtered.isNotEmpty() || filteredBuiltIns.isNotEmpty() || filteredFolders.isNotEmpty())
+            ) {
+                BoxWithConstraints(
+                    modifier = Modifier.align(Alignment.BottomEnd)
+                        .padding(bottom = 48.dp)
+                        .fillMaxHeight(0.56f)
+                        .width(116.dp)
+                ) {
+                    val animatedProgress by animateFloatAsState(
+                        targetValue = scrubberProgress ?: 0f,
+                        animationSpec = spring(dampingRatio = 0.72f, stiffness = 520f),
+                        label = "alphabet-scrubber-progress"
+                    )
+                    val maxBellOffset = 78.dp
+                    val activeIndex = scrubberProgress?.let {
+                        (it * alphabetLetters.lastIndex).toInt().coerceIn(0, alphabetLetters.lastIndex)
+                    }
+
+                    // Bell-curve wave: the selected letter travels furthest to the left,
+                    // while neighbouring letters fan out by a Gaussian falloff.
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.SpaceEvenly,
+                        horizontalAlignment = Alignment.End
+                    ) {
+                        alphabetLetters.forEachIndexed { index, letter ->
+                            val distance = activeIndex?.let { abs(it - index) }
+                            val bellCurve = distance?.let {
+                                exp(-(it * it).toDouble() / 5.0).toFloat()
+                            } ?: 0f
+                            val targetOffset = if (scrubberProgress != null) {
+                                maxBellOffset * bellCurve
+                            } else {
+                                0.dp
+                            }
+                            val animatedOffset by animateDpAsState(
+                                targetValue = targetOffset,
+                                animationSpec = spring(dampingRatio = 0.68f, stiffness = 560f),
+                                label = "alphabet-bell-curve-offset"
+                            )
+                            val isActiveLetter = activeIndex == index
+                            Box(
+                                modifier = Modifier.fillMaxWidth().weight(1f),
+                                contentAlignment = Alignment.CenterEnd
+                            ) {
+                                Box(
+                                    modifier = Modifier.width(24.dp).fillMaxHeight()
+                                        .offset(x = -animatedOffset)
+                                        .clickable(enabled = letter in firstIndexByLetter) {
+                                            scrollToLetter(letter, true)
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        letter,
+                                        color = if (isActiveLetter) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            secondary.copy(alpha = 0.70f)
+                                        },
+                                        fontSize = 11.sp,
+                                        lineHeight = 12.sp,
+                                        fontWeight = if (isActiveLetter) {
+                                            androidx.compose.ui.text.font.FontWeight.Bold
+                                        } else {
+                                            androidx.compose.ui.text.font.FontWeight.Normal
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Keep the touch target narrow so app names remain tappable while
+                    // the visual bell-curve animation can expand horizontally to the left.
+                    Box(
+                        modifier = Modifier.align(Alignment.CenterEnd)
+                            .width(24.dp)
+                            .fillMaxHeight()
+                            .pointerInput(alphabetLetters, firstIndexByLetter) {
+                                fun letterAt(y: Float): String {
+                                    val height = size.height.coerceAtLeast(1)
+                                    val index = ((y / height) * alphabetLetters.size)
+                                        .toInt().coerceIn(0, alphabetLetters.lastIndex)
+                                    return alphabetLetters[index]
+                                }
+                                awaitEachGesture {
+                                    val down = awaitFirstDown(
+                                        pass = PointerEventPass.Initial,
+                                        requireUnconsumed = false
+                                    )
+                                    var lastLetter = letterAt(down.position.y)
+                                    scrubberProgress = (down.position.y / size.height.coerceAtLeast(1))
+                                        .coerceIn(0f, 1f)
+                                    scrollToLetter(lastLetter, false)
+                                    var pointerDown = true
+                                    while (pointerDown) {
+                                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                                        val change = event.changes.firstOrNull { it.id == down.id }
+                                            ?: break
+                                        if (!change.pressed) {
+                                            pointerDown = false
+                                        } else {
+                                            val progress = (change.position.y / size.height.coerceAtLeast(1))
+                                                .coerceIn(0f, 1f)
+                                            scrubberProgress = progress
+                                            val nextLetter = letterAt(change.position.y)
+                                            if (nextLetter != lastLetter) {
+                                                lastLetter = nextLetter
+                                                scrollToLetter(nextLetter, false)
+                                            }
+                                            change.consume()
+                                        }
+                                    }
+                                    scrubberProgress = null
+                                }
+                            }
+                    )
+
+                    val popupHorizontalOffset = if (scrubberProgress != null) maxBellOffset else 0.dp
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = scrubberProgress != null,
+                        modifier = Modifier.align(Alignment.TopStart).offset(
+                            x = maxWidth - 80.dp - popupHorizontalOffset,
+                            y = (maxHeight * animatedProgress - 25.dp)
+                                .coerceIn(0.dp, (maxHeight - 50.dp).coerceAtLeast(0.dp))
+                        ),
+                        enter = androidx.compose.animation.fadeIn() +
+                            androidx.compose.animation.scaleIn(initialScale = 0.68f),
+                        exit = androidx.compose.animation.fadeOut() +
+                            androidx.compose.animation.scaleOut(targetScale = 0.68f)
+                    ) {
+                        Box(
+                            modifier = Modifier.size(50.dp)
+                                .shadow(7.dp, CircleShape)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                scrubberProgress?.let {
+                                    alphabetLetters[((it * alphabetLetters.lastIndex).toInt())
+                                        .coerceIn(0, alphabetLetters.lastIndex)]
+                                } ?: "",
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                fontSize = 21.sp,
+                                lineHeight = 23.sp,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        if (preferences.showSearchBar) {
+            Spacer(Modifier.height(2.dp))
+            val searchShape = RoundedCornerShape(24.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .height(46.dp)
+                    .border(
+                        width = 1.dp,
+                        color = if (searchFocused || query.isNotEmpty()) {
+                            mainText.copy(alpha = 0.62f)
+                        } else {
+                            secondary.copy(alpha = 0.38f)
+                        },
+                        shape = searchShape
+                    )
+                    .padding(horizontal = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.SearchIcon,
+                    contentDescription = "Search apps",
+                    tint = searchColor,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(10.dp))
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    if (query.isEmpty()) {
+                        Text(
+                            "Search Apps",
+                            color = searchColor,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontSize = 15.sp
+                        )
+                    }
+                    BasicTextField(
+                        value = query,
+                        onValueChange = onQueryChange,
+                        modifier = Modifier.fillMaxWidth()
+                            .focusRequester(focusRequester)
+                            .onFocusChanged { searchFocused = it.isFocused },
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(
+                            color = mainText,
+                            fontFamily = fontFamily,
+                            fontSize = 15.sp
+                        ),
+                        cursorBrush = SolidColor(mainText)
+                    )
+                }
+            }
+        }
+    }
+    selectedFolder?.let { folder ->
+        val folderApps = remember(apps, preferences.folderAssignments, folder) {
+            val assignedPackages = assignedPackagesForFolder(preferences.folderAssignments, folder)
+            apps.filter { app ->
+                !app.packageName.startsWith("internal:") && app.packageName in assignedPackages
+            }.sortedBy { it.label.lowercase(Locale.getDefault()) }
+        }
+        ModalBottomSheet(
+            onDismissRequest = { selectedFolder = null }
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp)
+                    .verticalScroll(androidx.compose.foundation.rememberScrollState())
+                    .padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(folder, style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            "${folderApps.size} apps",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+                if (folderApps.isEmpty()) {
+                    Text(
+                        "This folder is empty.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                }
+                folderApps.forEach { folderApp ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable {
+                                selectedFolder = null
+                                onLaunch(folderApp)
+                            }
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (preferences.showAppIcons) {
+                            AppIcon(folderApp, preferences.iconPack, size = 20.dp, iconShape = preferences.iconShape)
+                            Spacer(Modifier.width(12.dp))
+                        }
+                        Text(
+                            folderApp.label,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = MaterialTheme.typography.bodyLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
+
+    }
+
+    renamingApp?.let { app ->
+        AlertDialog(
+            onDismissRequest = { renamingApp = null },
+            title = { Text("Rename app") },
+            text = {
+                OutlinedTextField(
+                    value = renameValue,
+                    onValueChange = { renameValue = it },
+                    singleLine = true,
+                    label = { Text("App name") }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val newName = renameValue.trim()
+                    if (newName.isNotEmpty()) onRenameApp(app.packageName, newName)
+                    renamingApp = null
+                }) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { renamingApp = null }) { Text("Cancel") }
+            }
+        )
+    }
+
+    selectedFolderApp?.let { app ->
+        var newFolderName by remember(app.packageName) { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { selectedFolderApp = null },
+            title = { Text("Add to folder") },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp)
+                        .verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    if (preferences.appFolders.isEmpty()) {
+                        Text("No folders yet. Create one below.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    } else {
+                        sortedFolders.forEach { folder ->
+                            TextButton(
+                                onClick = {
+                                    val assignment = app.packageName + "\t" + folder
+                                    onPreferencesChange(preferences.copy(folderAssignments = preferences.folderAssignments + assignment))
+                                    selectedFolderApp = null
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Outlined.Folder, contentDescription = null)
+                                Spacer(Modifier.width(10.dp))
+                                Text(folder, modifier = Modifier.weight(1f), textAlign = TextAlign.Start)
+                            }
+                        }
+                    }
+                    OutlinedTextField(
+                        value = newFolderName,
+                        onValueChange = { newFolderName = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("New folder") },
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val folder = newFolderName.trim()
+                    if (folder.isNotEmpty()) {
+                        onPreferencesChange(
+                            preferences.copy(
+                                appFolders = preferences.appFolders + folder,
+                                folderAssignments = preferences.folderAssignments + (app.packageName + "\t" + folder)
+                            )
+                        )
+                        selectedFolderApp = null
+                    }
+                }) { Text("Create and add") }
+            },
+            dismissButton = {
+                TextButton(onClick = { selectedFolderApp = null }) { Text("Cancel") }
+            }
+        )
+    }
+}
+
+internal fun openApplicationInfo(context: Context, app: LauncherApp) {
+    val intent = Intent(
+        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+        Uri.parse("package:${app.packageName}")
+    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    context.startActivity(intent)
+}
+
+internal fun requestUninstall(context: Context, app: LauncherApp) {
+    if (app.isSystem) return
+    val intent = Intent(Intent.ACTION_DELETE, Uri.parse("package:${app.packageName}"))
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    context.startActivity(intent)
+}
