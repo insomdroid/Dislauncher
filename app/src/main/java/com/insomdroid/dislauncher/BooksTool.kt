@@ -558,7 +558,12 @@ internal fun BooksTool(onBack: () -> Unit) {
     var error by remember { mutableStateOf<String?>(null) }
     var pdfBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var pendingDelete by remember { mutableStateOf<BookEntry?>(null) }
-    var gridView by remember { mutableStateOf(false) }
+    var gridView by remember {
+        mutableStateOf(
+            context.getSharedPreferences("dislauncher_books", Context.MODE_PRIVATE)
+                .getBoolean("grid_view", false)
+        )
+    }
     var searchExpanded by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var showLibraryMenu by remember { mutableStateOf(false) }
@@ -671,7 +676,13 @@ internal fun BooksTool(onBack: () -> Unit) {
                         color = fg, modifier = Modifier.weight(1f), maxLines = 1)
                     IconButton(onClick = { searchExpanded = true }) { Icon(Icons.Outlined.Search, contentDescription = "Search books", tint = fg) }
                 }
-                if (books.isNotEmpty()) IconButton(onClick = { gridView = !gridView }) {
+                if (books.isNotEmpty()) IconButton(onClick = {
+                    gridView = !gridView
+                    context.getSharedPreferences("dislauncher_books", Context.MODE_PRIVATE)
+                        .edit()
+                        .putBoolean("grid_view", gridView)
+                        .apply()
+                }) {
                     Icon(if (gridView) Icons.Outlined.ViewList else Icons.Outlined.ViewModule,
                         contentDescription = if (gridView) "Switch to list view" else "Switch to grid view", tint = fg)
                 }
