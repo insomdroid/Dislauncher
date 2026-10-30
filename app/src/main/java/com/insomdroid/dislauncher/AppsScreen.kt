@@ -236,16 +236,6 @@ internal fun AppsScreen(
                 contentPadding = PaddingValues(bottom = 16.dp, top = 2.dp),
                 verticalArrangement = if (searching) Arrangement.Bottom else Arrangement.Top
             ) {
-                if (!searching && preferences.showAlphabetIndex && filtered.isNotEmpty()) {
-                    item(key = "drawer-usage-hint") {
-                        Text(
-                            "Swipe the letters to jump · # is for numbers or symbols · Long-press an app for more actions",
-                            color = secondary,
-                            fontSize = 11.sp,
-                            modifier = Modifier.padding(start = 8.dp, top = 2.dp, bottom = 10.dp)
-                        )
-                    }
-                }
                 if (
                     filtered.isEmpty() && filteredBuiltIns.isEmpty() &&
                     (apps.isEmpty() || !showSettingsEntry)
