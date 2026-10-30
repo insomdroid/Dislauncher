@@ -39,6 +39,7 @@ import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkAdded
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.DeleteOutline
@@ -561,6 +562,7 @@ internal fun BooksTool(onBack: () -> Unit) {
     var searchExpanded by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var showLibraryMenu by remember { mutableStateOf(false) }
+    var bookMenuTarget by remember { mutableStateOf<String?>(null) }
     var sortByTitle by remember { mutableStateOf(false) }
     var pinnedOnly by remember { mutableStateOf(false) }
 
@@ -665,6 +667,8 @@ internal fun BooksTool(onBack: () -> Unit) {
                             Icon(Icons.Outlined.Close, contentDescription = "Close search")
                         } })
                 } else {
+                    Icon(Icons.Outlined.MenuBook, contentDescription = "Reader",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp))
                     Text("Library", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.weight(1f), maxLines = 1)
                     IconButton(onClick = { searchExpanded = true }) { Icon(Icons.Outlined.Search, contentDescription = "Search books") }
@@ -717,19 +721,31 @@ internal fun BooksTool(onBack: () -> Unit) {
                             ) {
                                 Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     BookCover(book, Modifier.fillMaxWidth().height(148.dp))
-                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        if (book.pinned) Icon(Icons.Outlined.PushPin, contentDescription = "Pinned", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
-                                        Text(book.title, style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        if (book.pinned) Icon(Icons.Outlined.PushPin, contentDescription = "Pinned",
+                                            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+                                        Text(book.title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium,
+                                            maxLines = 3, overflow = TextOverflow.Ellipsis)
+                                        Box {
+                                            IconButton(onClick = { bookMenuTarget = book.id }, modifier = Modifier.size(28.dp)) {
+                                                Icon(Icons.Outlined.MoreVert, contentDescription = "Book actions")
+                                            }
+                                            DropdownMenu(expanded = bookMenuTarget == book.id, onDismissRequest = { bookMenuTarget = null }) {
+                                                DropdownMenuItem(text = { Text(if (book.pinned) "Unpin" else "Pin") },
+                                                    leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                                    onClick = {
+                                                        books = books.map { if (it.id == book.id) it.copy(pinned = !it.pinned) else it }
+                                                        writeBookLibrary(context, books)
+                                                        bookMenuTarget = null
+                                                    })
+                                                DropdownMenuItem(text = { Text("Remove") },
+                                                    leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                                    onClick = { pendingDelete = book; bookMenuTarget = null })
+                                            }
+                                        }
                                     }
                                     Text("${book.type.uppercase()} · ${if (book.position == 0) "Not started" else "Continue reading"}",
                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                        IconButton(onClick = { books = books.map { if (it.id == book.id) it.copy(pinned = !it.pinned) else it }; writeBookLibrary(context, books) }) {
-                                            Icon(Icons.Outlined.PushPin, contentDescription = if (book.pinned) "Unpin book" else "Pin book",
-                                                tint = if (book.pinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                                        }
-                                        IconButton(onClick = { pendingDelete = book }) { Icon(Icons.Outlined.DeleteOutline, contentDescription = "Remove book") }
-                                    }
                                 }
                             }
                         }
@@ -750,11 +766,23 @@ internal fun BooksTool(onBack: () -> Unit) {
                                     Text("${book.type.uppercase()} · ${if (book.position == 0) "Not started" else "Continue reading"}",
                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                                IconButton(onClick = { books = books.map { if (it.id == book.id) it.copy(pinned = !it.pinned) else it }; writeBookLibrary(context, books) }) {
-                                    Icon(Icons.Outlined.PushPin, contentDescription = if (book.pinned) "Unpin book" else "Pin book",
-                                        tint = if (book.pinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                                Box {
+                                    IconButton(onClick = { bookMenuTarget = book.id }) {
+                                        Icon(Icons.Outlined.MoreVert, contentDescription = "Book actions")
+                                    }
+                                    DropdownMenu(expanded = bookMenuTarget == book.id, onDismissRequest = { bookMenuTarget = null }) {
+                                        DropdownMenuItem(text = { Text(if (book.pinned) "Unpin" else "Pin") },
+                                            leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                            onClick = {
+                                                books = books.map { if (it.id == book.id) it.copy(pinned = !it.pinned) else it }
+                                                writeBookLibrary(context, books)
+                                                bookMenuTarget = null
+                                            })
+                                        DropdownMenuItem(text = { Text("Remove") },
+                                            leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                            onClick = { pendingDelete = book; bookMenuTarget = null })
+                                    }
                                 }
-                                IconButton(onClick = { pendingDelete = book }) { Icon(Icons.Outlined.DeleteOutline, contentDescription = "Remove book") }
                             }
                         }
                     }
@@ -786,19 +814,21 @@ internal fun BooksTool(onBack: () -> Unit) {
                         Icon(if (currentPage in book.bookmarks) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkAdded,
                             contentDescription = if (currentPage in book.bookmarks) "Remove bookmark" else "Add bookmark", tint = fg)
                     }
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(Icons.Outlined.MoreVert, contentDescription = "Reader settings", tint = fg)
+                    }
                 }
                 Box(
                     Modifier.weight(1f).fillMaxWidth().pointerInput(selectedBook?.id, currentPage) {
                         detectTapGestures(
-                            onLongPress = { showMenu = true },
                             onTap = { offset ->
-                            val x = offset.x / size.width
-                            when {
-                                x < 0.22f -> if (currentPage > 0) { pageDirection = -1; currentPage--; saveProgress(currentPage) }
-                                x > 0.78f -> if (bookContent != null && currentPage < bookContent!!.pages.lastIndex) { pageDirection = 1; currentPage++; saveProgress(currentPage) }
-                                else -> showMenu = !showMenu
+                                val x = offset.x / size.width
+                                when {
+                                    x < 0.22f -> if (currentPage > 0) { pageDirection = -1; currentPage--; saveProgress(currentPage) }
+                                    x > 0.78f -> if (bookContent != null && currentPage < bookContent!!.pages.lastIndex) { pageDirection = 1; currentPage++; saveProgress(currentPage) }
+                                }
                             }
-                        })
+                        )
                     },
                     contentAlignment = Alignment.Center
                 ) {
@@ -840,8 +870,6 @@ internal fun BooksTool(onBack: () -> Unit) {
                             }
                             Text("Text size", style = MaterialTheme.typography.labelLarge)
                             Slider(value = fontSize, onValueChange = { fontSize = it }, valueRange = 15f..30f)
-                            Text("Tap left or right edge to turn pages.", style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     },
                     confirmButton = { TextButton(onClick = { showMenu = false }) { Text("Done") } }
