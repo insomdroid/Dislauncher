@@ -158,15 +158,60 @@ private fun bookType(name: String, uri: Uri): String {
     }
 }
 
+private const val MAX_BOOK_BYTES = 100L * 1024L * 1024L
+private const val MAX_TEXT_BYTES = 16L * 1024L * 1024L
+private const val MAX_EPUB_ENTRY_BYTES = 4L * 1024L * 1024L
+private const val MAX_EPUB_TOTAL_BYTES = 32L * 1024L * 1024L
+private const val MAX_PDF_PAGES = 5_000
+
 private fun copyBookToCache(context: Context, uri: Uri, suffix: String): File {
-    val target = File(context.cacheDir, "book_${uri.toString().hashCode()}.$suffix")
-    if (!target.exists() || target.length() == 0L) {
+    val digest = java.security.MessageDigest.getInstance("SHA-256")
+        .digest(uri.toString().toByteArray(Charsets.UTF_8))
+        .joinToString("") { "%02x".format(it) }
+    val target = File(context.cacheDir, "book_$digest.$suffix")
+    if (target.exists() && target.length() > 0L) return target
+    val temporary = File(context.cacheDir, "${target.name}.tmp")
+    try {
         context.contentResolver.openInputStream(uri).use { input ->
             requireNotNull(input) { "Unable to open document" }
-            target.outputStream().use { output -> input.copyTo(output) }
+            temporary.outputStream().buffered().use { output ->
+                val buffer = ByteArray(16 * 1024)
+                var total = 0L
+                while (true) {
+                    val count = input.read(buffer)
+                    if (count < 0) break
+                    total += count
+                    require(total <= MAX_BOOK_BYTES) { "Book is too large. Maximum supported size is 100 MB." }
+                    output.write(buffer, 0, count)
+                }
+            }
         }
+        if (!temporary.renameTo(target)) {
+            temporary.copyTo(target, overwrite = true)
+            temporary.delete()
+        }
+    } catch (e: Exception) {
+        temporary.delete()
+        throw e
     }
     return target
+}
+
+private fun readZipEntryText(zip: ZipFile, entry: java.util.zip.ZipEntry, limit: Long): String {
+    require(entry.size < 0L || entry.size <= limit) { "This EPUB contains an oversized section." }
+    return zip.getInputStream(entry).bufferedReader(Charsets.UTF_8).use { reader ->
+        val result = StringBuilder()
+        val buffer = CharArray(8 * 1024)
+        var total = 0L
+        while (true) {
+            val count = reader.read(buffer)
+            if (count < 0) break
+            total += count
+            require(total <= limit) { "This EPUB contains an oversized section." }
+            result.append(buffer, 0, count)
+        }
+        result.toString()
+    }
 }
 
 private fun splitPages(text: String, limit: Int = 2600): List<String> {
