@@ -263,8 +263,7 @@ private val bookCoverCache = LruCache<String, Bitmap>(12)
 
 private fun loadBookCover(context: Context, book: BookEntry): Bitmap? {
     bookCoverCache.get(book.id)?.let { return it }
-    val result =
-    return runCatching {
+    val result = runCatching {
         when (book.type) {
             "pdf" -> copyBookToCache(context, Uri.parse(book.uri), "pdf").let { renderPdfPage(it, 0) }
             "epub" -> {
