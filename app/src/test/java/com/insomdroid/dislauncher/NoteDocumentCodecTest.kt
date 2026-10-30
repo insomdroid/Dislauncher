@@ -120,4 +120,15 @@ class NoteDocumentCodecTest {
         }
     }
 
+    @Test
+    fun markdownEditHistoryCanUndoAndRedo() {
+        val initial = MarkdownEditHistory()
+        val first = initial.record("one")
+        val second = first.record("two")
+        val undone = second.undo("three")!!
+        assertEquals("two", undone.text)
+        val redone = undone.history.redo("two")!!
+        assertEquals("three", redone.text)
+        assertTrue(redone.history.redo.isEmpty())
+    }
 }
