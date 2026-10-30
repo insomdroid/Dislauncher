@@ -433,7 +433,6 @@ internal fun BooksTool(onBack: () -> Unit) {
             val visibleBooks = books.filter { it.title.contains(searchQuery, ignoreCase = true) }
                 .let { if (sortByTitle) it.sortedBy { book -> book.title.lowercase() } else it }
             if (visibleBooks.isEmpty()) {
-            if (visibleBooks.isEmpty()) {
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(if (searchQuery.isBlank()) "A quiet place for your books" else "No matching books", style = MaterialTheme.typography.titleMedium)
