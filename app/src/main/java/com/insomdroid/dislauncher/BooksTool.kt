@@ -707,10 +707,18 @@ internal fun BooksTool(onBack: () -> Unit) {
             if (visibleBooks.isEmpty()) {
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(if (searchQuery.isBlank()) "A quiet place for your books" else "No matching books", style = MaterialTheme.typography.titleMedium, color = fg)
+                        val libraryIsEmpty = books.isEmpty() && searchQuery.isBlank() && !pinnedOnly
                         Text(
-                            if (searchQuery.isBlank()) "Use the + button to add an EPUB, PDF, or TXT file."
-                            else "Try another search or clear the search field.",
+                            if (libraryIsEmpty) "A quiet place for your books" else "No matching books",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = fg
+                        )
+                        Text(
+                            when {
+                                libraryIsEmpty -> "Use the + button to add an EPUB, PDF, or TXT file."
+                                pinnedOnly && searchQuery.isBlank() -> "No pinned books yet. Pin a book or show all books."
+                                else -> "Try another search or clear the search field."
+                            },
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
                         )
