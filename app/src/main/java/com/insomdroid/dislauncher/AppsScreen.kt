@@ -239,7 +239,7 @@ internal fun AppsScreen(
                 if (!searching && preferences.showAlphabetIndex && filtered.isNotEmpty()) {
                     item(key = "drawer-usage-hint") {
                         Text(
-                            "Swipe the letters to jump · Long-press an app for more actions",
+                            "builtInToolText("Swipe letters to jump · # is numbers/symbols · Long-press an app for more actions", "Usap huruf untuk berpindah · # untuk angka/simbol · Tekan lama aplikasi untuk tindakan lain")",
                             color = secondary,
                             fontSize = 11.sp,
                             modifier = Modifier.padding(start = 8.dp, top = 2.dp, bottom = 10.dp)
@@ -252,7 +252,7 @@ internal fun AppsScreen(
                 ) {
                     item(key = "empty-app-list") {
                         Text(
-                            if (apps.isEmpty()) "Loading apps…" else "No matching apps",
+                            if (apps.isEmpty()) builtInToolText("Loading apps…", "Memuat aplikasi…") else builtInToolText("No matching apps. Try another name.", "Aplikasi tidak ditemukan. Coba nama lain."),
                             color = secondary,
                             fontSize = 13.sp,
                             modifier = Modifier.padding(vertical = 18.dp)
@@ -640,7 +640,7 @@ internal fun AppsScreen(
                 ) {
                     if (query.isEmpty()) {
                         Text(
-                            "Search Apps",
+                            builtInToolText("Search apps", "Cari aplikasi"),
                             color = searchColor,
                             style = MaterialTheme.typography.bodyLarge,
                             fontSize = 15.sp

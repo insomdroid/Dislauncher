@@ -867,7 +867,7 @@ private fun NotesTool(
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(if (searchQuery.isBlank() && !pinnedOnly) "No notes yet" else "No matching notes",
                                 style = MaterialTheme.typography.titleMedium)
-                            Text(if (searchQuery.isBlank() && !pinnedOnly) "Capture a thought, list, or idea." else "Try another search or filter.",
+                            Text(if (searchQuery.isBlank() && !pinnedOnly) builtInToolText("Capture a thought, list, or idea. You can write in plain text or Markdown.", "Simpan ide, daftar, atau catatan. Anda bisa menulis dengan teks biasa atau Markdown.") else "Try another search or filter.",
                                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center)
                         }
@@ -1711,7 +1711,19 @@ private fun CalendarTool(
         }
         if (dayTasks.isEmpty() && dayEvents.isEmpty()) {
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Text("Nothing planned", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    if (!calendarPermission) {
+                        builtInToolText(
+                            "Calendar access is off. Allow access to see events from your device calendar.",
+                            "Akses kalender belum diizinkan. Izinkan akses untuk melihat acara dari kalender perangkat."
+                        )
+                    } else {
+                        builtInToolText("Nothing planned for this day.", "Tidak ada agenda untuk hari ini.")
+                    },
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 24.dp)
+                )
             }
         } else {
             LazyColumn(

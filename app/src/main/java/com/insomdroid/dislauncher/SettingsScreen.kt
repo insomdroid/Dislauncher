@@ -685,7 +685,7 @@ internal fun SettingsScreen(
                         SettingsGroup(tr("App visibility", "Visibilitas aplikasi")) {
                             SettingToggle(
                                 tr("Show built-in apps", "Tampilkan aplikasi bawaan"),
-                                tr("Show Calc, Cal, Notes, Conv and Reader in a dedicated row above the app list.", "Tampilkan Calc, Cal, Catatan, Conv, dan Reader dalam baris khusus di atas daftar aplikasi."),
+                                tr("Show Calculator, Calendar, Notes, Unit Converter and Books above your installed apps.", "Tampilkan Kalkulator, Kalender, Catatan, Konverter Satuan, dan Buku di atas daftar aplikasi."),
                                 preferences.showBuiltInApps
                             ) { onPreferencesChange(preferences.copy(showBuiltInApps = it)) }
                             SettingToggle(
@@ -702,7 +702,7 @@ internal fun SettingsScreen(
                             ) { onPreferencesChange(preferences.copy(showSearchBar = it)) }
                             SettingToggle(
                                 tr("Alphabet index", "Indeks alfabet"),
-                                tr("Show a scrollable A–Z index on the right edge of the app drawer.", "Tampilkan indeks A–Z yang bisa digeser di tepi kanan app drawer."),
+                                tr("Jump to apps by letter on the right edge. # groups names starting with numbers or symbols.", "Pindah ke aplikasi berdasarkan huruf di sisi kanan. # mengelompokkan nama yang diawali angka atau simbol."),
                                 preferences.showAlphabetIndex
                             ) { onPreferencesChange(preferences.copy(showAlphabetIndex = it)) }
                             SettingToggle(
