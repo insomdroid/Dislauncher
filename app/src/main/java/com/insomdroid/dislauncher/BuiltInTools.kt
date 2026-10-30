@@ -867,9 +867,13 @@ private fun NotesTool(
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(if (searchQuery.isBlank() && !pinnedOnly) "No notes yet" else "No matching notes",
                                 style = MaterialTheme.typography.titleMedium)
-                            Text(if (searchQuery.isBlank() && !pinnedOnly) builtInToolText("Capture a thought, list, or idea. You can write in plain text or Markdown.", "Simpan ide, daftar, atau catatan. Anda bisa menulis dengan teks biasa atau Markdown.") else "Try another search or filter.",
-                                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center)
+                            Text(
+                                if (searchQuery.isBlank() && !pinnedOnly) "Tap + to create your first note. Write in plain text or Markdown."
+                                else "Try another search or filter.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
                         }
                     }
                 } else if (gridView) {
@@ -1297,7 +1301,18 @@ private fun CalculatorTool(
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (history.isEmpty()) {
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text("No calculations yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text("No calculations yet", style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                "Completed calculations will appear here.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyMedium,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 } else {
                     LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1718,7 +1733,7 @@ private fun CalendarTool(
                             "Akses kalender belum diizinkan. Izinkan akses untuk melihat acara dari kalender perangkat."
                         )
                     } else {
-                        builtInToolText("Nothing planned for this day.", "Tidak ada agenda untuk hari ini.")
+                        "No events or tasks for this day. Tap + to add a task."
                     },
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
