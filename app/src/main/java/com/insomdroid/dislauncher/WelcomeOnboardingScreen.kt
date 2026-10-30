@@ -1,15 +1,11 @@
 package com.insomdroid.dislauncher
 
-import android.Manifest
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.content.pm.PackageManager
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.core.app.ActivityCompat
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -41,7 +37,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -51,7 +46,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -65,10 +59,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 
 @Composable
 internal fun WelcomeOnboardingScreen(
@@ -79,70 +69,14 @@ internal fun WelcomeOnboardingScreen(
     onFinish: (selectedPackages: Set<String>) -> Unit
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
     var page by remember { mutableStateOf(0) }
     var selectedFavorites by remember { mutableStateOf(favorites.toSet()) }
-    var permissionRefresh by remember { mutableStateOf(0) }
-    var permissionDialogPermission by remember { mutableStateOf<String?>(null) }
-    var permissionDialogSettings by remember { mutableStateOf(false) }
-    val pageCount = 6
-
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) permissionRefresh++
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-
-    val locationGranted = permissionRefresh >= 0 && hasWeatherLocationPermission(context)
-    val calendarGranted = permissionRefresh >= 0 &&
-        ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) ==
-            PackageManager.PERMISSION_GRANTED
-    val musicControlsGranted = permissionRefresh >= 0 && hasMusicNotificationAccess(context)
-
-    val locationPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { permissionRefresh++ }
-    val calendarPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { permissionRefresh++ }
-
-    fun launchOptionalPermission(permission: String) {
-        context.getSharedPreferences("dislauncher_permissions", Context.MODE_PRIVATE)
-            .edit()
-            .putBoolean("requested_$permission", true)
-            .apply()
-        when (permission) {
-            Manifest.permission.ACCESS_COARSE_LOCATION -> locationPermissionLauncher.launch(permission)
-            Manifest.permission.READ_CALENDAR -> calendarPermissionLauncher.launch(permission)
-        }
-    }
-
-    fun requestOptionalPermission(permission: String) {
-        if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
-            permissionRefresh++
-            return
-        }
-        val activity = context as? android.app.Activity
-        val requestedBefore = context.getSharedPreferences(
-            "dislauncher_permissions", Context.MODE_PRIVATE
-        ).getBoolean("requested_$permission", false)
-        if (activity != null && ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)) {
-            permissionDialogSettings = false
-            permissionDialogPermission = permission
-        } else if (requestedBefore) {
-            permissionDialogSettings = true
-            permissionDialogPermission = permission
-        } else {
-            launchOptionalPermission(permission)
-        }
-    }
+    val pageCount = 3
 
     fun skipOnboarding() {
-        val orderedApps = prioritizeNonSystemApps(apps).distinctBy { it.packageName }
-        onFinish(orderedApps.take(6).map { it.packageName }.toSet())
+        onFinish(emptySet())
     }
+
     fun openSystemSettings(action: String) {
         runCatching { context.startActivity(Intent(action)) }
     }
@@ -210,60 +144,7 @@ internal fun WelcomeOnboardingScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
                     when (currentPage) {
-                        1 -> {
-                            Text(
-                                "Set up your permissions",
-                                modifier = Modifier.fillMaxWidth(),
-                                style = MaterialTheme.typography.headlineMedium,
-                                color = MaterialTheme.colorScheme.onBackground,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                "These are optional and are controlled by Android. Choose only the features you want; you can change access later in system settings.",
-                                modifier = Modifier.fillMaxWidth(),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(Modifier.height(14.dp))
-                            PermissionActionRow(
-                                title = "Location · Weather",
-                                description = "Approximate location lets the Home screen retrieve local weather. Dislauncher does not need precise location for this feature.",
-                                granted = locationGranted,
-                                actionLabel = "Allow",
-                                onClick = {
-                                    requestOptionalPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
-                                }
-                            )
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
-                            PermissionActionRow(
-                                title = "Calendar · Agenda",
-                                description = "Read calendar events to show today's upcoming appointments on Home.",
-                                granted = calendarGranted,
-                                actionLabel = "Allow",
-                                onClick = { requestOptionalPermission(Manifest.permission.READ_CALENDAR) }
-                            )
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
-                            PermissionActionRow(
-                                title = "Music controls · Playback",
-                                description = "Allow notification access so the Home widget can show the current track and control playback.",
-                                granted = musicControlsGranted,
-                                actionLabel = "Open",
-                                onClick = { openSystemSettings(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS) }
-                            )
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
-                            Spacer(Modifier.height(10.dp))
-                            Text(
-                                "Optional: Double tap to lock needs Device Admin approval. You can enable that gesture later in Settings.",
-                                modifier = Modifier.fillMaxWidth(),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                        5 -> {
+                        2 -> {
                             Text(
                                 "Choose your six favourites",
                                 modifier = Modifier.fillMaxWidth(),
@@ -352,7 +233,7 @@ internal fun WelcomeOnboardingScreen(
                         else -> {
                             val illustration = when (currentPage) {
                                 0 -> "D."
-                                2 -> "09:41"
+                                1 -> "09:41"
                                 else -> "A  B  C"
                             }
                             Box(
@@ -374,7 +255,7 @@ internal fun WelcomeOnboardingScreen(
                                         illustration,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = when (currentPage) {
-                                            2 -> 37.sp
+                                            1 -> 37.sp
                                             3 -> 24.sp
                                             else -> 62.sp
                                         },
@@ -401,9 +282,8 @@ internal fun WelcomeOnboardingScreen(
                             Text(
                                 when (currentPage) {
                                     0 -> "A text-first launcher for the things you check every day—not another feed to scroll."
-                                    2 -> "Keep your clock, date, weather, battery, calendar and music close. Choose which items show up in Settings."
-                                    3 -> "Search at the bottom of the app drawer, or slide along the letter rail on the right. Long-press apps to pin, rename or hide them."
-                                    else -> "Use Android's wallpaper colors, or choose system, light, dark, or black."
+                                    1 -> "Use Android's wallpaper colors, or choose system, light, dark, or black."
+                                    else -> "A text-first launcher for the things you check every day—not another feed to scroll."
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 style = MaterialTheme.typography.bodyLarge,
@@ -411,7 +291,7 @@ internal fun WelcomeOnboardingScreen(
                                 textAlign = TextAlign.Center,
                                 lineHeight = 24.sp
                             )
-                            if (currentPage == 4) {
+                            if (currentPage == 1) {
                                 Spacer(Modifier.height(18.dp))
                                 Text(
                                     "THEME",
@@ -496,95 +376,4 @@ internal fun WelcomeOnboardingScreen(
         }
     }
 
-    permissionDialogPermission?.let { permission ->
-        val isLocation = permission == Manifest.permission.ACCESS_COARSE_LOCATION
-        AlertDialog(
-            onDismissRequest = { permissionDialogPermission = null },
-            title = {
-                Text(
-                    if (permissionDialogSettings) "Permission needs Settings" else "Why this permission?"
-                )
-            },
-            text = {
-                Text(
-                    when {
-                        permissionDialogSettings ->
-                            "Android has stopped showing the permission prompt. To enable ${if (isLocation) "weather location" else "calendar agenda"}, open Dislauncher in system settings and grant access there."
-                        isLocation ->
-                            "Dislauncher uses approximate location only to retrieve local weather. It does not need precise location."
-                        else ->
-                            "Dislauncher reads calendar events only to show upcoming appointments in the Home agenda."
-                    }
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    if (permissionDialogSettings) {
-                        runCatching {
-                            context.startActivity(
-                                Intent(
-                                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                    Uri.fromParts("package", context.packageName, null)
-                                )
-                            )
-                        }
-                    } else {
-                        launchOptionalPermission(permission)
-                    }
-                    permissionDialogPermission = null
-                }) {
-                    Text(if (permissionDialogSettings) "Open Settings" else "Continue")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { permissionDialogPermission = null }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-}
-
-@Composable
-private fun PermissionActionRow(
-    title: String,
-    description: String,
-    granted: Boolean,
-    actionLabel: String,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(
-            modifier = Modifier.weight(1f).padding(end = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(3.dp)
-        ) {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Text(
-                description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = 16.sp
-            )
-        }
-        TextButton(onClick = onClick, enabled = !granted) {
-            Text(if (granted) "Granted" else actionLabel)
-        }
-    }
-}
-
-internal fun hasMusicNotificationAccess(context: Context): Boolean {
-    val component = ComponentName(context, DislauncherNotificationListener::class.java)
-    val enabledListeners = Settings.Secure.getString(
-        context.contentResolver,
-        "enabled_notification_listeners"
-    ).orEmpty()
-    return enabledListeners.split(':').any { ComponentName.unflattenFromString(it) == component }
 }
