@@ -175,6 +175,21 @@ private data class CalendarAgendaItem(
 private fun notesStore(context: Context) =
     context.getSharedPreferences("dislauncher_notes", Context.MODE_PRIVATE)
 
+private fun preserveCorruptNotes(context: Context, rawJson: String) {
+    val store = notesStore(context)
+    if (!store.contains("notes_json_recovery_backup")) {
+        store.edit()
+            .putString("notes_json_recovery_backup", rawJson)
+            .putLong("notes_json_recovery_backup_at", System.currentTimeMillis())
+            .apply()
+    }
+    Toast.makeText(
+        context,
+        "Notes data could not be read safely. A recovery copy was preserved; the original data was not overwritten.",
+        Toast.LENGTH_LONG
+    ).show()
+}
+
 private fun loadNotes(context: Context): List<LocalNote> {
     val store = notesStore(context)
     val rawJson = store.getString("notes_json", "[]") ?: "[]"
@@ -226,8 +241,13 @@ private fun loadNotes(context: Context): List<LocalNote> {
             compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt }
         )
     } catch (_: Exception) {
-        // Preserve the original value so malformed or partially-written data is not destroyed.
+        // Preserve the original value and keep a separate recovery copy before returning an empty view.
+        preserveCorruptNotes(context, rawJson)
         return emptyList()
+    }
+
+    if (!safeToPersistMigration) {
+        preserveCorruptNotes(context, rawJson)
     }
 
     // Migrate legacy notes once, and only when every stored entry was parsed safely.
@@ -594,8 +614,8 @@ private fun NotesTool(
     var sortByTitle by remember { mutableStateOf(false) }
     var menuTarget by remember { mutableStateOf<String?>(null) }
     var deleteTarget by remember { mutableStateOf<String?>(null) }
-    var undoHistory by remember { mutableStateOf(listOf<NoteDocument>()) }
-    var redoHistory by remember { mutableStateOf(listOf<NoteDocument>()) }
+    var undoHistory by remember { mutableStateOf(listOf<String>()) }
+    var redoHistory by remember { mutableStateOf(listOf<String>()) }
     var pendingExport by remember { mutableStateOf<PendingNoteExport?>(null) }
     val scope = rememberCoroutineScope()
 
@@ -610,12 +630,22 @@ private fun NotesTool(
             }
             return
         }
+        val existing = notes.firstOrNull { it.id == id }
+        val normalizedTitle = title.trim()
+        if (existing != null &&
+            existing.title == normalizedTitle &&
+            existing.markdown == markdownText &&
+            existing.labels.toSet() == currentLabels &&
+            existing.color == currentColor
+        ) {
+            return
+        }
         val parsedDocument = NoteDocumentCodec.fromLegacyContent(markdownText)
         document = parsedDocument
-        val pinned = notes.firstOrNull { it.id == id }?.pinned ?: false
+        val pinned = existing?.pinned ?: false
         val current = LocalNote(
             id = id,
-            title = title.trim(),
+            title = normalizedTitle,
             content = plainText(parsedDocument),
             updatedAt = System.currentTimeMillis(),
             pinned = pinned,
@@ -733,10 +763,10 @@ private fun NotesTool(
             if (uri.scheme == "content") {
                 context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
+            undoHistory = (undoHistory + markdownText).takeLast(50)
+            redoHistory = emptyList()
             markdownText = markdownText.trimEnd() + "\n\n![Image](" + uri.toString() + ")"
             document = NoteDocumentCodec.fromLegacyContent(markdownText)
-            undoHistory = (undoHistory + document).takeLast(50)
-            redoHistory = emptyList()
         }.onFailure {
             Toast.makeText(context, "Could not add image", Toast.LENGTH_LONG).show()
         }
@@ -976,8 +1006,9 @@ private fun NotesTool(
                     IconButton(
                         onClick = {
                             if (undoHistory.isNotEmpty()) {
-                                redoHistory = (redoHistory + document).takeLast(50)
-                                document = undoHistory.last()
+                                redoHistory = (redoHistory + markdownText).takeLast(50)
+                                markdownText = undoHistory.last()
+                                document = NoteDocumentCodec.fromLegacyContent(markdownText)
                                 undoHistory = undoHistory.dropLast(1)
                             }
                         },
@@ -986,8 +1017,9 @@ private fun NotesTool(
                     IconButton(
                         onClick = {
                             if (redoHistory.isNotEmpty()) {
-                                undoHistory = (undoHistory + document).takeLast(50)
-                                document = redoHistory.last()
+                                undoHistory = (undoHistory + markdownText).takeLast(50)
+                                markdownText = redoHistory.last()
+                                document = NoteDocumentCodec.fromLegacyContent(markdownText)
                                 redoHistory = redoHistory.dropLast(1)
                             }
                         },
@@ -1096,7 +1128,7 @@ private fun NotesTool(
                         value = markdownText,
                         onValueChange = { updated ->
                             if (updated != markdownText) {
-                                undoHistory = (undoHistory + document).takeLast(50)
+                                undoHistory = (undoHistory + markdownText).takeLast(50)
                                 redoHistory = emptyList()
                                 markdownText = updated
                                 document = NoteDocumentCodec.fromLegacyContent(updated)

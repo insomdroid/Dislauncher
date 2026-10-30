@@ -96,7 +96,7 @@ jobs:
           test -s "$KEYSTORE_FILE"
           export RELEASE_STORE_FILE="$KEYSTORE_FILE"
 
-          ./gradlew lintRelease assembleRelease --stacktrace
+          ./gradlew testReleaseUnitTest lintRelease assembleRelease --stacktrace
 
           APK="app/build/outputs/apk/release/app-release.apk"
           test -s "$APK"

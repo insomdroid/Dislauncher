@@ -147,13 +147,12 @@ private fun displayName(context: Context, uri: Uri): String {
     }.getOrNull()?.takeIf { it.isNotBlank() } ?: (uri.lastPathSegment ?: "Book")
 }
 
-private fun bookType(name: String, uri: Uri): String {
+private fun bookType(name: String): String {
     val value = name.substringAfterLast('.', "").lowercase()
-    return when {
-        value == "pdf" -> "pdf"
-        value == "epub" -> "epub"
-        value == "txt" || value == "text" -> "txt"
-        uri.toString().contains("pdf", true) -> "pdf"
+    return when (value) {
+        "pdf" -> "pdf"
+        "epub" -> "epub"
+        "txt", "text" -> "txt"
         else -> value
     }
 }
@@ -163,11 +162,17 @@ private const val MAX_TEXT_BYTES = MAX_BOOK_BYTES
 private const val MAX_EPUB_ENTRY_BYTES = MAX_BOOK_BYTES
 private const val MAX_EPUB_TOTAL_BYTES = MAX_BOOK_BYTES
 
-private fun copyBookToCache(context: Context, uri: Uri, suffix: String): File {
-    val digest = java.security.MessageDigest.getInstance("SHA-256")
+private fun bookCacheDigest(uri: Uri): String =
+    java.security.MessageDigest.getInstance("SHA-256")
         .digest(uri.toString().toByteArray(Charsets.UTF_8))
         .joinToString("") { "%02x".format(it) }
-    val target = File(context.cacheDir, "book_$digest.$suffix")
+
+private fun cachedBookFile(context: Context, uri: Uri, suffix: String): File? =
+    File(context.cacheDir, "book_${bookCacheDigest(uri)}.$suffix")
+        .takeIf { it.isFile && it.length() in 1..MAX_BOOK_BYTES }
+
+private fun copyBookToCache(context: Context, uri: Uri, suffix: String): File {
+    val target = File(context.cacheDir, "book_${bookCacheDigest(uri)}.$suffix")
     if (target.exists()) {
         if (target.length() in 1..MAX_BOOK_BYTES) return target
         target.delete()
@@ -236,10 +241,42 @@ private fun splitPages(text: String, limit: Int = 2600): List<String> {
     return result.ifEmpty { listOf(normalized) }
 }
 
-private fun decodeEntities(text: String): String = text
-    .replace("&nbsp;", " ").replace("&amp;", "&").replace("&lt;", "<")
-    .replace("&gt;", ">").replace("&quot;", "\"").replace("&#39;", "'")
-    .replace(Regex("&#(\\d+);")) { match -> match.groupValues[1].toIntOrNull()?.toChar()?.toString() ?: "" }
+private fun readTextPages(file: File, pageLimit: Int = 2600): List<String> {
+    val pages = mutableListOf<String>()
+    val page = StringBuilder(pageLimit)
+    file.bufferedReader(Charsets.UTF_8).use { reader ->
+        val buffer = CharArray(8 * 1024)
+        var previousSpace = false
+        while (true) {
+            val count = reader.read(buffer)
+            if (count < 0) break
+            for (index in 0 until count) {
+                val raw = buffer[index]
+                val char = when (raw) {
+                    '\r' -> '\n'
+                    '\t', '\u000B', '\u000C' -> ' '
+                    else -> raw
+                }
+                if (char == ' ' && previousSpace) continue
+                page.append(char)
+                previousSpace = char == ' ' || char == '\n'
+                if (page.length >= pageLimit) {
+                    val breakAt = page.lastIndexOfAny(charArrayOf('\n', ' ', '.', '!', '?'))
+                    val end = if (breakAt > pageLimit / 2) breakAt + 1 else page.length
+                    val completed = page.substring(0, end).trim()
+                    if (completed.isNotEmpty()) pages += completed
+                    page.delete(0, end)
+                    previousSpace = page.lastOrNull()?.isWhitespace() == true
+                }
+            }
+        }
+    }
+    page.toString().trim().takeIf { it.isNotEmpty() }?.let(pages::add)
+    return pages.ifEmpty { listOf("This book contains no readable text.") }
+}
+
+private fun decodeEntities(text: String): String =
+    android.text.Html.fromHtml(text, android.text.Html.FROM_HTML_MODE_LEGACY).toString()
 
 private fun htmlToText(html: String): String = decodeEntities(
     html.replace(Regex("(?is)<(script|style|head|svg)[^>]*>.*?</\\1>"), " ")
@@ -306,18 +343,22 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
                         .filter { it.endsWith(".xhtml", true) || it.endsWith(".html", true) || it.endsWith(".htm", true) }
                         .toList()
                 }
-                val baseUri = java.net.URI(base)
+                val baseUri = java.net.URI(base.replace(" ", "%20"))
                 var totalSectionBytes = 0L
-                val sections = paths.mapNotNull { relative ->
-                    val relativeUri = java.net.URI(relative)
-                    require(!relativeUri.isAbsolute && relativeUri.rawAuthority == null) {
+                val pages = mutableListOf<String>()
+                val chapters = mutableListOf<Pair<String, Int>>()
+                paths.forEach { relative ->
+                    val relativeUri = java.net.URI(relative.replace(" ", "%20"))
+                    require(!relativeUri.isAbsolute && relativeUri.rawAuthority == null &&
+                        !relativeUri.path.startsWith("/")) {
                         "Invalid EPUB section reference."
                     }
                     val normalized = baseUri.resolve(relativeUri).normalize().path.removePrefix("/")
-                    require(normalized.startsWith(base) && !normalized.split('/').contains("..")) {
+                    require(normalized.isNotBlank() && normalized != ".." &&
+                        !normalized.startsWith("../") && !normalized.split('/').contains("..")) {
                         "Invalid EPUB section path."
                     }
-                    val entry = zip.getEntry(normalized) ?: return@mapNotNull null
+                    val entry = zip.getEntry(normalized) ?: return@forEach
                     val declaredSize = entry.size.coerceAtLeast(0L)
                     totalSectionBytes += declaredSize
                     require(totalSectionBytes <= MAX_EPUB_TOTAL_BYTES) {
@@ -325,16 +366,12 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
                     }
                     val remainingBytes = (MAX_EPUB_TOTAL_BYTES - (totalSectionBytes - declaredSize)).coerceAtLeast(0L)
                     val text = htmlToText(readZipEntryText(zip, entry, minOf(MAX_EPUB_ENTRY_BYTES, remainingBytes)))
-                    text.takeIf { it.isNotBlank() }?.let {
-                        relative.substringAfterLast('/').substringBeforeLast('.') to it
+                    if (text.isNotBlank()) {
+                        val chapterTitle = normalized.substringAfterLast('/').substringBeforeLast('.')
+                            .replace(Regex("[-_]"), " ").trim()
+                        if (chapterTitle.isNotBlank()) chapters += chapterTitle to pages.size
+                        pages.addAll(splitPages(text))
                     }
-                }
-                val pages = mutableListOf<String>()
-                val chapters = mutableListOf<Pair<String, Int>>()
-                sections.forEach { (title, sectionText) ->
-                    val chapterTitle = title.replace(Regex("[-_]"), " ").trim()
-                    if (chapterTitle.isNotBlank()) chapters += chapterTitle to pages.size
-                    pages.addAll(splitPages(sectionText))
                 }
                 BookContent(pages.ifEmpty { listOf("This book contains no readable text.") }, chapters)
             }
@@ -344,10 +381,7 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
             require(file.length() in 1..MAX_TEXT_BYTES) {
                 "Books larger than 100 MB are not supported."
             }
-            val text = file.inputStream().buffered().use { input ->
-                input.reader(Charsets.UTF_8).readText()
-            }
-            BookContent(splitPages(text))
+            BookContent(readTextPages(file))
         }
     }
     bookContentCache.put("${book.id}:${book.uri}", content)
@@ -360,13 +394,36 @@ private val bookCoverCache = object : LruCache<String, Bitmap>(
     override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
 }
 
+private fun removeBookResources(context: Context, book: BookEntry, remainingBooks: List<BookEntry>) {
+    val contentKey = "${book.id}:${book.uri}"
+    bookContentCache.remove(contentKey)
+    bookCoverCache.remove(contentKey)
+    if (remainingBooks.any { it.uri == book.uri }) return
+
+    val digest = bookCacheDigest(Uri.parse(book.uri))
+    val pdfPath = File(context.cacheDir, "book_$digest.pdf").absolutePath
+    pdfPageCache.snapshot().keys
+        .filter { it.startsWith("$pdfPath:") }
+        .forEach(pdfPageCache::remove)
+
+    context.cacheDir.listFiles().orEmpty()
+        .filter { it.name.startsWith("book_$digest.") }
+        .forEach { it.delete() }
+
+    runCatching {
+        context.contentResolver.releasePersistableUriPermission(
+            Uri.parse(book.uri), android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+        )
+    }
+}
+
 private fun loadBookCover(context: Context, book: BookEntry): Bitmap? {
     bookCoverCache.get("${book.id}:${book.uri}")?.let { return it }
     val result = runCatching {
         when (book.type) {
-            "pdf" -> copyBookToCache(context, Uri.parse(book.uri), "pdf").let { renderPdfPage(it, 0) }
+            "pdf" -> cachedBookFile(context, Uri.parse(book.uri), "pdf")?.let { renderPdfPage(it, 0) }
             "epub" -> {
-                val file = copyBookToCache(context, Uri.parse(book.uri), "epub")
+                val file = cachedBookFile(context, Uri.parse(book.uri), "epub") ?: return@runCatching null
                 ZipFile(file).use { zip ->
                     val imageEntry = zip.entries().asSequence().firstOrNull {
                         !it.isDirectory && it.size in 1..(8L * 1024L * 1024L) &&
@@ -439,7 +496,7 @@ private fun renderPdfPage(file: File, pageIndex: Int): Bitmap {
             val scale = minOf(900f / page.width, kotlin.math.sqrt(maxPixels.toDouble() / (page.width.toLong() * page.height)).toFloat())
             val width = (page.width * scale).toInt().coerceAtLeast(1)
             val height = (page.height * scale).toInt().coerceAtLeast(1)
-            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             bitmap.eraseColor(android.graphics.Color.WHITE)
             page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
             pdfPageCache.put(cacheKey, bitmap)
@@ -473,12 +530,18 @@ internal fun BooksTool(onBack: () -> Unit) {
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
-            runCatching { context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) }
             val name = displayName(context, uri)
-            val type = bookType(name, uri)
+            val type = bookType(name)
             if (type !in listOf("pdf", "epub", "txt", "text")) {
                 error = "Choose an EPUB, PDF, or TXT file."
             } else {
+                if (uri.scheme == "content") {
+                    runCatching {
+                        context.contentResolver.takePersistableUriPermission(
+                            uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        )
+                    }
+                }
                 val existing = books.firstOrNull { it.uri == uri.toString() }
                 val book = existing ?: BookEntry(UUID.randomUUID().toString(), uri.toString(), name.substringBeforeLast('.'), type)
                 books = if (existing == null) books + book else books
@@ -508,6 +571,11 @@ internal fun BooksTool(onBack: () -> Unit) {
             if (book.type == "pdf" && loaded.pdfFile != null) {
                 pdfBitmap = withContext(Dispatchers.IO) { renderPdfPage(loaded.pdfFile, currentPage) }
             }
+        } catch (e: OutOfMemoryError) {
+            bookContent = null
+            pdfBitmap = null
+            error = "This book could not be opened because the device ran out of memory. Close other apps and try again."
+            System.gc()
         } catch (e: Exception) {
             error = e.message ?: "Unable to open this book."
         } finally {
@@ -779,8 +847,10 @@ internal fun BooksTool(onBack: () -> Unit) {
             text = { Text("Remove \"${target.title}\" from your library? The original file will not be deleted.") },
             confirmButton = {
                 TextButton(onClick = {
-                    books = books.filterNot { it.id == target.id }
+                    val remaining = books.filterNot { it.id == target.id }
+                    books = remaining
                     writeBookLibrary(context, books)
+                    removeBookResources(context, target, remaining)
                     pendingDelete = null
                 }) { Text("Remove") }
             },
