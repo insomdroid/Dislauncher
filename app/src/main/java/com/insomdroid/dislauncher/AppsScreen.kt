@@ -214,6 +214,10 @@ internal fun AppsScreen(
     var selectedFolder by remember { mutableStateOf<String?>(null) }
     var selectedFolderApp by remember { mutableStateOf<LauncherApp?>(null) }
     val context = androidx.compose.ui.platform.LocalContext.current
+    val isIndonesian = context.resources.configuration.locales[0]?.language == "id"
+    fun builtInToolText(english: String, indonesian: String): String =
+        if (isIndonesian) indonesian else english
+
     LaunchedEffect(isActive, preferences.autoLaunchKeyboard, preferences.showSearchBar) {
         if (isActive && preferences.autoLaunchKeyboard && preferences.showSearchBar) {
             delay(180L)
@@ -239,7 +243,10 @@ internal fun AppsScreen(
                 if (!searching && preferences.showAlphabetIndex && filtered.isNotEmpty()) {
                     item(key = "drawer-usage-hint") {
                         Text(
-                            "builtInToolText("Swipe letters to jump · # is numbers/symbols · Long-press an app for more actions", "Usap huruf untuk berpindah · # untuk angka/simbol · Tekan lama aplikasi untuk tindakan lain")",
+                            builtInToolText(
+                                "Swipe the letters to jump · # is for numbers or symbols · Long-press an app for more actions",
+                                "Usap huruf untuk berpindah · # untuk angka atau simbol · Tekan lama aplikasi untuk tindakan lainnya"
+                            ),
                             color = secondary,
                             fontSize = 11.sp,
                             modifier = Modifier.padding(start = 8.dp, top = 2.dp, bottom = 10.dp)
