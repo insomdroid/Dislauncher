@@ -865,11 +865,18 @@ private fun NotesTool(
                             modifier = Modifier.padding(horizontal = 24.dp)) {
                             Icon(Icons.Outlined.NoteAdd, contentDescription = null, modifier = Modifier.size(38.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(if (searchQuery.isBlank() && !pinnedOnly) "No notes yet" else "No matching notes",
-                                style = MaterialTheme.typography.titleMedium)
+                            val notesLibraryIsEmpty = notes.isEmpty() &&
+                                searchQuery.isBlank() && !pinnedOnly && activeLabel == null
                             Text(
-                                if (searchQuery.isBlank() && !pinnedOnly) "Tap + to create your first note. Write in plain text or Markdown."
-                                else "Try another search or filter.",
+                                if (notesLibraryIsEmpty) "No notes yet" else "No matching notes",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                when {
+                                    notesLibraryIsEmpty -> "Tap + to create your first note. Write in plain text or Markdown."
+                                    pinnedOnly && searchQuery.isBlank() -> "No pinned notes. Show all notes or pin a note."
+                                    else -> "Try another search or filter."
+                                },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center
