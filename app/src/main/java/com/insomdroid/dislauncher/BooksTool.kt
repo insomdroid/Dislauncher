@@ -159,7 +159,6 @@ private fun bookType(name: String): String {
 
 private const val MAX_BOOK_BYTES = 100L * 1024L * 1024L
 private const val MAX_TEXT_BYTES = MAX_BOOK_BYTES
-private const val MAX_EPUB_ENTRY_BYTES = MAX_BOOK_BYTES
 private const val MAX_EPUB_TOTAL_BYTES = MAX_BOOK_BYTES
 
 private fun bookCacheDigest(uri: Uri): String =
@@ -223,24 +222,6 @@ private fun readZipEntryText(zip: ZipFile, entry: java.util.zip.ZipEntry, limit:
     return output.toString(Charsets.UTF_8.name())
 }
 
-private fun splitPages(text: String, limit: Int = 2600): List<String> {
-    val normalized = text.replace("\r\n", "\n").replace('\r', '\n')
-        .replace(Regex("[\\t ]+"), " ").trim()
-    if (normalized.isBlank()) return listOf("This book contains no readable text.")
-    val result = mutableListOf<String>()
-    var start = 0
-    while (start < normalized.length) {
-        var end = (start + limit).coerceAtMost(normalized.length)
-        if (end < normalized.length) {
-            val breakAt = normalized.lastIndexOfAny(charArrayOf('\n', ' ', '.', '!', '?'), end)
-            if (breakAt > start + limit / 2) end = breakAt + 1
-        }
-        result += normalized.substring(start, end).trim()
-        start = end
-    }
-    return result.ifEmpty { listOf(normalized) }
-}
-
 private fun readTextPages(file: File, pageFile: File): List<String> {
     val writer = DiskBackedBookPages.Writer(pageFile)
     return try {
@@ -258,16 +239,6 @@ private fun readTextPages(file: File, pageFile: File): List<String> {
         throw failure
     }
 }
-
-private fun decodeEntities(text: String): String =
-    android.text.Html.fromHtml(text, android.text.Html.FROM_HTML_MODE_LEGACY).toString()
-
-private fun htmlToText(html: String): String = decodeEntities(
-    html.replace(Regex("(?is)<(script|style|head|svg)[^>]*>.*?</\\1>"), " ")
-        .replace(Regex("(?i)<br\\s*/?>|</(p|div|h[1-6]|li|tr|section|article)>"), "\n\n")
-        .replace(Regex("(?s)<[^>]+>"), " ")
-).replace(Regex("[ \\t]+"), " ").replace(Regex(" *\\n *"), "\n")
-    .replace(Regex("\\n{3,}"), "\n\n").trim()
 
 private class BoundedEpubInputStream(
     input: java.io.InputStream,
