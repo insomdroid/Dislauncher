@@ -122,7 +122,7 @@ internal fun WelcomeOnboardingScreen(
                 )
             }
             Spacer(Modifier.weight(1f))
-            if (page > 0) TextButton(onClick = ::skipOnboarding) { Text(tx("Skip", "Lewati")) }
+            TextButton(onClick = ::skipOnboarding) { Text(tx("Skip setup", "Lewati pengaturan")) }
         }
 
         Box(
@@ -352,7 +352,7 @@ internal fun WelcomeOnboardingScreen(
                     TextButton(onClick = { page-- }) { Text(tx("Back", "Kembali")) }
                 } else {
                     Text(
-                        tx("STEP 1 OF $pageCount", "LANGKAH 1 DARI $pageCount"),
+                        tx("STEP ${page + 1} OF $pageCount", "LANGKAH ${page + 1} DARI $pageCount"),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
