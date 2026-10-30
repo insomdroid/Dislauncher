@@ -271,7 +271,7 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
             BookContent(object : AbstractList<String>() {
                 override val size: Int = count
                 override fun get(index: Int): String {
-                    if (index !in 0 until size) throw IndexOutOfBoundsException(index)
+                    if (index !in 0 until size) throw IndexOutOfBoundsException("Index $index is outside 0 until $size")
                     return "PDF page ${index + 1}"
                 }
             }, pdfFile = file)
