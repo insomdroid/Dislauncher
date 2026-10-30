@@ -436,7 +436,11 @@ private fun priorityColor(priority: Int): Color = when (priority) {
 @Composable
 internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     if (tool == BuiltInTool.BOOKS) {
-        BoxWithConstraints(Modifier.fillMaxSize()) {
+        BoxWithConstraints(
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
             Box(
                 Modifier
                     .widthIn(max = 840.dp)
