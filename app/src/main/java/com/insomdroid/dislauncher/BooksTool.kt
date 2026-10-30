@@ -746,7 +746,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                         items(visibleBooks, key = { it.id }) { book ->
                             Surface(
                                 modifier = Modifier.fillMaxWidth().clickable { selectedBook = book },
-                                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
                                 color = MaterialTheme.colorScheme.surfaceContainerLow,
                                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
                             ) {
