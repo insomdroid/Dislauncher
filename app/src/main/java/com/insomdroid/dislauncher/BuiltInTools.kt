@@ -459,9 +459,9 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     }
     val title = when (tool) {
         BuiltInTool.NOTES -> "Notes"
-        BuiltInTool.CALCULATOR -> if (calculatorShowingHistory) "History" else "Calc"
-        BuiltInTool.CALENDAR -> "Cal"
-        BuiltInTool.UNIT_CONVERTER -> "Conv"
+        BuiltInTool.CALCULATOR -> if (calculatorShowingHistory) "History" else "Calculator"
+        BuiltInTool.CALENDAR -> "Calendar"
+        BuiltInTool.UNIT_CONVERTER -> "Unit Converter"
     }
     Scaffold(
                 containerColor = MaterialTheme.colorScheme.background,
@@ -873,7 +873,7 @@ private fun NotesTool(
                             )
                             Text(
                                 when {
-                                    notesLibraryIsEmpty -> "Tap + to create your first note. Write in plain text or Markdown."
+                                    notesLibraryIsEmpty -> "Tap + to create a note. Just write normally; use Markdown only when you want simple formatting, such as **bold** or # headings."
                                     pinnedOnly && searchQuery.isBlank() -> "No pinned notes. Show all notes or pin a note."
                                     else -> "Try another search or filter."
                                 },
@@ -1740,7 +1740,7 @@ private fun CalendarTool(
                             "Akses kalender belum diizinkan. Izinkan akses untuk melihat acara dari kalender perangkat."
                         )
                     } else {
-                        "No events or tasks for this day. Tap + to add a task."
+                        "Nothing is scheduled for this day. Tap + to add a task or reminder. Device calendar events appear here when calendar access is enabled."
                     },
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -1794,8 +1794,13 @@ private fun CalendarTool(
                                 Surface(color = priorityColor(task.priority), shape = RoundedCornerShape(50)) {                                    Text(priorityLabel(task.priority), modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface)
                                 }
-                                if (task.time.isNotBlank()) Text(task.time, style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                if (task.time.isNotBlank()) {
+                                    Text(task.time, style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                } else {
+                                    Text("No time", style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
                                 if (task.type == "reminder") Text("Reminder", style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.primary)
                             }
