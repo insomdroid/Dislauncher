@@ -89,4 +89,35 @@ class NoteDocumentCodecTest {
         assertEquals(listOf("https://example.com", "http://example.com"), links)
     }
 
+    @Test
+    fun diskBackedReaderPagesCanBeReadInOrderAndRevisited() {
+        val file = java.io.File.createTempFile("reader-pages", ".bin")
+        try {
+            val writer = DiskBackedBookPages.Writer(file, pageLimit = 32)
+            writer.append("First page text.")
+            writer.finishSection()
+            writer.append("Second page text.")
+            val pages = writer.finish()
+
+            assertEquals(2, pages.size)
+            assertEquals("First page text.", pages[0])
+            assertEquals("Second page text.", pages[1])
+            assertEquals("First page text.", pages[0])
+        } finally {
+            file.delete()
+        }
+    }
+
+    @Test
+    fun diskBackedReaderProvidesPlaceholderForEmptyInput() {
+        val file = java.io.File.createTempFile("reader-pages", ".bin")
+        try {
+            val pages = DiskBackedBookPages.Writer(file).finish()
+            assertEquals(1, pages.size)
+            assertEquals("This book contains no readable text.", pages[0])
+        } finally {
+            file.delete()
+        }
+    }
+
 }
