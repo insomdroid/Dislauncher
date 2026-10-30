@@ -32,7 +32,7 @@ val parsedVersion = Regex("^(\\d+)\\.(\\d+)\\.(\\d+)$").matchEntire(releaseTag)
 // and the eventual stable release upgrades the development APK without an uninstall.
 // Outside GitHub Actions (including F-Droid builds), fall back to the latest stable release.
 val developmentVersionName = System.getenv("APP_VERSION_NAME")?.takeIf { it.isNotBlank() }
-    ?: "1.3.3"
+    ?: "1.3.5"
 val developmentBuildNumber = System.getenv("APP_BUILD_NUMBER")?.toIntOrNull() ?: 0
 val appVersionName = parsedVersion?.value ?: developmentVersionName
 val appVersionCode = (parsedVersion?.value ?: developmentVersionName)
@@ -98,8 +98,8 @@ android {
         targetSdk = 36
         // Keep literal release values here so F-Droid can discover them without evaluating Gradle.
         // CI overrides the packaged version through androidComponents below.
-        versionCode = 103039999
-        versionName = "1.3.3"
+        versionCode = 103059999
+        versionName = "1.3.5"
     }
 
     signingConfigs {

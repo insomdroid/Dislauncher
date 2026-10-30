@@ -1,5 +1,40 @@
 # Dislauncher Changelog
 
+## 1.3.5 | 30 October 2026
+#### What's New
+- **Built-in Books Reader:** Read EPUB, PDF, and TXT files offline, with Grid and List library views.
+- **Home Clock Styles:** Choose from Vertical Stack, Binary Dot, Dual Bar, and Text clock layouts.
+
+#### Improvements
+- Refined the layout and visual consistency across built-in tools.
+- Improved the Books library, cover handling, reading controls, and page navigation.
+- Improved book loading and memory usage with disk-backed page storage and bounded processing.
+- Improved Markdown editing, including list continuation and formatting preservation.
+- Added separate Undo and Redo history with a 50-step limit.
+- Improved reminder scheduling when the device clock or time zone changes.
+- Improved app drawer ordering and folder filtering performance.
+- Improved wallpaper contrast calculation efficiency.
+- Added clearer onboarding explanations for permissions and handling of permanently denied permissions.
+- Reduced unnecessary preference writes.
+
+#### Fixes
+- Fixed Books reader layout, scrolling, and navigation issues.
+- Fixed Markdown parsing and note round-trip preservation.
+- Protected notes and calendar data from being overwritten when stored data is corrupted.
+- Fixed built-in tool icon contrast in dark and AMOLED themes.
+- Fixed Books library text and menu visibility in List view.
+- Fixed reminder scheduling after system time and time zone changes.
+
+## 1.3.4 | 28 October 2026
+#### Improvements
+- Improved app drawer alphabet navigation responsiveness.
+- Added a direct shortcut to the top of the app list in the alphabet scrubber.
+- Standardized accent presets and notification dot colors for more consistent theming.
+- Added optional descriptions to Settings choices and Home screen settings.
+
+#### Fixes
+- Fixed built-in tool icon contrast in Light mode.
+
 ## 1.3.3 | 25 October 2026
 #### What's New
 - **Geist Mono:** Replaced Overpass Mono with the more compact Geist Mono font, bundled locally for offline use.
