@@ -424,7 +424,7 @@ internal fun BooksTool(onBack: () -> Unit) {
 
     if (selectedBook == null) {
         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding()) {
-          Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+          Column(Modifier.fillMaxSize().padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Back") }
                 if (searchExpanded) {
@@ -456,7 +456,7 @@ internal fun BooksTool(onBack: () -> Unit) {
             val visibleBooks = books.filter { it.title.contains(searchQuery, ignoreCase = true) && (!pinnedOnly || it.pinned) }
                 .let { list -> if (sortByTitle) list.sortedWith(compareByDescending<BookEntry> { it.pinned }.thenBy { it.title.lowercase() })
                     else list.sortedWith(compareByDescending<BookEntry> { it.pinned }) }
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(selected = !pinnedOnly, onClick = { pinnedOnly = false }, label = { Text("All books") })
                 FilterChip(selected = pinnedOnly, onClick = { pinnedOnly = true }, label = { Text("Pinned") })
             }
@@ -473,7 +473,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(2),
                         modifier = Modifier.weight(1f).fillMaxWidth(),
-                        contentPadding = PaddingValues(bottom = 96.dp),
+                        contentPadding = PaddingValues(start = 4.dp, end = 4.dp, bottom = 96.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
