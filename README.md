@@ -1,87 +1,137 @@
-# Dislauncher
+<!-- Dislauncher README -->
 
-**A quieter home screen for a more focused phone.**
+<div align="center">
+  <img src="Screenshot/Minimalist Dislauncher Logo on Black.png" alt="Dislauncher logo" width="128" />
 
-Dislauncher is an Android launcher designed to make your phone feel simpler. It puts your favourite apps, useful information, and everyday tools within easy reach—without turning your Home screen into another endless wall of icons.
+  <h1>Dislauncher</h1>
 
-Keep what matters close. Leave the rest out of the way.
+  **A quieter home screen for a more focused phone.**
 
-## A home screen that feels like yours
+  A minimal Android launcher that keeps your favourite apps, useful information, and everyday tools close — without the clutter.
+
+  <p>
+    <a href="https://github.com/insomdroid/Dislauncher/releases/latest">
+      <img src="https://img.shields.io/github/v/release/insomdroid/Dislauncher?display_name=tag&style=for-the-badge&color=7F7C83" alt="Latest release" />
+    </a>
+    <img src="https://img.shields.io/badge/Android-8.0%2B-7F7C83?style=for-the-badge&logo=android&logoColor=white" alt="Android 8.0 and newer" />
+    <a href="LICENSE">
+      <img src="https://img.shields.io/github/license/insomdroid/Dislauncher?style=for-the-badge&color=7F7C83" alt="MIT License" />
+    </a>
+  </p>
+
+  <p>
+    <a href="https://github.com/insomdroid/Dislauncher/releases/latest"><strong>Download</strong></a>
+    &nbsp;·&nbsp;
+    <a href="https://insomdroid.github.io/Dislauncher/">Website</a>
+    &nbsp;·&nbsp;
+    <a href="https://github.com/insomdroid/Dislauncher/issues">Feedback</a>
+  </p>
+</div>
+
+---
+
+## A home screen with room to breathe
 
 <p align="center">
-  <img src="Screenshot/Screenshot_20261022-221222_Dislauncher.png" alt="Dislauncher Home screen" width="22%" />
-  <img src="Screenshot/Screenshot_20261022-221233_Dislauncher.png" alt="Dislauncher app drawer" width="22%" />
-  <img src="Screenshot/Screenshot_20261022-221259_Dislauncher.png" alt="Dislauncher built-in tools" width="22%" />
-  <img src="Screenshot/Screenshot_20261022-221309_Dislauncher.png" alt="Dislauncher Notes" width="22%" />
-  <img src="Screenshot/Screenshot_20261022-221316_Dislauncher.png" alt="Dislauncher Calendar" width="22%" />
-  <img src="Screenshot/Screenshot_20261022-221321_Dislauncher.png" alt="Dislauncher personalization" width="22%" />
-  <img src="Screenshot/Screenshot_20261022-221335_Dislauncher.png" alt="Dislauncher settings" width="22%" />
-  <img src="Screenshot/Screenshot_20261022-221343_Dislauncher.png" alt="Dislauncher appearance" width="22%" />
+  <img src="Screenshot/Screenshot_20261022-221222_Dislauncher.png" alt="Dislauncher home screen" width="31%" />
+  <img src="Screenshot/Screenshot_20261022-221233_Dislauncher.png" alt="Dislauncher app drawer" width="31%" />
+  <img src="Screenshot/Screenshot_20261022-221335_Dislauncher.png" alt="Dislauncher settings" width="31%" />
 </p>
 
-## Everything you need, without the clutter
+Dislauncher is built around a simple idea: your phone should make the things you use easier to reach, not compete for your attention. Keep a small set of favourite apps on your Home screen, find the rest in a straightforward app drawer, and open practical tools when you need them.
 
-### A focused Home screen
-See the time and date, keep favourite apps close, and check useful details such as weather, calendar events, and network information. Choose a clock style that suits your screen and your taste.
+## Highlights
 
-### An app drawer that stays organised
-Find apps quickly with a clean, text-focused app list. Arrange your apps, use folders, hide apps you don't need to see, and personalise app icons with compatible icon packs.
+- **A focused Home screen** — time, date, favourite apps, and optional at-a-glance information.
+- **A text-focused app drawer** — organise apps, create folders, hide apps, and navigate your list.
+- **Useful tools included** — read books, write notes, manage tasks and events, calculate, and convert units.
+- **Personalise the essentials** — Light, Dark, and AMOLED themes, accent colours, fonts, text sizing, wallpapers, and icon packs.
+- **Optional extras** — weather, music controls, notification dots, and gestures.
 
-### Everyday tools built in
-Useful tools are already part of Dislauncher, so you can get things done without filling your phone with extra apps.
+## Screenshots
 
-- **Books:** Read EPUB, PDF, and TXT files in one place. Browse your library in Grid or List view.
-- **Notes:** Capture ideas in Markdown, preview your writing, search and pin important notes, add images, and import or export your notes.
-- **Calendar:** See your month and daily agenda, with device calendar events alongside your own tasks and reminders.
-- **Calculator:** Work through everyday sums and more advanced calculations.
-- **Unit Converter:** Convert common measurements such as length, weight, temperature, speed, and area.
+<p align="center">
+  <img src="Screenshot/Screenshot_20261022-221222_Dislauncher.png" alt="Home screen" width="24%" />
+  <img src="Screenshot/Screenshot_20261022-221233_Dislauncher.png" alt="App drawer" width="24%" />
+  <img src="Screenshot/Screenshot_20261022-221259_Dislauncher.png" alt="Built-in tools" width="24%" />
+  <img src="Screenshot/Screenshot_20261022-221321_Dislauncher.png" alt="Personalisation" width="24%" />
+</p>
+<p align="center">
+  <img src="Screenshot/Screenshot_20261022-221309_Dislauncher.png" alt="Notes" width="24%" />
+  <img src="Screenshot/Screenshot_20261022-221316_Dislauncher.png" alt="Calendar" width="24%" />
+  <img src="Screenshot/Screenshot_20261022-221335_Dislauncher.png" alt="Settings" width="24%" />
+  <img src="Screenshot/Screenshot_20261022-221343_Dislauncher.png" alt="Appearance settings" width="24%" />
+</p>
 
-### Make it your own
-Choose the look that feels right: Light, Dark, or AMOLED-friendly themes, accent colours, fonts, text sizes, wallpapers, and app icon styles. Keep the screen minimal or add the details that help you through the day.
+## Features
 
-## Made for everyday use
+### Home screen and app drawer
 
-- A clean interface that keeps attention on what matters.
-- Quick access to favourite apps and useful tools.
-- Optional weather, music controls, notification dots, and gestures.
-- Notes and personal reminders that stay available on your device.
-- No account required.
+Keep favourite apps within easy reach and choose how your Home screen displays the time and date. Optional information can include weather, calendar events, and network details.
 
-## Get Dislauncher
+The app drawer keeps the full app list easy to scan. Organise apps into folders, hide entries you do not need, and customise app icons with compatible icon packs.
 
-<a href="https://github.com/insomdroid/Dislauncher/releases/latest"><strong>Download the latest release</strong></a>
+### Built-in tools
 
-The latest stable APK is available from the official GitHub Releases page.
+Dislauncher includes a small collection of everyday tools:
 
-1. Open the latest release.
-2. Download the APK from **Assets**.
-3. Open the downloaded file and follow Android's installation prompts.
-4. Set Dislauncher as your default Home app.
+| Tool | What it does |
+| --- | --- |
+| **Books** | Read EPUB, PDF, and TXT files. Browse your library in Grid or List view. |
+| **Notes** | Write and preview Markdown notes, search and pin notes, add images, and import or export your writing. |
+| **Calendar** | View your month and agenda, including device calendar events and your own tasks. |
+| **Calculator** | Handle everyday calculations and more advanced expressions. |
+| **Unit Converter** | Convert measurements including length, weight, temperature, speed, and area. |
 
-[View all releases](https://github.com/insomdroid/Dislauncher/releases)
+### Personalisation
 
-### Try the latest changes with Nightly
+Choose Light, Dark, or AMOLED themes, adjust accent colours and text sizes, select fonts, set wallpapers, and use compatible icon packs. Optional features let you decide how much information appears on your Home screen.
 
-Want to see what's being worked on before the next stable release? Nightly builds let you try recent changes early.
+## Requirements
 
-[Find Nightly builds in GitHub Actions](https://github.com/insomdroid/Dislauncher/actions/workflows/build-apk.yml)
+- Android 8.0 (Oreo) or newer.
+- Set Dislauncher as your device's default Home app to use it as your launcher.
 
-Nightly builds are previews, may contain unfinished changes, and are not official stable releases. For everyday use, choose the latest release.
+Some optional features request Android permissions when you choose to use them. See [Privacy and permissions](PRIVACY.md) for details.
+
+## Installation
+
+1. Open the [latest GitHub Release](https://github.com/insomdroid/Dislauncher/releases/latest).
+2. Download the APK from the release's **Assets** section.
+3. Open the downloaded APK and follow Android's installation prompts.
+4. When prompted, choose Dislauncher as your default Home app.
+
+Browse [all releases](https://github.com/insomdroid/Dislauncher/releases).
+
+### Nightly builds
+
+Nightly builds let you try recent development changes before the next stable release.
+
+[Browse Nightly builds in GitHub Actions](https://github.com/insomdroid/Dislauncher/actions/workflows/build-apk.yml)
+
+These builds are previews and may contain unfinished changes. They are not stable releases; use the latest GitHub Release for everyday use.
 
 ## Privacy
 
-Dislauncher does not require an account. Some optional features may ask for permission when you choose to use them.
+Dislauncher does not require an account. Optional features may request permissions when you enable or use them.
 
 - [Privacy and permissions](PRIVACY.md)
 - [APK safety and updates](APK_SAFETY.md)
 
-## Explore the project
+## Project
 
-- [Project website](https://insomdroid.github.io/Dislauncher/)
+- [Website](https://insomdroid.github.io/Dislauncher/)
 - [Source code](https://github.com/insomdroid/Dislauncher)
-- [Report a bug or suggest an idea](https://github.com/insomdroid/Dislauncher/issues)
+- [Changelog](CHANGELOG.md)
+- [Report a bug or request a feature](https://github.com/insomdroid/Dislauncher/issues)
 - [Support the project](https://ko-fi.com/insomdroid)
+
+## License
+
+Dislauncher is open source under the [MIT License](LICENSE).
 
 ---
 
-*Dislauncher is built for people who want a simpler, more intentional Android home screen.*
+<div align="center">
+  <sub>Keep what matters close. Leave the rest out of the way.</sub>
+</div>
