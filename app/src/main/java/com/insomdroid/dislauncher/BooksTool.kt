@@ -159,10 +159,9 @@ private fun bookType(name: String, uri: Uri): String {
 }
 
 private const val MAX_BOOK_BYTES = 100L * 1024L * 1024L
-private const val MAX_TEXT_BYTES = 16L * 1024L * 1024L
-private const val MAX_EPUB_ENTRY_BYTES = 4L * 1024L * 1024L
-private const val MAX_EPUB_TOTAL_BYTES = 32L * 1024L * 1024L
-private const val MAX_PDF_PAGES = 5_000
+private const val MAX_TEXT_BYTES = MAX_BOOK_BYTES
+private const val MAX_EPUB_ENTRY_BYTES = MAX_BOOK_BYTES
+private const val MAX_EPUB_TOTAL_BYTES = MAX_BOOK_BYTES
 
 private fun copyBookToCache(context: Context, uri: Uri, suffix: String): File {
     val digest = java.security.MessageDigest.getInstance("SHA-256")
@@ -187,8 +186,9 @@ private fun copyBookToCache(context: Context, uri: Uri, suffix: String): File {
             }
         }
         if (!temporary.renameTo(target)) {
-            temporary.copyTo(target, overwrite = true)
-            temporary.delete()
+            // Keep the completed temporary file if the atomic rename is unavailable.
+            // A later read can use it only after it has been moved to the final name.
+            throw java.io.IOException("Unable to finalize the cached book file.")
         }
     } catch (e: Exception) {
         temporary.delete()
@@ -199,19 +199,19 @@ private fun copyBookToCache(context: Context, uri: Uri, suffix: String): File {
 
 private fun readZipEntryText(zip: ZipFile, entry: java.util.zip.ZipEntry, limit: Long): String {
     require(entry.size < 0L || entry.size <= limit) { "This EPUB contains an oversized section." }
-    return zip.getInputStream(entry).bufferedReader(Charsets.UTF_8).use { reader ->
-        val result = StringBuilder()
-        val buffer = CharArray(8 * 1024)
+    val output = java.io.ByteArrayOutputStream()
+    zip.getInputStream(entry).buffered().use { input ->
+        val buffer = ByteArray(8 * 1024)
         var total = 0L
         while (true) {
-            val count = reader.read(buffer)
+            val count = input.read(buffer)
             if (count < 0) break
             total += count
             require(total <= limit) { "This EPUB contains an oversized section." }
-            result.append(buffer, 0, count)
+            output.write(buffer, 0, count)
         }
-        result.toString()
     }
+    return output.toString(Charsets.UTF_8.name())
 }
 
 private fun splitPages(text: String, limit: Int = 2600): List<String> {
@@ -244,11 +244,15 @@ private fun htmlToText(html: String): String = decodeEntities(
 ).replace(Regex("[ \\t]+"), " ").replace(Regex(" *\\n *"), "\n")
     .replace(Regex("\\n{3,}"), "\n\n").trim()
 
-private val bookContentCache = object : LruCache<String, BookContent>(8 * 1024 * 1024) {
+private val bookContentCache = object : LruCache<String, BookContent>(
+    (Runtime.getRuntime().maxMemory() / 32L).coerceIn(2L * 1024L * 1024L, 8L * 1024L * 1024L).toInt()
+) {
     override fun sizeOf(key: String, value: BookContent): Int =
         (value.pages.sumOf { it.length.toLong() } * 2L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
 }
-private val pdfPageCache = object : LruCache<String, Bitmap>(12 * 1024 * 1024) {
+private val pdfPageCache = object : LruCache<String, Bitmap>(
+    (Runtime.getRuntime().maxMemory() / 16L).coerceIn(2L * 1024L * 1024L, 12L * 1024L * 1024L).toInt()
+) {
     override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
 }
 
@@ -259,8 +263,14 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
         "pdf" -> {
             val file = copyBookToCache(context, uri, "pdf")
             val count = PdfRenderer(android.os.ParcelFileDescriptor.open(file, android.os.ParcelFileDescriptor.MODE_READ_ONLY)).use { it.pageCount }
-            require(count in 1..MAX_PDF_PAGES) { "This PDF has an unsupported page count (maximum 5,000)." }
-            BookContent((0 until count).map { "PDF page ${it + 1}" }, pdfFile = file)
+            require(count > 0) { "This PDF contains no pages." }
+            BookContent(object : AbstractList<String>() {
+                override val size: Int = count
+                override fun get(index: Int): String {
+                    if (index !in 0 until size) throw IndexOutOfBoundsException(index)
+                    return "PDF page ${index + 1}"
+                }
+            }, pdfFile = file)
         }
         "epub" -> {
             val file = copyBookToCache(context, uri, "epub")
@@ -289,15 +299,14 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
                     zip.entries().asSequence().map { it.name }
                         .filter { it.endsWith(".xhtml", true) || it.endsWith(".html", true) || it.endsWith(".htm", true) }
                         .take(501).toList()
-                }.take(501)
-                require(paths.size <= 500) { "This EPUB has too many sections (maximum 500)." }
+                }
                 var totalSectionBytes = 0L
                 val sections = paths.mapNotNull { relative ->
                     val normalized = java.net.URI(base + relative).normalize().path.removePrefix("/")
                     require(!normalized.startsWith("../") && normalized != "..") { "Invalid EPUB section path." }
                     val entry = zip.getEntry(normalized) ?: zip.getEntry(base + relative) ?: return@mapNotNull null
                     totalSectionBytes += entry.size.coerceAtLeast(0L)
-                    require(totalSectionBytes <= MAX_EPUB_TOTAL_BYTES) { "This EPUB contains too much text to load safely." }
+                    require(totalSectionBytes <= MAX_EPUB_TOTAL_BYTES) { "This EPUB exceeds the 100 MB processing limit." }
                     val text = htmlToText(readZipEntryText(zip, entry, MAX_EPUB_ENTRY_BYTES))
                     text.takeIf { it.isNotBlank() }?.let { relative.substringAfterLast('/').substringBeforeLast('.') to it }
                 }
@@ -320,7 +329,7 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
                     val count = input.read(buffer)
                     if (count < 0) break
                     total += count
-                    require(total <= MAX_TEXT_BYTES) { "Text files larger than 16 MB are not supported." }
+                    require(total <= MAX_TEXT_BYTES) { "Books larger than 100 MB are not supported." }
                     output.write(buffer, 0, count)
                 }
                 output.toString(Charsets.UTF_8.name())
@@ -332,7 +341,9 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
     return content
 }
 
-private val bookCoverCache = object : LruCache<String, Bitmap>(6 * 1024 * 1024) {
+private val bookCoverCache = object : LruCache<String, Bitmap>(
+    (Runtime.getRuntime().maxMemory() / 32L).coerceIn(1L * 1024L * 1024L, 6L * 1024L * 1024L).toInt()
+) {
     override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
 }
 
@@ -349,7 +360,19 @@ private fun loadBookCover(context: Context, book: BookEntry): Bitmap? {
                             it.name.substringAfterLast('.', "").lowercase() in setOf("jpg", "jpeg", "png", "webp")
                     } ?: return@use null
                     zip.getInputStream(imageEntry).use { input ->
-                        val bytes = input.readBytes()
+                        val bytes = input.use { stream ->
+                            val output = java.io.ByteArrayOutputStream()
+                            val buffer = ByteArray(8 * 1024)
+                            var total = 0L
+                            while (true) {
+                                val count = stream.read(buffer)
+                                if (count < 0) break
+                                total += count
+                                require(total <= 8L * 1024L * 1024L) { "Cover image is too large." }
+                                output.write(buffer, 0, count)
+                            }
+                            output.toByteArray()
+                        }
                         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                         BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
                         if (bounds.outWidth !in 1..12_000 || bounds.outHeight !in 1..12_000) null
