@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirm_cleanup:
-        description: 'Confirm permanent deletion of older runs of this workflow'
+        description: 'Permanently delete workflow runs older than the 3 newest runs of each workflow'
         type: boolean
         required: true
         default: false
@@ -17,7 +17,7 @@ jobs:
     if: inputs.confirm_cleanup
     runs-on: ubuntu-latest
     steps:
-      - name: Keep the 3 newest runs and delete older runs
+      - name: Keep the 3 newest runs for every workflow
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -25,46 +25,56 @@ jobs:
         run: |
           set -euo pipefail
 
-          workflow_file="cleanup-workflow-history.yml"
-          mapfile -t runs < <(
-            gh api --paginate "repos/${GH_REPO}/actions/workflows/${workflow_file}/runs?per_page=100" \
-              --jq '.workflow_runs[] | [.id, .status] | @tsv'
-          )
-
-          total="${#runs[@]}"
-          echo "Found ${total} runs for ${workflow_file}."
-
-          if (( total <= 3 )); then
-            echo "Nothing to delete. The workflow has 3 or fewer runs."
-            exit 0
-          fi
-
-          deleted=0
-          failed=0
+          declare -A workflow_counts=()
+          total=0
           kept=0
+          deleted=0
+          skipped_active=0
+          failed=0
 
-          for index in "${!runs[@]}"; do
-            IFS=$'\t' read -r run_id status <<< "${runs[$index]}"
+          echo "Loading all workflow runs (including failed and cancelled runs)..."
 
-            if (( index < 3 )); then
+          while IFS=$'\t' read -r run_id workflow_id workflow_name status; do
+            [[ -n "${run_id}" && -n "${workflow_id}" ]] || continue
+            total=$((total + 1))
+
+            count="${workflow_counts[${workflow_id}]:-0}"
+            count=$((count + 1))
+            workflow_counts["${workflow_id}"]="${count}"
+
+            if (( count <= 3 )); then
               kept=$((kept + 1))
-              echo "Keeping run ${run_id} (${status})"
+              echo "KEEP [${count}/3] workflow='${workflow_name}' run=${run_id} status=${status}"
               continue
             fi
 
             if [[ "${status}" != "completed" ]]; then
-              echo "Skipping run ${run_id} because it is still ${status}."
+              skipped_active=$((skipped_active + 1))
+              echo "SKIP workflow='${workflow_name}' run=${run_id}: status is ${status}, not completed"
               continue
             fi
 
-            if gh api --method DELETE "repos/${GH_REPO}/actions/runs/${run_id}" >/dev/null 2>&1; then
+            echo "DELETE workflow='${workflow_name}' run=${run_id} (older than the 3 newest)"
+            if gh api --method DELETE "repos/${GH_REPO}/actions/runs/${run_id}"; then
               deleted=$((deleted + 1))
-              echo "Deleted older run ${run_id}"
             else
               failed=$((failed + 1))
-              echo "::warning::Failed to delete run ${run_id}"
+              echo "::error::GitHub rejected deletion of run ${run_id}. Check the HTTP error above and the Actions permissions."
             fi
-          done
+          done < <(
+            gh api --paginate "repos/${GH_REPO}/actions/runs?per_page=100" \
+              --jq '.workflow_runs[] | [.id, .workflow_id, .name, .status] | @tsv'
+          )
 
-          echo "Summary: kept=${kept}, deleted=${deleted}, failed=${failed}"
-          test "${failed}" -eq 0
+          echo ""
+          echo "Cleanup summary:"
+          echo "  Runs scanned: ${total}"
+          echo "  Newest runs retained: ${kept}"
+          echo "  Older completed runs deleted: ${deleted}"
+          echo "  Older active runs skipped: ${skipped_active}"
+          echo "  Deletion failures: ${failed}"
+
+          if (( failed > 0 )); then
+            echo "::error::Cleanup incomplete: ${failed} run(s) could not be deleted."
+            exit 1
+          fi
