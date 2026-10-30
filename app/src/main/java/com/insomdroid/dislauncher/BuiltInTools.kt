@@ -873,7 +873,7 @@ private fun NotesTool(
                             )
                             Text(
                                 when {
-                                    notesLibraryIsEmpty -> "Tap + to create a note. Just write normally; use Markdown only when you want simple formatting, such as **bold** or # headings."
+                                    notesLibraryIsEmpty -> "Tap + to create a note. Just write normally; Markdown is optional when you want simple formatting, such as **bold** or # headings."
                                     pinnedOnly && searchQuery.isBlank() -> "No pinned notes. Show all notes or pin a note."
                                     else -> "Try another search or filter."
                                 },
@@ -1123,13 +1123,23 @@ private fun NotesTool(
                         }
                     }
                 }
-                Surface(
+                Column(
                     modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerLow,
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    Text(
+                        "Write normally; Markdown is optional for formatting.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 2.dp)
+                    )
+                    Surface(
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerLow,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                    ) {
                     MarkdownNoteEditor(
                         value = markdownText,
                         onValueChange = { updated ->
@@ -1142,6 +1152,7 @@ private fun NotesTool(
                         modifier = Modifier.fillMaxSize().padding(vertical = 2.dp),
                         onInsertImage = { imageLauncher.launch(arrayOf("image/*")) }
                     )
+                    }
                 }
             }
         }
@@ -1740,7 +1751,7 @@ private fun CalendarTool(
                             "Akses kalender belum diizinkan. Izinkan akses untuk melihat acara dari kalender perangkat."
                         )
                     } else {
-                        "Nothing is scheduled for this day. Tap + to add a task or reminder. Device calendar events appear here when calendar access is enabled."
+                        "Nothing is scheduled for this day. Tap + to add a task or reminder. Enable calendar access to show device events here."
                     },
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
