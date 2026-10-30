@@ -725,6 +725,13 @@ internal fun BooksTool(onBack: () -> Unit) {
                             style = MaterialTheme.typography.titleMedium,
                             color = fg
                         )
+                        if (books.isEmpty() && searchQuery.isBlank() && !pinnedOnly) {
+                            Text(
+                                "Supports EPUB, PDF, and TXT",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             } else {
@@ -813,12 +820,16 @@ internal fun BooksTool(onBack: () -> Unit) {
                 }
             }
           }
-          FloatingActionButton(onClick = {
-              picker.launch(arrayOf("application/epub+zip", "application/pdf", "text/plain", "application/octet-stream"))
-          }, modifier = Modifier.align(Alignment.BottomEnd)
-                  .padding(end = BuiltInToolDesign.fabEndPadding, bottom = BuiltInToolDesign.fabBottomPadding),
+          FloatingActionButton(
+              onClick = {
+                  picker.launch(arrayOf("application/epub+zip", "application/pdf", "text/plain", "application/octet-stream"))
+              },
+              modifier = Modifier.align(Alignment.BottomEnd)
+                  .padding(end = BuiltInToolDesign.fabEndPadding, bottom = BuiltInToolDesign.fabBottomPadding)
+                  .size(56.dp),
               containerColor = MaterialTheme.colorScheme.primaryContainer,
-              contentColor = MaterialTheme.colorScheme.onPrimaryContainer) {
+              contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+          ) {
               Icon(Icons.Outlined.Add, contentDescription = "Add book")
           }
         }

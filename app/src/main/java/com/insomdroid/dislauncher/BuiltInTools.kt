@@ -436,7 +436,20 @@ private fun priorityColor(priority: Int): Color = when (priority) {
 @Composable
 internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     if (tool == BuiltInTool.BOOKS) {
-        BooksTool(onBack = onBack)
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            Box(
+                Modifier
+                    .widthIn(max = 840.dp)
+                    .fillMaxSize()
+                    .align(Alignment.TopCenter)
+                    .padding(
+                        horizontal = if (maxWidth >= 600.dp) 24.dp else 16.dp,
+                        vertical = 10.dp
+                    )
+            ) {
+                BooksTool(onBack = onBack)
+            }
+        }
         return
     }
     val context = androidx.compose.ui.platform.LocalContext.current
