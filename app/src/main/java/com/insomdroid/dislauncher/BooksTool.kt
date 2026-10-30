@@ -244,8 +244,13 @@ private fun htmlToText(html: String): String = decodeEntities(
 ).replace(Regex("[ \\t]+"), " ").replace(Regex(" *\\n *"), "\n")
     .replace(Regex("\\n{3,}"), "\n\n").trim()
 
-private val bookContentCache = LruCache<String, BookContent>(4)
-private val pdfPageCache = LruCache<String, Bitmap>(8)
+private val bookContentCache = object : LruCache<String, BookContent>(8 * 1024 * 1024) {
+    override fun sizeOf(key: String, value: BookContent): Int =
+        (value.pages.sumOf { it.length.toLong() } * 2L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+}
+private val pdfPageCache = object : LruCache<String, Bitmap>(12 * 1024 * 1024) {
+    override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
+}
 
 private fun loadBookContent(context: Context, book: BookEntry): BookContent {
     bookContentCache.get(book.id)?.let { return it }
@@ -254,17 +259,18 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
         "pdf" -> {
             val file = copyBookToCache(context, uri, "pdf")
             val count = PdfRenderer(android.os.ParcelFileDescriptor.open(file, android.os.ParcelFileDescriptor.MODE_READ_ONLY)).use { it.pageCount }
+            require(count in 1..MAX_PDF_PAGES) { "This PDF has an unsupported page count (maximum 5,000)." }
             BookContent((0 until count).map { "PDF page ${it + 1}" }, pdfFile = file)
         }
         "epub" -> {
             val file = copyBookToCache(context, uri, "epub")
             ZipFile(file).use { zip ->
                 val opfPath = zip.getEntry("META-INF/container.xml")?.let { entry ->
-                    zip.getInputStream(entry).bufferedReader().use { it.readText() }
+                    readZipEntryText(zip, entry, 256L * 1024L)
                         .let { Regex("full-path=[\"']([^\"']+)[\"']").find(it)?.groupValues?.get(1) }
                 }
                 val opf = opfPath?.let { zip.getEntry(it) }?.let { entry ->
-                    zip.getInputStream(entry).bufferedReader().use { it.readText() }
+                    readZipEntryText(zip, entry, 1024L * 1024L)
                 }
                 val base = opfPath?.substringBeforeLast('/', "")?.let { if (it.isBlank()) "" else "$it/" } ?: ""
                 val manifest = opf?.let { source ->
@@ -282,12 +288,17 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
                 val paths = spineIds.mapNotNull { manifest[it] }.ifEmpty {
                     zip.entries().asSequence().map { it.name }
                         .filter { it.endsWith(".xhtml", true) || it.endsWith(".html", true) || it.endsWith(".htm", true) }
-                        .toList()
+                        .take(501).toList()
                 }
+                require(paths.size <= 500) { "This EPUB has too many sections (maximum 500)." }
+                var totalSectionBytes = 0L
                 val sections = paths.mapNotNull { relative ->
                     val normalized = java.net.URI(base + relative).normalize().path.removePrefix("/")
+                    require(!normalized.startsWith("../") && normalized != "..") { "Invalid EPUB section path." }
                     val entry = zip.getEntry(normalized) ?: zip.getEntry(base + relative) ?: return@mapNotNull null
-                    val text = zip.getInputStream(entry).bufferedReader().use { htmlToText(it.readText()) }
+                    totalSectionBytes += entry.size.coerceAtLeast(0L)
+                    require(totalSectionBytes <= MAX_EPUB_TOTAL_BYTES) { "This EPUB contains too much text to load safely." }
+                    val text = htmlToText(readZipEntryText(zip, entry, MAX_EPUB_ENTRY_BYTES))
                     text.takeIf { it.isNotBlank() }?.let { relative.substringAfterLast('/').substringBeforeLast('.') to it }
                 }
                 val combined = sections.joinToString("\n\n") { it.second }
@@ -301,8 +312,19 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
             }
         }
         else -> {
-            val text = context.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
-                ?: throw IllegalStateException("Unable to read this text file")
+            val text = context.contentResolver.openInputStream(uri)?.use { input ->
+                val output = java.io.ByteArrayOutputStream()
+                val buffer = ByteArray(8 * 1024)
+                var total = 0L
+                while (true) {
+                    val count = input.read(buffer)
+                    if (count < 0) break
+                    total += count
+                    require(total <= MAX_TEXT_BYTES) { "Text files larger than 16 MB are not supported." }
+                    output.write(buffer, 0, count)
+                }
+                output.toString(Charsets.UTF_8.name())
+            } ?: throw IllegalStateException("Unable to read this text file")
             BookContent(splitPages(text))
         }
     }
@@ -310,7 +332,9 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
     return content
 }
 
-private val bookCoverCache = LruCache<String, Bitmap>(12)
+private val bookCoverCache = object : LruCache<String, Bitmap>(6 * 1024 * 1024) {
+    override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
+}
 
 private fun loadBookCover(context: Context, book: BookEntry): Bitmap? {
     bookCoverCache.get(book.id)?.let { return it }
@@ -363,9 +387,11 @@ private fun renderPdfPage(file: File, pageIndex: Int): Bitmap {
     val descriptor = android.os.ParcelFileDescriptor.open(file, android.os.ParcelFileDescriptor.MODE_READ_ONLY)
     PdfRenderer(descriptor).use { renderer ->
         renderer.openPage(pageIndex.coerceIn(0, renderer.pageCount - 1)).use { page ->
-            val width = 900
-            val height = (width.toFloat() * page.height / page.width).toInt().coerceAtLeast(1)
-            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            val maxPixels = 2_000_000L
+            val scale = minOf(900f / page.width, kotlin.math.sqrt(maxPixels.toDouble() / (page.width.toLong() * page.height)).toFloat())
+            val width = (page.width * scale).toInt().coerceAtLeast(1)
+            val height = (page.height * scale).toInt().coerceAtLeast(1)
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
             bitmap.eraseColor(android.graphics.Color.WHITE)
             page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
             pdfPageCache.put(cacheKey, bitmap)
