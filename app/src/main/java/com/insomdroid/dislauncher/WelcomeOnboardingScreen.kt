@@ -49,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -66,7 +67,8 @@ internal fun WelcomeOnboardingScreen(
     onFinish: (selectedPackages: Set<String>) -> Unit
 ) {
     val context = LocalContext.current
-    val isIndonesian = context.resources.configuration.locales[0]?.language == "id"
+    val configuration = LocalConfiguration.current
+    val isIndonesian = configuration.locales[0]?.language == "id"
     fun tx(english: String, indonesian: String): String =
         if (isIndonesian) indonesian else english
     var page by remember { mutableStateOf(0) }
