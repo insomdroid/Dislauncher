@@ -329,6 +329,32 @@ private fun releaseUnusedNoteImageResources(
     }
 }
 
+internal data class MarkdownHistoryTransition(val history: MarkdownEditHistory, val text: String)
+
+internal data class MarkdownEditHistory(
+    val undo: List<String> = emptyList(),
+    val redo: List<String> = emptyList()
+) {
+    fun record(currentText: String) =
+        copy(undo = (undo + currentText).takeLast(50), redo = emptyList())
+
+    fun undo(currentText: String): MarkdownHistoryTransition? {
+        val previous = undo.lastOrNull() ?: return null
+        return MarkdownHistoryTransition(
+            copy(undo = undo.dropLast(1), redo = (redo + currentText).takeLast(50)),
+            previous
+        )
+    }
+
+    fun redo(currentText: String): MarkdownHistoryTransition? {
+        val next = redo.lastOrNull() ?: return null
+        return MarkdownHistoryTransition(
+            copy(undo = (undo + currentText).takeLast(50), redo = redo.dropLast(1)),
+            next
+        )
+    }
+}
+
 private data class CalculatorHistoryEntry(
     val id: String,
     val expression: String,
@@ -614,8 +640,7 @@ private fun NotesTool(
     var sortByTitle by remember { mutableStateOf(false) }
     var menuTarget by remember { mutableStateOf<String?>(null) }
     var deleteTarget by remember { mutableStateOf<String?>(null) }
-    var undoHistory by remember { mutableStateOf(listOf<String>()) }
-    var redoHistory by remember { mutableStateOf(listOf<String>()) }
+    var editHistory by remember { mutableStateOf(MarkdownEditHistory()) }
     var pendingExport by remember { mutableStateOf<PendingNoteExport?>(null) }
     val scope = rememberCoroutineScope()
 
@@ -667,8 +692,7 @@ private fun NotesTool(
         document = NoteDocumentCodec.fromLegacyContent(markdownText)
         currentLabels = note.labels.toSet()
         currentColor = note.color
-        undoHistory = emptyList()
-        redoHistory = emptyList()
+        editHistory = MarkdownEditHistory()
         onEditingChanged(true)
     }
     fun createNote() {
@@ -678,8 +702,7 @@ private fun NotesTool(
         markdownText = ""
         currentLabels = emptySet()
         currentColor = "default"
-        undoHistory = emptyList()
-        redoHistory = emptyList()
+        editHistory = MarkdownEditHistory()
         onEditingChanged(true)
     }
     fun closeEditor() {
@@ -763,8 +786,7 @@ private fun NotesTool(
             if (uri.scheme == "content") {
                 context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            undoHistory = (undoHistory + markdownText).takeLast(50)
-            redoHistory = emptyList()
+            editHistory = editHistory.record(markdownText)
             markdownText = markdownText.trimEnd() + "\n\n![Image](" + uri.toString() + ")"
             document = NoteDocumentCodec.fromLegacyContent(markdownText)
         }.onFailure {
@@ -1005,25 +1027,23 @@ private fun NotesTool(
                     IconButton(onClick = onBackRequested) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Back") }
                     IconButton(
                         onClick = {
-                            if (undoHistory.isNotEmpty()) {
-                                redoHistory = (redoHistory + markdownText).takeLast(50)
-                                markdownText = undoHistory.last()
+                            editHistory.undo(markdownText)?.let { transition ->
+                                editHistory = transition.history
+                                markdownText = transition.text
                                 document = NoteDocumentCodec.fromLegacyContent(markdownText)
-                                undoHistory = undoHistory.dropLast(1)
                             }
                         },
-                        enabled = undoHistory.isNotEmpty()
+                        enabled = editHistory.undo.isNotEmpty()
                     ) { Icon(Icons.AutoMirrored.Outlined.Undo, contentDescription = "Undo") }
                     IconButton(
                         onClick = {
-                            if (redoHistory.isNotEmpty()) {
-                                undoHistory = (undoHistory + markdownText).takeLast(50)
-                                markdownText = redoHistory.last()
+                            editHistory.redo(markdownText)?.let { transition ->
+                                editHistory = transition.history
+                                markdownText = transition.text
                                 document = NoteDocumentCodec.fromLegacyContent(markdownText)
-                                redoHistory = redoHistory.dropLast(1)
                             }
                         },
-                        enabled = redoHistory.isNotEmpty()
+                        enabled = editHistory.redo.isNotEmpty()
                     ) { Icon(Icons.Outlined.ArrowForward, contentDescription = "Redo") }
                     Spacer(Modifier.weight(1f))
                     val pinned = notes.firstOrNull { it.id == selectedId }?.pinned == true
@@ -1128,8 +1148,7 @@ private fun NotesTool(
                         value = markdownText,
                         onValueChange = { updated ->
                             if (updated != markdownText) {
-                                undoHistory = (undoHistory + markdownText).takeLast(50)
-                                redoHistory = emptyList()
+                                editHistory = editHistory.record(markdownText)
                                 markdownText = updated
                                 document = NoteDocumentCodec.fromLegacyContent(updated)
                             }
