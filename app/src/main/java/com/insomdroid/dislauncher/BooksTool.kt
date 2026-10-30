@@ -302,63 +302,71 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
         }
         "epub" -> {
             val file = copyBookToCache(context, uri, "epub")
-            ZipFile(file).use { zip ->
-                val opfPath = zip.getEntry("META-INF/container.xml")?.let { entry ->
-                    readZipEntryText(zip, entry, 256L * 1024L)
-                        .let { Regex("full-path=[\"']([^\"']+)[\"']").find(it)?.groupValues?.get(1) }
-                }
-                val opf = opfPath?.let { zip.getEntry(it) }?.let { entry ->
-                    readZipEntryText(zip, entry, 1024L * 1024L)
-                }
-                val base = opfPath?.substringBeforeLast('/', "")?.let { if (it.isBlank()) "" else "$it/" } ?: ""
-                val manifest = opf?.let { source ->
-                    Regex("(?is)<item\\b([^>]*?)>").findAll(source).associate { match ->
-                        val attrs = match.groupValues[1]
-                        val id = Regex("id=[\"']([^\"']+)[\"']").find(attrs)?.groupValues?.get(1).orEmpty()
-                        val href = Regex("href=[\"']([^\"']+)[\"']").find(attrs)?.groupValues?.get(1).orEmpty()
-                        id to href
-                    }
-                }.orEmpty()
-                val spineIds = opf?.let { source ->
-                    Regex("(?is)<itemref\\b[^>]*?idref=[\"']([^\"']+)[\"'][^>]*/?>").findAll(source)
-                        .map { it.groupValues[1] }.toList()
-                }.orEmpty()
-                val paths = spineIds.mapNotNull { manifest[it] }.ifEmpty {
-                    zip.entries().asSequence().map { it.name }
-                        .filter { it.endsWith(".xhtml", true) || it.endsWith(".html", true) || it.endsWith(".htm", true) }
-                        .toList()
-                }
-                val baseUri = java.net.URI(base.replace(" ", "%20"))
-                var totalSectionBytes = 0L
-                val pages = mutableListOf<String>()
+            val pageFile = File(context.cacheDir, "book_${bookCacheDigest(uri)}.pages")
+            val writer = DiskBackedBookPages.Writer(pageFile)
+            try {
                 val chapters = mutableListOf<Pair<String, Int>>()
-                paths.forEach { relative ->
-                    val relativeUri = java.net.URI(relative.replace(" ", "%20"))
-                    require(!relativeUri.isAbsolute && relativeUri.rawAuthority == null &&
-                        !relativeUri.path.startsWith("/")) {
-                        "Invalid EPUB section reference."
+                ZipFile(file).use { zip ->
+                    val opfPath = zip.getEntry("META-INF/container.xml")?.let { entry ->
+                        readZipEntryText(zip, entry, 256L * 1024L)
+                            .let { Regex("full-path=[\"']([^\"']+)[\"']").find(it)?.groupValues?.get(1) }
                     }
-                    val normalized = baseUri.resolve(relativeUri).normalize().path.removePrefix("/")
-                    require(normalized.isNotBlank() && normalized != ".." &&
-                        !normalized.startsWith("../") && !normalized.split('/').contains("..")) {
-                        "Invalid EPUB section path."
+                    val opf = opfPath?.let { zip.getEntry(it) }?.let { entry ->
+                        readZipEntryText(zip, entry, 1024L * 1024L)
                     }
-                    val entry = zip.getEntry(normalized) ?: return@forEach
-                    val declaredSize = entry.size.coerceAtLeast(0L)
-                    totalSectionBytes += declaredSize
-                    require(totalSectionBytes <= MAX_EPUB_TOTAL_BYTES) {
-                        "This EPUB exceeds the 100 MB processing limit."
+                    val base = opfPath?.substringBeforeLast('/', "")?.let { if (it.isBlank()) "" else "$it/" } ?: ""
+                    val manifest = opf?.let { source ->
+                        Regex("(?is)<item\\b([^>]*?)>").findAll(source).associate { match ->
+                            val attrs = match.groupValues[1]
+                            val id = Regex("id=[\"']([^\"']+)[\"']").find(attrs)?.groupValues?.get(1).orEmpty()
+                            val href = Regex("href=[\"']([^\"']+)[\"']").find(attrs)?.groupValues?.get(1).orEmpty()
+                            id to href
+                        }
+                    }.orEmpty()
+                    val spineIds = opf?.let { source ->
+                        Regex("(?is)<itemref\\b[^>]*?idref=[\"']([^\"']+)[\"'][^>]*/?>").findAll(source)
+                            .map { it.groupValues[1] }.toList()
+                    }.orEmpty()
+                    val paths = spineIds.mapNotNull { manifest[it] }.ifEmpty {
+                        zip.entries().asSequence().map { it.name }
+                            .filter { it.endsWith(".xhtml", true) || it.endsWith(".html", true) || it.endsWith(".htm", true) }
+                            .toList()
                     }
-                    val remainingBytes = (MAX_EPUB_TOTAL_BYTES - (totalSectionBytes - declaredSize)).coerceAtLeast(0L)
-                    val text = htmlToText(readZipEntryText(zip, entry, minOf(MAX_EPUB_ENTRY_BYTES, remainingBytes)))
-                    if (text.isNotBlank()) {
-                        val chapterTitle = normalized.substringAfterLast('/').substringBeforeLast('.')
-                            .replace(Regex("[-_]"), " ").trim()
-                        if (chapterTitle.isNotBlank()) chapters += chapterTitle to pages.size
-                        pages.addAll(splitPages(text))
+                    val baseUri = java.net.URI(base.replace(" ", "%20"))
+                    var totalSectionBytes = 0L
+                    paths.forEach { relative ->
+                        val relativeUri = java.net.URI(relative.replace(" ", "%20"))
+                        require(!relativeUri.isAbsolute && relativeUri.rawAuthority == null &&
+                            !relativeUri.path.startsWith("/")) {
+                            "Invalid EPUB section reference."
+                        }
+                        val normalized = baseUri.resolve(relativeUri).normalize().path.removePrefix("/")
+                        require(normalized.isNotBlank() && normalized != ".." &&
+                            !normalized.startsWith("../") && !normalized.split('/').contains("..")) {
+                            "Invalid EPUB section path."
+                        }
+                        val entry = zip.getEntry(normalized) ?: return@forEach
+                        val declaredSize = entry.size.coerceAtLeast(0L)
+                        totalSectionBytes += declaredSize
+                        require(totalSectionBytes <= MAX_EPUB_TOTAL_BYTES) {
+                            "This EPUB exceeds the 100 MB processing limit."
+                        }
+                        val remainingBytes = (MAX_EPUB_TOTAL_BYTES - (totalSectionBytes - declaredSize)).coerceAtLeast(0L)
+                        val chapterStart = writer.pageCount
+                        val text = htmlToText(readZipEntryText(zip, entry, minOf(MAX_EPUB_ENTRY_BYTES, remainingBytes)))
+                        if (text.isNotBlank()) {
+                            writer.append(text)
+                            writer.finishSection()
+                            val chapterTitle = normalized.substringAfterLast('/').substringBeforeLast('.')
+                                .replace(Regex("[-_]"), " ").trim()
+                            if (chapterTitle.isNotBlank()) chapters += chapterTitle to chapterStart
+                        }
                     }
                 }
-                BookContent(pages.ifEmpty { listOf("This book contains no readable text.") }, chapters)
+                BookContent(writer.finish(), chapters)
+            } catch (failure: Exception) {
+                writer.abort()
+                throw failure
             }
         }
         else -> {
