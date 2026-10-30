@@ -241,38 +241,22 @@ private fun splitPages(text: String, limit: Int = 2600): List<String> {
     return result.ifEmpty { listOf(normalized) }
 }
 
-private fun readTextPages(file: File, pageLimit: Int = 2600): List<String> {
-    val pages = mutableListOf<String>()
-    val page = StringBuilder(pageLimit)
-    file.bufferedReader(Charsets.UTF_8).use { reader ->
-        val buffer = CharArray(8 * 1024)
-        var previousSpace = false
-        while (true) {
-            val count = reader.read(buffer)
-            if (count < 0) break
-            for (index in 0 until count) {
-                val raw = buffer[index]
-                val char = when (raw) {
-                    '\r' -> '\n'
-                    '\t', '\u000B', '\u000C' -> ' '
-                    else -> raw
-                }
-                if (char == ' ' && previousSpace) continue
-                page.append(char)
-                previousSpace = char == ' ' || char == '\n'
-                if (page.length >= pageLimit) {
-                    val breakAt = page.lastIndexOfAny(charArrayOf('\n', ' ', '.', '!', '?'))
-                    val end = if (breakAt > pageLimit / 2) breakAt + 1 else page.length
-                    val completed = page.substring(0, end).trim()
-                    if (completed.isNotEmpty()) pages += completed
-                    page.delete(0, end)
-                    previousSpace = page.lastOrNull()?.isWhitespace() == true
-                }
+private fun readTextPages(file: File, pageFile: File): List<String> {
+    val writer = DiskBackedBookPages.Writer(pageFile)
+    return try {
+        file.bufferedReader(Charsets.UTF_8).use { reader ->
+            val buffer = CharArray(8 * 1024)
+            while (true) {
+                val count = reader.read(buffer)
+                if (count < 0) break
+                writer.append(String(buffer, 0, count))
             }
         }
+        writer.finish()
+    } catch (failure: Exception) {
+        writer.abort()
+        throw failure
     }
-    page.toString().trim().takeIf { it.isNotEmpty() }?.let(pages::add)
-    return pages.ifEmpty { listOf("This book contains no readable text.") }
 }
 
 private fun decodeEntities(text: String): String =
@@ -289,7 +273,8 @@ private val bookContentCache = object : LruCache<String, BookContent>(
     (Runtime.getRuntime().maxMemory() / 32L).coerceIn(2L * 1024L * 1024L, 8L * 1024L * 1024L).toInt()
 ) {
     override fun sizeOf(key: String, value: BookContent): Int =
-        (value.pages.sumOf { it.length.toLong() } * 2L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        (value.pages as? DiskBackedBookPages)?.metadataBytes
+            ?: (value.pages.sumOf { it.length.toLong() } * 2L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
 }
 private val pdfPageCache = object : LruCache<String, Bitmap>(
     (Runtime.getRuntime().maxMemory() / 16L).coerceIn(2L * 1024L * 1024L, 12L * 1024L * 1024L).toInt()
@@ -381,7 +366,8 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
             require(file.length() in 1..MAX_TEXT_BYTES) {
                 "Books larger than 100 MB are not supported."
             }
-            BookContent(readTextPages(file))
+            val pageFile = File(context.cacheDir, "book_${bookCacheDigest(uri)}.pages")
+            BookContent(readTextPages(file, pageFile))
         }
     }
     bookContentCache.put("${book.id}:${book.uri}", content)
@@ -397,6 +383,7 @@ private val bookCoverCache = object : LruCache<String, Bitmap>(
 private fun removeBookResources(context: Context, book: BookEntry, remainingBooks: List<BookEntry>) {
     val contentKey = "${book.id}:${book.uri}"
     bookContentCache.remove(contentKey)
+    File(context.cacheDir, "book_${bookCacheDigest(Uri.parse(book.uri))}.pages").delete()
     bookCoverCache.remove(contentKey)
     if (remainingBooks.any { it.uri == book.uri }) return
 
@@ -511,6 +498,7 @@ internal fun BooksTool(onBack: () -> Unit) {
     var books by remember { mutableStateOf(readBookLibrary(context)) }
     var selectedBook by remember { mutableStateOf<BookEntry?>(null) }
     var bookContent by remember { mutableStateOf<BookContent?>(null) }
+    var currentPageText by remember { mutableStateOf("") }
     var currentPage by remember { mutableStateOf(0) }
     var pageDirection by remember { mutableStateOf(1) }
     val pageScrollState = rememberScrollState()
@@ -580,6 +568,13 @@ internal fun BooksTool(onBack: () -> Unit) {
             error = e.message ?: "Unable to open this book."
         } finally {
             loading = false
+        }
+    }
+
+    LaunchedEffect(currentPage, selectedBook?.id, bookContent) {
+        val content = bookContent ?: return@LaunchedEffect
+        currentPageText = withContext(Dispatchers.IO) {
+            runCatching { content.pages.getOrElse(currentPage) { "" } }.getOrDefault("")
         }
     }
 
@@ -768,7 +763,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                             modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 12.dp)
                         )
                         else -> Text(
-                            bookContent!!.pages.getOrElse(currentPage) { "" },
+                            currentPageText,
                             modifier = Modifier.fillMaxSize().verticalScroll(pageScrollState).padding(horizontal = 28.dp, vertical = 28.dp),
                             color = fg, fontSize = fontSize.sp, lineHeight = (fontSize * 1.55f).sp,
                             fontFamily = FontFamily.Serif
