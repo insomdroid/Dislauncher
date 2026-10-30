@@ -198,9 +198,13 @@ private fun htmlToText(html: String): String = decodeEntities(
 ).replace(Regex("[ \\t]+"), " ").replace(Regex(" *\\n *"), "\n")
     .replace(Regex("\\n{3,}"), "\n\n").trim()
 
+private val bookContentCache = LruCache<String, BookContent>(4)
+private val pdfPageCache = LruCache<String, Bitmap>(8)
+
 private fun loadBookContent(context: Context, book: BookEntry): BookContent {
+    bookContentCache.get(book.id)?.let { return it }
     val uri = Uri.parse(book.uri)
-    return when (book.type) {
+    val content = when (book.type) {
         "pdf" -> {
             val file = copyBookToCache(context, uri, "pdf")
             val count = PdfRenderer(android.os.ParcelFileDescriptor.open(file, android.os.ParcelFileDescriptor.MODE_READ_ONLY)).use { it.pageCount }
@@ -256,8 +260,9 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
             BookContent(splitPages(text))
         }
     }
+    bookContentCache.put(book.id, content)
+    return content
 }
-
 
 private val bookCoverCache = LruCache<String, Bitmap>(12)
 
@@ -307,14 +312,17 @@ private fun BookCover(book: BookEntry, modifier: Modifier = Modifier) {
 }
 
 private fun renderPdfPage(file: File, pageIndex: Int): Bitmap {
+    val cacheKey = "${file.absolutePath}:$pageIndex"
+    pdfPageCache.get(cacheKey)?.let { return it }
     val descriptor = android.os.ParcelFileDescriptor.open(file, android.os.ParcelFileDescriptor.MODE_READ_ONLY)
     PdfRenderer(descriptor).use { renderer ->
         renderer.openPage(pageIndex.coerceIn(0, renderer.pageCount - 1)).use { page ->
-            val width = 1200
+            val width = 900
             val height = (width.toFloat() * page.height / page.width).toInt().coerceAtLeast(1)
             val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             bitmap.eraseColor(android.graphics.Color.WHITE)
             page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+            pdfPageCache.put(cacheKey, bitmap)
             return bitmap
         }
     }
@@ -473,11 +481,15 @@ internal fun BooksTool(onBack: () -> Unit) {
                             Surface(
                                 modifier = Modifier.fillMaxWidth().clickable { selectedBook = book },
                                 shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-                                color = MaterialTheme.colorScheme.surfaceContainerLow
+                                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
                             ) {
                                 Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     BookCover(book, Modifier.fillMaxWidth().height(148.dp))
-                                    Text(book.title, style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        if (book.pinned) Icon(Icons.Outlined.PushPin, contentDescription = "Pinned", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+                                        Text(book.title, style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                                    }
                                     Text("${book.type.uppercase()} · ${if (book.position == 0) "Not started" else "Continue reading"}",
                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
@@ -500,7 +512,10 @@ internal fun BooksTool(onBack: () -> Unit) {
                             ) {
                                 BookCover(book, Modifier.size(width = 48.dp, height = 64.dp))
                                 Column(Modifier.weight(1f).padding(start = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text(book.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        if (book.pinned) Icon(Icons.Outlined.PushPin, contentDescription = "Pinned", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+                                        Text(book.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                    }
                                     Text("${book.type.uppercase()} · ${if (book.position == 0) "Not started" else "Continue reading"}",
                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
