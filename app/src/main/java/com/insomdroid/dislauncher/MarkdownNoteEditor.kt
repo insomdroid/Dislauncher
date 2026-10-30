@@ -42,8 +42,8 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import io.noties.markwon.Markwon
 
-private val MARKDOWN_LIST_LINE_REGEX: Regex = Regex("^(\\\\s*)([-*+]\\\\s+|\\\\d+[.)]\\\\s+)(.*)$")
-private val MARKDOWN_NUMBER_REGEX: Regex = Regex("\\\\d+")
+private val MARKDOWN_LIST_LINE_REGEX: Regex = Regex("^(\\s*)([-*+]\\s+|\\d+[.)]\\s+)(.*)$")
+private val MARKDOWN_NUMBER_REGEX: Regex = Regex("\\d+")
 
 /** Markdown-native editor. The Markdown source is canonical; preview is rendered locally. */
 @Composable

@@ -1,4 +1,0 @@
-Dislauncher 1.3.3:
-- Added the bundled Geist Mono font and a Home-screen network information setting.
-- Refined Settings and Home-screen layout.
-- Fixed Settings compilation and improved weather and network status handling.

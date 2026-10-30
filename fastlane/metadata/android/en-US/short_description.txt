@@ -1,1 +1,0 @@
-A minimal, text-first Android launcher with useful built-in tools
