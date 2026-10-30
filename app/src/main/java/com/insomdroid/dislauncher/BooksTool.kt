@@ -266,7 +266,9 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
     val content = when (book.type) {
         "pdf" -> {
             val file = copyBookToCache(context, uri, "pdf")
-            val count = PdfRenderer(android.os.ParcelFileDescriptor.open(file, android.os.ParcelFileDescriptor.MODE_READ_ONLY)).use { it.pageCount }
+            val count = android.os.ParcelFileDescriptor.open(
+                file, android.os.ParcelFileDescriptor.MODE_READ_ONLY
+            ).use { descriptor -> PdfRenderer(descriptor).use { it.pageCount } }
             require(count > 0) { "This PDF contains no pages." }
             BookContent(object : AbstractList<String>() {
                 override val size: Int = count
@@ -304,15 +306,28 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
                         .filter { it.endsWith(".xhtml", true) || it.endsWith(".html", true) || it.endsWith(".htm", true) }
                         .toList()
                 }
+                val baseUri = java.net.URI(base)
                 var totalSectionBytes = 0L
                 val sections = paths.mapNotNull { relative ->
-                    val normalized = java.net.URI(base + relative).normalize().path.removePrefix("/")
-                    require(!normalized.startsWith("../") && normalized != "..") { "Invalid EPUB section path." }
-                    val entry = zip.getEntry(normalized) ?: zip.getEntry(base + relative) ?: return@mapNotNull null
-                    totalSectionBytes += entry.size.coerceAtLeast(0L)
-                    require(totalSectionBytes <= MAX_EPUB_TOTAL_BYTES) { "This EPUB exceeds the 100 MB processing limit." }
-                    val text = htmlToText(readZipEntryText(zip, entry, MAX_EPUB_ENTRY_BYTES))
-                    text.takeIf { it.isNotBlank() }?.let { relative.substringAfterLast('/').substringBeforeLast('.') to it }
+                    val relativeUri = java.net.URI(relative)
+                    require(!relativeUri.isAbsolute && relativeUri.rawAuthority == null) {
+                        "Invalid EPUB section reference."
+                    }
+                    val normalized = baseUri.resolve(relativeUri).normalize().path.removePrefix("/")
+                    require(normalized.startsWith(base) && !normalized.split('/').contains("..")) {
+                        "Invalid EPUB section path."
+                    }
+                    val entry = zip.getEntry(normalized) ?: return@mapNotNull null
+                    val declaredSize = entry.size.coerceAtLeast(0L)
+                    totalSectionBytes += declaredSize
+                    require(totalSectionBytes <= MAX_EPUB_TOTAL_BYTES) {
+                        "This EPUB exceeds the 100 MB processing limit."
+                    }
+                    val remainingBytes = (MAX_EPUB_TOTAL_BYTES - (totalSectionBytes - declaredSize)).coerceAtLeast(0L)
+                    val text = htmlToText(readZipEntryText(zip, entry, minOf(MAX_EPUB_ENTRY_BYTES, remainingBytes)))
+                    text.takeIf { it.isNotBlank() }?.let {
+                        relative.substringAfterLast('/').substringBeforeLast('.') to it
+                    }
                 }
                 val combined = sections.joinToString("\n\n") { it.second }
                 val pages = splitPages(combined)
@@ -325,19 +340,13 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
             }
         }
         else -> {
-            val text = context.contentResolver.openInputStream(uri)?.use { input ->
-                val output = java.io.ByteArrayOutputStream()
-                val buffer = ByteArray(8 * 1024)
-                var total = 0L
-                while (true) {
-                    val count = input.read(buffer)
-                    if (count < 0) break
-                    total += count
-                    require(total <= MAX_TEXT_BYTES) { "Books larger than 100 MB are not supported." }
-                    output.write(buffer, 0, count)
-                }
-                output.toString(Charsets.UTF_8.name())
-            } ?: throw IllegalStateException("Unable to read this text file")
+            val file = copyBookToCache(context, uri, "txt")
+            require(file.length() in 1..MAX_TEXT_BYTES) {
+                "Books larger than 100 MB are not supported."
+            }
+            val text = file.inputStream().buffered().use { input ->
+                input.reader(Charsets.UTF_8).readText()
+            }
             BookContent(splitPages(text))
         }
     }
