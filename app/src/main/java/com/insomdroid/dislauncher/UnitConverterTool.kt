@@ -143,7 +143,18 @@ internal fun UnitConverterTool(
     var input by remember { mutableStateOf("1") }
     var fromIndex by remember { mutableStateOf(0) }
     var toIndex by remember { mutableStateOf(1) }
-    val category = converterCategories[categoryIndex]
+    val matchingCategoryIndices = converterCategories.indices.filter { index ->
+        val item = converterCategories[index]
+        categoryQuery.isBlank() || item.name.contains(categoryQuery, ignoreCase = true) ||
+            item.units.any {
+                it.name.contains(categoryQuery, ignoreCase = true) ||
+                    it.symbol.contains(categoryQuery, ignoreCase = true)
+            }
+    }
+    val effectiveCategoryIndex = matchingCategoryIndices.firstOrNull { it == categoryIndex }
+        ?: matchingCategoryIndices.firstOrNull()
+        ?: categoryIndex
+    val category = converterCategories[effectiveCategoryIndex]
     val fromUnit = category.units[fromIndex.coerceIn(category.units.indices)]
     val toUnit = category.units[toIndex.coerceIn(category.units.indices)]
     val numericInput = input.replace(',', '.').toDoubleOrNull()
@@ -159,10 +170,9 @@ internal fun UnitConverterTool(
             verticalAlignment = Alignment.CenterVertically
         ) {
             converterCategories.forEachIndexed { index, item ->
-                if (categoryQuery.isBlank() || item.name.contains(categoryQuery, ignoreCase = true) ||
-                    item.units.any { it.name.contains(categoryQuery, ignoreCase = true) || it.symbol.contains(categoryQuery, ignoreCase = true) }) {
+                if (index in matchingCategoryIndices) {
                 FilterChip(
-                    selected = categoryIndex == index,
+                    selected = effectiveCategoryIndex == index,
                     onClick = {
                         categoryIndex = index
                         fromIndex = 0
@@ -174,6 +184,18 @@ internal fun UnitConverterTool(
             }
         }
 
+        if (matchingCategoryIndices.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "No matching categories or units.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        } else Column(verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
         Column(verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.compact)) {
             Text(
                 builtInToolText("From", "Dari"),
@@ -254,6 +276,7 @@ internal fun UnitConverterTool(
                     )
                 }
             }
+        }
         }
     }
 }
