@@ -431,9 +431,9 @@ private val bookCoverCache = object : LruCache<String, Bitmap>(
 private fun removeBookResources(context: Context, book: BookEntry, remainingBooks: List<BookEntry>) {
     val contentKey = "${book.id}:${book.uri}"
     bookContentCache.remove(contentKey)
-    File(context.cacheDir, "book_${bookCacheDigest(Uri.parse(book.uri))}.pages").delete()
     bookCoverCache.remove(contentKey)
     if (remainingBooks.any { it.uri == book.uri }) return
+    File(context.cacheDir, "book_${bookCacheDigest(Uri.parse(book.uri))}.pages").delete()
 
     val digest = bookCacheDigest(Uri.parse(book.uri))
     val pdfPath = File(context.cacheDir, "book_$digest.pdf").absolutePath

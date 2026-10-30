@@ -521,21 +521,11 @@ internal fun DislauncherRoot() {
     val systemBarIconAppearance = remember(
         wallpaperImage.value,
         preferences.wallpaperMode,
-        preferences.wallpaperColor,
         isDark
     ) {
-        val solidWallpaperColor = if (preferences.wallpaperMode == "solid") {
-            runCatching {
-                android.graphics.Color.parseColor(preferences.wallpaperColor)
-            }.getOrNull()
-        } else null
         val image = if (preferences.wallpaperMode == "image") wallpaperImage.value else null
-        val darkStatusIcons = solidWallpaperColor?.let {
-            android.graphics.Color.luminance(it) > 0.45f
-        } ?: image?.let { wallpaperEdgeUsesDarkIcons(it, topEdge = true) } ?: !isDark
-        val darkNavigationIcons = solidWallpaperColor?.let {
-            android.graphics.Color.luminance(it) > 0.45f
-        } ?: image?.let { wallpaperEdgeUsesDarkIcons(it, topEdge = false) } ?: !isDark
+        val darkStatusIcons = image?.let { wallpaperEdgeUsesDarkIcons(it, topEdge = true) } ?: !isDark
+        val darkNavigationIcons = image?.let { wallpaperEdgeUsesDarkIcons(it, topEdge = false) } ?: !isDark
         darkStatusIcons to darkNavigationIcons
     }
 

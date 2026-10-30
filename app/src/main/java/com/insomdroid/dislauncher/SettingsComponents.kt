@@ -31,7 +31,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
-internal fun settingsLocalizedText(context: Context, english: String, indonesian: String): String = english
+internal fun settingsLocalizedText(context: Context, english: String, indonesian: String): String =
+    if (context.resources.configuration.locales[0]?.language == "id") indonesian else english
 
 @Composable
 internal fun AppSelectionDialog(
