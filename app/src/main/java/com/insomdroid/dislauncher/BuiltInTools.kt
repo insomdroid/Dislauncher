@@ -40,7 +40,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.ArrowForward
+import androidx.compose.material.icons.automirrored.outlined.Redo
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Event
@@ -326,32 +326,6 @@ private fun releaseUnusedNoteImageResources(
             it.path.startsWith(archiveDirectory.path + java.io.File.separator)
         }
         if (!stillReferenced) archiveDirectory.deleteRecursively()
-    }
-}
-
-internal data class MarkdownHistoryTransition(val history: MarkdownEditHistory, val text: String)
-
-internal data class MarkdownEditHistory(
-    val undo: List<String> = emptyList(),
-    val redo: List<String> = emptyList()
-) {
-    fun record(currentText: String) =
-        copy(undo = (undo + currentText).takeLast(50), redo = emptyList())
-
-    fun undo(currentText: String): MarkdownHistoryTransition? {
-        val previous = undo.lastOrNull() ?: return null
-        return MarkdownHistoryTransition(
-            copy(undo = undo.dropLast(1), redo = (redo + currentText).takeLast(50)),
-            previous
-        )
-    }
-
-    fun redo(currentText: String): MarkdownHistoryTransition? {
-        val next = redo.lastOrNull() ?: return null
-        return MarkdownHistoryTransition(
-            copy(undo = (undo + currentText).takeLast(50), redo = redo.dropLast(1)),
-            next
-        )
     }
 }
 
@@ -1017,7 +991,7 @@ private fun NotesTool(
             }
             FloatingActionButton(
                 onClick = { createNote() },
-                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 24.dp),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(end = BuiltInToolDesign.fabEndPadding, bottom = BuiltInToolDesign.fabBottomPadding),
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             ) { Icon(Icons.Outlined.NoteAdd, contentDescription = "New note") }
@@ -1044,7 +1018,7 @@ private fun NotesTool(
                             }
                         },
                         enabled = editHistory.redo.isNotEmpty()
-                    ) { Icon(Icons.Outlined.ArrowForward, contentDescription = "Redo") }
+                    ) { Icon(Icons.AutoMirrored.Outlined.Redo, contentDescription = "Redo") }
                     Spacer(Modifier.weight(1f))
                     val pinned = notes.firstOrNull { it.id == selectedId }?.pinned == true
                     IconButton(onClick = {
@@ -1807,7 +1781,7 @@ private fun CalendarTool(
     }
         FloatingActionButton(
             onClick = ::beginNewTask,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 24.dp),
+            modifier = Modifier.align(Alignment.BottomEnd).padding(end = BuiltInToolDesign.fabEndPadding, bottom = BuiltInToolDesign.fabBottomPadding),
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         ) { Icon(Icons.Outlined.Add, contentDescription = builtInToolText("Add task", "Tambah tugas")) }

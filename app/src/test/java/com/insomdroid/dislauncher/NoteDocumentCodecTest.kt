@@ -121,6 +121,19 @@ class NoteDocumentCodecTest {
     }
 
     @Test
+    fun markdownEditHistoryIsBoundedToFiftySteps() {
+        var history = MarkdownEditHistory()
+        repeat(60) { index -> history = history.record("state-$index") }
+        assertEquals(MAX_MARKDOWN_HISTORY_STEPS, history.undo.size)
+        assertEquals("state-59", history.undo.last())
+        repeat(MAX_MARKDOWN_HISTORY_STEPS) { index ->
+            history = history.undo("current-$index")!!.history
+        }
+        assertTrue(history.undo.isEmpty())
+        assertEquals(MAX_MARKDOWN_HISTORY_STEPS, history.redo.size)
+    }
+
+    @Test
     fun markdownEditHistoryCanUndoAndRedo() {
         val initial = MarkdownEditHistory()
         val first = initial.record("one")

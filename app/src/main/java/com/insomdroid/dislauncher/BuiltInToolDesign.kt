@@ -17,6 +17,8 @@ internal object BuiltInToolDesign {
     val cardCornerRadius = 8.dp
     val controlCornerRadius = 6.dp
     val calculatorKeyCornerRadius = 8.dp
+    val fabEndPadding = 8.dp
+    val fabBottomPadding = 24.dp
 }
 
 /** Follow the device language while keeping English as the fallback. */

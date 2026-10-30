@@ -48,6 +48,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Calculate
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Description
@@ -281,11 +282,7 @@ internal fun AppsScreen(
                                             contentDescription = app.label,
                                             // Keep built-in tool glyphs visibly distinct from their neutral icon circles
                                             // even if a device's dynamic theme supplies unexpected icon colors.
-                                            tint = if (isDark) {
-                                                androidx.compose.ui.graphics.Color(0xFFD9D9D9)
-                                            } else {
-                                                androidx.compose.ui.graphics.Color(0xFF222222)
-                                            },
+                                            tint = MaterialTheme.colorScheme.onSurface,
                                             modifier = Modifier.size(18.dp)
                                         )
                                     }

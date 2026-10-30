@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
@@ -668,7 +669,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                         } })
                 } else {
                     Icon(Icons.Outlined.MenuBook, contentDescription = "Reader",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp))
+                        tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(22.dp))
                     Text("Library", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.weight(1f), maxLines = 1)
                     IconButton(onClick = { searchExpanded = true }) { Icon(Icons.Outlined.Search, contentDescription = "Search books") }
@@ -791,7 +792,8 @@ internal fun BooksTool(onBack: () -> Unit) {
           }
           FloatingActionButton(onClick = {
               picker.launch(arrayOf("application/epub+zip", "application/pdf", "text/plain", "application/octet-stream"))
-          }, modifier = Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 24.dp),
+          }, modifier = Modifier.align(Alignment.BottomEnd).navigationBarsPadding()
+                  .padding(end = BuiltInToolDesign.fabEndPadding, bottom = BuiltInToolDesign.fabBottomPadding),
               containerColor = MaterialTheme.colorScheme.primaryContainer,
               contentColor = MaterialTheme.colorScheme.onPrimaryContainer) {
               Icon(Icons.Outlined.Add, contentDescription = "Add book")
