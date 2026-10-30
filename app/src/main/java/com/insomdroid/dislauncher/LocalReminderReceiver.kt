@@ -10,6 +10,9 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import org.json.JSONArray
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
 
 private const val REMINDER_CHANNEL_ID = "dislauncher_local_reminders"
 private const val EXTRA_REMINDER_ID = "reminder_id"
@@ -73,7 +76,12 @@ class LocalReminderReceiver : AndroidBroadcastReceiver() {
 
 class ReminderBootReceiver : AndroidBroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
+        if (intent.action !in setOf(
+                Intent.ACTION_BOOT_COMPLETED,
+                Intent.ACTION_TIME_CHANGED,
+                Intent.ACTION_TIMEZONE_CHANGED
+            )
+        ) return
         val prefs = context.getSharedPreferences("dislauncher_local_tasks", Context.MODE_PRIVATE)
         runCatching {
             val array = JSONArray(prefs.getString("tasks_json", "[]") ?: "[]")
@@ -82,9 +90,19 @@ class ReminderBootReceiver : AndroidBroadcastReceiver() {
                 if (task.optString("type") != "reminder" || task.optBoolean("completed")) continue
                 val id = task.optString("id")
                 val title = task.optString("title")
-                val atMillis = task.optLong("reminderAt")
-                if (id.isNotBlank() && atMillis > System.currentTimeMillis()) {
-                    scheduleLocalReminder(context, id, title, atMillis)
+                val storedTime = task.optLong("reminderAt")
+                val atMillis = runCatching {
+                    LocalDate.parse(task.optString("date"))
+                        .atTime(LocalTime.parse(task.optString("time")))
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli()
+                }.getOrDefault(storedTime)
+                if (id.isNotBlank()) {
+                    cancelLocalReminder(context, id)
+                    if (atMillis > System.currentTimeMillis()) {
+                        scheduleLocalReminder(context, id, title, atMillis)
+                    }
                 }
             }
         }
