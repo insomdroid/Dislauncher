@@ -766,7 +766,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                                 }
                                 Box {
                                     IconButton(onClick = { bookMenuTarget = book.id }) {
-                                        Icon(Icons.Outlined.MoreVert, contentDescription = "Book actions")
+                                        Icon(Icons.Outlined.MoreVert, contentDescription = "Book actions", tint = fg)
                                     }
                                     DropdownMenu(expanded = bookMenuTarget == book.id, onDismissRequest = { bookMenuTarget = null }) {
                                         DropdownMenuItem(text = { Text(if (book.pinned) "Unpin" else "Pin") },
