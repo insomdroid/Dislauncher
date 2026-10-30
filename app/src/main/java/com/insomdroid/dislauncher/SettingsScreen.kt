@@ -449,7 +449,7 @@ internal fun SettingsScreen(
                         SettingsGroup(tr("App icons", "Ikon aplikasi")) {
                             SettingToggle(
                                 tr("Show app icons", "Tampilkan ikon aplikasi"),
-                                "",
+                                tr("Display app icons in the app drawer and on Home.", "Display app icons in the app drawer and on Home."),
                                 preferences.showAppIcons
                             ) { onPreferencesChange(preferences.copy(showAppIcons = it)) }
                             if (preferences.showAppIcons) {
@@ -690,14 +690,14 @@ internal fun SettingsScreen(
                             ) { onPreferencesChange(preferences.copy(showBuiltInApps = it)) }
                             SettingToggle(
                                 tr("Show system apps", "Tampilkan aplikasi sistem"),
-                                "",
+                                tr("Include preinstalled Android and manufacturer apps in the app drawer.", "Include preinstalled Android and manufacturer apps in the app drawer."),
                                 !preferences.hideSystemApps
                             ) { onPreferencesChange(preferences.copy(hideSystemApps = !it)) }
                         }
                         SettingsGroup(tr("App drawer", "Laci aplikasi")) {
                             SettingToggle(
                                 tr("Show search bar", "Tampilkan kolom pencarian"),
-                                "",
+                                tr("Display the search field at the bottom of the app drawer.", "Display the search field at the bottom of the app drawer."),
                                 preferences.showSearchBar
                             ) { onPreferencesChange(preferences.copy(showSearchBar = it)) }
                             SettingToggle(
