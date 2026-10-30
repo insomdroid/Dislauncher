@@ -40,7 +40,6 @@ import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkAdded
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.DeleteOutline
@@ -660,26 +659,24 @@ internal fun BooksTool(onBack: () -> Unit) {
         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding()) {
           Column(Modifier.fillMaxSize().padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Back") }
+                IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Back", tint = fg) }
                 if (searchExpanded) {
                     OutlinedTextField(value = searchQuery, onValueChange = { searchQuery = it },
                         modifier = Modifier.weight(1f), placeholder = { Text("Search books") }, singleLine = true,
                         trailingIcon = { IconButton(onClick = { searchQuery = ""; searchExpanded = false }) {
-                            Icon(Icons.Outlined.Close, contentDescription = "Close search")
+                            Icon(Icons.Outlined.Close, contentDescription = "Close search", tint = fg)
                         } })
                 } else {
-                    Icon(Icons.Outlined.MenuBook, contentDescription = "Reader",
-                        tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(22.dp))
                     Text("Library", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.weight(1f), maxLines = 1)
-                    IconButton(onClick = { searchExpanded = true }) { Icon(Icons.Outlined.Search, contentDescription = "Search books") }
+                        color = fg, modifier = Modifier.weight(1f), maxLines = 1)
+                    IconButton(onClick = { searchExpanded = true }) { Icon(Icons.Outlined.Search, contentDescription = "Search books", tint = fg) }
                 }
                 if (books.isNotEmpty()) IconButton(onClick = { gridView = !gridView }) {
                     Icon(if (gridView) Icons.Outlined.ViewList else Icons.Outlined.ViewModule,
-                        contentDescription = if (gridView) "Switch to list view" else "Switch to grid view")
+                        contentDescription = if (gridView) "Switch to list view" else "Switch to grid view", tint = fg)
                 }
                 Box {
-                    IconButton(onClick = { showLibraryMenu = true }) { Icon(Icons.Outlined.MoreVert, contentDescription = "Library options") }
+                    IconButton(onClick = { showLibraryMenu = true }) { Icon(Icons.Outlined.MoreVert, contentDescription = "Library options", tint = fg) }
                     DropdownMenu(expanded = showLibraryMenu, onDismissRequest = { showLibraryMenu = false }) {
                         DropdownMenuItem(text = { Text(if (sortByTitle) "Sort by recently opened" else "Sort by title") },
                             onClick = { sortByTitle = !sortByTitle; showLibraryMenu = false })
@@ -699,7 +696,7 @@ internal fun BooksTool(onBack: () -> Unit) {
             if (visibleBooks.isEmpty()) {
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(if (searchQuery.isBlank()) "A quiet place for your books" else "No matching books", style = MaterialTheme.typography.titleMedium)
+                        Text(if (searchQuery.isBlank()) "A quiet place for your books" else "No matching books", style = MaterialTheme.typography.titleMedium, color = fg)
                         Text(if (searchQuery.isBlank()) "Add an EPUB, PDF, or TXT file to begin." else "Try another search.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
                     }
@@ -726,10 +723,10 @@ internal fun BooksTool(onBack: () -> Unit) {
                                         if (book.pinned) Icon(Icons.Outlined.PushPin, contentDescription = "Pinned",
                                             tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
                                         Text(book.title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium,
-                                            maxLines = 3, overflow = TextOverflow.Ellipsis)
+                                            color = fg, maxLines = 3, overflow = TextOverflow.Ellipsis)
                                         Box {
                                             IconButton(onClick = { bookMenuTarget = book.id }, modifier = Modifier.size(28.dp)) {
-                                                Icon(Icons.Outlined.MoreVert, contentDescription = "Book actions")
+                                                Icon(Icons.Outlined.MoreVert, contentDescription = "Book actions", tint = fg)
                                             }
                                             DropdownMenu(expanded = bookMenuTarget == book.id, onDismissRequest = { bookMenuTarget = null }) {
                                                 DropdownMenuItem(text = { Text(if (book.pinned) "Unpin" else "Pin") },
@@ -762,7 +759,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                                 Column(Modifier.weight(1f).padding(start = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                         if (book.pinned) Icon(Icons.Outlined.PushPin, contentDescription = "Pinned", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
-                                        Text(book.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                        Text(book.title, style = MaterialTheme.typography.titleMedium, color = fg, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                     }
                                     Text("${book.type.uppercase()} · ${if (book.position == 0) "Not started" else "Continue reading"}",
                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
