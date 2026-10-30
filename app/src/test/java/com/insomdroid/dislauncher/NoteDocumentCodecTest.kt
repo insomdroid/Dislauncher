@@ -80,4 +80,13 @@ class NoteDocumentCodecTest {
         assertEquals(setOf(NoteMark.CODE), spans[2].marks)
     }
 
+    @Test
+    fun noteMarkdownLinkParserAcceptsOnlyHttpAndHttpsDestinations() {
+        val document = NoteDocumentCodec.fromLegacyContent(
+            "[safe](https://example.com) [also-safe](http://example.com) [unsafe](javascript:alert(1))"
+        )
+        val links = document.blocks.flatMap { it.spans }.mapNotNull { it.link }
+        assertEquals(listOf("https://example.com", "http://example.com"), links)
+    }
+
 }
