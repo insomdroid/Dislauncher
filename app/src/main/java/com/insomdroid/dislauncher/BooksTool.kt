@@ -2,6 +2,7 @@ package com.insomdroid.dislauncher
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -36,6 +37,8 @@ import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkAdded
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.ViewList
 import androidx.compose.material.icons.outlined.ViewModule
@@ -48,10 +51,15 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.setValue
@@ -245,6 +253,48 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
     }
 }
 
+
+private fun loadBookCover(context: Context, book: BookEntry): Bitmap? {
+    return runCatching {
+        when (book.type) {
+            "pdf" -> copyBookToCache(context, Uri.parse(book.uri), "pdf").let { renderPdfPage(it, 0) }
+            "epub" -> {
+                val file = copyBookToCache(context, Uri.parse(book.uri), "epub")
+                ZipFile(file).use { zip ->
+                    val imageEntry = zip.entries().asSequence().firstOrNull {
+                        !it.isDirectory && it.name.substringAfterLast('.', "").lowercase() in
+                            setOf("jpg", "jpeg", "png", "webp")
+                    } ?: return@use null
+                    zip.getInputStream(imageEntry).use { BitmapFactory.decodeStream(it) }
+                }
+            }
+            else -> null
+        }
+    }.getOrNull()
+}
+
+@Composable
+private fun BookCover(book: BookEntry, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val cover by produceState<Bitmap?>(initialValue = null, book.id, book.uri, book.type) {
+        value = withContext(Dispatchers.IO) { loadBookCover(context, book) }
+    }
+    Surface(
+        modifier = modifier,
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+    ) {
+        if (cover != null) {
+            Image(bitmap = cover!!.asImageBitmap(), contentDescription = "Cover of ${book.title}", modifier = Modifier.fillMaxSize())
+        } else {
+            Box(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.Center) {
+                Text(book.type.uppercase(), style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
 private fun renderPdfPage(file: File, pageIndex: Int): Bitmap {
     val descriptor = android.os.ParcelFileDescriptor.open(file, android.os.ParcelFileDescriptor.MODE_READ_ONLY)
     PdfRenderer(descriptor).use { renderer ->
@@ -276,6 +326,10 @@ internal fun BooksTool(onBack: () -> Unit) {
     var pdfBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var pendingDelete by remember { mutableStateOf<BookEntry?>(null) }
     var gridView by remember { mutableStateOf(false) }
+    var searchExpanded by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    var showLibraryMenu by remember { mutableStateOf(false) }
+    var sortByTitle by remember { mutableStateOf(false) }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
@@ -349,47 +403,61 @@ internal fun BooksTool(onBack: () -> Unit) {
     val fg = MaterialTheme.colorScheme.onBackground
 
     if (selectedBook == null) {
-        Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding()) {
+          Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Back") }
-                Text("Reader", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
-                if (books.isNotEmpty()) IconButton(onClick = { gridView = !gridView }) {
-                    Icon(if (gridView) Icons.Outlined.ViewList else Icons.Outlined.ViewModule, contentDescription = if (gridView) "List view" else "Grid view")
+                if (searchExpanded) {
+                    OutlinedTextField(value = searchQuery, onValueChange = { searchQuery = it },
+                        modifier = Modifier.weight(1f), placeholder = { Text("Search books") }, singleLine = true,
+                        trailingIcon = { IconButton(onClick = { searchQuery = ""; searchExpanded = false }) {
+                            Icon(Icons.Outlined.Close, contentDescription = "Close search")
+                        } })
+                } else {
+                    Text("Library", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f), maxLines = 1)
+                    IconButton(onClick = { searchExpanded = true }) { Icon(Icons.Outlined.Search, contentDescription = "Search books") }
                 }
-                FilledTonalButton(
-                    onClick = { picker.launch(arrayOf("application/epub+zip", "application/pdf", "text/plain", "application/octet-stream")) },
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
-                ) {
-                    Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Add book")
+                if (books.isNotEmpty()) IconButton(onClick = { gridView = !gridView }) {
+                    Icon(if (gridView) Icons.Outlined.ViewList else Icons.Outlined.ViewModule,
+                        contentDescription = if (gridView) "Switch to list view" else "Switch to grid view")
+                }
+                Box {
+                    IconButton(onClick = { showLibraryMenu = true }) { Icon(Icons.Outlined.MoreVert, contentDescription = "Library options") }
+                    DropdownMenu(expanded = showLibraryMenu, onDismissRequest = { showLibraryMenu = false }) {
+                        DropdownMenuItem(text = { Text(if (sortByTitle) "Sort by recently opened" else "Sort by title") },
+                            onClick = { sortByTitle = !sortByTitle; showLibraryMenu = false })
+                    }
                 }
             }
-            Text("Your library", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 10.dp))
-            if (books.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            val visibleBooks = books.filter { it.title.contains(searchQuery, ignoreCase = true) }
+                .let { if (sortByTitle) it.sortedBy { book -> book.title.lowercase() } else it }
+            if (visibleBooks.isEmpty()) {
+            if (visibleBooks.isEmpty()) {
+                Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text("A quiet place for your books", style = MaterialTheme.typography.titleMedium)
-                        Text("Add an EPUB, PDF, or TXT file to begin.", color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
-                        TextButton(onClick = { picker.launch(arrayOf("application/epub+zip", "application/pdf", "text/plain", "application/octet-stream")) }) { Text("Add a book") }
+                        Text(if (searchQuery.isBlank()) "A quiet place for your books" else "No matching books", style = MaterialTheme.typography.titleMedium)
+                        Text(if (searchQuery.isBlank()) "Add an EPUB, PDF, or TXT file to begin." else "Try another search.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
                     }
                 }
             } else {
                 if (gridView) {
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(2),
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        contentPadding = PaddingValues(bottom = 96.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(books, key = { it.id }) { book ->
+                        items(visibleBooks, key = { it.id }) { book ->
                             Surface(
                                 modifier = Modifier.fillMaxWidth().clickable { selectedBook = book },
                                 shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
                                 color = MaterialTheme.colorScheme.surfaceContainer
                             ) {
-                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    BookCover(book, Modifier.fillMaxWidth().height(148.dp))
                                     Text(book.title, style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
                                     Text("${book.type.uppercase()} · ${if (book.position == 0) "Not started" else "Continue reading"}",
                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -401,13 +469,14 @@ internal fun BooksTool(onBack: () -> Unit) {
                         }
                     }
                 } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        books.forEach { book ->
+                    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        visibleBooks.forEach { book ->
                             Row(
                                 Modifier.fillMaxWidth().clickable { selectedBook = book }.padding(vertical = 14.dp, horizontal = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                BookCover(book, Modifier.size(width = 48.dp, height = 64.dp))
+                                Column(Modifier.weight(1f).padding(start = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Text(book.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                     Text("${book.type.uppercase()} · ${if (book.position == 0) "Not started" else "Continue reading"}",
                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -418,6 +487,14 @@ internal fun BooksTool(onBack: () -> Unit) {
                     }
                 }
             }
+          }
+          FloatingActionButton(onClick = {
+              picker.launch(arrayOf("application/epub+zip", "application/pdf", "text/plain", "application/octet-stream"))
+          }, modifier = Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 24.dp),
+              containerColor = MaterialTheme.colorScheme.primaryContainer,
+              contentColor = MaterialTheme.colorScheme.onPrimaryContainer) {
+              Icon(Icons.Outlined.Add, contentDescription = "Add book")
+          }
         }
     } else {
         val book = selectedBook!!
@@ -433,19 +510,22 @@ internal fun BooksTool(onBack: () -> Unit) {
                         selectedBook = books.first { it.id == book.id }
                         writeBookLibrary(context, books)
                     }) {
-                        Icon(if (currentPage in book.bookmarks) Icons.Outlined.BookmarkAdded else Icons.Outlined.Bookmark, contentDescription = "Bookmark", tint = fg)
+                        Icon(if (currentPage in book.bookmarks) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkAdded,
+                            contentDescription = if (currentPage in book.bookmarks) "Remove bookmark" else "Add bookmark", tint = fg)
                     }
                 }
                 Box(
                     Modifier.weight(1f).fillMaxWidth().pointerInput(selectedBook?.id, currentPage) {
-                        detectTapGestures { offset ->
+                        detectTapGestures(
+                            onLongPress = { showMenu = true },
+                            onTap = { offset ->
                             val x = offset.x / size.width
                             when {
                                 x < 0.22f -> if (currentPage > 0) { pageDirection = -1; currentPage--; saveProgress(currentPage) }
                                 x > 0.78f -> if (bookContent != null && currentPage < bookContent!!.pages.lastIndex) { pageDirection = 1; currentPage++; saveProgress(currentPage) }
                                 else -> showMenu = !showMenu
                             }
-                        }
+                        })
                     },
                     contentAlignment = Alignment.Center
                 ) {
@@ -473,24 +553,26 @@ internal fun BooksTool(onBack: () -> Unit) {
             }
 
             if (showMenu) {
-                Surface(
-                    modifier = Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = 28.dp),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    shadowElevation = 4.dp
-                ) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(book.title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            IconButton(onClick = { showMenu = false }) { Icon(Icons.Outlined.Close, contentDescription = "Close menu") }
+                AlertDialog(
+                    onDismissRequest = { showMenu = false },
+                    title = { Text("Reader options") },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(book.title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            TextButton(onClick = { menuSection = "toc"; showMenu = false }, modifier = Modifier.fillMaxWidth()) {
+                                Text("Table of contents", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
+                            }
+                            TextButton(onClick = { menuSection = "bookmarks"; showMenu = false }, modifier = Modifier.fillMaxWidth()) {
+                                Text("Bookmarks", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
+                            }
+                            Text("Text size", style = MaterialTheme.typography.labelLarge)
+                            Slider(value = fontSize, onValueChange = { fontSize = it }, valueRange = 15f..30f)
+                            Text("Tap left or right edge to turn pages.", style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        TextButton(onClick = { menuSection = "toc"; showMenu = false }, modifier = Modifier.fillMaxWidth()) { Text("Table of contents", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start) }
-                        TextButton(onClick = { menuSection = "bookmarks"; showMenu = false }, modifier = Modifier.fillMaxWidth()) { Text("Bookmarks", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start) }
-                        Text("Text size", style = MaterialTheme.typography.labelLarge)
-                        Slider(value = fontSize, onValueChange = { fontSize = it }, valueRange = 15f..30f)
-                        Text("Tap left or right edge to turn pages.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
+                    },
+                    confirmButton = { TextButton(onClick = { showMenu = false }) { Text("Done") } }
+                )
             }
 
             if (menuSection.isNotEmpty()) {
