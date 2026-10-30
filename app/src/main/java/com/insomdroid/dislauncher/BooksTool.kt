@@ -708,8 +708,12 @@ internal fun BooksTool(onBack: () -> Unit) {
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(if (searchQuery.isBlank()) "A quiet place for your books" else "No matching books", style = MaterialTheme.typography.titleMedium, color = fg)
-                        Text(if (searchQuery.isBlank()) "Add an EPUB, PDF, or TXT file to begin." else "Try another search.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+                        Text(
+                            if (searchQuery.isBlank()) "Use the + button to add an EPUB, PDF, or TXT file."
+                            else "Try another search or clear the search field.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
                     }
                 }
             } else {
@@ -800,7 +804,7 @@ internal fun BooksTool(onBack: () -> Unit) {
           }
           FloatingActionButton(onClick = {
               picker.launch(arrayOf("application/epub+zip", "application/pdf", "text/plain", "application/octet-stream"))
-          }, modifier = Modifier.align(Alignment.BottomEnd).navigationBarsPadding()
+          }, modifier = Modifier.align(Alignment.BottomEnd)
                   .padding(end = BuiltInToolDesign.fabEndPadding, bottom = BuiltInToolDesign.fabBottomPadding),
               containerColor = MaterialTheme.colorScheme.primaryContainer,
               contentColor = MaterialTheme.colorScheme.onPrimaryContainer) {
