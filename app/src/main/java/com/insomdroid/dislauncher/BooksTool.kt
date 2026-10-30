@@ -620,7 +620,20 @@ internal fun BooksTool(onBack: () -> Unit) {
             error = "This book could not be opened because the device ran out of memory. Close other apps and try again."
             System.gc()
         } catch (e: Exception) {
-            error = e.message ?: "Unable to open this book."
+            val detail = e.message.orEmpty()
+            error = when {
+                detail.contains("too large", ignoreCase = true) ->
+                    "$detail Choose a smaller file; the maximum supported size is 100 MB."
+                detail.contains("oversized section", ignoreCase = true) ->
+                    "This EPUB contains a section that is too large to load. Try another copy of the book."
+                detail.contains("permission", ignoreCase = true) ||
+                    detail.contains("access", ignoreCase = true) ->
+                    "The app can no longer access this file. Add the book again and select the file from your device."
+                detail.isNotBlank() ->
+                    "Could not open this ${book.type.uppercase()} file. It may be damaged or use unsupported content. Select another file and try again. Details: $detail"
+                else ->
+                    "Could not open this ${book.type.uppercase()} file. Check that the file is available, then add it again."
+            }
         } finally {
             loading = false
         }
@@ -857,7 +870,12 @@ internal fun BooksTool(onBack: () -> Unit) {
                     when {
                         loading -> Text("Opening book…", color = fg)
                         error != null -> Text(error ?: "", color = fg, modifier = Modifier.padding(24.dp), textAlign = TextAlign.Center)
-                        bookContent == null -> Text("No content", color = fg)
+                        bookContent == null -> Text(
+                            "This file has no readable content. Try another EPUB, PDF, or TXT file.",
+                            color = fg,
+                            modifier = Modifier.padding(24.dp),
+                            textAlign = TextAlign.Center
+                        )
                         book.type == "pdf" && pdfBitmap != null -> Image(
                             bitmap = pdfBitmap!!.asImageBitmap(), contentDescription = "PDF page ${currentPage + 1}",
                             modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 12.dp)
