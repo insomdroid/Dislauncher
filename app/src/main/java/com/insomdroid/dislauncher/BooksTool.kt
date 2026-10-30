@@ -269,6 +269,77 @@ private fun htmlToText(html: String): String = decodeEntities(
 ).replace(Regex("[ \\t]+"), " ").replace(Regex(" *\\n *"), "\n")
     .replace(Regex("\\n{3,}"), "\n\n").trim()
 
+private class BoundedEpubInputStream(
+    input: java.io.InputStream,
+    private val limit: Long,
+    private val onBytesRead: (Long) -> Unit
+) : java.io.FilterInputStream(input) {
+    private var consumed = 0L
+
+    override fun read(): Int {
+        val value = super.read()
+        if (value >= 0) record(1)
+        return value
+    }
+
+    override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
+        val count = super.read(buffer, offset, length)
+        if (count > 0) record(count.toLong())
+        return count
+    }
+
+    private fun record(count: Long) {
+        consumed += count
+        require(consumed <= limit) { "This EPUB exceeds the 100 MB processing limit." }
+        onBytesRead(count)
+    }
+}
+
+private fun appendEpubSection(
+    input: java.io.InputStream,
+    remainingBytes: Long,
+    writer: DiskBackedBookPages.Writer,
+    onBytesRead: (Long) -> Unit
+) {
+    val parser = android.util.Xml.newPullParser()
+    parser.setFeature(org.xmlpull.v1.XmlPullParser.FEATURE_PROCESS_DOCDECL, false)
+    BoundedEpubInputStream(input, remainingBytes, onBytesRead).use { stream ->
+        parser.setInput(stream, "UTF-8")
+        val ignoredTags = setOf("head", "script", "style", "svg")
+        val blockTags = setOf("p", "div", "h1", "h2", "h3", "h4", "h5", "h6", "li", "tr", "section", "article", "br")
+        var ignoredDepth = 0
+        var event = parser.eventType
+        while (event != org.xmlpull.v1.XmlPullParser.END_DOCUMENT) {
+            when (event) {
+                org.xmlpull.v1.XmlPullParser.START_TAG -> {
+                    val tag = parser.name?.lowercase().orEmpty()
+                    if (ignoredDepth > 0) {
+                        ignoredDepth++
+                    } else if (tag in ignoredTags) {
+                        ignoredDepth = 1
+                    } else if (tag in blockTags) {
+                        writer.append(" ")
+                    }
+                }
+                org.xmlpull.v1.XmlPullParser.TEXT,
+                org.xmlpull.v1.XmlPullParser.CDSECT,
+                org.xmlpull.v1.XmlPullParser.ENTITY_REF -> {
+                    if (ignoredDepth == 0) parser.text?.let(writer::append)
+                }
+                org.xmlpull.v1.XmlPullParser.END_TAG -> {
+                    if (ignoredDepth > 0) {
+                        ignoredDepth--
+                    } else if (parser.name?.lowercase() in blockTags) {
+                        writer.append(" ")
+                    }
+                }
+            }
+            event = parser.next()
+        }
+    }
+    writer.finishSection()
+}
+
 private val bookContentCache = object : LruCache<String, BookContent>(
     (Runtime.getRuntime().maxMemory() / 32L).coerceIn(2L * 1024L * 1024L, 8L * 1024L * 1024L).toInt()
 ) {
@@ -346,17 +417,15 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
                             "Invalid EPUB section path."
                         }
                         val entry = zip.getEntry(normalized) ?: return@forEach
-                        val declaredSize = entry.size.coerceAtLeast(0L)
-                        totalSectionBytes += declaredSize
-                        require(totalSectionBytes <= MAX_EPUB_TOTAL_BYTES) {
+                        val remainingBytes = (MAX_EPUB_TOTAL_BYTES - totalSectionBytes).coerceAtLeast(0L)
+                        require(entry.size < 0L || entry.size <= remainingBytes) {
                             "This EPUB exceeds the 100 MB processing limit."
                         }
-                        val remainingBytes = (MAX_EPUB_TOTAL_BYTES - (totalSectionBytes - declaredSize)).coerceAtLeast(0L)
                         val chapterStart = writer.pageCount
-                        val text = htmlToText(readZipEntryText(zip, entry, minOf(MAX_EPUB_ENTRY_BYTES, remainingBytes)))
-                        if (text.isNotBlank()) {
-                            writer.append(text)
-                            writer.finishSection()
+                        appendEpubSection(zip.getInputStream(entry), remainingBytes, writer) { count ->
+                            totalSectionBytes += count
+                        }
+                        if (writer.pageCount > chapterStart) {
                             val chapterTitle = normalized.substringAfterLast('/').substringBeforeLast('.')
                                 .replace(Regex("[-_]"), " ").trim()
                             if (chapterTitle.isNotBlank()) chapters += chapterTitle to chapterStart
