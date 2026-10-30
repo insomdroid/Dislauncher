@@ -42,6 +42,9 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import io.noties.markwon.Markwon
 
+private val MARKDOWN_LIST_LINE_REGEX = MARKDOWN_LIST_LINE_REGEX
+private val MARKDOWN_NUMBER_REGEX = MARKDOWN_NUMBER_REGEX
+
 /** Markdown-native editor. The Markdown source is canonical; preview is rendered locally. */
 @Composable
 internal fun MarkdownNoteEditor(
@@ -121,7 +124,7 @@ internal fun MarkdownNoteEditor(
                         val cursorBeforeNewline = previous.selection.min.coerceIn(0, previous.text.length)
                         val lineStart = if (cursorBeforeNewline == 0) 0 else previous.text.lastIndexOf('\n', cursorBeforeNewline - 1) + 1
                         val line = previous.text.substring(lineStart, cursorBeforeNewline)
-                        val match = Regex("^(\\s*)([-*+]\\s+|\\d+[.)]\\s+)(.*)$").matchEntire(line)
+                        val match = MARKDOWN_LIST_LINE_REGEX.matchEntire(line)
                         if (match != null) {
                             val indent = match.groupValues[1]
                             val marker = match.groupValues[2]
@@ -132,8 +135,8 @@ internal fun MarkdownNoteEditor(
                                 onValueChange(nextText)
                             } else {
                                 val nextMarker = if (marker.trimStart().firstOrNull()?.isDigit() == true) {
-                                    val number = Regex("\\d+").find(marker)?.value?.toIntOrNull() ?: 1
-                                    marker.replace(Regex("\\d+"), (number + 1).toString())
+                                    val number = MARKDOWN_NUMBER_REGEX.find(marker)?.value?.toIntOrNull() ?: 1
+                                    marker.replace(MARKDOWN_NUMBER_REGEX, (number + 1).toString())
                                 } else marker
                                 val continuation = indent + nextMarker
                                 val insertionPoint = cursorAfterNewline
@@ -157,7 +160,7 @@ internal fun MarkdownNoteEditor(
                         val lineStart = if (cursor == 0) 0 else text.lastIndexOf('\n', cursor - 1) + 1
                         val lineEnd = text.indexOf('\n', cursor).let { if (it < 0) text.length else it }
                         val line = text.substring(lineStart, lineEnd)
-                        val match = Regex("^(\\s*)([-*+]\\s+|\\d+[.)]\\s+)(.*)$").matchEntire(line)
+                        val match = MARKDOWN_LIST_LINE_REGEX.matchEntire(line)
                             ?: return@onPreviewKeyEvent false
                         val indent = match.groupValues[1]
                         val marker = match.groupValues[2]
@@ -168,8 +171,8 @@ internal fun MarkdownNoteEditor(
                             onValueChange(nextText)
                         } else {
                             val nextMarker = if (marker.trimStart().firstOrNull()?.isDigit() == true) {
-                                val number = Regex("\\d+").find(marker)?.value?.toIntOrNull() ?: 1
-                                marker.replace(Regex("\\d+"), (number + 1).toString())
+                                val number = MARKDOWN_NUMBER_REGEX.find(marker)?.value?.toIntOrNull() ?: 1
+                                marker.replace(MARKDOWN_NUMBER_REGEX, (number + 1).toString())
                             } else marker
                             val insertion = "\n" + indent + nextMarker
                             val nextText = text.replaceRange(cursor, cursor, insertion)
