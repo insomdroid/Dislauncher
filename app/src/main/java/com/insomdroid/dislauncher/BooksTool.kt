@@ -329,14 +329,14 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
                         relative.substringAfterLast('/').substringBeforeLast('.') to it
                     }
                 }
-                val combined = sections.joinToString("\n\n") { it.second }
-                val pages = splitPages(combined)
-                val chapters = sections.mapNotNull { (title, text) ->
-                    val index = combined.indexOf(text).takeIf { it >= 0 } ?: return@mapNotNull null
-                    val position = pages.indexOfFirst { page -> combined.indexOf(page).let { it >= 0 && it <= index && index < it + page.length } }
-                    title.replace(Regex("[-_]"), " ").takeIf { it.isNotBlank() }?.let { it to position.coerceAtLeast(0) }
+                val pages = mutableListOf<String>()
+                val chapters = mutableListOf<Pair<String, Int>>()
+                sections.forEach { (title, sectionText) ->
+                    val chapterTitle = title.replace(Regex("[-_]"), " ").trim()
+                    if (chapterTitle.isNotBlank()) chapters += chapterTitle to pages.size
+                    pages.addAll(splitPages(sectionText))
                 }
-                BookContent(pages, chapters)
+                BookContent(pages.ifEmpty { listOf("This book contains no readable text.") }, chapters)
             }
         }
         else -> {
