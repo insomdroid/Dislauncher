@@ -674,7 +674,7 @@ internal fun BooksTool(onBack: () -> Unit) {
     val fg = MaterialTheme.colorScheme.onSurface
 
     if (selectedBook == null) {
-        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding()) {
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding().navigationBarsPadding()) {
           Column(Modifier.fillMaxSize().padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Back", tint = fg) }
@@ -720,20 +720,10 @@ internal fun BooksTool(onBack: () -> Unit) {
             if (visibleBooks.isEmpty()) {
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        val libraryIsEmpty = books.isEmpty() && searchQuery.isBlank() && !pinnedOnly
                         Text(
-                            if (libraryIsEmpty) "A quiet place for your books" else "No matching books",
+                            if (books.isEmpty() && searchQuery.isBlank() && !pinnedOnly) "No books yet" else "No matching books",
                             style = MaterialTheme.typography.titleMedium,
                             color = fg
-                        )
-                        Text(
-                            when {
-                                libraryIsEmpty -> "Use the + button to add an EPUB, PDF, or TXT file."
-                                pinnedOnly && searchQuery.isBlank() -> "No pinned books yet. Pin a book or show all books."
-                                else -> "Try another search or clear the search field."
-                            },
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
                         )
                     }
                 }
