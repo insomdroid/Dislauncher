@@ -253,7 +253,7 @@ private val pdfPageCache = object : LruCache<String, Bitmap>(12 * 1024 * 1024) {
 }
 
 private fun loadBookContent(context: Context, book: BookEntry): BookContent {
-    bookContentCache.get(book.id)?.let { return it }
+    bookContentCache.get("${book.id}:${book.uri}")?.let { return it }
     val uri = Uri.parse(book.uri)
     val content = when (book.type) {
         "pdf" -> {
@@ -289,7 +289,7 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
                     zip.entries().asSequence().map { it.name }
                         .filter { it.endsWith(".xhtml", true) || it.endsWith(".html", true) || it.endsWith(".htm", true) }
                         .take(501).toList()
-                }
+                }.take(501)
                 require(paths.size <= 500) { "This EPUB has too many sections (maximum 500)." }
                 var totalSectionBytes = 0L
                 val sections = paths.mapNotNull { relative ->
@@ -328,7 +328,7 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
             BookContent(splitPages(text))
         }
     }
-    bookContentCache.put(book.id, content)
+    bookContentCache.put("${book.id}:${book.uri}", content)
     return content
 }
 
@@ -337,7 +337,7 @@ private val bookCoverCache = object : LruCache<String, Bitmap>(6 * 1024 * 1024) 
 }
 
 private fun loadBookCover(context: Context, book: BookEntry): Bitmap? {
-    bookCoverCache.get(book.id)?.let { return it }
+    bookCoverCache.get("${book.id}:${book.uri}")?.let { return it }
     val result = runCatching {
         when (book.type) {
             "pdf" -> copyBookToCache(context, Uri.parse(book.uri), "pdf").let { renderPdfPage(it, 0) }
@@ -345,16 +345,28 @@ private fun loadBookCover(context: Context, book: BookEntry): Bitmap? {
                 val file = copyBookToCache(context, Uri.parse(book.uri), "epub")
                 ZipFile(file).use { zip ->
                     val imageEntry = zip.entries().asSequence().firstOrNull {
-                        !it.isDirectory && it.name.substringAfterLast('.', "").lowercase() in
-                            setOf("jpg", "jpeg", "png", "webp")
+                        !it.isDirectory && it.size in 1..(8L * 1024L * 1024L) &&
+                            it.name.substringAfterLast('.', "").lowercase() in setOf("jpg", "jpeg", "png", "webp")
                     } ?: return@use null
-                    zip.getInputStream(imageEntry).use { BitmapFactory.decodeStream(it) }
+                    zip.getInputStream(imageEntry).use { input ->
+                        val bytes = input.readBytes()
+                        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+                        if (bounds.outWidth !in 1..12_000 || bounds.outHeight !in 1..12_000) null
+                        else {
+                            var sample = 1
+                            while (sample < 64 &&
+                                (bounds.outWidth / sample > 1200 || bounds.outHeight / sample > 1600)) sample *= 2
+                            val options = BitmapFactory.Options().apply { inSampleSize = sample }
+                            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+                        }
+                    }
                 }
             }
             else -> null
         }
     }.getOrNull()
-    if (result != null) bookCoverCache.put(book.id, result)
+    if (result != null) bookCoverCache.put("${book.id}:${book.uri}", result)
     return result
 }
 
