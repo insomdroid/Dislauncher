@@ -47,6 +47,7 @@ internal data class LauncherPreferences(
     val folderAssignments: Set<String> = emptySet()
 ) {
     fun save(p: SharedPreferences) {
+        if (this == load(p)) return
         p.edit()
             .putString("theme_mode", themeMode)
             .putString("wallpaper_mode", wallpaperMode)
