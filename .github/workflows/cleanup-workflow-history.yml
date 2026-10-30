@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirm_cleanup:
-        description: 'Confirm permanent deletion of completed workflow run history'
+        description: 'Confirm permanent deletion of older runs of this workflow'
         type: boolean
         required: true
         default: false
@@ -17,25 +17,54 @@ jobs:
     if: inputs.confirm_cleanup
     runs-on: ubuntu-latest
     steps:
-      - name: Delete completed workflow runs
+      - name: Keep the 3 newest runs and delete older runs
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         shell: bash
         run: |
           set -euo pipefail
-          mapfile -t ids < <(gh api --paginate "repos/${GH_REPO}/actions/runs?per_page=100" --jq '.workflow_runs[] | select(.status == "completed") | .id')
-          echo "Found ${#ids[@]} completed workflow runs."
+
+          workflow_file="cleanup-workflow-history.yml"
+          mapfile -t runs < <(
+            gh api --paginate "repos/${GH_REPO}/actions/workflows/${workflow_file}/runs?per_page=100" \
+              --jq '.workflow_runs[] | [.id, .status] | @tsv'
+          )
+
+          total="${#runs[@]}"
+          echo "Found ${total} runs for ${workflow_file}."
+
+          if (( total <= 3 )); then
+            echo "Nothing to delete. The workflow has 3 or fewer runs."
+            exit 0
+          fi
+
           deleted=0
           failed=0
-          for id in "${ids[@]}"; do
-            if gh api --method DELETE "repos/${GH_REPO}/actions/runs/${id}" >/dev/null 2>&1; then
+          kept=0
+
+          for index in "${!runs[@]}"; do
+            IFS=$'\t' read -r run_id status <<< "${runs[$index]}"
+
+            if (( index < 3 )); then
+              kept=$((kept + 1))
+              echo "Keeping run ${run_id} (${status})"
+              continue
+            fi
+
+            if [[ "${status}" != "completed" ]]; then
+              echo "Skipping run ${run_id} because it is still ${status}."
+              continue
+            fi
+
+            if gh api --method DELETE "repos/${GH_REPO}/actions/runs/${run_id}" >/dev/null 2>&1; then
               deleted=$((deleted + 1))
-              echo "Deleted run ${id}"
+              echo "Deleted older run ${run_id}"
             else
               failed=$((failed + 1))
-              echo "::warning::Failed to delete run ${id}"
+              echo "::warning::Failed to delete run ${run_id}"
             fi
           done
-          echo "Summary: deleted=${deleted}, failed=${failed}"
+
+          echo "Summary: kept=${kept}, deleted=${deleted}, failed=${failed}"
           test "${failed}" -eq 0
