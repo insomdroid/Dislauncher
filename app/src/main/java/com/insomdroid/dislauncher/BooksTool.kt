@@ -816,7 +816,7 @@ internal fun BooksTool(onBack: () -> Unit) {
           FloatingActionButton(onClick = {
               picker.launch(arrayOf("application/epub+zip", "application/pdf", "text/plain", "application/octet-stream"))
           }, modifier = Modifier.align(Alignment.BottomEnd)
-                  .padding(end = BuiltInToolDesign.fabEndPadding, bottom = BuiltInToolDesign.fabBottomPadding + 10.dp),
+                  .padding(end = BuiltInToolDesign.fabEndPadding, bottom = BuiltInToolDesign.fabBottomPadding),
               containerColor = MaterialTheme.colorScheme.primaryContainer,
               contentColor = MaterialTheme.colorScheme.onPrimaryContainer) {
               Icon(Icons.Outlined.Add, contentDescription = "Add book")
