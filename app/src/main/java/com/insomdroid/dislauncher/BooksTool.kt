@@ -38,6 +38,7 @@ import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkAdded
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.ViewList
@@ -55,6 +56,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -79,6 +81,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import android.util.LruCache
 import java.util.UUID
 import java.util.zip.ZipFile
 
@@ -88,7 +91,8 @@ private data class BookEntry(
     val title: String,
     val type: String,
     val position: Int = 0,
-    val bookmarks: List<Int> = emptyList()
+    val bookmarks: List<Int> = emptyList(),
+    val pinned: Boolean = false
 )
 
 private data class BookContent(
@@ -113,7 +117,8 @@ private fun readBookLibrary(context: Context): List<BookEntry> {
                 position = o.optInt("position", 0).coerceAtLeast(0),
                 bookmarks = (o.optJSONArray("bookmarks") ?: JSONArray()).let { a ->
                     (0 until a.length()).map { a.optInt(it) }.filter { it >= 0 }
-                }
+                },
+                pinned = o.optBoolean("pinned", false)
             )
         }
     }.getOrDefault(emptyList())
@@ -125,7 +130,7 @@ private fun writeBookLibrary(context: Context, books: List<BookEntry>) {
         array.put(JSONObject().apply {
             put("id", book.id); put("uri", book.uri); put("title", book.title)
             put("type", book.type); put("position", book.position)
-            put("bookmarks", JSONArray(book.bookmarks))
+            put("bookmarks", JSONArray(book.bookmarks)); put("pinned", book.pinned)
         })
     }
     context.getSharedPreferences("dislauncher_books", Context.MODE_PRIVATE)
@@ -254,7 +259,11 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
 }
 
 
+private val bookCoverCache = LruCache<String, Bitmap>(12)
+
 private fun loadBookCover(context: Context, book: BookEntry): Bitmap? {
+    bookCoverCache.get(book.id)?.let { return it }
+    val result =
     return runCatching {
         when (book.type) {
             "pdf" -> copyBookToCache(context, Uri.parse(book.uri), "pdf").let { renderPdfPage(it, 0) }
@@ -271,6 +280,8 @@ private fun loadBookCover(context: Context, book: BookEntry): Bitmap? {
             else -> null
         }
     }.getOrNull()
+    if (result != null) bookCoverCache.put(book.id, result)
+    return result
 }
 
 @Composable
@@ -281,8 +292,9 @@ private fun BookCover(book: BookEntry, modifier: Modifier = Modifier) {
     }
     Surface(
         modifier = modifier,
-        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
     ) {
         if (cover != null) {
             Image(bitmap = cover!!.asImageBitmap(), contentDescription = "Cover of ${book.title}", modifier = Modifier.fillMaxSize())
@@ -330,6 +342,7 @@ internal fun BooksTool(onBack: () -> Unit) {
     var searchQuery by remember { mutableStateOf("") }
     var showLibraryMenu by remember { mutableStateOf(false) }
     var sortByTitle by remember { mutableStateOf(false) }
+    var pinnedOnly by remember { mutableStateOf(false) }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
@@ -399,8 +412,8 @@ internal fun BooksTool(onBack: () -> Unit) {
         }
     }
 
-    val bg = MaterialTheme.colorScheme.background
-    val fg = MaterialTheme.colorScheme.onBackground
+    val bg = MaterialTheme.colorScheme.surface
+    val fg = MaterialTheme.colorScheme.onSurface
 
     if (selectedBook == null) {
         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding()) {
@@ -427,11 +440,19 @@ internal fun BooksTool(onBack: () -> Unit) {
                     DropdownMenu(expanded = showLibraryMenu, onDismissRequest = { showLibraryMenu = false }) {
                         DropdownMenuItem(text = { Text(if (sortByTitle) "Sort by recently opened" else "Sort by title") },
                             onClick = { sortByTitle = !sortByTitle; showLibraryMenu = false })
+                        DropdownMenuItem(text = { Text(if (pinnedOnly) "Show all books" else "Pinned books") },
+                            leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                            onClick = { pinnedOnly = !pinnedOnly; showLibraryMenu = false })
                     }
                 }
             }
-            val visibleBooks = books.filter { it.title.contains(searchQuery, ignoreCase = true) }
-                .let { if (sortByTitle) it.sortedBy { book -> book.title.lowercase() } else it }
+            val visibleBooks = books.filter { it.title.contains(searchQuery, ignoreCase = true) && (!pinnedOnly || it.pinned) }
+                .let { list -> if (sortByTitle) list.sortedWith(compareByDescending<BookEntry> { it.pinned }.thenBy { it.title.lowercase() })
+                    else list.sortedWith(compareByDescending<BookEntry> { it.pinned }) }
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = !pinnedOnly, onClick = { pinnedOnly = false }, label = { Text("All books") })
+                FilterChip(selected = pinnedOnly, onClick = { pinnedOnly = true }, label = { Text("Pinned") })
+            }
             if (visibleBooks.isEmpty()) {
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -453,7 +474,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                             Surface(
                                 modifier = Modifier.fillMaxWidth().clickable { selectedBook = book },
                                 shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-                                color = MaterialTheme.colorScheme.surfaceContainer
+                                color = MaterialTheme.colorScheme.surfaceContainerLow
                             ) {
                                 Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     BookCover(book, Modifier.fillMaxWidth().height(148.dp))
@@ -461,6 +482,10 @@ internal fun BooksTool(onBack: () -> Unit) {
                                     Text("${book.type.uppercase()} · ${if (book.position == 0) "Not started" else "Continue reading"}",
                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                        IconButton(onClick = { books = books.map { if (it.id == book.id) it.copy(pinned = !it.pinned) else it }; writeBookLibrary(context, books) }) {
+                                            Icon(Icons.Outlined.PushPin, contentDescription = if (book.pinned) "Unpin book" else "Pin book",
+                                                tint = if (book.pinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
                                         IconButton(onClick = { pendingDelete = book }) { Icon(Icons.Outlined.DeleteOutline, contentDescription = "Remove book") }
                                     }
                                 }
@@ -479,6 +504,10 @@ internal fun BooksTool(onBack: () -> Unit) {
                                     Text(book.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                     Text("${book.type.uppercase()} · ${if (book.position == 0) "Not started" else "Continue reading"}",
                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                IconButton(onClick = { books = books.map { if (it.id == book.id) it.copy(pinned = !it.pinned) else it }; writeBookLibrary(context, books) }) {
+                                    Icon(Icons.Outlined.PushPin, contentDescription = if (book.pinned) "Unpin book" else "Pin book",
+                                        tint = if (book.pinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 IconButton(onClick = { pendingDelete = book }) { Icon(Icons.Outlined.DeleteOutline, contentDescription = "Remove book") }
                             }
