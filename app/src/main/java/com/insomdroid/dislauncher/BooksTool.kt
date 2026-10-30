@@ -168,8 +168,12 @@ private fun copyBookToCache(context: Context, uri: Uri, suffix: String): File {
         .digest(uri.toString().toByteArray(Charsets.UTF_8))
         .joinToString("") { "%02x".format(it) }
     val target = File(context.cacheDir, "book_$digest.$suffix")
-    if (target.exists() && target.length() > 0L) return target
+    if (target.exists()) {
+        if (target.length() in 1..MAX_BOOK_BYTES) return target
+        target.delete()
+    }
     val temporary = File(context.cacheDir, "${target.name}.tmp")
+    temporary.delete()
     try {
         context.contentResolver.openInputStream(uri).use { input ->
             requireNotNull(input) { "Unable to open document" }
@@ -298,7 +302,7 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
                 val paths = spineIds.mapNotNull { manifest[it] }.ifEmpty {
                     zip.entries().asSequence().map { it.name }
                         .filter { it.endsWith(".xhtml", true) || it.endsWith(".html", true) || it.endsWith(".htm", true) }
-                        .take(501).toList()
+                        .toList()
                 }
                 var totalSectionBytes = 0L
                 val sections = paths.mapNotNull { relative ->
