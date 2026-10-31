@@ -444,12 +444,23 @@ private fun priorityColor(priority: Int): Color = when (priority) {
 @Composable
 internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     if (tool == BuiltInTool.BOOKS) {
-        Box(
+        BoxWithConstraints(
             Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            BooksTool(onBack = onBack)
+            Box(
+                Modifier
+                    .widthIn(max = 840.dp)
+                    .fillMaxSize()
+                    .align(Alignment.TopCenter)
+                    .padding(
+                        horizontal = if (maxWidth >= 600.dp) 24.dp else 16.dp,
+                        vertical = 10.dp
+                    )
+            ) {
+                BooksTool(onBack = onBack)
+            }
         }
         return
     }
@@ -818,7 +829,7 @@ private fun NotesTool(
                 Text("Loading notes…", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else if (selectedId == null) {
-            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
                 Row(
                     Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -917,7 +928,7 @@ private fun NotesTool(
                             }
                             Surface(
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 144.dp).clickable { openNote(note) },
-                                shape = RoundedCornerShape(12.dp),
+                                shape = RoundedCornerShape(BuiltInToolDesign.cardCornerRadius),
                                 color = when (note.color) {
                                     "red" -> MaterialTheme.colorScheme.errorContainer
                                     "yellow" -> MaterialTheme.colorScheme.secondaryContainer
@@ -929,7 +940,7 @@ private fun NotesTool(
                                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
                                 tonalElevation = 0.dp
                             ) {
-                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         if (note.pinned) Icon(Icons.Outlined.PushPin, contentDescription = "Pinned",
                                             tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(15.dp))
@@ -1024,7 +1035,7 @@ private fun NotesTool(
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             ) { Icon(Icons.Outlined.NoteAdd, contentDescription = "New note") }
         } else {
-            Column(Modifier.fillMaxSize().imePadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.fillMaxSize().imePadding(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onBackRequested) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Back") }
                     IconButton(
@@ -1099,7 +1110,7 @@ private fun NotesTool(
                 }
                 Surface(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(BuiltInToolDesign.cardCornerRadius),
                     color = MaterialTheme.colorScheme.surfaceContainerLow,
                     contentColor = MaterialTheme.colorScheme.onSurface,
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
@@ -1150,7 +1161,7 @@ private fun NotesTool(
                 ) {
                     Surface(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(BuiltInToolDesign.cardCornerRadius),
                         color = MaterialTheme.colorScheme.surfaceContainerLow,
                         contentColor = MaterialTheme.colorScheme.onSurface,
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
@@ -1331,7 +1342,7 @@ private fun CalculatorTool(
             .coerceAtLeast(36.dp)
 
         if (showHistory) {
-            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
                 if (history.isEmpty()) {
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                         Column(
@@ -1342,7 +1353,7 @@ private fun CalculatorTool(
                         }
                     }
                 } else {
-                    LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
                         items(history, key = { it.id }) { entry ->
                             Surface(
                                 modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(BuiltInToolDesign.cardCornerRadius)).clickable {
