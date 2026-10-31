@@ -112,7 +112,7 @@ class NoteDocumentCodecTest {
     fun diskBackedReaderPreservesTextLineAndParagraphBreaks() {
         val file = java.io.File.createTempFile("reader-paragraphs", ".bin")
         try {
-            val source = "First line\\nSecond line\\n\\nThird paragraph"
+            val source = "First line\nSecond line\n\nThird paragraph"
             val pages = DiskBackedBookPages.Writer(file).apply { append(source) }.finish()
             assertEquals(source, pages.joinToString(""))
         } finally {
