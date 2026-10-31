@@ -539,7 +539,11 @@ private fun loadBookCover(context: Context, book: BookEntry): Bitmap? {
     bookCoverCache.get("${book.id}:${book.uri}")?.let { return it }
     val result = runCatching {
         when (book.type) {
-            "pdf" -> renderPdfThumbnail(context, Uri.parse(book.uri), 0)
+            "pdf" -> runCatching {
+                renderPdfThumbnail(context, Uri.parse(book.uri), 0)
+            }.getOrElse {
+                cachedBookFile(context, Uri.parse(book.uri), "pdf")?.let { renderPdfThumbnail(it, 0) }
+            }
             "epub" -> {
                 val file = cachedBookFile(context, Uri.parse(book.uri), "epub") ?: return@runCatching null
                 ZipFile(file).use { zip ->
@@ -646,6 +650,11 @@ private fun renderPdfThumbnail(context: Context, uri: Uri, pageIndex: Int): Bitm
     return renderPdfPage(descriptor, "cover:${uri}", pageIndex, 300f, cache = false)
 }
 
+private fun renderPdfThumbnail(file: File, pageIndex: Int): Bitmap {
+    val descriptor = android.os.ParcelFileDescriptor.open(file, android.os.ParcelFileDescriptor.MODE_READ_ONLY)
+    return renderPdfPage(descriptor, "cover:${file.absolutePath}", pageIndex, 300f, cache = false)
+}
+
 private fun renderPdfPage(
     descriptor: android.os.ParcelFileDescriptor,
     cacheKey: String,
@@ -656,9 +665,13 @@ private fun renderPdfPage(
     PdfRenderer(descriptor).use { renderer ->
         renderer.openPage(pageIndex.coerceIn(0, renderer.pageCount - 1)).use { page ->
             val maxPixels = if (maxDimension <= 300f) 160_000L else 2_000_000L
+            val dimensionScale = if (maxDimension <= 300f) {
+                minOf(maxDimension / page.width, maxDimension / page.height)
+            } else {
+                maxDimension / page.width
+            }
             val scale = minOf(
-                maxDimension / page.width,
-                maxDimension / page.height,
+                dimensionScale,
                 kotlin.math.sqrt(maxPixels.toDouble() / (page.width.toLong() * page.height)).toFloat()
             )
             val width = (page.width * scale).toInt().coerceAtLeast(1)
