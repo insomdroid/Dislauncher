@@ -7,7 +7,7 @@
 
   **Minimal. Functional. Personal.**
 
-  A text-first Android launcher designed to keep your Home screen focused, useful tools close, and the experience yours.
+  A text-first Android launcher that keeps your favourite apps close, everyday tools within reach, and your Home screen personal.
 
   <p>
     <a href="https://github.com/insomdroid/Dislauncher/releases/latest">
@@ -32,18 +32,17 @@
 
 ## The idea behind Dislauncher
 
-Dislauncher is built around three connected principles. They shape the Home screen, the tools included with the launcher, and the choices available to each user.
+Three principles shape the Dislauncher experience: a focused Home screen, useful tools built in, and room to make the launcher your own.
 
 | Principle | What it means in Dislauncher |
 | --- | --- |
 | **Minimal** | A text-first Home screen, a straightforward app drawer, and optional information that stays out of the way. |
-| **Functional** | Useful everyday tools are built in, so reading, writing, planning, calculating, and converting do not require a separate utility app. |
+| **Functional** | Everyday tools for reading, writing, planning, calculating, and converting are built in and easy to reach. |
 | **Personal** | Themes, colours, fonts, wallpapers, text sizing, and gestures let you decide how the launcher looks and behaves. |
 
-The goal is not to remove useful features. It is to make each feature purposeful, easy to reach, and part of a calm interface.
+The aim is simple: keep useful features close without making the Home screen feel crowded.
 
 ## Minimal — less clutter, more focus
-
 
 - **Text-first Home screen** — keep up to six favourite apps within reach without a conventional icon grid.
 - **Straightforward app drawer** — browse or search your apps, jump through the list, create folders, and hide apps you do not need.
@@ -77,20 +76,18 @@ Choose the appearance and controls that suit your device and preferences:
 ## Screenshots
 
 <div align="center">
-  <img src="Screenshot/InstaMocks_20261031_140537032.png" alt="Dislauncher Home screen with clock, useful information and favourite apps" width="19%" />
-  <img src="Screenshot/InstaMocks_20261031_140536503.png" alt="Current Dislauncher app drawer with built-in shortcuts for Calendar, Notes, Calculator and Converter" width="19%" />
-  <img src="Screenshot/InstaMocks_20261031_140533140.png" alt="Dislauncher Unit Converter with measurement categories, input and result" width="19%" />
-  <img src="Screenshot/InstaMocks_20261031_140533775.png" alt="Reading an ebook in Dislauncher Books" width="19%" />
+  <img src="Screenshot/InstaMocks_20261031_140537032.png" alt="Dislauncher Home screen with clock, useful information and favourite apps" width="18%" />
+  <img src="Screenshot/InstaMocks_20261031_140536503.png" alt="Dislauncher app drawer with installed apps and built-in shortcuts" width="18%" />
+  <img src="Screenshot/InstaMocks_20261031_140533140.png" alt="Dislauncher Unit Converter with measurement categories, input and result" width="18%" />
+  <img src="Screenshot/InstaMocks_20261031_140533775.png" alt="Reading an ebook in Dislauncher Books" width="18%" />
+  <img src="Screenshot/InstaMocks_20261031_140534343.png" alt="Dislauncher Books library with saved books" width="18%" />
 </div>
 <div align="center">
-  <img src="Screenshot/InstaMocks_20261031_140534343.png" alt="Dislauncher Books library with a grid of saved books" width="19%" />
-  <img src="Screenshot/InstaMocks_20261031_140534900.png" alt="Dislauncher Calendar month view and agenda" width="19%" />
-  <img src="Screenshot/InstaMocks_20261031_140535468.png" alt="Dislauncher Notes list" width="19%" />
-  <img src="Screenshot/InstaMocks_20261031_140535957.png" alt="Editing a Markdown note in Dislauncher Notes" width="19%" />
-  <img src="Screenshot/InstaMocks_20261031_140532025.png" alt="Dislauncher appearance and personalisation settings" width="19%" />
-</div>
-<div align="center">
-  <img src="Screenshot/InstaMocks_20261031_140532601.png" alt="Dislauncher typography and icon appearance settings" width="19%" />
+  <img src="Screenshot/InstaMocks_20261031_140534900.png" alt="Dislauncher Calendar month view and agenda" width="18%" />
+  <img src="Screenshot/InstaMocks_20261031_140535468.png" alt="Dislauncher Notes list" width="18%" />
+  <img src="Screenshot/InstaMocks_20261031_140535957.png" alt="Editing a Markdown note in Dislauncher Notes" width="18%" />
+  <img src="Screenshot/InstaMocks_20261031_140532025.png" alt="Dislauncher appearance and personalisation settings" width="18%" />
+  <img src="Screenshot/InstaMocks_20261031_140532601.png" alt="Dislauncher typography and icon appearance settings" width="18%" />
 </div>
 
 ## Requirements
@@ -138,7 +135,3 @@ Dislauncher does not require an account. Optional features may request permissio
 Dislauncher is open source under the [MIT License](LICENSE).
 
 ---
-
-<div align="center">
-  <sub>Minimal. Functional. Personal.</sub>
-</div>
