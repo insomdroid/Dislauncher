@@ -1,8 +1,11 @@
 package com.insomdroid.dislauncher
 
+import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
+import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.RandomAccessFile
 import java.nio.charset.StandardCharsets
@@ -13,11 +16,37 @@ internal class DiskBackedBookPages private constructor(
     private val offsets: LongArray
 ) : AbstractList<String>() {
     override val size: Int get() = offsets.size
-    val isAvailable: Boolean get() = file.isFile
+    private val indexFile: File get() = File(file.parentFile, file.name + ".idx")
+    val isAvailable: Boolean get() = file.isFile && indexFile.isFile
     val metadataBytes: Int get() = (offsets.size * Long.SIZE_BYTES).coerceAtMost(Int.MAX_VALUE)
 
     fun touch() {
-        if (file.isFile) file.setLastModified(System.currentTimeMillis())
+        val now = System.currentTimeMillis()
+        if (file.isFile) file.setLastModified(now)
+        if (indexFile.isFile) indexFile.setLastModified(now)
+    }
+
+    companion object {
+        private const val INDEX_MAGIC = 0x44504231
+        private const val MAX_INDEXED_PAGES = 1_000_000
+
+        fun open(file: File): DiskBackedBookPages? {
+            val indexFile = File(file.parentFile, file.name + ".idx")
+            if (!file.isFile || !indexFile.isFile) return null
+            return runCatching {
+                DataInputStream(BufferedInputStream(FileInputStream(indexFile))).use { input ->
+                    require(input.readInt() == INDEX_MAGIC) { "Invalid reader page index." }
+                    val count = input.readInt()
+                    require(count in 1..MAX_INDEXED_PAGES) { "Invalid reader page count." }
+                    val offsets = LongArray(count) { input.readLong() }
+                    require(input.read() == -1) { "Reader page index contains trailing data." }
+                    require(offsets.first() == 0L || offsets.all { it > 0L })
+                    require(offsets.zipWithNext().all { (first, second) -> second > first })
+                    require(offsets.all { it >= 0L && it + Int.SIZE_BYTES <= file.length() })
+                    DiskBackedBookPages(file, offsets)
+                }
+            }.getOrNull()
+        }
     }
 
     override fun get(index: Int): String {
@@ -90,6 +119,19 @@ internal class DiskBackedBookPages private constructor(
             flushPage(true)
             if (offsets.isEmpty()) writePage("This book contains no readable text.")
             output.close()
+            val indexFile = File(target.parentFile, target.name + ".idx")
+            val temporaryIndex = File(target.parentFile, target.name + ".idx.tmp")
+            temporaryIndex.delete()
+            DataOutputStream(BufferedOutputStream(FileOutputStream(temporaryIndex))).use { index ->
+                index.writeInt(INDEX_MAGIC)
+                index.writeInt(offsets.size)
+                offsets.forEach(index::writeLong)
+            }
+            indexFile.delete()
+            if (!temporaryIndex.renameTo(indexFile)) {
+                temporaryIndex.delete()
+                throw java.io.IOException("Unable to finalize the reader page index.")
+            }
             finished = true
             return DiskBackedBookPages(target, offsets.toLongArray())
         }
@@ -98,6 +140,8 @@ internal class DiskBackedBookPages private constructor(
             if (!finished) runCatching { output.close() }
             finished = true
             target.delete()
+            File(target.parentFile, target.name + ".idx").delete()
+            File(target.parentFile, target.name + ".idx.tmp").delete()
         }
 
         private fun flushPage(force: Boolean) {
