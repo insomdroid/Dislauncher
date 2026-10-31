@@ -423,6 +423,7 @@ private suspend fun loadBookContent(context: Context, book: BookEntry): BookCont
                     }
                     val baseUri = java.net.URI(base.replace(" ", "%20"))
                     var totalSectionBytes = 0L
+                    var hasProcessedSection = false
                     paths.forEach { relative ->
                         val relativeUri = java.net.URI(relative.replace(" ", "%20"))
                         require(!relativeUri.isAbsolute && relativeUri.rawAuthority == null &&
@@ -439,6 +440,8 @@ private suspend fun loadBookContent(context: Context, book: BookEntry): BookCont
                         require(entry.size < 0L || entry.size <= remainingBytes) {
                             "This EPUB exceeds the 100 MB processing limit."
                         }
+                        if (hasProcessedSection) writer.append("\n\n")
+                        hasProcessedSection = true
                         val chapterStart = writer.pageCount
                         try {
                             appendEpubSection(zip.getInputStream(entry), remainingBytes, writer) { count ->
