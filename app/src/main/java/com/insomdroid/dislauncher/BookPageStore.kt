@@ -64,7 +64,7 @@ internal class DiskBackedBookPages private constructor(
                         if (page.isNotEmpty() && page.last() != '\n') {
                             page.append('\n')
                         } else if (page.isNotEmpty() &&
-                            (page.length < 2 || page[page.length - 2] != '\\n')
+                            (page.length < 2 || page[page.length - 2] != '\n')
                         ) {
                             page.append('\n')
                         }
@@ -82,7 +82,6 @@ internal class DiskBackedBookPages private constructor(
 
         fun finishSection() {
             check(!finished)
-            if (page.isNotEmpty()) append("\n\n")
             flushPage(true)
         }
 
