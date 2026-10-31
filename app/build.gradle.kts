@@ -137,7 +137,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-
     buildFeatures {
         compose = true
     }
@@ -167,16 +166,18 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("com.kizitonwose.calendar:compose:2.9.1")
+
     implementation("io.noties.markwon:core:4.6.2")
     implementation("io.noties.markwon:ext-strikethrough:4.6.2")
     implementation("io.noties.markwon:ext-tasklist:4.6.2")
     implementation("io.noties.markwon:html:4.6.2")
     implementation("io.noties.markwon:image:4.6.2")
+    // Markwon's image module references these optional decoders during minification.
+    implementation("com.caverock:androidsvg-aar:1.4")
+    implementation("pl.droidsonroids.gif:android-gif-drawable:1.2.29")
 
     testImplementation("junit:junit:4.13.2")
-
 }
-
 
 // F-Droid reads literal defaultConfig version values from source. Keep CI's existing
 // release-tag and nightly versioning behavior by overriding the generated variant outputs.
