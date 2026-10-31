@@ -73,7 +73,7 @@ internal fun MarkdownNoteEditor(
     val markwon = remember(context) {
         Markwon.builder(context)
             .usePlugin(StrikethroughPlugin.create())
-            .usePlugin(TaskListPlugin.create())
+            .usePlugin(TaskListPlugin.create(context))
             .usePlugin(HtmlPlugin.create())
             .usePlugin(ImagesPlugin.create(object : ImagesPlugin.ImagesConfigure {
                 override fun configureImages(plugin: ImagesPlugin) {
