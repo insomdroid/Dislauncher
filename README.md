@@ -76,17 +76,23 @@ Choose the appearance and controls that suit your device and preferences:
 
 ## Screenshots
 
-<p align="center">
-  <img src="Screenshot/InstaMocks_20261031_140537032.png" alt="Dislauncher Home screen with clock, useful information and favourite apps" width="24%" />
-  <img src="Screenshot/InstaMocks_20261031_140536503.png" alt="Dislauncher app drawer with built-in tools shortcuts and app list" width="24%" />
-  <img src="Screenshot/Screenshot_20261022-221259_Dislauncher.png" alt="Dislauncher built-in tools" width="24%" />
-  <img src="Screenshot/InstaMocks_20261031_140533775.png" alt="Reading an ebook in Dislauncher Books" width="24%" />
-</p>
-<p align="center">
-  <img src="Screenshot/InstaMocks_20261031_140535957.png" alt="Editing a Markdown note in Dislauncher Notes" width="24%" />
-  <img src="Screenshot/InstaMocks_20261031_140534900.png" alt="Dislauncher Calendar month view and agenda" width="24%" />
-  <img src="Screenshot/InstaMocks_20261031_140532601.png" alt="Dislauncher appearance settings for fonts, text size and icons" width="24%" />
-</p>
+<div align="center">
+  <img src="Screenshot/InstaMocks_20261031_140537032.png" alt="Dislauncher Home screen with clock, useful information and favourite apps" width="19%" />
+  <img src="Screenshot/InstaMocks_20261031_140536503.png" alt="Dislauncher app drawer with installed apps and built-in tools shortcuts" width="19%" />
+  <img src="Screenshot/Screenshot_20261022-221259_Dislauncher.png" alt="Dislauncher built-in tools screen with quick access to its utilities" width="19%" />
+  <img src="Screenshot/InstaMocks_20261031_140533140.png" alt="Dislauncher Books library" width="19%" />
+  <img src="Screenshot/InstaMocks_20261031_140533775.png" alt="Reading an ebook in Dislauncher Books" width="19%" />
+</div>
+<div align="center">
+  <img src="Screenshot/InstaMocks_20261031_140534343.png" alt="Dislauncher Unit Converter" width="19%" />
+  <img src="Screenshot/InstaMocks_20261031_140534900.png" alt="Dislauncher Calendar month view and agenda" width="19%" />
+  <img src="Screenshot/InstaMocks_20261031_140535468.png" alt="Dislauncher Notes list" width="19%" />
+  <img src="Screenshot/InstaMocks_20261031_140535957.png" alt="Editing a Markdown note in Dislauncher Notes" width="19%" />
+  <img src="Screenshot/InstaMocks_20261031_140532025.png" alt="Dislauncher appearance and personalisation settings" width="19%" />
+</div>
+<div align="center">
+  <img src="Screenshot/InstaMocks_20261031_140532601.png" alt="Dislauncher typography and icon appearance settings" width="19%" />
+</div>
 
 ## Requirements
 

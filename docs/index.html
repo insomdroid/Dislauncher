@@ -52,6 +52,7 @@
     .nav-action:hover, .button:hover { transform: translateY(-3px); background: #333333; }
     .nav-action:active, .button:active { transform: translateY(1px) scale(.98); }
     .hero { min-height: min(850px, calc(100svh - 82px)); display: grid; grid-template-columns: minmax(300px, .78fr) minmax(0, 1.22fr); align-items: center; gap: clamp(36px, 6vw, 100px); padding-block: 42px 72px; }
+    .hero-slogan { margin-top: 20px; font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
     .hero-copy { max-width: 570px; position: relative; z-index: 1; }
     h1 { max-width: 570px; font-size: clamp(54px, 7.2vw, 104px); line-height: .94; }
     .hero-copy > p { max-width: 470px; margin-top: 30px; color: var(--muted); font-size: clamp(16px, 1.35vw, 19px); line-height: 1.65; }
@@ -89,7 +90,7 @@
     .tool-list { display: grid; grid-template-columns: 1fr 1fr; column-gap: 38px; row-gap: 44px; }
     .tool h3 { font-size: clamp(21px, 2.2vw, 29px); line-height: 1.1; }
     .tool p { max-width: 330px; margin-top: 10px; color: var(--muted); font-size: 14px; line-height: 1.65; }
-    .tools-image { min-height: 520px; display: grid; place-items: center; overflow: hidden; background: #dedede; }
+    .tools-image { min-height: 520px; display: grid; place-items: center; overflow: hidden; background: var(--field); }
     .tools-image img { width: auto; height: min(65svh, 600px); max-width: 100%; object-fit: contain; transition: transform .8s cubic-bezier(.22,1,.36,1); }
     .tools-image { grid-template-rows: 1fr auto auto; }
     .tools-preview-controls { justify-content: center; gap: 22px; padding: 14px 20px 0; }
@@ -103,7 +104,7 @@
     .personal-list { display: grid; grid-template-columns: 1fr 1fr; gap: 28px 38px; margin-top: 48px; }
     .personal-item h3 { font-size: 20px; }
     .personal-item p { margin-top: 7px; color: #d0d0d0; font-size: 14px; line-height: 1.6; }
-    .personal-image { min-height: 600px; display: grid; place-items: center; overflow: hidden; background: #242424; }
+    .personal-image { min-height: 600px; display: grid; place-items: center; overflow: hidden; background: var(--dark); }
     .personal-image img { width: auto; height: min(68svh, 650px); max-width: 100%; object-fit: contain; transition: transform .8s cubic-bezier(.22,1,.36,1); }
     .personal-image:hover img { transform: scale(1.025); }
     .privacy-section { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: clamp(40px, 8vw, 130px); align-items: start; }
@@ -118,11 +119,6 @@
     .download-layout h2 { max-width: 900px; font-size: clamp(48px, 7vw, 96px); line-height: .96; }
     .download-layout p { max-width: 610px; margin-top: 22px; color: var(--muted); font-size: 16px; line-height: 1.7; }
     .download-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 18px; }
-    .faq-section { display: grid; grid-template-columns: .65fr 1.35fr; gap: clamp(40px, 8vw, 120px); }
-    .faq-section h2 { max-width: 390px; font-size: clamp(44px, 5.6vw, 76px); line-height: .98; }
-    .faq-list { display: grid; grid-template-columns: 1fr 1fr; gap: 38px 42px; }
-    .faq-item h3 { font-size: 18px; line-height: 1.25; }
-    .faq-item p { margin-top: 10px; color: var(--muted); font-size: 14px; line-height: 1.7; }
     footer { overflow: hidden; padding-top: 60px; background: var(--dark); color: var(--paper); }
     .footer-top { display: flex; justify-content: space-between; gap: 40px; padding-bottom: 48px; }
     .footer-description { max-width: 360px; color: #d0d0d0; font-size: 14px; line-height: 1.7; }
@@ -141,8 +137,6 @@
       .tools-image, .personal-image { min-height: 480px; }
       .personal-layout { gap: 42px; }
       .privacy-section { gap: 42px; }
-      .faq-section { grid-template-columns: .75fr 1.25fr; gap: 42px; }
-      .faq-list { gap: 30px 24px; }
     }
     @media (max-width: 650px) {
       .site-header { min-height: 72px; }
@@ -219,7 +213,8 @@
     <section class="wrap hero" aria-labelledby="hero-title">
       <div class="hero-copy reveal">
         <h1 id="hero-title">A text-first Android launcher</h1>
-        <p>Keep six favourite apps close, with everyday tools built into the launcher. Make the rest of your Home screen your own.</p>
+        <p class="hero-slogan">Minimal. Functional. Personal.</p>
+        <p>Keep six favourite apps close, with useful tools built into the launcher. Make the rest of your Home screen your own.</p>
         <div class="hero-actions">
           <a class="button" href="https://github.com/insomdroid/Dislauncher/releases/latest" target="_blank" rel="noopener noreferrer">Download for Android</a>
           <a class="quiet-link" href="#experience">See how it works</a>
@@ -233,7 +228,7 @@
         <div class="preview-controls" role="group" aria-label="Choose an app preview">
           <button class="preview-tab" type="button" data-image="InstaMocks_20261031_140537032.png" data-alt="Dislauncher Home screen showing the clock, useful information and favourite apps" data-caption="The Home screen keeps favourite apps in a simple text list." aria-pressed="true">Home</button>
           <button class="preview-tab" type="button" data-image="InstaMocks_20261031_140536503.png" data-alt="Dislauncher app drawer with built-in tools shortcuts and installed apps" data-caption="The app drawer gives you search, browsing and organisation." aria-pressed="false">App drawer</button>
-          <button class="preview-tab" type="button" data-image="Screenshot_20261022-221259_Dislauncher.png" data-alt="Dislauncher built-in tools screen" data-caption="Everyday tools are part of the launcher." aria-pressed="false">Built-in tools</button>
+          <button class="preview-tab" type="button" data-image="Screenshot_20261022-221259_Dislauncher.png" data-alt="Dislauncher built-in tools screen" data-caption="Open Books, Notes, Calendar, Calculator and Unit Converter from one built-in tools screen." aria-pressed="false">Built-in tools</button>
         </div>
         <p class="preview-caption" id="preview-caption" aria-live="polite">The Home screen keeps favourite apps in a simple text list.</p>
       </div>
@@ -271,8 +266,8 @@
     <section class="section tools-section" id="tools" aria-labelledby="tools-title">
       <div class="wrap">
         <div class="tools-intro">
-          <h2 class="reveal" id="tools-title">Useful tools belong close by.</h2>
-          <p class="reveal">Read, write, plan, calculate and convert without filling your phone with separate utility apps.</p>
+          <h2 class="reveal" id="tools-title">Everyday tools, built into your launcher.</h2>
+          <p class="reveal">Books, Notes, Calendar, Calculator and Unit Converter are available from one place, alongside your apps.</p>
         </div>
         <div class="tools-layout">
           <div class="tool-list">
@@ -286,8 +281,11 @@
             <img id="tools-preview" src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/InstaMocks_20261031_140533775.png" alt="Reading an ebook in Dislauncher Books" loading="lazy">
             <div class="preview-controls tools-preview-controls" role="group" aria-label="Choose a built-in tool preview">
               <button class="preview-tab tools-preview-tab" type="button" data-image="InstaMocks_20261031_140533775.png" data-alt="Reading an ebook in Dislauncher Books" data-caption="Books keeps your reading close, with bookmarks and reading progress." aria-pressed="true">Books</button>
-              <button class="preview-tab tools-preview-tab" type="button" data-image="InstaMocks_20261031_140535957.png" data-alt="Editing a Markdown note in Dislauncher Notes" data-caption="Notes gives you a focused Markdown editor and preview." aria-pressed="false">Notes</button>
-              <button class="preview-tab tools-preview-tab" type="button" data-image="InstaMocks_20261031_140534900.png" data-alt="Dislauncher Calendar month view and agenda" data-caption="Calendar brings the month and selected day's agenda together." aria-pressed="false">Calendar</button>
+              <button class="preview-tab tools-preview-tab" type="button" data-image="InstaMocks_20261031_140533140.png" data-alt="Dislauncher Books library" data-caption="Browse your book collection in the library." aria-pressed="false">Library</button>
+              <button class="preview-tab tools-preview-tab" type="button" data-image="InstaMocks_20261031_140535468.png" data-alt="Dislauncher Notes list" data-caption="Keep notes organised in one searchable list." aria-pressed="false">Notes</button>
+              <button class="preview-tab tools-preview-tab" type="button" data-image="InstaMocks_20261031_140535957.png" data-alt="Editing a Markdown note in Dislauncher Notes" data-caption="Write and preview Markdown in the editor." aria-pressed="false">Editor</button>
+              <button class="preview-tab tools-preview-tab" type="button" data-image="InstaMocks_20261031_140534900.png" data-alt="Dislauncher Calendar month view and agenda" data-caption="Review the month and a selected day's agenda." aria-pressed="false">Calendar</button>
+              <button class="preview-tab tools-preview-tab" type="button" data-image="InstaMocks_20261031_140534343.png" data-alt="Dislauncher Unit Converter" data-caption="Convert between supported measurement units." aria-pressed="false">Converter</button>
             </div>
             <p class="preview-caption tools-preview-caption" id="tools-preview-caption" aria-live="polite">Books keeps your reading close, with bookmarks and reading progress.</p>
           </div>
@@ -342,19 +340,6 @@
       </div>
     </section>
 
-    <section class="section wrap faq-section" id="faq" aria-labelledby="faq-title">
-      <h2 class="reveal" id="faq-title">A few things to know.</h2>
-      <div class="faq-list">
-        <article class="faq-item reveal"><h3>Which Android versions are supported?</h3><p>Dislauncher supports Android 8.0 (Oreo) and newer. Some optional features depend on the Android version and permissions available on your device.</p></article>
-        <article class="faq-item reveal"><h3>How do I set it as my Home app?</h3><p>Install the APK, then choose Dislauncher when Android asks which Home app to use. You can also select it in your device's Default apps settings.</p></article>
-        <article class="faq-item reveal"><h3>Can I find apps outside my favourites?</h3><p>Yes. Open the app drawer to browse or search installed apps. You can also organise apps into folders, hide apps and use compatible icon packs.</p></article>
-        <article class="faq-item reveal"><h3>Which file types does Books support?</h3><p>The built-in reader supports EPUB, PDF and TXT files. It includes bookmarks and reading progress, with a table of contents when the file provides one.</p></article>
-        <article class="faq-item reveal"><h3>Do Notes and Calendar work offline?</h3><p>Notes are stored on your device. Calendar includes local to-dos and reminders, and can show device calendar events when you grant calendar access.</p></article>
-        <article class="faq-item reveal"><h3>Why does Dislauncher ask for permissions?</h3><p>Permissions are tied to optional features, such as device calendar events, notification indicators or location-based weather. You do not need to enable features you do not use.</p></article>
-        <article class="faq-item reveal"><h3>Is Dislauncher free?</h3><p>Yes. Dislauncher is free and open source, with no ads, no analytics and no account requirement. The source code is available on <a class="inline-link" href="https://github.com/insomdroid/Dislauncher" target="_blank" rel="noopener noreferrer">GitHub</a>.</p></article>
-        <article class="faq-item reveal"><h3>Can I try changes before a stable release?</h3><p>Yes. <a class="inline-link" href="https://github.com/insomdroid/Dislauncher/actions/workflows/build-apk.yml" target="_blank" rel="noopener noreferrer">Nightly builds</a> let you test recent changes before they are included in a stable release. They may contain unfinished work.</p></article>
-      </div>
-    </section>
   </main>
 
   <footer>
