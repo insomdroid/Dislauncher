@@ -81,7 +81,8 @@ internal fun MarkdownNoteEditor(
                         override fun handle(raw: String, uri: Uri): ImageItem {
                             val input = context.contentResolver.openInputStream(uri)
                                 ?: error("Unable to open note image")
-                            return ImageItem.withDecodingNeeded("image/*", input)
+                            val mimeType = context.contentResolver.getType(uri) ?: "image/*"
+                            return ImageItem.withDecodingNeeded(mimeType, input)
                         }
 
                         override fun supportedSchemes(): Collection<String> = listOf("content")
@@ -92,8 +93,10 @@ internal fun MarkdownNoteEditor(
                 override fun configureConfiguration(builder: MarkwonConfiguration.Builder) {
                     builder.linkResolver(LinkResolver { view, link ->
                         val uri = runCatching { Uri.parse(link) }.getOrNull()
-                        if (uri?.scheme.equals("http", ignoreCase = true) ||
-                            uri?.scheme.equals("https", ignoreCase = true)
+                        if (uri != null && (
+                            uri.scheme.equals("http", ignoreCase = true) ||
+                                uri.scheme.equals("https", ignoreCase = true)
+                            )
                         ) {
                             runCatching {
                                 view.context.startActivity(Intent(Intent.ACTION_VIEW, uri))
