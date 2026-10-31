@@ -605,6 +605,7 @@ internal fun AppsScreen(
                 onValueChange = onQueryChange,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
                 pill = true,
+                placeholder = "Search apps",
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Outlined.SearchIcon,
