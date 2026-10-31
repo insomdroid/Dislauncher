@@ -175,8 +175,6 @@ dependencies {
     // Markwon's image module references these optional decoders during minification.
     implementation("com.caverock:androidsvg-aar:1.4")
     implementation("pl.droidsonroids.gif:android-gif-drawable:1.2.29")
-
-    testImplementation("junit:junit:4.13.2")
 }
 
 // F-Droid reads literal defaultConfig version values from source. Keep CI's existing

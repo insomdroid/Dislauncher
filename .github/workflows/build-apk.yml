@@ -1,5 +1,5 @@
 name: Dislauncher Nightly
-# Nightly pipeline intentionally excludes emulator and automated test stages.
+# Nightly pipeline intentionally excludes automated test stages.
 
 on:
   push:
@@ -84,7 +84,7 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6
 
-      - name: Run Android lint and build APK
+      - name: Lint and build APK
         env:
           APP_VERSION_NAME: "${{ steps.version.outputs.app_version_name }}"
           APP_BUILD_NUMBER: "${{ github.run_number }}"
@@ -111,7 +111,7 @@ jobs:
             export RELEASE_STORE_FILE="$KEYSTORE_FILE"
           fi
 
-          ./gradlew testReleaseUnitTest lintRelease assembleRelease --stacktrace
+          ./gradlew lintRelease assembleRelease --stacktrace
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9

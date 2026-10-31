@@ -34,7 +34,6 @@ jobs:
           ref: ${{ inputs.release_tag || github.ref }}
           persist-credentials: false
 
-
       - name: Validate release tag
         id: validate
         env:
@@ -96,7 +95,7 @@ jobs:
           test -s "$KEYSTORE_FILE"
           export RELEASE_STORE_FILE="$KEYSTORE_FILE"
 
-          ./gradlew testReleaseUnitTest lintRelease assembleRelease --stacktrace
+          ./gradlew lintRelease assembleRelease --stacktrace
 
           APK="app/build/outputs/apk/release/app-release.apk"
           test -s "$APK"

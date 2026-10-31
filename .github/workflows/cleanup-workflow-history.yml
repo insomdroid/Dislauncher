@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirm_cleanup:
-        description: 'Permanently delete completed workflow runs except the 3 newest completed runs in this repository'
+        description: "Permanently delete every workflow run except runs from the Release APK workflow"
         type: boolean
         required: true
         default: false
@@ -17,10 +17,11 @@ jobs:
     if: inputs.confirm_cleanup
     runs-on: ubuntu-latest
     steps:
-      - name: Keep the 3 newest completed runs across the repository
+      - name: Delete all workflow history except Release APK
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          CURRENT_RUN_ID: ${{ github.run_id }}
         shell: bash
         run: |
           set -euo pipefail
@@ -29,54 +30,74 @@ jobs:
           trap 'rm -f "${runs_file}"' EXIT
 
           scanned=0
-          completed=0
-          kept=0
+          release_kept=0
           deleted=0
-          active=0
+          cancelled=0
+          self_kept=0
           failed=0
 
-          echo "Loading all workflow runs, newest first..."
+          echo "Loading every workflow run, newest first..."
 
           gh api --paginate "repos/${GH_REPO}/actions/runs?per_page=100" \
-            --jq '.workflow_runs[] | [.id, .name, .status, .created_at] | @tsv' > "${runs_file}"
+            --jq '.workflow_runs[] | [.id, .name, .path, .status, .created_at] | @tsv' > "${runs_file}"
 
-          while IFS=$'\t' read -r run_id workflow_name status created_at; do
+          while IFS=$'\t' read -r run_id workflow_name workflow_path status created_at; do
             [[ -n "${run_id}" ]] || continue
             scanned=$((scanned + 1))
 
+            if [[ "${workflow_path}" == ".github/workflows/release.yml" ]]; then
+              release_kept=$((release_kept + 1))
+              echo "KEEP RELEASE workflow='${workflow_name}' run=${run_id} status=${status} created_at=${created_at}"
+              continue
+            fi
+
+            # A workflow cannot delete the run that is currently executing it.
+            if [[ "${run_id}" == "${CURRENT_RUN_ID}" ]]; then
+              self_kept=$((self_kept + 1))
+              echo "KEEP CURRENT cleanup run=${run_id}; it can be removed by the next cleanup execution."
+              continue
+            fi
+
             if [[ "${status}" != "completed" ]]; then
-              active=$((active + 1))
-              echo "LEAVE ACTIVE workflow='${workflow_name}' run=${run_id} status=${status}"
+              echo "CANCEL workflow='${workflow_name}' run=${run_id} status=${status}"
+              gh api --method POST "repos/${GH_REPO}/actions/runs/${run_id}/cancel" >/dev/null || true
+              cancelled=$((cancelled + 1))
+
+              # GitHub only permits deleting completed runs. Wait for cancellation to finish.
+              for attempt in $(seq 1 60); do
+                status="$(gh api "repos/${GH_REPO}/actions/runs/${run_id}" --jq '.status')"
+                if [[ "${status}" == "completed" ]]; then
+                  break
+                fi
+                sleep 2
+              done
+            fi
+
+            if [[ "${status}" != "completed" ]]; then
+              echo "::error::Run ${run_id} did not finish cancellation in time; it was not deleted."
+              failed=$((failed + 1))
               continue
             fi
 
-            completed=$((completed + 1))
-
-            if (( completed <= 3 )); then
-              kept=$((kept + 1))
-              echo "KEEP [${completed}/3] workflow='${workflow_name}' run=${run_id} created_at=${created_at}"
-              continue
-            fi
-
-            echo "DELETE completed run workflow='${workflow_name}' run=${run_id} created_at=${created_at}"
+            echo "DELETE workflow='${workflow_name}' run=${run_id} created_at=${created_at}"
             if gh api --method DELETE "repos/${GH_REPO}/actions/runs/${run_id}"; then
               deleted=$((deleted + 1))
             else
               failed=$((failed + 1))
-              echo "::error::GitHub rejected deletion of completed run ${run_id}. Check the HTTP error above and the Actions permissions."
+              echo "::error::GitHub rejected deletion of workflow run ${run_id}."
             fi
           done < "${runs_file}"
 
           echo ""
-          echo "Repository-wide cleanup summary:"
+          echo "Workflow history cleanup summary:"
           echo "  Runs scanned: ${scanned}"
-          echo "  Completed runs found: ${completed}"
-          echo "  Newest completed runs retained: ${kept}"
-          echo "  Older completed runs deleted: ${deleted}"
-          echo "  Active runs left untouched: ${active}"
-          echo "  Deletion failures: ${failed}"
+          echo "  Release APK runs retained: ${release_kept}"
+          echo "  Non-release runs deleted: ${deleted}"
+          echo "  Non-release runs cancelled: ${cancelled}"
+          echo "  Current cleanup run retained: ${self_kept}"
+          echo "  Failures: ${failed}"
 
           if (( failed > 0 )); then
-            echo "::error::Cleanup incomplete: ${failed} completed run(s) could not be deleted."
+            echo "::error::Cleanup incomplete: ${failed} workflow run(s) could not be deleted."
             exit 1
           fi
