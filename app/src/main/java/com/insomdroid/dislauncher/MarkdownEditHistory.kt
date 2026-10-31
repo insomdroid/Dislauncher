@@ -11,7 +11,7 @@ internal data class MarkdownHistoryEntry(
     val cursor: Int,
     val recordedAtMillis: Long,
     val byteCount: Int = text.toByteArray(StandardCharsets.UTF_8).size
-) {
+)
 
 internal data class MarkdownHistoryTransition(
     val history: MarkdownEditHistory,
