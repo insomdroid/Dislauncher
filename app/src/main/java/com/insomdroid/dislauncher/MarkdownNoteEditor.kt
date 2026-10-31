@@ -91,15 +91,17 @@ internal fun MarkdownNoteEditor(
             }))
             .usePlugin(object : AbstractMarkwonPlugin() {
                 override fun configureConfiguration(builder: MarkwonConfiguration.Builder) {
-                    builder.linkResolver(LinkResolver { view, link ->
-                        val uri = runCatching { Uri.parse(link) }.getOrNull()
-                        if (uri != null && (
-                            uri.scheme.equals("http", ignoreCase = true) ||
-                                uri.scheme.equals("https", ignoreCase = true)
-                            )
-                        ) {
-                            runCatching {
-                                view.context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                    builder.linkResolver(object : LinkResolver {
+                        override fun resolve(view: android.view.View, link: String) {
+                            val uri = runCatching { Uri.parse(link) }.getOrNull()
+                            if (uri != null && (
+                                uri.scheme.equals("http", ignoreCase = true) ||
+                                    uri.scheme.equals("https", ignoreCase = true)
+                                )
+                            ) {
+                                runCatching {
+                                    view.context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                                }
                             }
                         }
                     })
