@@ -164,6 +164,7 @@ class NoteDocumentCodecTest {
             assertEquals("This book contains no readable text.", pages[0])
         } finally {
             file.delete()
+            java.io.File(file.parentFile, file.name + ".idx").delete()
         }
     }
 
