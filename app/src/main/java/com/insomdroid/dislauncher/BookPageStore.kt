@@ -56,21 +56,21 @@ internal class DiskBackedBookPages private constructor(
             text.forEachIndexed { index, character ->
                 if (index % 1024 == 0) cancellationCheck()
                 when {
-                    character == '\\r' -> Unit
-                    character == '\\n' -> {
-                        while (page.isNotEmpty() && (page.last() == ' ' || page.last() == '\\t')) {
+                    character == '\r' -> Unit
+                    character == '\n' -> {
+                        while (page.isNotEmpty() && (page.last() == ' ' || page.last() == '\t')) {
                             page.deleteCharAt(page.lastIndex)
                         }
-                        if (page.isNotEmpty() && page.last() != '\\n') {
-                            page.append('\\n')
+                        if (page.isNotEmpty() && page.last() != '\n') {
+                            page.append('\n')
                         } else if (page.isNotEmpty() &&
                             (page.length < 2 || page[page.length - 2] != '\\n')
                         ) {
-                            page.append('\\n')
+                            page.append('\n')
                         }
                     }
                     character.isWhitespace() -> {
-                        if (page.isNotEmpty() && page.last() != ' ' && page.last() != '\\n') {
+                        if (page.isNotEmpty() && page.last() != ' ' && page.last() != '\n') {
                             page.append(' ')
                         }
                     }
@@ -82,7 +82,7 @@ internal class DiskBackedBookPages private constructor(
 
         fun finishSection() {
             check(!finished)
-            if (page.isNotEmpty()) append("\\n\\n")
+            if (page.isNotEmpty()) append("\n\n")
             flushPage(true)
         }
 
@@ -108,7 +108,7 @@ internal class DiskBackedBookPages private constructor(
                 val boundary = text.lastIndexOfAny(charArrayOf(' ', '.', '!', '?', '\n'))
                 if (boundary > pageLimit / 2) boundary + 1 else pageLimit
             }.coerceAtMost(text.length)
-            val chunk = text.substring(0, end).trim(' ', '\\t', '\\r')
+            val chunk = text.substring(0, end).trim(' ', '\t', '\r')
             if (chunk.isNotEmpty()) writePage(chunk)
             page.delete(0, end)
             while (page.isNotEmpty() && (page.first() == ' ' || page.first() == '\\t' || page.first() == '\\r')) page.deleteCharAt(0)
