@@ -177,7 +177,8 @@ private fun cachedBookFile(context: Context, uri: Uri, suffix: String): File? =
         .takeIf { it.isFile && it.length() in 1..MAX_BOOK_BYTES }
         ?.also { it.setLastModified(System.currentTimeMillis()) }
 
-private fun copyBookToCache(context: Context, uri: Uri, suffix: String): File {
+private suspend fun copyBookToCache(context: Context, uri: Uri, suffix: String): File {
+    val coroutineContext = currentCoroutineContext()
     val target = File(context.cacheDir, "book_${bookCacheDigest(uri)}.$suffix")
     if (target.exists()) {
         if (target.length() in 1..MAX_BOOK_BYTES) {
@@ -195,6 +196,7 @@ private fun copyBookToCache(context: Context, uri: Uri, suffix: String): File {
                 val buffer = ByteArray(16 * 1024)
                 var total = 0L
                 while (true) {
+                    coroutineContext.ensureActive()
                     val count = input.read(buffer)
                     if (count < 0) break
                     total += count
@@ -420,7 +422,9 @@ private suspend fun loadBookContent(context: Context, book: BookEntry): BookCont
             if (cachedPages != null) {
                 cachedPages.touch()
                 chapterFile.setLastModified(System.currentTimeMillis())
-                BookContent(cachedPages, readBookChapters(chapterFile))
+                BookContent(cachedPages, readBookChapters(chapterFile)).also {
+                    pruneBookCache(context, digest)
+                }
             } else {
                 val writer = DiskBackedBookPages.Writer(pageFile)
                 try {
