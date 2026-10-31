@@ -79,12 +79,12 @@ Choose the appearance and controls that suit your device and preferences:
 <div align="center">
   <img src="Screenshot/InstaMocks_20261031_140537032.png" alt="Dislauncher Home screen with clock, useful information and favourite apps" width="19%" />
   <img src="Screenshot/InstaMocks_20261031_140536503.png" alt="Dislauncher app drawer with installed apps and built-in tools shortcuts" width="19%" />
-  <img src="Screenshot/Screenshot_20261022-221259_Dislauncher.png" alt="Dislauncher built-in tools screen with quick access to its utilities" width="19%" />
-  <img src="Screenshot/InstaMocks_20261031_140533140.png" alt="Dislauncher Books library" width="19%" />
+  <img src="Screenshot/Screenshot_20261022-221233_Dislauncher.png" alt="Earlier Dislauncher app drawer with quick shortcuts to Calendar, Notes, Calculator and Converter" width="19%" />
+  <img src="Screenshot/InstaMocks_20261031_140533140.png" alt="Dislauncher Unit Converter with measurement categories, input and result" width="19%" />
   <img src="Screenshot/InstaMocks_20261031_140533775.png" alt="Reading an ebook in Dislauncher Books" width="19%" />
 </div>
 <div align="center">
-  <img src="Screenshot/InstaMocks_20261031_140534343.png" alt="Dislauncher Unit Converter" width="19%" />
+  <img src="Screenshot/InstaMocks_20261031_140534343.png" alt="Dislauncher Books library with a grid of saved books" width="19%" />
   <img src="Screenshot/InstaMocks_20261031_140534900.png" alt="Dislauncher Calendar month view and agenda" width="19%" />
   <img src="Screenshot/InstaMocks_20261031_140535468.png" alt="Dislauncher Notes list" width="19%" />
   <img src="Screenshot/InstaMocks_20261031_140535957.png" alt="Editing a Markdown note in Dislauncher Notes" width="19%" />

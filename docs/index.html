@@ -104,7 +104,7 @@
     .personal-list { display: grid; grid-template-columns: 1fr 1fr; gap: 28px 38px; margin-top: 48px; }
     .personal-item h3 { font-size: 20px; }
     .personal-item p { margin-top: 7px; color: #d0d0d0; font-size: 14px; line-height: 1.6; }
-    .personal-image { min-height: 600px; display: grid; place-items: center; overflow: hidden; background: var(--dark); }
+    .personal-image { min-height: 600px; display: grid; place-items: center; overflow: hidden; background: var(--field); }
     .personal-image img { width: auto; height: min(68svh, 650px); max-width: 100%; object-fit: contain; transition: transform .8s cubic-bezier(.22,1,.36,1); }
     .personal-image:hover img { transform: scale(1.025); }
     .privacy-section { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: clamp(40px, 8vw, 130px); align-items: start; }
@@ -224,8 +224,8 @@
         </div>
         <div class="preview-controls" role="group" aria-label="Choose an app preview">
           <button class="preview-tab" type="button" data-image="InstaMocks_20261031_140537032.png" data-alt="Dislauncher Home screen showing the clock, useful information and favourite apps" data-caption="The Home screen keeps favourite apps in a simple text list." aria-pressed="true">Home</button>
-          <button class="preview-tab" type="button" data-image="InstaMocks_20261031_140536503.png" data-alt="Dislauncher app drawer with built-in tools shortcuts and installed apps" data-caption="The app drawer gives you search, browsing and organisation." aria-pressed="false">App drawer</button>
-          <button class="preview-tab" type="button" data-image="Screenshot_20261022-221259_Dislauncher.png" data-alt="Dislauncher built-in tools screen" data-caption="Open Books, Notes, Calendar, Calculator and Unit Converter from one built-in tools screen." aria-pressed="false">Built-in tools</button>
+          <button class="preview-tab" type="button" data-image="InstaMocks_20261031_140536503.png" data-alt="Dislauncher app drawer with built-in tools shortcuts and installed apps" data-caption="Browse installed apps, use the alphabet index and reach built-in shortcuts." aria-pressed="false">App drawer</button>
+          <button class="preview-tab" type="button" data-image="Screenshot_20261022-221233_Dislauncher.png" data-alt="Earlier Dislauncher app drawer with Calendar, Notes, Calculator and Converter shortcuts above the app list" data-caption="Quick shortcuts to Calendar, Notes, Calculator and Converter sit above the installed app list." aria-pressed="false">Built-in tools</button>
         </div>
         <p class="preview-caption" id="preview-caption" aria-live="polite">The Home screen keeps favourite apps in a simple text list.</p>
       </div>
@@ -278,11 +278,11 @@
             <img id="tools-preview" src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/InstaMocks_20261031_140533775.png" alt="Reading an ebook in Dislauncher Books" loading="lazy">
             <div class="preview-controls tools-preview-controls" role="group" aria-label="Choose a built-in tool preview">
               <button class="preview-tab tools-preview-tab" type="button" data-image="InstaMocks_20261031_140533775.png" data-alt="Reading an ebook in Dislauncher Books" data-caption="Books keeps your reading close, with bookmarks and reading progress." aria-pressed="true">Books</button>
-              <button class="preview-tab tools-preview-tab" type="button" data-image="InstaMocks_20261031_140533140.png" data-alt="Dislauncher Books library" data-caption="Browse your book collection in the library." aria-pressed="false">Library</button>
+              <button class="preview-tab tools-preview-tab" type="button" data-image="InstaMocks_20261031_140534343.png" data-alt="Dislauncher Books library showing saved books in a grid" data-caption="Browse your book collection in the library." aria-pressed="false">Library</button>
               <button class="preview-tab tools-preview-tab" type="button" data-image="InstaMocks_20261031_140535468.png" data-alt="Dislauncher Notes list" data-caption="Keep notes organised in one searchable list." aria-pressed="false">Notes</button>
               <button class="preview-tab tools-preview-tab" type="button" data-image="InstaMocks_20261031_140535957.png" data-alt="Editing a Markdown note in Dislauncher Notes" data-caption="Write and preview Markdown in the editor." aria-pressed="false">Editor</button>
               <button class="preview-tab tools-preview-tab" type="button" data-image="InstaMocks_20261031_140534900.png" data-alt="Dislauncher Calendar month view and agenda" data-caption="Review the month and a selected day's agenda." aria-pressed="false">Calendar</button>
-              <button class="preview-tab tools-preview-tab" type="button" data-image="InstaMocks_20261031_140534343.png" data-alt="Dislauncher Unit Converter" data-caption="Convert between supported measurement units." aria-pressed="false">Converter</button>
+              <button class="preview-tab tools-preview-tab" type="button" data-image="InstaMocks_20261031_140533140.png" data-alt="Dislauncher Unit Converter showing measurement categories, input and conversion result" data-caption="Convert between supported measurement units." aria-pressed="false">Converter</button>
             </div>
             <p class="preview-caption tools-preview-caption" id="tools-preview-caption" aria-live="polite">Books keeps your reading close, with bookmarks and reading progress.</p>
           </div>
