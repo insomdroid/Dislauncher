@@ -316,7 +316,7 @@ private suspend fun appendEpubSection(
         "nbsp" to "\u00A0", "mdash" to "—", "ndash" to "–", "hellip" to "…",
         "rsquo" to "’", "lsquo" to "‘", "rdquo" to "”", "ldquo" to "“",
         "copy" to "©", "reg" to "®", "trade" to "™", "bull" to "•",
-        "euro" to "€", "pound" to "£", "mdash" to "—", "apos" to "'"
+        "euro" to "€", "pound" to "£", "apos" to "'"
     )
     entities.forEach { (name, value) -> runCatching { parser.defineEntityReplacementText(name, value) } }
     val coroutineContext = currentCoroutineContext()
@@ -538,7 +538,7 @@ private fun removeBookResources(context: Context, book: BookEntry, remainingBook
     val digest = bookCacheDigest(Uri.parse(book.uri))
     val pdfPath = File(context.cacheDir, "book_$digest.pdf").absolutePath
     pdfPageCache.snapshot().keys
-        .filter { it.startsWith("$pdfPath:") }
+        .filter { it.startsWith("$pdfPath:") || it.startsWith("${book.uri}:") }
         .forEach(pdfPageCache::remove)
 
     context.cacheDir.listFiles().orEmpty()
