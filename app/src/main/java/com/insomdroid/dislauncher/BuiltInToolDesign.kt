@@ -5,8 +5,8 @@ import java.util.Locale
 
 /** Shared spacing rhythm for the built-in tools. */
 internal object BuiltInToolSpacing {
-    val section = 12.dp
-    val compact = 6.dp
+    val section = 8.dp
+    val compact = 4.dp
 }
 
 /**
