@@ -1296,7 +1296,6 @@ private fun NotesTool(
                     if (selectedId == target) {
                         selectedId = null
                         title = ""
-                        document = NoteDocument()
                         markdownText = ""
                         onEditingChanged(false)
                     }
