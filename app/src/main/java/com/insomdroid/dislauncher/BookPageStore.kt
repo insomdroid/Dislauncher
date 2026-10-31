@@ -16,6 +16,10 @@ internal class DiskBackedBookPages private constructor(
     val isAvailable: Boolean get() = file.isFile
     val metadataBytes: Int get() = (offsets.size * Long.SIZE_BYTES).coerceAtMost(Int.MAX_VALUE)
 
+    fun touch() {
+        if (file.isFile) file.setLastModified(System.currentTimeMillis())
+    }
+
     override fun get(index: Int): String {
         if (index !in offsets.indices) throw IndexOutOfBoundsException("Page $index is outside the book")
         RandomAccessFile(file, "r").use { input ->
