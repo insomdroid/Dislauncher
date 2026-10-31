@@ -40,8 +40,8 @@ internal class DiskBackedBookPages private constructor(
                     require(count in 1..MAX_INDEXED_PAGES) { "Invalid reader page count." }
                     val offsets = LongArray(count) { input.readLong() }
                     require(input.read() == -1) { "Reader page index contains trailing data." }
-                    require(offsets.first() == 0L || offsets.all { it > 0L })
-                    require(offsets.zipWithNext().all { (first, second) -> second > first })
+                    require(offsets.first() == 0L)
+                    require((1 until offsets.size).all { offsets[it] > offsets[it - 1] })
                     require(offsets.all { it >= 0L && it + Int.SIZE_BYTES <= file.length() })
                     DiskBackedBookPages(file, offsets)
                 }
@@ -75,6 +75,8 @@ internal class DiskBackedBookPages private constructor(
             require(pageLimit >= 32)
             target.parentFile?.mkdirs()
             target.delete()
+            File(target.parentFile, target.name + ".idx").delete()
+            File(target.parentFile, target.name + ".idx.tmp").delete()
             output = DataOutputStream(BufferedOutputStream(FileOutputStream(target)))
         }
 
@@ -154,7 +156,7 @@ internal class DiskBackedBookPages private constructor(
             val chunk = text.substring(0, end).trim(' ', '\t', '\r')
             if (chunk.isNotEmpty()) writePage(chunk)
             page.delete(0, end)
-            while (page.isNotEmpty() && (page.first() == ' ' || page.first() == '\\t' || page.first() == '\\r')) page.deleteCharAt(0)
+            while (page.isNotEmpty() && (page.first() == ' ' || page.first() == '\t' || page.first() == '\r')) page.deleteCharAt(0)
         }
 
         private fun writePage(value: String) {
