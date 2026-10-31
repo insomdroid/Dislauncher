@@ -622,8 +622,7 @@ private fun NotesTool(
     var notesLoaded by remember(context) { mutableStateOf(false) }
     var selectedId by remember { mutableStateOf<String?>(null) }
     var title by remember { mutableStateOf("") }
-    var document by remember { mutableStateOf(NoteDocument()) }
-    var markdownText by remember { mutableStateOf("") }
+remove document state    var markdownText by remember { mutableStateOf("") }
     var markdownCursor by remember { mutableStateOf(0) }
     var searchQuery by remember { mutableStateOf("") }
     var searchExpanded by remember { mutableStateOf(false) }
@@ -673,8 +672,7 @@ private fun NotesTool(
             return
         }
         val parsedDocument = NoteDocumentCodec.fromLegacyContent(markdownText)
-        document = parsedDocument
-        markdownCursor = markdownCursor.coerceIn(0, markdownText.length)
+remove saved document state        markdownCursor = markdownCursor.coerceIn(0, markdownText.length)
         val pinned = existing?.pinned ?: false
         val current = LocalNote(
             id = id,
@@ -698,8 +696,7 @@ private fun NotesTool(
             ?: NoteDocumentCodec.fromLegacyContent(note.content)
         markdownText = note.markdown.ifEmpty { NoteDocumentCodec.toMarkdown(loadedDocument) }
         markdownCursor = markdownText.length
-        document = NoteDocumentCodec.fromLegacyContent(markdownText)
-        currentLabels = note.labels.toSet()
+remove open document state        currentLabels = note.labels.toSet()
         currentColor = note.color
         editHistory = MarkdownEditHistory()
         onEditingChanged(true)
@@ -707,8 +704,7 @@ private fun NotesTool(
     fun createNote() {
         selectedId = UUID.randomUUID().toString()
         title = ""
-        document = NoteDocument()
-        markdownText = ""
+remove create document state        markdownText = ""
         markdownCursor = 0
         currentLabels = emptySet()
         currentColor = "default"
