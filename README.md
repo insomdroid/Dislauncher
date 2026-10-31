@@ -77,16 +77,15 @@ Choose the appearance and controls that suit your device and preferences:
 ## Screenshots
 
 <p align="center">
-  <img src="Screenshot/Screenshot_20261022-221222_Dislauncher.png" alt="Home screen" width="24%" />
-  <img src="Screenshot/Screenshot_20261022-221233_Dislauncher.png" alt="App drawer" width="24%" />
-  <img src="Screenshot/Screenshot_20261022-221259_Dislauncher.png" alt="Built-in tools" width="24%" />
-  <img src="Screenshot/Screenshot_20261022-221321_Dislauncher.png" alt="Personalisation" width="24%" />
+  <img src="Screenshot/InstaMocks_20261031_140537032.png" alt="Dislauncher Home screen with clock, useful information and favourite apps" width="24%" />
+  <img src="Screenshot/InstaMocks_20261031_140536503.png" alt="Dislauncher app drawer with built-in tools shortcuts and app list" width="24%" />
+  <img src="Screenshot/Screenshot_20261022-221259_Dislauncher.png" alt="Dislauncher built-in tools" width="24%" />
+  <img src="Screenshot/InstaMocks_20261031_140533775.png" alt="Reading an ebook in Dislauncher Books" width="24%" />
 </p>
 <p align="center">
-  <img src="Screenshot/Screenshot_20261022-221309_Dislauncher.png" alt="Notes" width="24%" />
-  <img src="Screenshot/Screenshot_20261022-221316_Dislauncher.png" alt="Calendar" width="24%" />
-  <img src="Screenshot/Screenshot_20261022-221335_Dislauncher.png" alt="Settings" width="24%" />
-  <img src="Screenshot/Screenshot_20261022-221343_Dislauncher.png" alt="Appearance settings" width="24%" />
+  <img src="Screenshot/InstaMocks_20261031_140535957.png" alt="Editing a Markdown note in Dislauncher Notes" width="24%" />
+  <img src="Screenshot/InstaMocks_20261031_140534900.png" alt="Dislauncher Calendar month view and agenda" width="24%" />
+  <img src="Screenshot/InstaMocks_20261031_140532601.png" alt="Dislauncher appearance settings for fonts, text size and icons" width="24%" />
 </p>
 
 ## Requirements

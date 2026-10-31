@@ -8,7 +8,7 @@
   <meta property="og:type" content="website">
   <meta property="og:title" content="Dislauncher — A text-first Android launcher">
   <meta property="og:description" content="Keep your favourite apps close. Read, write, plan and calculate with tools built into your launcher.">
-  <meta property="og:image" content="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/Screenshot_20261022-221222_Dislauncher.png">
+  <meta property="og:image" content="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/InstaMocks_20261031_140537032.png">
   <meta name="color-scheme" content="light">
   <title>Dislauncher — A text-first Android launcher</title>
   <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/Minimalist%20Dislauncher%20Logo%20on%20Black.png">
@@ -91,6 +91,10 @@
     .tool p { max-width: 330px; margin-top: 10px; color: var(--muted); font-size: 14px; line-height: 1.65; }
     .tools-image { min-height: 520px; display: grid; place-items: center; overflow: hidden; background: #dedede; }
     .tools-image img { width: auto; height: min(65svh, 600px); max-width: 100%; object-fit: contain; transition: transform .8s cubic-bezier(.22,1,.36,1); }
+    .tools-image { grid-template-rows: 1fr auto auto; }
+    .tools-preview-controls { justify-content: center; gap: 22px; padding: 14px 20px 0; }
+    .tools-preview-caption { min-height: 24px; padding: 0 20px 14px; text-align: center; color: #555555; }
+
     .tools-image:hover img { transform: scale(1.025); }
     .personal-section { padding-block: clamp(100px, 13vw, 180px); background: var(--dark); color: var(--paper); }
     .personal-layout { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: clamp(44px, 8vw, 120px); align-items: center; }
@@ -224,11 +228,11 @@
       </div>
       <div class="preview reveal">
         <div class="preview-stage">
-          <img class="preview-image" id="product-preview" src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/Screenshot_20261022-221222_Dislauncher.png" alt="Dislauncher Home screen with a clock and six favourite app names" fetchpriority="high">
+          <img class="preview-image" id="product-preview" src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/InstaMocks_20261031_140537032.png" alt="Dislauncher Home screen showing the clock, useful information and favourite apps" fetchpriority="high">
         </div>
         <div class="preview-controls" role="group" aria-label="Choose an app preview">
-          <button class="preview-tab" type="button" data-image="Screenshot_20261022-221222_Dislauncher.png" data-alt="Dislauncher Home screen with a clock and six favourite app names" data-caption="The Home screen keeps favourite apps in a simple text list." aria-pressed="true">Home</button>
-          <button class="preview-tab" type="button" data-image="Screenshot_20261022-221233_Dislauncher.png" data-alt="Dislauncher app drawer showing installed apps" data-caption="The app drawer gives you search, browsing and organisation." aria-pressed="false">App drawer</button>
+          <button class="preview-tab" type="button" data-image="InstaMocks_20261031_140537032.png" data-alt="Dislauncher Home screen showing the clock, useful information and favourite apps" data-caption="The Home screen keeps favourite apps in a simple text list." aria-pressed="true">Home</button>
+          <button class="preview-tab" type="button" data-image="InstaMocks_20261031_140536503.png" data-alt="Dislauncher app drawer with built-in tools shortcuts and installed apps" data-caption="The app drawer gives you search, browsing and organisation." aria-pressed="false">App drawer</button>
           <button class="preview-tab" type="button" data-image="Screenshot_20261022-221259_Dislauncher.png" data-alt="Dislauncher built-in tools screen" data-caption="Everyday tools are part of the launcher." aria-pressed="false">Built-in tools</button>
         </div>
         <p class="preview-caption" id="preview-caption" aria-live="polite">The Home screen keeps favourite apps in a simple text list.</p>
@@ -250,7 +254,7 @@
           <p><a class="inline-link" href="https://github.com/insomdroid/Dislauncher" target="_blank" rel="noopener noreferrer">Explore the project</a></p>
         </div>
         <div class="experience-image reveal">
-          <img src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/Screenshot_20261022-221222_Dislauncher.png" alt="Dislauncher Home screen showing the clock, favourite apps and optional information" loading="lazy">
+          <img src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/InstaMocks_20261031_140537032.png" alt="Dislauncher Home screen with clock, information and favourite apps" loading="lazy">
         </div>
       </article>
       <article class="experience-row reverse">
@@ -259,7 +263,7 @@
           <p>Browse or search installed apps, move through the list, organise apps into folders, hide the ones you do not need and use compatible icon packs.</p>
         </div>
         <div class="experience-image reveal">
-          <img src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/Screenshot_20261022-221233_Dislauncher.png" alt="Dislauncher app drawer with installed apps" loading="lazy">
+          <img src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/InstaMocks_20261031_140536503.png" alt="Dislauncher app drawer with installed apps" loading="lazy">
         </div>
       </article>
     </section>
@@ -279,7 +283,13 @@
             <article class="tool reveal"><h3>Unit Converter</h3><p>Convert length, mass, temperature, speed, area, volume, time, energy, power and data storage.</p></article>
           </div>
           <div class="tools-image reveal">
-            <img src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/Screenshot_20261022-221259_Dislauncher.png" alt="Dislauncher built-in tools screen" loading="lazy">
+            <img id="tools-preview" src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/InstaMocks_20261031_140533775.png" alt="Reading an ebook in Dislauncher Books" loading="lazy">
+            <div class="preview-controls tools-preview-controls" role="group" aria-label="Choose a built-in tool preview">
+              <button class="preview-tab tools-preview-tab" type="button" data-image="InstaMocks_20261031_140533775.png" data-alt="Reading an ebook in Dislauncher Books" data-caption="Books keeps your reading close, with bookmarks and reading progress." aria-pressed="true">Books</button>
+              <button class="preview-tab tools-preview-tab" type="button" data-image="InstaMocks_20261031_140535957.png" data-alt="Editing a Markdown note in Dislauncher Notes" data-caption="Notes gives you a focused Markdown editor and preview." aria-pressed="false">Notes</button>
+              <button class="preview-tab tools-preview-tab" type="button" data-image="InstaMocks_20261031_140534900.png" data-alt="Dislauncher Calendar month view and agenda" data-caption="Calendar brings the month and selected day's agenda together." aria-pressed="false">Calendar</button>
+            </div>
+            <p class="preview-caption tools-preview-caption" id="tools-preview-caption" aria-live="polite">Books keeps your reading close, with bookmarks and reading progress.</p>
           </div>
         </div>
       </div>
@@ -300,7 +310,7 @@
           </div>
         </div>
         <div class="personal-image reveal">
-          <img src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/Screenshot_20261022-221343_Dislauncher.png" alt="Dislauncher appearance settings with theme and visual options" loading="lazy">
+          <img src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/InstaMocks_20261031_140532601.png" alt="Dislauncher appearance settings for fonts, text size and app icons" loading="lazy">
         </div>
       </div>
     </section>
@@ -385,6 +395,28 @@
           next.onerror = () => {
             preview.style.opacity = "1";
             caption.textContent = "This preview could not be loaded. Try another view.";
+          };
+          next.src = base + tab.dataset.image;
+        });
+      });
+
+      const toolsPreview = document.getElementById("tools-preview");
+      const toolsCaption = document.getElementById("tools-preview-caption");
+      const toolsTabs = Array.from(document.querySelectorAll(".tools-preview-tab"));
+      toolsTabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          toolsTabs.forEach((item) => item.setAttribute("aria-pressed", String(item === tab)));
+          toolsPreview.style.opacity = "0.25";
+          const next = new Image();
+          next.onload = () => {
+            toolsPreview.src = next.src;
+            toolsPreview.alt = tab.dataset.alt;
+            toolsCaption.textContent = tab.dataset.caption;
+            toolsPreview.style.opacity = "1";
+          };
+          next.onerror = () => {
+            toolsPreview.style.opacity = "1";
+            toolsCaption.textContent = "This preview could not be loaded. Try another view.";
           };
           next.src = base + tab.dataset.image;
         });
