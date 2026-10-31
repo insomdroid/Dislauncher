@@ -168,6 +168,10 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("com.kizitonwose.calendar:compose:2.9.1")
     implementation("io.noties.markwon:core:4.6.2")
+    implementation("io.noties.markwon:ext-strikethrough:4.6.2")
+    implementation("io.noties.markwon:ext-tasklist:4.6.2")
+    implementation("io.noties.markwon:html:4.6.2")
+    implementation("io.noties.markwon:image:4.6.2")
 
     testImplementation("junit:junit:4.13.2")
 
