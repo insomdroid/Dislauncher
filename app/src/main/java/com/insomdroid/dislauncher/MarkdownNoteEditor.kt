@@ -112,7 +112,7 @@ internal fun MarkdownNoteEditor(
 
     LaunchedEffect(value, selection) {
         val safeSelection = selection.coerceIn(0, value.length)
-        if (field.text != value || field.selection.start != safeSelection || field.selection.end != safeSelection) {
+        if (field.text != value || field.selection.end != safeSelection) {
             field = TextFieldValue(value, selection = TextRange(safeSelection))
         }
     }
