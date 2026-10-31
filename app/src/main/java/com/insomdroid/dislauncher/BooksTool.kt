@@ -289,7 +289,7 @@ private suspend fun appendEpubSection(
     parser.setFeature(org.xmlpull.v1.XmlPullParser.FEATURE_PROCESS_DOCDECL, false)
     runCatching { parser.setFeature(org.xmlpull.v1.XmlPullParser.FEATURE_RELAXED, true) }
     val entities = mapOf(
-        "nbsp" to "\\u00A0", "mdash" to "—", "ndash" to "–", "hellip" to "…",
+        "nbsp" to "\u00A0", "mdash" to "—", "ndash" to "–", "hellip" to "…",
         "rsquo" to "’", "lsquo" to "‘", "rdquo" to "”", "ldquo" to "“",
         "copy" to "©", "reg" to "®", "trade" to "™", "bull" to "•",
         "euro" to "€", "pound" to "£", "mdash" to "—", "apos" to "'"
@@ -312,7 +312,7 @@ private suspend fun appendEpubSection(
                     } else if (tag in ignoredTags) {
                         ignoredDepth = 1
                     } else if (tag == "br") {
-                        writer.append("\\n") { coroutineContext.ensureActive() }
+                        writer.append("\n") { coroutineContext.ensureActive() }
                     }
                 }
                 org.xmlpull.v1.XmlPullParser.TEXT,
@@ -326,7 +326,7 @@ private suspend fun appendEpubSection(
                     if (ignoredDepth > 0) {
                         ignoredDepth--
                     } else if (parser.name?.lowercase() in blockTags) {
-                        writer.append("\\n\\n") { coroutineContext.ensureActive() }
+                        writer.append("\n\n") { coroutineContext.ensureActive() }
                     }
                 }
             }
