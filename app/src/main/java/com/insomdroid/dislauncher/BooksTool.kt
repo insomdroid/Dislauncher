@@ -653,7 +653,7 @@ private fun BookCover(book: BookEntry, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(BuiltInToolDesign.cardCornerRadius),
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
     ) {
         if (cover != null) {
@@ -877,7 +877,7 @@ internal fun BooksTool(onBack: () -> Unit) {
 
     if (selectedBook == null) {
         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding().navigationBarsPadding()) {
-          Column(Modifier.fillMaxSize().padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+          Column(Modifier.fillMaxSize().padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Back", tint = fg) }
                 if (searchExpanded) {
@@ -948,7 +948,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                         items(visibleBooks, key = { it.id }) { book ->
                             Surface(
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 144.dp).clickable { selectedBook = book },
-                                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                                shape = RoundedCornerShape(BuiltInToolDesign.cardCornerRadius),
                                 color = MaterialTheme.colorScheme.surfaceContainerLow,
                                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
                             ) {
@@ -1039,7 +1039,7 @@ internal fun BooksTool(onBack: () -> Unit) {
         val book = selectedBook!!
         Box(Modifier.fillMaxSize().background(bg).statusBarsPadding()) {
             Column(Modifier.fillMaxSize()) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = { selectedBook = null; bookContent = null; pdfBitmap = null }) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Library", tint = fg) }
                     Text(book.title, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis, color = fg, style = MaterialTheme.typography.titleSmall)
                     IconButton(onClick = {
