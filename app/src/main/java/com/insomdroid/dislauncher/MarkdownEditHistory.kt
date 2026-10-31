@@ -9,10 +9,9 @@ private const val MARKDOWN_HISTORY_COALESCE_MS = 700L
 internal data class MarkdownHistoryEntry(
     val text: String,
     val cursor: Int,
-    val recordedAtMillis: Long
+    val recordedAtMillis: Long,
+    val byteCount: Int = text.toByteArray(StandardCharsets.UTF_8).size
 ) {
-    val byteCount: Int get() = text.toByteArray(StandardCharsets.UTF_8).size
-}
 
 internal data class MarkdownHistoryTransition(
     val history: MarkdownEditHistory,
@@ -40,7 +39,7 @@ internal data class MarkdownEditHistory(
         }
 
         val coalesce = lastRecordedAtMillis > 0L &&
-            nowMillis - lastRecordedAtMillis in 0..MARKDOWN_HISTORY_COALESCE_MS
+            nowMillis - lastRecordedAtMillis in 0L..MARKDOWN_HISTORY_COALESCE_MS
         val nextUndo = if (coalesce) undo else undo + entry
         val (boundedUndo, boundedRedo) = trimStacks(nextUndo, emptyList())
         return copy(
