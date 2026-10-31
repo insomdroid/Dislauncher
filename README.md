@@ -5,9 +5,9 @@
 
   <h1>Dislauncher</h1>
 
-  **Minimal, Functional, Personal.**
+  **Minimal. Functional. Personal.**
 
-  A minimal Android launcher that keeps your favourite apps, useful information, and everyday tools close — without the clutter.
+  A text-first Android launcher designed to keep your Home screen focused, useful tools close, and the experience yours.
 
   <p>
     <a href="https://github.com/insomdroid/Dislauncher/releases/latest">
@@ -30,23 +30,54 @@
 
 ---
 
-## A home screen with room to breathe
+## The idea behind Dislauncher
+
+Dislauncher is built around three connected principles. They shape the Home screen, the tools included with the launcher, and the choices available to each user.
+
+| Principle | What it means in Dislauncher |
+| --- | --- |
+| **Minimal** | A text-first Home screen, a straightforward app drawer, and optional information that stays out of the way. |
+| **Functional** | Useful everyday tools are built in, so reading, writing, planning, calculating, and converting do not require a separate utility app. |
+| **Personal** | Themes, colours, fonts, wallpapers, text sizing, and gestures let you decide how the launcher looks and behaves. |
+
+The goal is not to remove useful features. It is to make each feature purposeful, easy to reach, and part of a calm interface.
+
+## Minimal — less clutter, more focus
 
 <p align="center">
-  <img src="Screenshot/Screenshot_20261022-221222_Dislauncher.png" alt="Dislauncher home screen" width="31%" />
+  <img src="Screenshot/Screenshot_20261022-221222_Dislauncher.png" alt="Dislauncher text-first Home screen" width="31%" />
   <img src="Screenshot/Screenshot_20261022-221233_Dislauncher.png" alt="Dislauncher app drawer" width="31%" />
   <img src="Screenshot/Screenshot_20261022-221335_Dislauncher.png" alt="Dislauncher settings" width="31%" />
 </p>
 
-Dislauncher is built around a simple idea: your phone should make the things you use easier to reach, not compete for your attention. Keep a small set of favourite apps on your Home screen, find the rest in a straightforward app drawer, and open practical tools when you need them.
+- **Text-first Home screen** — keep up to six favourite apps within reach without a conventional icon grid.
+- **Straightforward app drawer** — browse or search your apps, jump through the list, create folders, and hide apps you do not need.
+- **At-a-glance information** — optionally show battery, weather, calendar, network, music, and notification information without turning the Home screen into a dashboard.
 
-## Highlights
+## Functional — useful tools, built in
 
-- **A focused Home screen** — time, date, favourite apps, and optional at-a-glance information.
-- **A text-focused app drawer** — organise apps, create folders, hide apps, and navigate your list.
-- **Useful tools included** — read books, write notes, manage tasks and events, calculate, and convert units.
-- **Personalise the essentials** — Light, Dark, and AMOLED themes, accent colours, fonts, text sizing, wallpapers, and icon packs.
-- **Optional extras** — weather, music controls, notification dots, and gestures.
+Dislauncher includes a focused set of everyday tools:
+
+| Tool | What you can do |
+| --- | --- |
+| **Books** | Read EPUB, PDF, and TXT files in the built-in reader. Browse your library in Grid or List view. |
+| **Notes** | Write and preview Markdown notes, search and pin notes, add images, and import or export your writing. |
+| **Calendar** | Browse a month and daily agenda, including device calendar events and your own tasks. |
+| **Calculator** | Handle everyday calculations and more advanced expressions. |
+| **Unit Converter** | Convert common measurements including length, weight, temperature, speed, and area. |
+
+These tools are available from the launcher. They are intended to be useful when needed, without adding more visual noise to the Home screen.
+
+## Personal — make it yours
+
+Choose the appearance and controls that suit your device and preferences:
+
+- **Themes** — System, Light, Dark, and AMOLED-friendly appearance.
+- **Colour** — choose an accent colour and adjust the visual tone.
+- **Typography** — use bundled fonts and adjust text sizing.
+- **Wallpaper** — use your own wallpaper and adjust dimming.
+- **Controls** — customise supported gestures and optional Home screen information.
+- **Icons** — use compatible icon packs for app icons.
 
 ## Screenshots
 
@@ -62,30 +93,6 @@ Dislauncher is built around a simple idea: your phone should make the things you
   <img src="Screenshot/Screenshot_20261022-221335_Dislauncher.png" alt="Settings" width="24%" />
   <img src="Screenshot/Screenshot_20261022-221343_Dislauncher.png" alt="Appearance settings" width="24%" />
 </p>
-
-## Features
-
-### Home screen and app drawer
-
-Keep favourite apps within easy reach and choose how your Home screen displays the time and date. Optional information can include weather, calendar events, and network details.
-
-The app drawer keeps the full app list easy to scan. Organise apps into folders, hide entries you do not need, and customise app icons with compatible icon packs.
-
-### Built-in tools
-
-Dislauncher includes a small collection of everyday tools:
-
-| Tool | What it does |
-| --- | --- |
-| **Books** | Read EPUB, PDF, and TXT files. Browse your library in Grid or List view. |
-| **Notes** | Write and preview Markdown notes, search and pin notes, add images, and import or export your writing. |
-| **Calendar** | View your month and agenda, including device calendar events and your own tasks. |
-| **Calculator** | Handle everyday calculations and more advanced expressions. |
-| **Unit Converter** | Convert measurements including length, weight, temperature, speed, and area. |
-
-### Personalisation
-
-Choose Light, Dark, or AMOLED themes, adjust accent colours and text sizes, select fonts, set wallpapers, and use compatible icon packs. Optional features let you decide how much information appears on your Home screen.
 
 ## Requirements
 
@@ -115,6 +122,7 @@ These builds are previews and may contain unfinished changes. They are not stabl
 
 Dislauncher does not require an account. Optional features may request permissions when you enable or use them.
 
+- No ads or analytics.
 - [Privacy and permissions](PRIVACY.md)
 - [APK safety and updates](APK_SAFETY.md)
 
@@ -133,5 +141,5 @@ Dislauncher is open source under the [MIT License](LICENSE).
 ---
 
 <div align="center">
-  <sub>Minimal, Functional, Personal.</sub>
+  <sub>Minimal. Functional. Personal.</sub>
 </div>

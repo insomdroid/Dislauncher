@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111111">
-  <meta name="description" content="Dislauncher is a minimal, functional and personal open-source Android launcher with a text-first Home screen, searchable app drawer, Books reader, Markdown Notes, Calendar and everyday tools.">
+  <meta name="description" content="Dislauncher is a text-first Android launcher built around three principles: a focused interface, useful built-in tools, and personalisation that stays in your hands.">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Dislauncher — Minimal, Functional, Personal">
-  <meta property="og:description" content="Keep favourite apps close, find the rest quickly, and use Books, Notes, Calendar and everyday tools in one focused launcher.">
+  <meta property="og:description" content="A focused Home screen, useful built-in tools, and the freedom to make the launcher yours. Minimal. Functional. Personal.">
   <meta property="og:image" content="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/Screenshot_20261022-221222_Dislauncher.png">
   <meta name="color-scheme" content="dark">
   <title>Dislauncher — Minimal, Functional, Personal</title>
@@ -89,6 +89,15 @@
     .manifesto-copy { max-width: 440px; color: var(--muted); font-size: 14px; line-height: 1.95; }
     .manifesto-copy p { margin-bottom: 20px; }
     .inline-link { display: inline-block; padding-bottom: 4px; border-bottom: 1px solid var(--line-strong); font-size: 12px; font-weight: 600; }
+    .principle-layout { display: grid; grid-template-columns: .78fr 1.22fr; gap: 64px; align-items: start; }
+    .principle-intro { position: sticky; top: 32px; }
+    .principle-intro h2 { font-size: clamp(36px, 4.8vw, 58px); }
+    .principle-list { border-top: 1px solid var(--line); }
+    .principle { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 20px; padding: 24px 0; border-bottom: 1px solid var(--line); }
+    .principle-index { padding-top: 7px; color: var(--subtle); font: 500 11px/1.5 var(--mono); }
+    .principle h3 { margin: 0 0 10px; font-size: 25px; font-weight: 600; }
+    .principle p { max-width: 58ch; margin: 0 0 12px; color: var(--muted); font-size: 13px; line-height: 1.85; }
+    .principle-detail { color: var(--subtle); font: 500 10px/1.7 var(--mono); letter-spacing: .025em; }
     .gallery { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
     figure { min-width: 0; margin: 0; padding: 10px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
     .shot { display: grid; min-height: 245px; place-items: center; overflow: hidden; padding: 10px; background: #0b0b0b; }
@@ -169,6 +178,10 @@
       .trust-item, .trust-item:first-child { min-height: 64px; padding: 13px 0; border-right: 0; border-bottom: 1px solid var(--line); }
       .trust-item:last-child { border-bottom: 0; }
       .section { padding-block: 60px; }
+      .principle-layout { grid-template-columns: 1fr; gap: 32px; }
+      .principle-intro { position: static; }
+      .principle { grid-template-columns: 32px minmax(0, 1fr); gap: 12px; padding: 20px 0; }
+      .principle h3 { font-size: 22px; }
       .section-head, .manifesto, .personalisation, .download-layout { grid-template-columns: 1fr; gap: 16px; }
       .section-head { margin-bottom: 27px; }
       .section-label { padding-top: 0; }
@@ -223,7 +236,7 @@
       <div>
         <p class="eyebrow">Minimal, Functional, Personal. · Open-source Android launcher</p>
         <h1 id="hero-title">Your apps, <span>without the icon grid.</span></h1>
-        <p class="lead">Keep up to six favourite apps close on a text-first Home screen. Find everything else in the searchable app drawer, then read books, write Markdown notes, manage your day and use everyday tools without filling your phone with extra apps.</p>
+        <p class="lead">A focused text-first Home screen, a straightforward app drawer, and useful tools for reading, writing, planning and everyday tasks. Dislauncher keeps what matters close without turning your phone into another crowded dashboard.</p>
         <div class="actions">
           <a class="button" href="https://github.com/insomdroid/Dislauncher/releases/latest" target="_blank" rel="noopener noreferrer">Get Dislauncher <span class="arrow" aria-hidden="true">↗</span></a>
           <a class="button secondary" href="#features">Explore features <span class="arrow" aria-hidden="true">↓</span></a>
@@ -238,6 +251,42 @@
         </div>
         <div class="screen-note"><strong>Text-first Home screen</strong><span>Apps and optional tools at a glance.</span></div>
         <div class="visual-caption"><span>01 — Home</span><span>Clock, date and apps</span></div>
+      </div>
+    </section>
+
+    <section class="section" id="principles" aria-labelledby="principles-title">
+      <div class="wrap principle-layout">
+        <div class="principle-intro">
+          <p class="eyebrow">The principles</p>
+          <h2 id="principles-title">Three ideas. One coherent experience.</h2>
+          <p class="section-copy">The slogan is more than a description. Each principle has a practical role in how Dislauncher looks, works, and fits into your day.</p>
+        </div>
+        <div class="principle-list">
+          <article class="principle">
+            <span class="principle-index">01</span>
+            <div>
+              <h3>Minimal</h3>
+              <p>A quieter starting point. The text-first Home screen, searchable app drawer, and optional status information keep attention on the apps and details you choose.</p>
+              <span class="principle-detail">Home screen · App drawer · Optional information</span>
+            </div>
+          </article>
+          <article class="principle">
+            <span class="principle-index">02</span>
+            <div>
+              <h3>Functional</h3>
+              <p>Simple does not mean limited. Books, Markdown Notes, Calendar, Calculator, and Unit Converter put practical tools within reach when you need them.</p>
+              <span class="principle-detail">Read · Write · Plan · Calculate · Convert</span>
+            </div>
+          </article>
+          <article class="principle">
+            <span class="principle-index">03</span>
+            <div>
+              <h3>Personal</h3>
+              <p>Your launcher should reflect your preferences. Choose themes, accent colours, fonts, wallpapers, text sizing, and supported gestures.</p>
+              <span class="principle-detail">Appearance · Typography · Controls</span>
+            </div>
+          </article>
+        </div>
       </div>
     </section>
 
@@ -296,7 +345,7 @@
           <p class="section-label">Features</p>
           <div>
             <h2 id="features-title">What you can do with Dislauncher</h2>
-            <p class="section-copy">Use a text-first Home screen, organise apps, customise the interface and open everyday tools without switching to separate utility apps.</p>
+            <p class="section-copy">The three principles come together in everyday use: keep the interface calm, reach practical tools when needed, and choose how the experience behaves.</p>
           </div>
         </div>
         <div class="feature-grid">
@@ -308,14 +357,6 @@
           <article class="feature"><span class="feature-index">06 / EVERYDAY TOOLS</span><h3>Calculate and convert</h3><p>Use the built-in calculator for everyday and advanced calculations, then convert common measurements such as length, weight, temperature, speed and area.</p></article>
           <article class="feature"><span class="feature-index">07 / APPEARANCE</span><h3>Make the interface yours</h3><p>Choose System, Light, Dark or AMOLED-friendly appearance, adjust accent colours and text size, select bundled fonts, set wallpapers and customise gestures.</p></article>
           <article class="feature"><span class="feature-index">08 / PRIVACY</span><h3>Use only the integrations you need</h3><p>No account is required. Optional features request their related Android access only when needed. The source code and privacy notes are available to review.</p></article>
-        </div>
-        <div class="tool-strip" aria-label="Built-in tools">
-          <div class="tool"><strong>Books</strong><span>EPUB, PDF and TXT reader</span></div>
-          <div class="tool"><strong>Notes</strong><span>Markdown, checklists and images</span></div>
-          <div class="tool"><strong>Calendar</strong><span>Month, agenda, tasks and reminders</span></div>
-          <div class="tool"><strong>Calculator</strong><span>Everyday and advanced calculations</span></div>
-          <div class="tool"><strong>Unit converter</strong><span>Common measurements and units</span></div>
-          <div class="tool"><strong>Optional Home tools</strong><span>Weather, music and status information</span></div>
         </div>
       </div>
     </section>
@@ -410,7 +451,7 @@
     <div class="footer-main">
       <div class="footer-brand">
         <a class="brand" href="#top"><img src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/Minimalist%20Dislauncher%20Logo%20on%20Black.png" alt=""><span>Dislauncher</span></a>
-        <p>Minimal, Functional, Personal. A text-first Android Home screen, a searchable app drawer and useful tools without the clutter.</p>
+        <p>Minimal. Functional. Personal. A focused Android Home screen, useful built-in tools, and an experience shaped by your choices.</p>
       </div>
       <nav class="footer-links" aria-label="Footer navigation">
         <a href="https://github.com/insomdroid/Dislauncher" target="_blank" rel="noopener noreferrer">GitHub</a>
