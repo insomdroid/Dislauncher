@@ -109,6 +109,46 @@ class NoteDocumentCodecTest {
     }
 
     @Test
+    fun diskBackedReaderPreservesTextLineAndParagraphBreaks() {
+        val file = java.io.File.createTempFile("reader-paragraphs", ".bin")
+        try {
+            val source = "First line\\nSecond line\\n\\nThird paragraph"
+            val pages = DiskBackedBookPages.Writer(file).apply { append(source) }.finish()
+            assertEquals(source, pages.joinToString(""))
+        } finally {
+            file.delete()
+        }
+    }
+
+    @Test
+    fun markdownEditHistoryCoalescesTypingAndRestoresCursor() {
+        val first = MarkdownEditHistory().record("start", cursor = 2, nowMillis = 1_000L)
+        val coalesced = first.record("started", cursor = 5, nowMillis = 1_500L)
+        val separated = coalesced.record("started!", cursor = 8, nowMillis = 2_201L)
+
+        assertEquals(listOf("start", "started"), separated.undo.map { it.text })
+        val undone = separated.undo("started!!", cursor = 9)!!
+        assertEquals("started", undone.text)
+        assertEquals(5, undone.cursor)
+        val redone = undone.history.redo("started", cursor = 5)!!
+        assertEquals("started!!", redone.text)
+        assertEquals(9, redone.cursor)
+    }
+
+    @Test
+    fun markdownEditHistoryRespectsCombinedByteLimit() {
+        val largeText = "x".repeat(MAX_MARKDOWN_HISTORY_BYTES / 2)
+        var history = MarkdownEditHistory()
+        repeat(4) { index ->
+            history = history.record("$largeText$index", nowMillis = index * 1_000L)
+        }
+        val retainedBytes = history.undo.sumOf { it.byteCount.toLong() } +
+            history.redo.sumOf { it.byteCount.toLong() }
+        assertTrue(retainedBytes <= MAX_MARKDOWN_HISTORY_BYTES)
+        assertTrue(history.undo.size + history.redo.size <= MAX_MARKDOWN_HISTORY_STEPS)
+    }
+
+    @Test
     fun diskBackedReaderProvidesPlaceholderForEmptyInput() {
         val file = java.io.File.createTempFile("reader-pages", ".bin")
         try {
@@ -123,9 +163,9 @@ class NoteDocumentCodecTest {
     @Test
     fun markdownEditHistoryIsBoundedToFiftySteps() {
         var history = MarkdownEditHistory()
-        repeat(60) { index -> history = history.record("state-$index") }
+        repeat(60) { index -> history = history.record("state-$index", nowMillis = index * 1_000L) }
         assertEquals(MAX_MARKDOWN_HISTORY_STEPS, history.undo.size)
-        assertEquals("state-59", history.undo.last())
+        assertEquals("state-59", history.undo.last().text)
         repeat(MAX_MARKDOWN_HISTORY_STEPS) { index ->
             history = history.undo("current-$index")!!.history
         }
@@ -136,8 +176,8 @@ class NoteDocumentCodecTest {
     @Test
     fun markdownEditHistoryCanUndoAndRedo() {
         val initial = MarkdownEditHistory()
-        val first = initial.record("one")
-        val second = first.record("two")
+        val first = initial.record("one", nowMillis = 1_000L)
+        val second = first.record("two", nowMillis = 2_000L)
         val undone = second.undo("three")!!
         assertEquals("two", undone.text)
         val redone = undone.history.redo("two")!!
