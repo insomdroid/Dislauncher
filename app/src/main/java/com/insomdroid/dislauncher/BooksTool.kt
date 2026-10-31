@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -952,7 +953,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                                 color = MaterialTheme.colorScheme.surfaceContainerLow,
                                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
                             ) {
-                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
                                     BookCover(book, Modifier.fillMaxWidth().height(148.dp))
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                         if (book.pinned) Icon(Icons.Outlined.PushPin, contentDescription = "Pinned",
@@ -1103,7 +1104,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                     onDismissRequest = { showMenu = false },
                     title = { Text("Reader options") },
                     text = {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
                             Text(book.title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
                             TextButton(onClick = { menuSection = "toc"; showMenu = false }, modifier = Modifier.fillMaxWidth()) {
                                 Text("Table of contents", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
@@ -1122,7 +1123,7 @@ internal fun BooksTool(onBack: () -> Unit) {
             if (menuSection.isNotEmpty()) {
                 Surface(
                     modifier = Modifier.fillMaxSize().padding(12.dp),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(BuiltInToolDesign.cardCornerRadius),
                     color = MaterialTheme.colorScheme.surfaceContainerHigh
                 ) {
                     Column(Modifier.fillMaxSize().padding(16.dp)) {
