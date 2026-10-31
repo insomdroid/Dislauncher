@@ -5,7 +5,7 @@
 
   <h1>Dislauncher</h1>
 
-  **A quieter home screen for a more focused phone.**
+  **Minimal, Functional, Personal.**
 
   A minimal Android launcher that keeps your favourite apps, useful information, and everyday tools close — without the clutter.
 
@@ -133,5 +133,5 @@ Dislauncher is open source under the [MIT License](LICENSE).
 ---
 
 <div align="center">
-  <sub>Keep what matters close. Leave the rest out of the way.</sub>
+  <sub>Minimal, Functional, Personal.</sub>
 </div>
