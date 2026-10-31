@@ -391,14 +391,14 @@ private suspend fun loadBookContent(context: Context, book: BookEntry): BookCont
             val directPageCount = runCatching {
                 val descriptor = context.contentResolver.openFileDescriptor(uri, "r")
                     ?: error("Unable to open PDF document")
-                PdfRenderer(descriptor).use { it.pageCount }
+                descriptor.use { pdfDescriptor -> PdfRenderer(pdfDescriptor).use { it.pageCount } }
             }.getOrNull()?.takeIf { it > 0 }
             val file = if (directPageCount == null) copyBookToCache(context, uri, "pdf") else null
             val count = directPageCount ?: run {
                 val descriptor = android.os.ParcelFileDescriptor.open(
                     requireNotNull(file), android.os.ParcelFileDescriptor.MODE_READ_ONLY
                 )
-                PdfRenderer(descriptor).use { it.pageCount }
+                descriptor.use { pdfDescriptor -> PdfRenderer(pdfDescriptor).use { it.pageCount } }
             }
             require(count > 0) { "This PDF contains no pages." }
             BookContent(
@@ -699,25 +699,27 @@ private fun renderPdfPage(
     maxDimension: Float,
     cache: Boolean
 ): Bitmap {
-    PdfRenderer(descriptor).use { renderer ->
-        renderer.openPage(pageIndex.coerceIn(0, renderer.pageCount - 1)).use { page ->
-            val maxPixels = if (maxDimension <= 300f) 160_000L else 2_000_000L
-            val dimensionScale = if (maxDimension <= 300f) {
-                minOf(maxDimension / page.width, maxDimension / page.height)
-            } else {
-                maxDimension / page.width
+    descriptor.use { pdfDescriptor ->
+        PdfRenderer(pdfDescriptor).use { renderer ->
+            renderer.openPage(pageIndex.coerceIn(0, renderer.pageCount - 1)).use { page ->
+                val maxPixels = if (maxDimension <= 300f) 160_000L else 2_000_000L
+                val dimensionScale = if (maxDimension <= 300f) {
+                    minOf(maxDimension / page.width, maxDimension / page.height)
+                } else {
+                    maxDimension / page.width
+                }
+                val scale = minOf(
+                    dimensionScale,
+                    kotlin.math.sqrt(maxPixels.toDouble() / (page.width.toLong() * page.height)).toFloat()
+                )
+                val width = (page.width * scale).toInt().coerceAtLeast(1)
+                val height = (page.height * scale).toInt().coerceAtLeast(1)
+                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                bitmap.eraseColor(android.graphics.Color.WHITE)
+                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                if (cache) pdfPageCache.put(cacheKey, bitmap)
+                return bitmap
             }
-            val scale = minOf(
-                dimensionScale,
-                kotlin.math.sqrt(maxPixels.toDouble() / (page.width.toLong() * page.height)).toFloat()
-            )
-            val width = (page.width * scale).toInt().coerceAtLeast(1)
-            val height = (page.height * scale).toInt().coerceAtLeast(1)
-            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-            bitmap.eraseColor(android.graphics.Color.WHITE)
-            page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-            if (cache) pdfPageCache.put(cacheKey, bitmap)
-            return bitmap
         }
     }
 }
