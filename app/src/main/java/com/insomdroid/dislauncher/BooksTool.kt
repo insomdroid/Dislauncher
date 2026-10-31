@@ -234,6 +234,10 @@ private fun readZipEntryText(zip: ZipFile, entry: java.util.zip.ZipEntry, limit:
 }
 
 private suspend fun readTextPages(file: File, pageFile: File): List<String> {
+    DiskBackedBookPages.open(pageFile)?.let { cached ->
+        cached.touch()
+        return cached
+    }
     val writer = DiskBackedBookPages.Writer(pageFile)
     val coroutineContext = currentCoroutineContext()
     return try {
@@ -251,6 +255,24 @@ private suspend fun readTextPages(file: File, pageFile: File): List<String> {
         writer.abort()
         throw failure
     }
+}
+
+private fun readBookChapters(file: File): List<Pair<String, Int>> = runCatching {
+    val array = JSONArray(file.readText(Charsets.UTF_8))
+    (0 until array.length()).mapNotNull { index ->
+        val item = array.optJSONObject(index) ?: return@mapNotNull null
+        val title = item.optString("title").takeIf { it.isNotBlank() } ?: return@mapNotNull null
+        val page = item.optInt("page", -1)
+        if (page < 0) null else title to page
+    }
+}.getOrDefault(emptyList())
+
+private fun writeBookChapters(file: File, chapters: List<Pair<String, Int>>) {
+    val array = JSONArray()
+    chapters.forEach { (title, page) ->
+        array.put(JSONObject().put("title", title).put("page", page))
+    }
+    file.writeText(array.toString(), Charsets.UTF_8)
 }
 
 private class BoundedEpubInputStream(
@@ -391,9 +413,17 @@ private suspend fun loadBookContent(context: Context, book: BookEntry): BookCont
         }
         "epub" -> {
             val file = copyBookToCache(context, uri, "epub")
-            val pageFile = File(context.cacheDir, "book_${bookCacheDigest(uri)}.pages")
-            val writer = DiskBackedBookPages.Writer(pageFile)
-            try {
+            val digest = bookCacheDigest(uri)
+            val pageFile = File(context.cacheDir, "book_$digest.pages")
+            val chapterFile = File(context.cacheDir, "book_$digest.chapters")
+            val cachedPages = DiskBackedBookPages.open(pageFile)
+            if (cachedPages != null) {
+                cachedPages.touch()
+                chapterFile.setLastModified(System.currentTimeMillis())
+                BookContent(cachedPages, readBookChapters(chapterFile))
+            } else {
+                val writer = DiskBackedBookPages.Writer(pageFile)
+                try {
                 val chapters = mutableListOf<Pair<String, Int>>()
                 ZipFile(file).use { zip ->
                     val opfPath = zip.getEntry("META-INF/container.xml")?.let { entry ->
@@ -458,13 +488,16 @@ private suspend fun loadBookContent(context: Context, book: BookEntry): BookCont
                         }
                     }
                 }
-                BookContent(writer.finish(), chapters).also {
-                    pageFile.setLastModified(System.currentTimeMillis())
-                    pruneBookCache(context, bookCacheDigest(uri))
+                    BookContent(writer.finish(), chapters).also {
+                        writeBookChapters(chapterFile, chapters)
+                        pageFile.setLastModified(System.currentTimeMillis())
+                        chapterFile.setLastModified(System.currentTimeMillis())
+                        pruneBookCache(context, digest)
+                    }
+                } catch (failure: Exception) {
+                    writer.abort()
+                    throw failure
                 }
-            } catch (failure: Exception) {
-                writer.abort()
-                throw failure
             }
         }
         else -> {
@@ -519,7 +552,7 @@ private fun pruneBookCache(context: Context, protectedDigest: String) {
     val files = context.cacheDir.listFiles().orEmpty().filter { it.name.startsWith("book_") }
     files.filter { it.name.endsWith(".tmp") }.forEach { it.delete() }
     val groups = files.filter { it.isFile && !it.name.endsWith(".tmp") }
-        .groupBy { it.name.removePrefix("book_").substringBeforeLast('.') }
+        .groupBy { it.name.removePrefix("book_").substringBefore('.') }
     var totalBytes = groups.values.sumOf { group -> group.sumOf { it.length() } }
     groups.entries
         .filter { it.key != protectedDigest }
