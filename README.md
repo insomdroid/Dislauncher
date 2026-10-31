@@ -44,11 +44,6 @@ The goal is not to remove useful features. It is to make each feature purposeful
 
 ## Minimal — less clutter, more focus
 
-<p align="center">
-  <img src="Screenshot/Screenshot_20261022-221222_Dislauncher.png" alt="Dislauncher text-first Home screen" width="31%" />
-  <img src="Screenshot/Screenshot_20261022-221233_Dislauncher.png" alt="Dislauncher app drawer" width="31%" />
-  <img src="Screenshot/Screenshot_20261022-221335_Dislauncher.png" alt="Dislauncher settings" width="31%" />
-</p>
 
 - **Text-first Home screen** — keep up to six favourite apps within reach without a conventional icon grid.
 - **Straightforward app drawer** — browse or search your apps, jump through the list, create folders, and hide apps you do not need.
@@ -60,11 +55,11 @@ Dislauncher includes a focused set of everyday tools:
 
 | Tool | What you can do |
 | --- | --- |
-| **Books** | Read EPUB, PDF, and TXT files in the built-in reader. Browse your library in Grid or List view. |
-| **Notes** | Write and preview Markdown notes, search and pin notes, add images, and import or export your writing. |
-| **Calendar** | Browse a month and daily agenda, including device calendar events and your own tasks. |
-| **Calculator** | Handle everyday calculations and more advanced expressions. |
-| **Unit Converter** | Convert common measurements including length, weight, temperature, speed, and area. |
+| **Books** | Read EPUB, PDF, and TXT files. Browse the library in Grid or List view, keep bookmarks, follow a table of contents when available, and resume reading progress. |
+| **Notes** | Write and preview Markdown notes, use headings, lists and checklists, add images, search, pin and label notes, and import or export your writing. |
+| **Calendar** | Switch between month and week views, review a selected day's agenda, and manage local to-dos and reminders alongside device calendar events. |
+| **Calculator** | Handle everyday and scientific calculations, with a saved calculation history. |
+| **Unit Converter** | Convert length, mass, temperature, speed, area, volume, time, energy, power, and data storage units. |
 
 These tools are available from the launcher. They are intended to be useful when needed, without adding more visual noise to the Home screen.
 
@@ -74,7 +69,7 @@ Choose the appearance and controls that suit your device and preferences:
 
 - **Themes** — System, Light, Dark, and AMOLED-friendly appearance.
 - **Colour** — choose an accent colour and adjust the visual tone.
-- **Typography** — use bundled fonts and adjust text sizing.
+- **Typography** — choose bundled or custom fonts and adjust text sizing.
 - **Wallpaper** — use your own wallpaper and adjust dimming.
 - **Controls** — customise supported gestures and optional Home screen information.
 - **Icons** — use compatible icon packs for app icons.

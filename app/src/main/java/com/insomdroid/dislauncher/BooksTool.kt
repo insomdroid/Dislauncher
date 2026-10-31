@@ -15,6 +15,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,6 +27,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -940,7 +942,7 @@ internal fun BooksTool(onBack: () -> Unit) {
             } else {
                 if (gridView) {
                     LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
+                        columns = GridCells.Adaptive(minSize = 150.dp),
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                         contentPadding = PaddingValues(start = 4.dp, top = 8.dp, end = 4.dp, bottom = 96.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -1084,12 +1086,19 @@ internal fun BooksTool(onBack: () -> Unit) {
                             bitmap = pdfBitmap!!.asImageBitmap(), contentDescription = "PDF page ${currentPage + 1}",
                             modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 12.dp)
                         )
-                        else -> Text(
-                            currentPageText,
-                            modifier = Modifier.fillMaxSize().verticalScroll(pageScrollState).padding(horizontal = 28.dp, vertical = 28.dp),
-                            color = fg, fontSize = fontSize.sp, lineHeight = (fontSize * 1.55f).sp,
-                            fontFamily = FontFamily.Serif
-                        )
+                        else -> BoxWithConstraints(Modifier.fillMaxSize()) {
+                            Text(
+                                currentPageText,
+                                modifier = Modifier
+                                    .widthIn(max = 720.dp)
+                                    .fillMaxSize()
+                                    .align(Alignment.TopCenter)
+                                    .verticalScroll(pageScrollState)
+                                    .padding(horizontal = 28.dp, vertical = 28.dp),
+                                color = fg, fontSize = fontSize.sp, lineHeight = (fontSize * 1.55f).sp,
+                                fontFamily = FontFamily.Serif
+                            )
+                        }
                     }
                 }
                 Text(

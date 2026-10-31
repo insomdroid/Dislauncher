@@ -444,23 +444,12 @@ private fun priorityColor(priority: Int): Color = when (priority) {
 @Composable
 internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     if (tool == BuiltInTool.BOOKS) {
-        BoxWithConstraints(
+        Box(
             Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            Box(
-                Modifier
-                    .widthIn(max = 840.dp)
-                    .fillMaxSize()
-                    .align(Alignment.TopCenter)
-                    .padding(
-                        horizontal = if (maxWidth >= 600.dp) 24.dp else 16.dp,
-                        vertical = 10.dp
-                    )
-            ) {
-                BooksTool(onBack = onBack)
-            }
+            BooksTool(onBack = onBack)
         }
         return
     }
@@ -571,7 +560,6 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                 BoxWithConstraints(Modifier.fillMaxSize()) {
                     Box(
                         Modifier
-                            .widthIn(max = 840.dp)
                             .fillMaxSize()
                             .align(Alignment.TopCenter)
                             .padding(padding)
@@ -580,31 +568,44 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                                 vertical = 10.dp
                             )
                     ) {
-                    when (tool) {
-                        BuiltInTool.NOTES -> NotesTool(
-                            context = context,
-                            backSignal = notesBackSignal,
-                            onEditingChanged = { notesEditing = it },
-                            onBackRequested = { if (notesEditing) notesBackSignal++ else requestClose() },
-                            modifier = Modifier.fillMaxSize()
-                        )
-                        BuiltInTool.CALCULATOR -> CalculatorTool(
-                            modifier = Modifier.fillMaxSize(),
-                            showHistory = calculatorShowingHistory,
-                            onShowHistoryChange = { calculatorShowingHistory = it },
-                            clearHistorySignal = calculatorClearHistorySignal,
-                            onHistoryAvailabilityChanged = { calculatorHistoryHasItems = it },
-                            scientificMode = calculatorScientificMode,
-                            onScientificModeChange = { calculatorScientificMode = it }
-                        )
-                        BuiltInTool.CALENDAR -> CalendarTool(
-                            context = context,
-                            month = calendarMonth,
-                            onMonthChange = { calendarMonth = it },
-                            modifier = Modifier.fillMaxSize()
-                        )
-                        BuiltInTool.UNIT_CONVERTER -> UnitConverterTool(Modifier.fillMaxSize(), converterSearchQuery)
-                    }
+                        when (tool) {
+                            BuiltInTool.NOTES -> NotesTool(
+                                context = context,
+                                backSignal = notesBackSignal,
+                                onEditingChanged = { notesEditing = it },
+                                onBackRequested = { if (notesEditing) notesBackSignal++ else requestClose() },
+                                modifier = Modifier.fillMaxSize()
+                            )
+                            BuiltInTool.CALCULATOR -> Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.TopCenter
+                            ) {
+                                CalculatorTool(
+                                    modifier = Modifier.widthIn(max = 560.dp).fillMaxSize(),
+                                    showHistory = calculatorShowingHistory,
+                                    onShowHistoryChange = { calculatorShowingHistory = it },
+                                    clearHistorySignal = calculatorClearHistorySignal,
+                                    onHistoryAvailabilityChanged = { calculatorHistoryHasItems = it },
+                                    scientificMode = calculatorScientificMode,
+                                    onScientificModeChange = { calculatorScientificMode = it }
+                                )
+                            }
+                            BuiltInTool.CALENDAR -> CalendarTool(
+                                context = context,
+                                month = calendarMonth,
+                                onMonthChange = { calendarMonth = it },
+                                modifier = Modifier.fillMaxSize()
+                            )
+                            BuiltInTool.UNIT_CONVERTER -> Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.TopCenter
+                            ) {
+                                UnitConverterTool(
+                                    Modifier.widthIn(max = 760.dp).fillMaxSize(),
+                                    converterSearchQuery
+                                )
+                            }
+                        }
                     }
                 }
             }
