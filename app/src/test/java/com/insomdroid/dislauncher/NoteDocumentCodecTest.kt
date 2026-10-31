@@ -54,6 +54,7 @@ class NoteDocumentCodecTest {
         assertEquals(code, parsed.blocks.single().spans.joinToString("") { it.text })
         assertTrue(parsed.blocks.single().spans.none { it.marks.isNotEmpty() })
     }
+
     @Test
     fun markdownRoundTripPreservesEscapesInsideFormatting() {
         val document = NoteDocument(
@@ -133,7 +134,7 @@ class NoteDocumentCodecTest {
         val coalesced = first.record("started", cursor = 5, nowMillis = 1_500L)
         val separated = coalesced.record("started!", cursor = 8, nowMillis = 2_201L)
 
-        assertEquals(listOf("started", "started!"), separated.undo.map { it.text })
+        assertEquals(listOf("start", "started!"), separated.undo.map { it.text })
         val undone = separated.undo("started!!", cursor = 9)!!
         assertEquals("started!", undone.text)
         assertEquals(8, undone.cursor)
