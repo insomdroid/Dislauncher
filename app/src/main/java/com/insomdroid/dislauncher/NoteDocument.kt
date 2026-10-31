@@ -49,7 +49,7 @@ internal object NoteDocumentCodec {
     private val bulletPattern = Regex("^\\s*[-*+]\\s+(.+)$")
     private val numberedPattern = Regex("^\\s*(\\d+)[.)]\\s+(.+)$")
     private val checklistPattern = Regex("^\\s*[-*+]\\s+\\[([ xX])]\\s+(.+)$")
-    private val inlinePattern = Regex("""\\(.)|<u>(.+?)</u>|!\[((?:\\.|[^\]])*)\]\((?:<)?([^)>]+)(?:>)?\)|\[([^\]]+)\]\((https?://[^)]+)\)|\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|~~(.+?)~~|\*(.+?)\*|`((?:\\.|[^`])+)`""")
+    private val inlinePattern = Regex("""\\(.)|<u>(.+?)</u>|!\\[((?:[^\\\\\\]]|\\\\.)*)\\]\\((?:<)?([^)>]+)(?:>)?\\)|\\[([^\\]]+)\\]\\((https?://[^)]+)\\)|\\*\\*\\*(.+?)\\*\\*\\*|\\*\\*(.+?)\\*\\*|~~(.+?)~~|\\*(.+?)\\*|`((?:[^\\\\`]|\\\\.)+)`""")
 
     fun fromLegacyContent(markdown: String): NoteDocument {
         if (markdown.isBlank()) return NoteDocument()
