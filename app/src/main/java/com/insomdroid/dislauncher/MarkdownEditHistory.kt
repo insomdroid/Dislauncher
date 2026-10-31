@@ -41,10 +41,11 @@ internal data class MarkdownEditHistory(
 
         val coalesce = lastRecordedAtMillis > 0L &&
             nowMillis - lastRecordedAtMillis in 0..MARKDOWN_HISTORY_COALESCE_MS
-        val nextUndo = if (coalesce) undo else trimHistory(undo + entry)
+        val nextUndo = if (coalesce) undo else undo + entry
+        val (boundedUndo, boundedRedo) = trimStacks(nextUndo, emptyList())
         return copy(
-            undo = nextUndo,
-            redo = emptyList(),
+            undo = boundedUndo,
+            redo = boundedRedo,
             lastRecordedAtMillis = nowMillis
         )
     }
@@ -59,10 +60,11 @@ internal data class MarkdownEditHistory(
             cursor.coerceIn(0, currentText.length),
             System.currentTimeMillis()
         )
+        val (boundedUndo, boundedRedo) = trimStacks(undo.dropLast(1), redo + current)
         return MarkdownHistoryTransition(
             history = copy(
-                undo = undo.dropLast(1),
-                redo = trimHistory(redo + current),
+                undo = boundedUndo,
+                redo = boundedRedo,
                 lastRecordedAtMillis = 0L
             ),
             text = previous.text,
@@ -80,10 +82,11 @@ internal data class MarkdownEditHistory(
             cursor.coerceIn(0, currentText.length),
             System.currentTimeMillis()
         )
+        val (boundedUndo, boundedRedo) = trimStacks(undo + current, redo.dropLast(1))
         return MarkdownHistoryTransition(
             history = copy(
-                undo = trimHistory(undo + current),
-                redo = redo.dropLast(1),
+                undo = boundedUndo,
+                redo = boundedRedo,
                 lastRecordedAtMillis = 0L
             ),
             text = next.text,
@@ -91,12 +94,27 @@ internal data class MarkdownEditHistory(
         )
     }
 
-    private fun trimHistory(entries: List<MarkdownHistoryEntry>): List<MarkdownHistoryEntry> {
-        val boundedSteps = entries.takeLast(MAX_MARKDOWN_HISTORY_STEPS).toMutableList()
-        var totalBytes = boundedSteps.sumOf { it.byteCount.toLong() }
-        while (boundedSteps.isNotEmpty() && totalBytes > MAX_MARKDOWN_HISTORY_BYTES) {
-            totalBytes -= boundedSteps.removeAt(0).byteCount
+    private fun trimStacks(
+        undoEntries: List<MarkdownHistoryEntry>,
+        redoEntries: List<MarkdownHistoryEntry>
+    ): Pair<List<MarkdownHistoryEntry>, List<MarkdownHistoryEntry>> {
+        val boundedUndo = undoEntries.takeLast(MAX_MARKDOWN_HISTORY_STEPS).toMutableList()
+        val boundedRedo = redoEntries.takeLast(MAX_MARKDOWN_HISTORY_STEPS).toMutableList()
+        fun totalBytes() = boundedUndo.sumOf { it.byteCount.toLong() } +
+            boundedRedo.sumOf { it.byteCount.toLong() }
+
+        while (
+            boundedUndo.size + boundedRedo.size > MAX_MARKDOWN_HISTORY_STEPS ||
+            totalBytes() > MAX_MARKDOWN_HISTORY_BYTES
+        ) {
+            if (boundedUndo.isNotEmpty()) {
+                boundedUndo.removeAt(0)
+            } else if (boundedRedo.isNotEmpty()) {
+                boundedRedo.removeAt(0)
+            } else {
+                break
+            }
         }
-        return boundedSteps
+        return boundedUndo to boundedRedo
     }
 }
