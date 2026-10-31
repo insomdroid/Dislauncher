@@ -940,9 +940,9 @@ internal fun BooksTool(onBack: () -> Unit) {
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(2),
                         modifier = Modifier.weight(1f).fillMaxWidth(),
-                        contentPadding = PaddingValues(start = 4.dp, end = 4.dp, bottom = 96.dp),
+                        contentPadding = PaddingValues(start = 4.dp, top = 8.dp, end = 4.dp, bottom = 96.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         items(visibleBooks, key = { it.id }) { book ->
                             Surface(
