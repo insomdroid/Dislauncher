@@ -878,7 +878,7 @@ internal fun BooksTool(onBack: () -> Unit) {
 
     if (selectedBook == null) {
         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding().navigationBarsPadding()) {
-          Column(Modifier.fillMaxSize().padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
+          Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Back", tint = fg) }
                 if (searchExpanded) {
@@ -1038,7 +1038,7 @@ internal fun BooksTool(onBack: () -> Unit) {
         }
     } else {
         val book = selectedBook!!
-        Box(Modifier.fillMaxSize().background(bg).statusBarsPadding()) {
+        Box(Modifier.fillMaxSize().background(bg).statusBarsPadding().navigationBarsPadding()) {
             Column(Modifier.fillMaxSize()) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = { selectedBook = null; bookContent = null; pdfBitmap = null }) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Library", tint = fg) }
