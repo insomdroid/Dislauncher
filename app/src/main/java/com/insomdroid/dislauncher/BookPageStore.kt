@@ -13,6 +13,7 @@ internal class DiskBackedBookPages private constructor(
     private val offsets: LongArray
 ) : AbstractList<String>() {
     override val size: Int get() = offsets.size
+    val isAvailable: Boolean get() = file.isFile
     val metadataBytes: Int get() = (offsets.size * Long.SIZE_BYTES).coerceAtMost(Int.MAX_VALUE)
 
     override fun get(index: Int): String {
