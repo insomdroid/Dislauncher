@@ -78,8 +78,7 @@ Choose the appearance and controls that suit your device and preferences:
 
 <div align="center">
   <img src="Screenshot/InstaMocks_20261031_140537032.png" alt="Dislauncher Home screen with clock, useful information and favourite apps" width="19%" />
-  <img src="Screenshot/InstaMocks_20261031_140536503.png" alt="Dislauncher app drawer with installed apps and built-in tools shortcuts" width="19%" />
-  <img src="Screenshot/Screenshot_20261022-221233_Dislauncher.png" alt="Earlier Dislauncher app drawer with quick shortcuts to Calendar, Notes, Calculator and Converter" width="19%" />
+  <img src="Screenshot/InstaMocks_20261031_140536503.png" alt="Current Dislauncher app drawer with built-in shortcuts for Calendar, Notes, Calculator and Converter" width="19%" />
   <img src="Screenshot/InstaMocks_20261031_140533140.png" alt="Dislauncher Unit Converter with measurement categories, input and result" width="19%" />
   <img src="Screenshot/InstaMocks_20261031_140533775.png" alt="Reading an ebook in Dislauncher Books" width="19%" />
 </div>
