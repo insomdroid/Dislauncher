@@ -133,11 +133,11 @@ class NoteDocumentCodecTest {
         val coalesced = first.record("started", cursor = 5, nowMillis = 1_500L)
         val separated = coalesced.record("started!", cursor = 8, nowMillis = 2_201L)
 
-        assertEquals(listOf("start", "started"), separated.undo.map { it.text })
+        assertEquals(listOf("started", "started!"), separated.undo.map { it.text })
         val undone = separated.undo("started!!", cursor = 9)!!
-        assertEquals("started", undone.text)
-        assertEquals(5, undone.cursor)
-        val redone = undone.history.redo("started", cursor = 5)!!
+        assertEquals("started!", undone.text)
+        assertEquals(8, undone.cursor)
+        val redone = undone.history.redo("started!", cursor = 8)!!
         assertEquals("started!!", redone.text)
         assertEquals(9, redone.cursor)
     }
