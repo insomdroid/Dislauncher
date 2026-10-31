@@ -1,29 +1,29 @@
 # Dislauncher Changelog
 
-## 1.3.5 | 30 October 2026
+## 1.3.6 | 1 November 2026
 #### What's New
-- **Built-in Books Reader:** Read EPUB, PDF, and TXT files offline, with Grid and List library views.
-- **Home Clock Styles:** Choose from Vertical Stack, Binary Dot, Dual Bar, and Text clock layouts.
+- **Expanded Markdown Preview:** Added support for task lists, strikethrough, HTML content, and images in Notes.
+- **Simplified Onboarding:** Refined the first-run experience with clearer progress, skip options, and deferred optional permissions.
 
 #### Improvements
-- Refined the layout and visual consistency across built-in tools.
-- Improved the Books library, cover handling, reading controls, and page navigation.
-- Improved book loading and memory usage with disk-backed page storage and bounded processing.
-- Improved Markdown editing, including list continuation and formatting preservation.
-- Added separate Undo and Redo history with a 50-step limit.
-- Improved reminder scheduling when the device clock or time zone changes.
-- Improved app drawer ordering and folder filtering performance.
-- Improved wallpaper contrast calculation efficiency.
-- Added clearer onboarding explanations for permissions and handling of permanently denied permissions.
-- Reduced unnecessary preference writes.
+- Improved Books library and reader layouts, including Grid and List spacing, card sizing, full-width presentation, and add-button placement.
+- Improved book processing and reading performance with persistent disk-backed page indexes, bounded cache groups, cancellable cache operations, and safer PDF resource handling.
+- Improved EPUB and TXT text preservation, including paragraph breaks, chapter boundaries, escaped entities, and line spacing.
+- Improved PDF cover thumbnail handling with a fallback for unavailable previews.
+- Improved Notes loading and saving, Markdown editor state management, cursor tracking, and text-selection preservation.
+- Improved Undo and Redo history coalescing while keeping the combined history bounded.
+- Unified built-in tool headers, search fields, and shared shape tokens for a more consistent interface.
+- Improved empty states and filtered results across Books, Notes, Calculator, Calendar, and Unit Converter.
+- Improved app discovery and clarified selected Settings and app drawer options.
+- Persisted the Books library's Grid or List view preference.
 
 #### Fixes
-- Fixed Books reader layout, scrolling, and navigation issues.
-- Fixed Markdown parsing and note round-trip preservation.
-- Protected notes and calendar data from being overwritten when stored data is corrupted.
-- Fixed built-in tool icon contrast in dark and AMOLED themes.
-- Fixed Books library text and menu visibility in List view.
-- Fixed reminder scheduling after system time and time zone changes.
+- Fixed Markdown parsing edge cases and preserved note content during editing and preview.
+- Fixed book page storage issues that could introduce unwanted blank lines or lose paragraph and chapter separation.
+- Fixed stale or invalid persisted page indexes and cache cleanup when books are removed.
+- Fixed PDF file descriptor handling and improved reader error messages.
+- Fixed onboarding configuration and notification-access status handling.
+- Fixed Notes editor state declarations and regression cases in Markdown history.
 
 ## 1.3.4 | 28 October 2026
 #### Improvements
