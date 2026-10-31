@@ -1179,7 +1179,7 @@ private fun NotesTool(
                                 markdownText = updated
                             }
                         },
-                        onSelectionChange = { markdownCursor = it.coerceIn(0, markdownText.length) },
+                        onSelectionChange = { markdownCursor = it },
                         modifier = Modifier.fillMaxSize().padding(vertical = 2.dp),
                         onInsertImage = { imageLauncher.launch(arrayOf("image/*")) }
                     )
