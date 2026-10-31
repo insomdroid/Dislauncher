@@ -946,12 +946,12 @@ internal fun BooksTool(onBack: () -> Unit) {
                     ) {
                         items(visibleBooks, key = { it.id }) { book ->
                             Surface(
-                                modifier = Modifier.fillMaxWidth().clickable { selectedBook = book },
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 144.dp).clickable { selectedBook = book },
                                 shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
                                 color = MaterialTheme.colorScheme.surfaceContainerLow,
                                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
                             ) {
-                                Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     BookCover(book, Modifier.fillMaxWidth().height(148.dp))
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                         if (book.pinned) Icon(Icons.Outlined.PushPin, contentDescription = "Pinned",
