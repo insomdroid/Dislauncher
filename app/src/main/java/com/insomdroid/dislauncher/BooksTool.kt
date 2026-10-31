@@ -352,8 +352,13 @@ private val pdfPageCache = object : LruCache<String, Bitmap>(
 private suspend fun loadBookContent(context: Context, book: BookEntry): BookContent {
     val cacheKey = "${book.id}:${book.uri}"
     bookContentCache.get(cacheKey)?.let { cached ->
-        val pagesAvailable = (cached.pages as? DiskBackedBookPages)?.isAvailable != false
-        if (pagesAvailable && (cached.pdfFile == null || cached.pdfFile.isFile)) return cached
+        val pages = cached.pages as? DiskBackedBookPages
+        val pagesAvailable = pages?.isAvailable != false
+        if (pagesAvailable && (cached.pdfFile == null || cached.pdfFile.isFile)) {
+            pages?.touch()
+            cached.pdfFile?.setLastModified(System.currentTimeMillis())
+            return cached
+        }
         bookContentCache.remove(cacheKey)
     }
     val uri = Uri.parse(book.uri)
