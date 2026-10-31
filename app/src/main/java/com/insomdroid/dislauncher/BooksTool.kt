@@ -311,7 +311,7 @@ private suspend fun appendEpubSection(
 ) {
     val parser = android.util.Xml.newPullParser()
     parser.setFeature(org.xmlpull.v1.XmlPullParser.FEATURE_PROCESS_DOCDECL, false)
-    runCatching { parser.setFeature(org.xmlpull.v1.XmlPullParser.FEATURE_RELAXED, true) }
+    runCatching { parser.setFeature("http://xmlpull.org/v1/doc/features.html#relaxed", true) }
     val entities = mapOf(
         "nbsp" to "\u00A0", "mdash" to "—", "ndash" to "–", "hellip" to "…",
         "rsquo" to "’", "lsquo" to "‘", "rdquo" to "”", "ldquo" to "“",
