@@ -176,6 +176,12 @@ private data class CalendarAgendaItem(
 private fun notesStore(context: Context) =
     context.getSharedPreferences("dislauncher_notes", Context.MODE_PRIVATE)
 
+private fun showNotesWarning(context: Context, message: String) {
+    android.os.Handler(android.os.Looper.getMainLooper()).post {
+        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+    }
+}
+
 private fun preserveCorruptNotes(context: Context, rawJson: String) {
     val store = notesStore(context)
     if (!store.contains("notes_json_recovery_backup")) {
@@ -184,11 +190,10 @@ private fun preserveCorruptNotes(context: Context, rawJson: String) {
             .putLong("notes_json_recovery_backup_at", System.currentTimeMillis())
             .apply()
     }
-    Toast.makeText(
+    showNotesWarning(
         context,
-        "Notes data could not be read safely. A recovery copy was preserved; the original data was not overwritten.",
-        Toast.LENGTH_LONG
-    ).show()
+        "Notes data could not be read safely. A recovery copy was preserved; the original data was not overwritten."
+    )
 }
 
 private fun loadNotes(context: Context): List<LocalNote> {
@@ -268,7 +273,10 @@ private fun saveNotes(context: Context, notes: List<LocalNote>) {
             item != null && item.optString("id").isNotBlank()
         }
     }.getOrDefault(false)
-    if (!existingStoreIsSafe) return
+    if (!existingStoreIsSafe) {
+        preserveCorruptNotes(context, existingRaw)
+        return
+    }
 
     val array = JSONArray()
     notes.forEach { note ->
@@ -610,11 +618,13 @@ private fun NotesTool(
     onBackRequested: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var notes by remember(context) { mutableStateOf(loadNotes(context)) }
+    var notes by remember(context) { mutableStateOf(emptyList<LocalNote>()) }
+    var notesLoaded by remember(context) { mutableStateOf(false) }
     var selectedId by remember { mutableStateOf<String?>(null) }
     var title by remember { mutableStateOf("") }
     var document by remember { mutableStateOf(NoteDocument()) }
     var markdownText by remember { mutableStateOf("") }
+    var markdownCursor by remember { mutableStateOf(0) }
     var searchQuery by remember { mutableStateOf("") }
     var searchExpanded by remember { mutableStateOf(false) }
     var currentLabels by remember { mutableStateOf(setOf<String>()) }
@@ -635,6 +645,11 @@ private fun NotesTool(
     var editHistory by remember { mutableStateOf(MarkdownEditHistory()) }
     var pendingExport by remember { mutableStateOf<PendingNoteExport?>(null) }
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(context) {
+        notes = withContext(Dispatchers.IO) { loadNotes(context) }
+        notesLoaded = true
+    }
 
     fun plainText(doc: NoteDocument): String = NoteDocumentCodec.plainText(doc)
     fun isEmptyMarkdown(markdown: String): Boolean = markdown.isBlank()
@@ -659,6 +674,7 @@ private fun NotesTool(
         }
         val parsedDocument = NoteDocumentCodec.fromLegacyContent(markdownText)
         document = parsedDocument
+        markdownCursor = markdownCursor.coerceIn(0, markdownText.length)
         val pinned = existing?.pinned ?: false
         val current = LocalNote(
             id = id,
@@ -681,6 +697,7 @@ private fun NotesTool(
         val loadedDocument = NoteDocumentCodec.decode(note.documentJson)
             ?: NoteDocumentCodec.fromLegacyContent(note.content)
         markdownText = note.markdown.ifEmpty { NoteDocumentCodec.toMarkdown(loadedDocument) }
+        markdownCursor = markdownText.length
         document = NoteDocumentCodec.fromLegacyContent(markdownText)
         currentLabels = note.labels.toSet()
         currentColor = note.color
@@ -692,6 +709,7 @@ private fun NotesTool(
         title = ""
         document = NoteDocument()
         markdownText = ""
+        markdownCursor = 0
         currentLabels = emptySet()
         currentColor = "default"
         editHistory = MarkdownEditHistory()
@@ -778,9 +796,9 @@ private fun NotesTool(
             if (uri.scheme == "content") {
                 context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            editHistory = editHistory.record(markdownText)
+            editHistory = editHistory.record(markdownText, markdownCursor)
             markdownText = markdownText.trimEnd() + "\n\n![Image](" + uri.toString() + ")"
-            document = NoteDocumentCodec.fromLegacyContent(markdownText)
+            markdownCursor = markdownText.length
         }.onFailure {
             Toast.makeText(context, "Could not add image", Toast.LENGTH_LONG).show()
         }
@@ -797,18 +815,24 @@ private fun NotesTool(
     }
     BackHandler(enabled = selectedId != null) { closeEditor() }
 
-    val visibleNotes = notes.filter { note ->
-        (!pinnedOnly || note.pinned) &&
-            (activeLabel == null || activeLabel in note.labels) &&
-            (searchQuery.isBlank() || note.title.contains(searchQuery, true) ||
-                note.content.contains(searchQuery, true))
-    }.let { list ->
-        if (sortByTitle) list.sortedWith(compareByDescending<LocalNote> { it.pinned }.thenBy { it.title.lowercase() })
-        else list.sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
+    val visibleNotes = remember(notes, pinnedOnly, activeLabel, searchQuery, sortByTitle) {
+        notes.filter { note ->
+            (!pinnedOnly || note.pinned) &&
+                (activeLabel == null || activeLabel in note.labels) &&
+                (searchQuery.isBlank() || note.title.contains(searchQuery, true) ||
+                    note.content.contains(searchQuery, true))
+        }.let { list ->
+            if (sortByTitle) list.sortedWith(compareByDescending<LocalNote> { it.pinned }.thenBy { it.title.lowercase() })
+            else list.sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
+        }
     }
 
     Box(modifier.fillMaxSize()) {
-        if (selectedId == null) {
+        if (!notesLoaded) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Loading notes…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        } else if (selectedId == null) {
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(
                     Modifier.fillMaxWidth(),
@@ -1020,20 +1044,20 @@ private fun NotesTool(
                     IconButton(onClick = onBackRequested) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Back") }
                     IconButton(
                         onClick = {
-                            editHistory.undo(markdownText)?.let { transition ->
+                            editHistory.undo(markdownText, markdownCursor)?.let { transition ->
                                 editHistory = transition.history
                                 markdownText = transition.text
-                                document = NoteDocumentCodec.fromLegacyContent(markdownText)
+                                markdownCursor = transition.cursor
                             }
                         },
                         enabled = editHistory.undo.isNotEmpty()
                     ) { Icon(Icons.AutoMirrored.Outlined.Undo, contentDescription = "Undo") }
                     IconButton(
                         onClick = {
-                            editHistory.redo(markdownText)?.let { transition ->
+                            editHistory.redo(markdownText, markdownCursor)?.let { transition ->
                                 editHistory = transition.history
                                 markdownText = transition.text
-                                document = NoteDocumentCodec.fromLegacyContent(markdownText)
+                                markdownCursor = transition.cursor
                             }
                         },
                         enabled = editHistory.redo.isNotEmpty()
@@ -1065,7 +1089,12 @@ private fun NotesTool(
                                 leadingIcon = { Icon(Icons.Outlined.FileDownload, contentDescription = null, modifier = Modifier.size(20.dp)) },
                                 onClick = {
                                     saveCurrent()
-                                    pendingExport = PendingNoteExport(title, document, currentLabels.toList(), currentColor)
+                                    pendingExport = PendingNoteExport(
+                                        title,
+                                        NoteDocumentCodec.fromLegacyContent(markdownText),
+                                        currentLabels.toList(),
+                                        currentColor
+                                    )
                                     val filename = title.ifBlank { "note" }.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim().ifBlank { "note" }
                                     menuTarget = null
                                     exportLauncher.launch("$filename.zip")
@@ -1143,13 +1172,14 @@ private fun NotesTool(
                     ) {
                     MarkdownNoteEditor(
                         value = markdownText,
+                        selection = markdownCursor,
                         onValueChange = { updated ->
                             if (updated != markdownText) {
-                                editHistory = editHistory.record(markdownText)
+                                editHistory = editHistory.record(markdownText, markdownCursor)
                                 markdownText = updated
-                                document = NoteDocumentCodec.fromLegacyContent(updated)
                             }
                         },
+                        onSelectionChange = { markdownCursor = it.coerceIn(0, markdownText.length) },
                         modifier = Modifier.fillMaxSize().padding(vertical = 2.dp),
                         onInsertImage = { imageLauncher.launch(arrayOf("image/*")) }
                     )
