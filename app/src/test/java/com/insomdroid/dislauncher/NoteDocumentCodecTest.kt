@@ -103,8 +103,14 @@ class NoteDocumentCodecTest {
             assertEquals("First page text.", pages[0])
             assertEquals("Second page text.", pages[1])
             assertEquals("First page text.", pages[0])
+
+            val reopened = DiskBackedBookPages.open(file)!!
+            assertEquals(2, reopened.size)
+            assertEquals("First page text.", reopened[0])
+            assertEquals("Second page text.", reopened[1])
         } finally {
             file.delete()
+            java.io.File(file.parentFile, file.name + ".idx").delete()
         }
     }
 
@@ -117,6 +123,7 @@ class NoteDocumentCodecTest {
             assertEquals(source, pages.joinToString(""))
         } finally {
             file.delete()
+            java.io.File(file.parentFile, file.name + ".idx").delete()
         }
     }
 
