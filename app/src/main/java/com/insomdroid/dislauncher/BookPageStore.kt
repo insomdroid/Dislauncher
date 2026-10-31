@@ -92,11 +92,11 @@ internal class DiskBackedBookPages private constructor(
                         while (page.isNotEmpty() && (page.last() == ' ' || page.last() == '\t')) {
                             page.deleteCharAt(page.lastIndex)
                         }
-                        if (page.isNotEmpty() && page.last() != '\n') {
+                        if (page.isEmpty()) {
                             page.append('\n')
-                        } else if (page.isNotEmpty() &&
-                            (page.length < 2 || page[page.length - 2] != '\n')
-                        ) {
+                        } else if (page.last() != '\n') {
+                            page.append('\n')
+                        } else if (page.length < 2 || page[page.length - 2] != '\n') {
                             page.append('\n')
                         }
                     }
@@ -111,8 +111,9 @@ internal class DiskBackedBookPages private constructor(
             }
         }
 
-        fun finishSection() {
+        fun finishSection(addParagraphSeparator: Boolean = false) {
             check(!finished)
+            if (addParagraphSeparator && page.isNotEmpty()) append("\n\n")
             flushPage(true)
         }
 
