@@ -986,7 +986,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                     Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         visibleBooks.forEach { book ->
                             Row(
-                                Modifier.fillMaxWidth().clickable { selectedBook = book }.padding(vertical = 14.dp, horizontal = 4.dp),
+                                Modifier.fillMaxWidth().clickable { selectedBook = book }.padding(vertical = 14.dp, horizontal = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 BookCover(book, Modifier.size(width = 48.dp, height = 64.dp))
