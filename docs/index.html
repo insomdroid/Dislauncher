@@ -107,12 +107,6 @@
     .personal-image { min-height: 640px; display: grid; place-items: center; overflow: hidden; background: var(--field); }
     .personal-image img { width: auto; height: min(76svh, 700px); max-width: min(100%, 520px); object-fit: contain; transition: transform .8s cubic-bezier(.22,1,.36,1); }
     .personal-image:hover img { transform: scale(1.025); }
-    .privacy-section { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: clamp(40px, 8vw, 130px); align-items: start; }
-    .privacy-section h2 { max-width: 570px; font-size: clamp(42px, 5.6vw, 76px); line-height: 1; }
-    .privacy-section > div:first-child > p { max-width: 480px; margin-top: 22px; color: var(--muted); font-size: 16px; line-height: 1.7; }
-    .privacy-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 34px 42px; }
-    .privacy-fact h3 { font-size: 22px; }
-    .privacy-fact p { margin-top: 8px; color: var(--muted); font-size: 14px; line-height: 1.65; }
     .inline-link { font-weight: 700; text-decoration: underline; text-underline-offset: 4px; }
     .download-section { padding-block: clamp(100px, 14vw, 190px); background: var(--field); }
     .download-layout { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 50px; align-items: end; }
@@ -139,7 +133,6 @@
       .tools-image, .personal-image { min-height: 560px; }
       .tools-image img, .personal-image img { height: min(70svh, 600px); max-width: 100%; }
       .personal-layout { gap: 42px; }
-      .privacy-section { gap: 42px; }
     }
     @media (max-width: 650px) {
       .site-header { min-height: 72px; }
@@ -177,9 +170,6 @@
       .personal-list { gap: 28px 20px; margin-top: 36px; }
       .personal-image { min-height: 520px; }
       .personal-image img { height: min(66svh, 560px); max-width: 100%; }
-      .privacy-section { grid-template-columns: 1fr; gap: 44px; }
-      .privacy-section h2 { font-size: 48px; }
-      .privacy-facts { gap: 28px 20px; }
       .download-layout { grid-template-columns: 1fr; gap: 32px; }
       .download-layout h2 { font-size: clamp(48px, 12vw, 66px); }
       .footer-top { flex-direction: column; gap: 32px; }
@@ -206,7 +196,6 @@
       <a href="#experience">Experience</a>
       <a href="#tools">Tools</a>
       <a href="#personalisation">Personalisation</a>
-      <a href="#privacy">Privacy</a>
       <a class="nav-action" href="https://github.com/insomdroid/Dislauncher/releases/latest" target="_blank" rel="noopener noreferrer">Download</a>
     </nav>
   </header>
@@ -312,20 +301,6 @@
         <div class="personal-image reveal">
           <img src="https://raw.githubusercontent.com/insomdroid/Dislauncher/main/Screenshot/InstaMocks_20261031_140532601.png" alt="Dislauncher appearance settings for fonts, text size and app icons" loading="lazy">
         </div>
-      </div>
-    </section>
-
-    <section class="section wrap privacy-section" id="privacy" aria-labelledby="privacy-title">
-      <div class="reveal">
-        <h2 id="privacy-title">Your device. Your data. Your call.</h2>
-        <p>Dislauncher does not require an account and includes no ads or analytics. Optional integrations use Android permissions or system access when you enable the related feature. You decide what to turn on.</p>
-        <p><a class="inline-link" href="https://github.com/insomdroid/Dislauncher/blob/main/PRIVACY.md" target="_blank" rel="noopener noreferrer">Read the privacy information</a></p>
-      </div>
-      <div class="privacy-facts">
-        <article class="privacy-fact reveal"><h3>No account</h3><p>Start using the launcher without signing up.</p></article>
-        <article class="privacy-fact reveal"><h3>No ads or analytics</h3><p>No advertising and no in-app analytics.</p></article>
-        <article class="privacy-fact reveal"><h3>Optional access</h3><p>Calendar, notifications and location-based weather are opt-in features.</p></article>
-        <article class="privacy-fact reveal"><h3>Open source</h3><p>Review the code, permissions and project history on GitHub.</p></article>
       </div>
     </section>
 
