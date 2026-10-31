@@ -78,7 +78,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -100,7 +103,8 @@ private data class BookEntry(
 private data class BookContent(
     val pages: List<String>,
     val chapters: List<Pair<String, Int>> = emptyList(),
-    val pdfFile: File? = null
+    val pdfFile: File? = null,
+    val pdfUri: String? = null
 )
 
 private fun readBookLibrary(context: Context): List<BookEntry> {
@@ -161,6 +165,7 @@ private fun bookType(name: String): String {
 private const val MAX_BOOK_BYTES = 100L * 1024L * 1024L
 private const val MAX_TEXT_BYTES = MAX_BOOK_BYTES
 private const val MAX_EPUB_TOTAL_BYTES = MAX_BOOK_BYTES
+private const val MAX_BOOK_CACHE_BYTES = 500L * 1024L * 1024L
 
 private fun bookCacheDigest(uri: Uri): String =
     java.security.MessageDigest.getInstance("SHA-256")
@@ -170,11 +175,15 @@ private fun bookCacheDigest(uri: Uri): String =
 private fun cachedBookFile(context: Context, uri: Uri, suffix: String): File? =
     File(context.cacheDir, "book_${bookCacheDigest(uri)}.$suffix")
         .takeIf { it.isFile && it.length() in 1..MAX_BOOK_BYTES }
+        ?.also { it.setLastModified(System.currentTimeMillis()) }
 
 private fun copyBookToCache(context: Context, uri: Uri, suffix: String): File {
     val target = File(context.cacheDir, "book_${bookCacheDigest(uri)}.$suffix")
     if (target.exists()) {
-        if (target.length() in 1..MAX_BOOK_BYTES) return target
+        if (target.length() in 1..MAX_BOOK_BYTES) {
+            target.setLastModified(System.currentTimeMillis())
+            return target
+        }
         target.delete()
     }
     val temporary = File(context.cacheDir, "${target.name}.tmp")
@@ -203,6 +212,7 @@ private fun copyBookToCache(context: Context, uri: Uri, suffix: String): File {
         temporary.delete()
         throw e
     }
+    target.setLastModified(System.currentTimeMillis())
     return target
 }
 
@@ -223,18 +233,20 @@ private fun readZipEntryText(zip: ZipFile, entry: java.util.zip.ZipEntry, limit:
     return output.toString(Charsets.UTF_8.name())
 }
 
-private fun readTextPages(file: File, pageFile: File): List<String> {
+private suspend fun readTextPages(file: File, pageFile: File): List<String> {
     val writer = DiskBackedBookPages.Writer(pageFile)
+    val coroutineContext = currentCoroutineContext()
     return try {
         file.bufferedReader(Charsets.UTF_8).use { reader ->
             val buffer = CharArray(8 * 1024)
             while (true) {
+                coroutineContext.ensureActive()
                 val count = reader.read(buffer)
                 if (count < 0) break
-                writer.append(String(buffer, 0, count))
+                writer.append(String(buffer, 0, count)) { coroutineContext.ensureActive() }
             }
         }
-        writer.finish()
+        writer.finish().also { pageFile.setLastModified(System.currentTimeMillis()) }
     } catch (failure: Exception) {
         writer.abort()
         throw failure
@@ -267,7 +279,7 @@ private class BoundedEpubInputStream(
     }
 }
 
-private fun appendEpubSection(
+private suspend fun appendEpubSection(
     input: java.io.InputStream,
     remainingBytes: Long,
     writer: DiskBackedBookPages.Writer,
@@ -275,13 +287,23 @@ private fun appendEpubSection(
 ) {
     val parser = android.util.Xml.newPullParser()
     parser.setFeature(org.xmlpull.v1.XmlPullParser.FEATURE_PROCESS_DOCDECL, false)
+    runCatching { parser.setFeature(org.xmlpull.v1.XmlPullParser.FEATURE_RELAXED, true) }
+    val entities = mapOf(
+        "nbsp" to "\\u00A0", "mdash" to "—", "ndash" to "–", "hellip" to "…",
+        "rsquo" to "’", "lsquo" to "‘", "rdquo" to "”", "ldquo" to "“",
+        "copy" to "©", "reg" to "®", "trade" to "™", "bull" to "•",
+        "euro" to "€", "pound" to "£", "mdash" to "—", "apos" to "'"
+    )
+    entities.forEach { (name, value) -> runCatching { parser.defineEntityReplacementText(name, value) } }
+    val coroutineContext = currentCoroutineContext()
     BoundedEpubInputStream(input, remainingBytes, onBytesRead).use { stream ->
         parser.setInput(stream, "UTF-8")
         val ignoredTags = setOf("head", "script", "style", "svg")
-        val blockTags = setOf("p", "div", "h1", "h2", "h3", "h4", "h5", "h6", "li", "tr", "section", "article", "br")
+        val blockTags = setOf("p", "div", "h1", "h2", "h3", "h4", "h5", "h6", "li", "tr", "section", "article")
         var ignoredDepth = 0
         var event = parser.eventType
         while (event != org.xmlpull.v1.XmlPullParser.END_DOCUMENT) {
+            coroutineContext.ensureActive()
             when (event) {
                 org.xmlpull.v1.XmlPullParser.START_TAG -> {
                     val tag = parser.name?.lowercase().orEmpty()
@@ -289,20 +311,22 @@ private fun appendEpubSection(
                         ignoredDepth++
                     } else if (tag in ignoredTags) {
                         ignoredDepth = 1
-                    } else if (tag in blockTags) {
-                        writer.append(" ")
+                    } else if (tag == "br") {
+                        writer.append("\\n") { coroutineContext.ensureActive() }
                     }
                 }
                 org.xmlpull.v1.XmlPullParser.TEXT,
                 org.xmlpull.v1.XmlPullParser.CDSECT,
                 org.xmlpull.v1.XmlPullParser.ENTITY_REF -> {
-                    if (ignoredDepth == 0) parser.text?.let(writer::append)
+                    if (ignoredDepth == 0) parser.text?.let {
+                        writer.append(it) { coroutineContext.ensureActive() }
+                    }
                 }
                 org.xmlpull.v1.XmlPullParser.END_TAG -> {
                     if (ignoredDepth > 0) {
                         ignoredDepth--
                     } else if (parser.name?.lowercase() in blockTags) {
-                        writer.append(" ")
+                        writer.append("\\n\\n") { coroutineContext.ensureActive() }
                     }
                 }
             }
@@ -325,23 +349,40 @@ private val pdfPageCache = object : LruCache<String, Bitmap>(
     override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
 }
 
-private fun loadBookContent(context: Context, book: BookEntry): BookContent {
-    bookContentCache.get("${book.id}:${book.uri}")?.let { return it }
+private suspend fun loadBookContent(context: Context, book: BookEntry): BookContent {
+    val cacheKey = "${book.id}:${book.uri}"
+    bookContentCache.get(cacheKey)?.let { cached ->
+        val pagesAvailable = (cached.pages as? DiskBackedBookPages)?.isAvailable != false
+        if (pagesAvailable && (cached.pdfFile == null || cached.pdfFile.isFile)) return cached
+        bookContentCache.remove(cacheKey)
+    }
     val uri = Uri.parse(book.uri)
     val content = when (book.type) {
         "pdf" -> {
-            val file = copyBookToCache(context, uri, "pdf")
-            val count = android.os.ParcelFileDescriptor.open(
-                file, android.os.ParcelFileDescriptor.MODE_READ_ONLY
-            ).use { descriptor -> PdfRenderer(descriptor).use { it.pageCount } }
+            val directPageCount = runCatching {
+                val descriptor = context.contentResolver.openFileDescriptor(uri, "r")
+                    ?: error("Unable to open PDF document")
+                PdfRenderer(descriptor).use { it.pageCount }
+            }.getOrNull()?.takeIf { it > 0 }
+            val file = if (directPageCount == null) copyBookToCache(context, uri, "pdf") else null
+            val count = directPageCount ?: run {
+                val descriptor = android.os.ParcelFileDescriptor.open(
+                    requireNotNull(file), android.os.ParcelFileDescriptor.MODE_READ_ONLY
+                )
+                PdfRenderer(descriptor).use { it.pageCount }
+            }
             require(count > 0) { "This PDF contains no pages." }
-            BookContent(object : AbstractList<String>() {
-                override val size: Int = count
-                override fun get(index: Int): String {
-                    if (index !in 0 until size) throw IndexOutOfBoundsException("Index $index is outside 0 until $size")
-                    return "PDF page ${index + 1}"
-                }
-            }, pdfFile = file)
+            BookContent(
+                pages = object : AbstractList<String>() {
+                    override val size: Int = count
+                    override fun get(index: Int): String {
+                        if (index !in 0 until size) throw IndexOutOfBoundsException("Index $index is outside 0 until $size")
+                        return "PDF page ${index + 1}"
+                    }
+                },
+                pdfFile = file,
+                pdfUri = uri.toString().takeIf { file == null }
+            )
         }
         "epub" -> {
             val file = copyBookToCache(context, uri, "epub")
@@ -394,8 +435,13 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
                             "This EPUB exceeds the 100 MB processing limit."
                         }
                         val chapterStart = writer.pageCount
-                        appendEpubSection(zip.getInputStream(entry), remainingBytes, writer) { count ->
-                            totalSectionBytes += count
+                        try {
+                            appendEpubSection(zip.getInputStream(entry), remainingBytes, writer) { count ->
+                                totalSectionBytes += count
+                            }
+                        } catch (_: org.xmlpull.v1.XmlPullParserException) {
+                            // A malformed chapter should not prevent the remaining spine items from opening.
+                            writer.finishSection()
                         }
                         if (writer.pageCount > chapterStart) {
                             val chapterTitle = normalized.substringAfterLast('/').substringBeforeLast('.')
@@ -404,7 +450,10 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
                         }
                     }
                 }
-                BookContent(writer.finish(), chapters)
+                BookContent(writer.finish(), chapters).also {
+                    pageFile.setLastModified(System.currentTimeMillis())
+                    pruneBookCache(context, bookCacheDigest(uri))
+                }
             } catch (failure: Exception) {
                 writer.abort()
                 throw failure
@@ -416,10 +465,15 @@ private fun loadBookContent(context: Context, book: BookEntry): BookContent {
                 "Books larger than 100 MB are not supported."
             }
             val pageFile = File(context.cacheDir, "book_${bookCacheDigest(uri)}.pages")
-            BookContent(readTextPages(file, pageFile))
+            BookContent(readTextPages(file, pageFile)).also {
+                pruneBookCache(context, bookCacheDigest(uri))
+            }
         }
     }
-    bookContentCache.put("${book.id}:${book.uri}", content)
+    if (book.type == "pdf" && content.pdfFile != null) {
+        pruneBookCache(context, bookCacheDigest(uri))
+    }
+    bookContentCache.put(cacheKey, content)
     return content
 }
 
@@ -453,18 +507,62 @@ private fun removeBookResources(context: Context, book: BookEntry, remainingBook
     }
 }
 
+private fun pruneBookCache(context: Context, protectedDigest: String) {
+    val files = context.cacheDir.listFiles().orEmpty().filter { it.name.startsWith("book_") }
+    files.filter { it.name.endsWith(".tmp") }.forEach { it.delete() }
+    val groups = files.filter { it.isFile && !it.name.endsWith(".tmp") }
+        .groupBy { it.name.removePrefix("book_").substringBeforeLast('.') }
+    var totalBytes = groups.values.sumOf { group -> group.sumOf { it.length() } }
+    groups.entries
+        .filter { it.key != protectedDigest }
+        .sortedBy { entry -> entry.value.minOfOrNull { it.lastModified() } ?: 0L }
+        .forEach { entry ->
+            if (totalBytes <= MAX_BOOK_CACHE_BYTES) return@forEach
+            entry.value.forEach { file ->
+                totalBytes -= file.length()
+                file.delete()
+            }
+        }
+    bookContentCache.snapshot().forEach { (key, value) ->
+        val pageFileMissing = (value.pages as? DiskBackedBookPages)?.isAvailable == false
+        val pdfFileMissing = value.pdfFile != null && !value.pdfFile.isFile
+        if (pageFileMissing || pdfFileMissing) bookContentCache.remove(key)
+    }
+}
+
 private fun loadBookCover(context: Context, book: BookEntry): Bitmap? {
     bookCoverCache.get("${book.id}:${book.uri}")?.let { return it }
     val result = runCatching {
         when (book.type) {
-            "pdf" -> cachedBookFile(context, Uri.parse(book.uri), "pdf")?.let { renderPdfPage(it, 0) }
+            "pdf" -> renderPdfThumbnail(context, Uri.parse(book.uri), 0)
             "epub" -> {
                 val file = cachedBookFile(context, Uri.parse(book.uri), "epub") ?: return@runCatching null
                 ZipFile(file).use { zip ->
-                    val imageEntry = zip.entries().asSequence().firstOrNull {
-                        !it.isDirectory && it.size in 1..(8L * 1024L * 1024L) &&
-                            it.name.substringAfterLast('.', "").lowercase() in setOf("jpg", "jpeg", "png", "webp")
+                    val container = zip.getEntry("META-INF/container.xml")
+                        ?.let { readZipEntryText(zip, it, 256L * 1024L) }
+                    val opfPath = container?.let {
+                        Regex("full-path=[\\\"']([^\\\"']+)[\\\"']").find(it)?.groupValues?.get(1)
                     } ?: return@use null
+                    val opfEntry = zip.getEntry(opfPath) ?: return@use null
+                    val opf = readZipEntryText(zip, opfEntry, 1024L * 1024L)
+                    val items = Regex("(?is)<item\\b([^>]*?)/?>").findAll(opf).map { match ->
+                        val attrs = match.groupValues[1]
+                        fun attr(name: String) = Regex("(?is)\\b$name=[\\\"']([^\\\"']+)[\\\"']")
+                            .find(attrs)?.groupValues?.get(1).orEmpty()
+                        Triple(attr("id"), attr("href"), attr("properties"))
+                    }.toList()
+                    val legacyCoverId = Regex("(?is)<meta\\b[^>]*?name=[\\\"']cover[\\\"'][^>]*?content=[\\\"']([^\\\"']+)[\\\"']")
+                        .find(opf)?.groupValues?.get(1)
+                    val coverHref = items.firstOrNull { "cover-image" in it.third.split(Regex("\\s+")) }?.second
+                        ?: items.firstOrNull { it.first == legacyCoverId }?.second
+                        ?: return@use null
+                    val base = opfPath.substringBeforeLast('/', "").let { if (it.isBlank()) "" else "$it/" }
+                    val coverPath = java.net.URI(base.replace(" ", "%20"))
+                        .resolve(java.net.URI(coverHref.replace(" ", "%20"))).normalize().path.removePrefix("/")
+                    val imageEntry = zip.getEntry(coverPath) ?: return@use null
+                    if (imageEntry.isDirectory || imageEntry.size !in 1..(8L * 1024L * 1024L) ||
+                        imageEntry.name.substringAfterLast('.', "").lowercase() !in setOf("jpg", "jpeg", "png", "webp")
+                    ) return@use null
                     zip.getInputStream(imageEntry).use { input ->
                         val bytes = input.use { stream ->
                             val output = java.io.ByteArrayOutputStream()
@@ -485,7 +583,7 @@ private fun loadBookCover(context: Context, book: BookEntry): Bitmap? {
                         else {
                             var sample = 1
                             while (sample < 64 &&
-                                (bounds.outWidth / sample > 1200 || bounds.outHeight / sample > 1600)) sample *= 2
+                                (bounds.outWidth / sample > 300 || bounds.outHeight / sample > 450)) sample *= 2
                             val options = BitmapFactory.Options().apply { inSampleSize = sample }
                             BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
                         }
@@ -526,16 +624,44 @@ private fun renderPdfPage(file: File, pageIndex: Int): Bitmap {
     val cacheKey = "${file.absolutePath}:$pageIndex"
     pdfPageCache.get(cacheKey)?.let { return it }
     val descriptor = android.os.ParcelFileDescriptor.open(file, android.os.ParcelFileDescriptor.MODE_READ_ONLY)
+    return renderPdfPage(descriptor, cacheKey, pageIndex, 900f, cache = true)
+}
+
+private fun renderPdfPage(context: Context, uri: Uri, pageIndex: Int): Bitmap {
+    val cacheKey = "${uri}:$pageIndex"
+    pdfPageCache.get(cacheKey)?.let { return it }
+    val descriptor = context.contentResolver.openFileDescriptor(uri, "r")
+        ?: error("Unable to open PDF document")
+    return renderPdfPage(descriptor, cacheKey, pageIndex, 900f, cache = true)
+}
+
+private fun renderPdfThumbnail(context: Context, uri: Uri, pageIndex: Int): Bitmap {
+    val descriptor = context.contentResolver.openFileDescriptor(uri, "r")
+        ?: error("Unable to open PDF document")
+    return renderPdfPage(descriptor, "cover:${uri}", pageIndex, 300f, cache = false)
+}
+
+private fun renderPdfPage(
+    descriptor: android.os.ParcelFileDescriptor,
+    cacheKey: String,
+    pageIndex: Int,
+    maxDimension: Float,
+    cache: Boolean
+): Bitmap {
     PdfRenderer(descriptor).use { renderer ->
         renderer.openPage(pageIndex.coerceIn(0, renderer.pageCount - 1)).use { page ->
-            val maxPixels = 2_000_000L
-            val scale = minOf(900f / page.width, kotlin.math.sqrt(maxPixels.toDouble() / (page.width.toLong() * page.height)).toFloat())
+            val maxPixels = if (maxDimension <= 300f) 160_000L else 2_000_000L
+            val scale = minOf(
+                maxDimension / page.width,
+                maxDimension / page.height,
+                kotlin.math.sqrt(maxPixels.toDouble() / (page.width.toLong() * page.height)).toFloat()
+            )
             val width = (page.width * scale).toInt().coerceAtLeast(1)
             val height = (page.height * scale).toInt().coerceAtLeast(1)
             val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             bitmap.eraseColor(android.graphics.Color.WHITE)
             page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-            pdfPageCache.put(cacheKey, bitmap)
+            if (cache) pdfPageCache.put(cacheKey, bitmap)
             return bitmap
         }
     }
@@ -602,7 +728,14 @@ internal fun BooksTool(onBack: () -> Unit) {
     }
 
     LaunchedEffect(selectedBook?.id) {
-        val book = selectedBook ?: return@LaunchedEffect
+        val book = selectedBook
+        if (book == null) {
+            loading = false
+            error = null
+            bookContent = null
+            pdfBitmap = null
+            return@LaunchedEffect
+        }
         loading = true
         error = null
         bookContent = null
@@ -611,9 +744,14 @@ internal fun BooksTool(onBack: () -> Unit) {
             val loaded = withContext(Dispatchers.IO) { loadBookContent(context, book) }
             bookContent = loaded
             currentPage = book.position.coerceIn(0, loaded.pages.lastIndex.coerceAtLeast(0))
-            if (book.type == "pdf" && loaded.pdfFile != null) {
-                pdfBitmap = withContext(Dispatchers.IO) { renderPdfPage(loaded.pdfFile, currentPage) }
+            if (book.type == "pdf" && (loaded.pdfFile != null || loaded.pdfUri != null)) {
+                pdfBitmap = withContext(Dispatchers.IO) {
+                    loaded.pdfUri?.let { renderPdfPage(context, Uri.parse(it), currentPage) }
+                        ?: renderPdfPage(requireNotNull(loaded.pdfFile), currentPage)
+                }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: OutOfMemoryError) {
             bookContent = null
             pdfBitmap = null
@@ -647,7 +785,7 @@ internal fun BooksTool(onBack: () -> Unit) {
     }
 
     LaunchedEffect(currentPage, selectedBook?.id) {
-        if (selectedBook != null && bookContent?.pdfFile == null) {
+        if (selectedBook != null && bookContent?.pdfFile == null && bookContent?.pdfUri == null) {
             withFrameNanos { }
             if (pageDirection > 0) {
                 pageScrollState.scrollTo(0)
@@ -657,9 +795,15 @@ internal fun BooksTool(onBack: () -> Unit) {
         }
     }
 
-    LaunchedEffect(selectedBook?.id, currentPage, bookContent?.pdfFile) {
-        val file = bookContent?.pdfFile ?: return@LaunchedEffect
-        pdfBitmap = withContext(Dispatchers.IO) { runCatching { renderPdfPage(file, currentPage) }.getOrNull() }
+    LaunchedEffect(selectedBook?.id, currentPage, bookContent?.pdfFile, bookContent?.pdfUri) {
+        val content = bookContent ?: return@LaunchedEffect
+        if (content.pdfFile == null && content.pdfUri == null) return@LaunchedEffect
+        pdfBitmap = withContext(Dispatchers.IO) {
+            runCatching {
+                content.pdfUri?.let { renderPdfPage(context, Uri.parse(it), currentPage) }
+                    ?: renderPdfPage(requireNotNull(content.pdfFile), currentPage)
+            }.getOrNull()
+        }
     }
 
     BackHandler(enabled = selectedBook != null || showMenu || menuSection.isNotEmpty()) {
