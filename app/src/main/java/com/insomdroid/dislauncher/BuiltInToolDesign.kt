@@ -14,9 +14,9 @@ internal object BuiltInToolSpacing {
  * Pills remain appropriate for compact filters and status labels.
  */
 internal object BuiltInToolDesign {
-    val cardCornerRadius = 8.dp
-    val controlCornerRadius = 6.dp
-    val calculatorKeyCornerRadius = 8.dp
+    val cardCornerRadius = LauncherShapeTokens.medium
+    val controlCornerRadius = LauncherShapeTokens.small
+    val calculatorKeyCornerRadius = LauncherShapeTokens.medium
     val fabEndPadding = 8.dp
     val fabBottomPadding = 24.dp
 }

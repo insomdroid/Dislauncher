@@ -480,15 +480,14 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
     Scaffold(
                 containerColor = MaterialTheme.colorScheme.background,
                 topBar = {
-                    if (!(tool == BuiltInTool.NOTES)) TopAppBar(
+                    if (!(tool == BuiltInTool.NOTES)) BuiltInToolHeader(
                         title = {
                             if (tool == BuiltInTool.UNIT_CONVERTER && converterSearchExpanded) {
-                                OutlinedTextField(
+                                BuiltInToolSearchField(
                                     value = converterSearchQuery,
                                     onValueChange = { converterSearchQuery = it },
                                     modifier = Modifier.fillMaxWidth(),
-                                    singleLine = true,
-                                    placeholder = { Text(builtInToolText("Search units and categories", "Cari satuan dan kategori")) }
+                                    placeholder = builtInToolText("Search units and categories", "Cari satuan dan kategori")
                                 )
                             } else {
                                 Text(
@@ -831,61 +830,70 @@ private fun NotesTool(
             }
         } else if (selectedId == null) {
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    IconButton(onClick = onBackRequested) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = builtInToolText("Back", "Kembali"))
-                    }
-                    if (searchExpanded) {
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            modifier = Modifier.weight(1f),
-                            placeholder = { Text("Search notes") },
-                            singleLine = true,
-                            shape = RoundedCornerShape(BuiltInToolDesign.controlCornerRadius),
-                            trailingIcon = {
-                                IconButton(onClick = { searchQuery = ""; searchExpanded = false }) {
-                                    Icon(Icons.Outlined.Close, contentDescription = "Close search")
+                BuiltInToolHeader(
+                    title = {
+                        if (searchExpanded) {
+                            BuiltInToolSearchField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                placeholder = "Search notes",
+                                trailingIcon = {
+                                    IconButton(onClick = { searchQuery = ""; searchExpanded = false }) {
+                                        Icon(Icons.Outlined.Close, contentDescription = "Close search")
+                                    }
                                 }
+                            )
+                        } else {
+                            Text(
+                                "Notes",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1
+                            )
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBackRequested) {
+                            Icon(Icons.Outlined.ArrowBack, contentDescription = builtInToolText("Back", "Kembali"))
+                        }
+                    },
+                    windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
+                    actions = {
+                        if (!searchExpanded) {
+                            IconButton(onClick = { searchExpanded = true }) {
+                                Icon(Icons.Outlined.Search, contentDescription = "Search notes")
                             }
-                        )
-                    } else {
-                        Text("Notes", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold, maxLines = 1)
-                        IconButton(onClick = { searchExpanded = true }) {
-                            Icon(Icons.Outlined.Search, contentDescription = "Search notes")
+                        }
+                        IconButton(onClick = {
+                            gridView = !gridView
+                            context.getSharedPreferences("dislauncher_notes", Context.MODE_PRIVATE)
+                                .edit().putBoolean("grid_view", gridView).apply()
+                        }) {
+                            Icon(
+                                if (gridView) Icons.Outlined.ViewList else Icons.Outlined.ViewModule,
+                                contentDescription = if (gridView) "Switch to list view" else "Switch to grid view"
+                            )
+                        }
+                        Box {
+                            IconButton(onClick = { menuTarget = "home" }) {
+                                Icon(Icons.Outlined.MoreVert, contentDescription = "Notes options")
+                            }
+                            DropdownMenu(expanded = menuTarget == "home", onDismissRequest = { menuTarget = null }) {
+                                DropdownMenuItem(text = { Text(if (pinnedOnly) "Show all notes" else "Pinned notes") },
+                                    leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                    onClick = { pinnedOnly = !pinnedOnly; menuTarget = null })
+                                DropdownMenuItem(text = { Text(if (sortByTitle) "Sort by modified" else "Sort by title") },
+                                    onClick = { sortByTitle = !sortByTitle; menuTarget = null })
+                                DropdownMenuItem(text = { Text("Manage labels") },
+                                    onClick = { menuTarget = null; showLabelManager = true })
+                                DropdownMenuItem(text = { Text("Import note archive") },
+                                    leadingIcon = { Icon(Icons.Outlined.FileOpen, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                    onClick = { menuTarget = null; importLauncher.launch(arrayOf("application/zip", "application/octet-stream")) })
+                            }
                         }
                     }
-                    IconButton(onClick = {
-                        gridView = !gridView
-                        context.getSharedPreferences("dislauncher_notes", Context.MODE_PRIVATE)
-                            .edit().putBoolean("grid_view", gridView).apply()
-                    }) {
-                        Icon(if (gridView) Icons.Outlined.ViewList else Icons.Outlined.ViewModule,
-                            contentDescription = if (gridView) "Switch to list view" else "Switch to grid view")
-                    }
-                    Box {
-                        IconButton(onClick = { menuTarget = "home" }) {
-                            Icon(Icons.Outlined.MoreVert, contentDescription = "Notes options")
-                        }
-                        DropdownMenu(expanded = menuTarget == "home", onDismissRequest = { menuTarget = null }) {
-                            DropdownMenuItem(text = { Text(if (pinnedOnly) "Show all notes" else "Pinned notes") },
-                                leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null, modifier = Modifier.size(20.dp)) },
-                                onClick = { pinnedOnly = !pinnedOnly; menuTarget = null })
-                            DropdownMenuItem(text = { Text(if (sortByTitle) "Sort by modified" else "Sort by title") },
-                                onClick = { sortByTitle = !sortByTitle; menuTarget = null })
-                            DropdownMenuItem(text = { Text("Manage labels") },
-                                onClick = { menuTarget = null; showLabelManager = true })
-                            DropdownMenuItem(text = { Text("Import note archive") },
-                                leadingIcon = { Icon(Icons.Outlined.FileOpen, contentDescription = null, modifier = Modifier.size(20.dp)) },
-                                onClick = { menuTarget = null; importLauncher.launch(arrayOf("application/zip", "application/octet-stream")) })
-                        }
-                    }
-                }
+                )
                 Row(
                     Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -969,7 +977,7 @@ private fun NotesTool(
                                     if (note.labels.isNotEmpty()) {
                                         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                             note.labels.forEach { label ->
-                                                Surface(shape = RoundedCornerShape(6.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+                                                Surface(shape = RoundedCornerShape(LauncherShapeTokens.small), color = MaterialTheme.colorScheme.secondaryContainer) {
                                                     Text(label, Modifier.padding(horizontal = 6.dp, vertical = 3.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
                                                 }
                                             }
@@ -987,7 +995,7 @@ private fun NotesTool(
                     LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         items(visibleNotes, key = { it.id }) { note ->
                             Row(
-                                Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { openNote(note) }
+                                Modifier.fillMaxWidth().clip(RoundedCornerShape(LauncherShapeTokens.medium)).clickable { openNote(note) }
                                     .padding(horizontal = 8.dp, vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -1150,7 +1158,7 @@ private fun NotesTool(
                 if (currentLabels.isNotEmpty()) {
                     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         currentLabels.sorted().forEach { label ->
-                            Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+                            Surface(shape = RoundedCornerShape(LauncherShapeTokens.medium), color = MaterialTheme.colorScheme.secondaryContainer) {
                                 Text(label, Modifier.padding(horizontal = 8.dp, vertical = 5.dp), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
                             }
                         }
@@ -1789,7 +1797,7 @@ private fun CalendarTool(
                                 Locale.getDefault()).format(Date(event.begin)),
                                 modifier = Modifier.width(72.dp), style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary)
-                            Box(Modifier.width(3.dp).height(34.dp).clip(RoundedCornerShape(2.dp))
+                            Box(Modifier.width(3.dp).height(34.dp).clip(RoundedCornerShape(LauncherShapeTokens.extraSmall))
                                 .background(MaterialTheme.colorScheme.tertiary))
                             Text(event.title, modifier = Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.bodyLarge,
                                 maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -1816,7 +1824,7 @@ private fun CalendarTool(
                                 textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None,
                                 color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface)
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Surface(color = priorityColor(task.priority), shape = RoundedCornerShape(50)) {                                    Text(priorityLabel(task.priority), modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                Surface(color = priorityColor(task.priority), shape = RoundedCornerShape(LauncherShapeTokens.pill)) {                                    Text(priorityLabel(task.priority), modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface)
                                 }
                                 if (task.time.isNotBlank()) {
@@ -1908,7 +1916,7 @@ private fun CalendarTool(
                             Surface(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .clip(RoundedCornerShape(50))
+                                    .clip(RoundedCornerShape(LauncherShapeTokens.pill))
                                     .clickable { priority = level },
                                 color = if (isSelected) {
                                     MaterialTheme.colorScheme.primary
@@ -1920,7 +1928,7 @@ private fun CalendarTool(
                                 } else {
                                     MaterialTheme.colorScheme.onSurface
                                 },
-                                shape = RoundedCornerShape(50)
+                                shape = RoundedCornerShape(LauncherShapeTokens.pill)
                             ) {
                                 Text(
                                     text = label,
@@ -1981,7 +1989,7 @@ private fun CalendarTool(
         ) {
             Surface(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-                shape = RoundedCornerShape(28.dp),
+                shape = RoundedCornerShape(LauncherShapeTokens.dialog),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh
             ) {
                 Column {

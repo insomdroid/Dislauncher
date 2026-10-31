@@ -878,42 +878,71 @@ internal fun BooksTool(onBack: () -> Unit) {
     val fg = MaterialTheme.colorScheme.onSurface
 
     if (selectedBook == null) {
-        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding().navigationBarsPadding()) {
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).navigationBarsPadding()) {
           Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Back", tint = fg) }
-                if (searchExpanded) {
-                    OutlinedTextField(value = searchQuery, onValueChange = { searchQuery = it },
-                        modifier = Modifier.weight(1f), placeholder = { Text("Search books") }, singleLine = true,
-                        trailingIcon = { IconButton(onClick = { searchQuery = ""; searchExpanded = false }) {
-                            Icon(Icons.Outlined.Close, contentDescription = "Close search", tint = fg)
-                        } })
-                } else {
-                    Text("Library", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold,
-                        color = fg, modifier = Modifier.weight(1f), maxLines = 1)
-                    IconButton(onClick = { searchExpanded = true }) { Icon(Icons.Outlined.Search, contentDescription = "Search books", tint = fg) }
-                }
-                if (books.isNotEmpty()) IconButton(onClick = {
-                    gridView = !gridView
-                    context.getSharedPreferences("dislauncher_books", Context.MODE_PRIVATE)
-                        .edit()
-                        .putBoolean("grid_view", gridView)
-                        .apply()
-                }) {
-                    Icon(if (gridView) Icons.Outlined.ViewList else Icons.Outlined.ViewModule,
-                        contentDescription = if (gridView) "Switch to list view" else "Switch to grid view", tint = fg)
-                }
-                Box {
-                    IconButton(onClick = { showLibraryMenu = true }) { Icon(Icons.Outlined.MoreVert, contentDescription = "Library options", tint = fg) }
-                    DropdownMenu(expanded = showLibraryMenu, onDismissRequest = { showLibraryMenu = false }) {
-                        DropdownMenuItem(text = { Text(if (sortByTitle) "Sort by recently opened" else "Sort by title") },
-                            onClick = { sortByTitle = !sortByTitle; showLibraryMenu = false })
-                        DropdownMenuItem(text = { Text(if (pinnedOnly) "Show all books" else "Pinned books") },
-                            leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null, modifier = Modifier.size(20.dp)) },
-                            onClick = { pinnedOnly = !pinnedOnly; showLibraryMenu = false })
+            BuiltInToolHeader(
+                title = {
+                    if (searchExpanded) {
+                        BuiltInToolSearchField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = "Search books",
+                            textColor = fg,
+                            trailingIcon = {
+                                IconButton(onClick = { searchQuery = ""; searchExpanded = false }) {
+                                    Icon(Icons.Outlined.Close, contentDescription = "Close search", tint = fg)
+                                }
+                            }
+                        )
+                    } else {
+                        Text(
+                            "Library",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = fg,
+                            maxLines = 1
+                        )
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back", tint = fg)
+                    }
+                },
+                actions = {
+                    if (!searchExpanded) {
+                        IconButton(onClick = { searchExpanded = true }) {
+                            Icon(Icons.Outlined.Search, contentDescription = "Search books", tint = fg)
+                        }
+                    }
+                    if (books.isNotEmpty()) {
+                        IconButton(onClick = {
+                            gridView = !gridView
+                            context.getSharedPreferences("dislauncher_books", Context.MODE_PRIVATE)
+                                .edit().putBoolean("grid_view", gridView).apply()
+                        }) {
+                            Icon(
+                                if (gridView) Icons.Outlined.ViewList else Icons.Outlined.ViewModule,
+                                contentDescription = if (gridView) "Switch to list view" else "Switch to grid view",
+                                tint = fg
+                            )
+                        }
+                    }
+                    Box {
+                        IconButton(onClick = { showLibraryMenu = true }) {
+                            Icon(Icons.Outlined.MoreVert, contentDescription = "Library options", tint = fg)
+                        }
+                        DropdownMenu(expanded = showLibraryMenu, onDismissRequest = { showLibraryMenu = false }) {
+                            DropdownMenuItem(text = { Text(if (sortByTitle) "Sort by recently opened" else "Sort by title") },
+                                onClick = { sortByTitle = !sortByTitle; showLibraryMenu = false })
+                            DropdownMenuItem(text = { Text(if (pinnedOnly) "Show all books" else "Pinned books") },
+                                leadingIcon = { Icon(Icons.Outlined.PushPin, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                onClick = { pinnedOnly = !pinnedOnly; showLibraryMenu = false })
+                        }
                     }
                 }
-            }
+            )
             val visibleBooks = books.filter { it.title.contains(searchQuery, ignoreCase = true) && (!pinnedOnly || it.pinned) }
                 .let { list -> if (sortByTitle) list.sortedWith(compareByDescending<BookEntry> { it.pinned }.thenBy { it.title.lowercase() })
                     else list.sortedWith(compareByDescending<BookEntry> { it.pinned }) }
@@ -1039,25 +1068,42 @@ internal fun BooksTool(onBack: () -> Unit) {
         }
     } else {
         val book = selectedBook!!
-        Box(Modifier.fillMaxSize().background(bg).statusBarsPadding().navigationBarsPadding()) {
+        Box(Modifier.fillMaxSize().background(bg).navigationBarsPadding()) {
             Column(Modifier.fillMaxSize()) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { selectedBook = null; bookContent = null; pdfBitmap = null }) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Library", tint = fg) }
-                    Text(book.title, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis, color = fg, style = MaterialTheme.typography.titleSmall)
-                    IconButton(onClick = {
-                        val saved = books.firstOrNull { it.id == book.id }?.bookmarks.orEmpty()
-                        val next = if (currentPage in saved) saved - currentPage else saved + currentPage
-                        books = books.map { if (it.id == book.id) it.copy(bookmarks = next.sorted()) else it }
-                        selectedBook = books.first { it.id == book.id }
-                        writeBookLibrary(context, books)
-                    }) {
-                        Icon(if (currentPage in book.bookmarks) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkAdded,
-                            contentDescription = if (currentPage in book.bookmarks) "Remove bookmark" else "Add bookmark", tint = fg)
+                BuiltInToolHeader(
+                    title = {
+                        Text(
+                            book.title,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = fg,
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { selectedBook = null; bookContent = null; pdfBitmap = null }) {
+                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Library", tint = fg)
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = {
+                            val saved = books.firstOrNull { it.id == book.id }?.bookmarks.orEmpty()
+                            val next = if (currentPage in saved) saved - currentPage else saved + currentPage
+                            books = books.map { if (it.id == book.id) it.copy(bookmarks = next.sorted()) else it }
+                            selectedBook = books.first { it.id == book.id }
+                            writeBookLibrary(context, books)
+                        }) {
+                            Icon(
+                                if (currentPage in book.bookmarks) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkAdded,
+                                contentDescription = if (currentPage in book.bookmarks) "Remove bookmark" else "Add bookmark",
+                                tint = fg
+                            )
+                        }
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(Icons.Outlined.MoreVert, contentDescription = "Reader settings", tint = fg)
+                        }
                     }
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Outlined.MoreVert, contentDescription = "Reader settings", tint = fg)
-                    }
-                }
+                )
                 Box(
                     Modifier.weight(1f).fillMaxWidth().pointerInput(selectedBook?.id, currentPage) {
                         detectTapGestures(

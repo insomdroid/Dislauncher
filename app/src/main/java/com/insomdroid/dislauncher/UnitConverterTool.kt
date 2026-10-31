@@ -233,7 +233,7 @@ internal fun UnitConverterTool(
                     fromIndex = toIndex
                     toIndex = oldFrom
                 },
-                shape = RoundedCornerShape(50),
+                shape = RoundedCornerShape(LauncherShapeTokens.pill),
                 color = MaterialTheme.colorScheme.secondaryContainer,
                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer
             ) {
@@ -317,12 +317,11 @@ private fun ConverterDropdown(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            OutlinedTextField(
+            BuiltInToolSearchField(
                 value = query,
                 onValueChange = { query = it },
                 modifier = Modifier.width(240.dp).padding(horizontal = 8.dp),
-                singleLine = true,
-                placeholder = { Text(builtInToolText("Search unit", "Cari satuan")) }
+                placeholder = builtInToolText("Search unit", "Cari satuan")
             )
             filteredOptions.forEach { (index, option) ->
                 DropdownMenuItem(

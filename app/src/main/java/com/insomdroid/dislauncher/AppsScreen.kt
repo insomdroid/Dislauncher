@@ -267,7 +267,7 @@ internal fun AppsScreen(
                                     else -> androidx.compose.material.icons.Icons.Outlined.Description
                                 }
                                 Column(
-                                    modifier = Modifier.weight(1f).heightIn(min = 56.dp).clip(RoundedCornerShape(10.dp))
+                                    modifier = Modifier.weight(1f).heightIn(min = 56.dp).clip(RoundedCornerShape(LauncherShapeTokens.medium))
                                         .clickable { onLaunch(app) }.padding(vertical = 8.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -309,7 +309,7 @@ internal fun AppsScreen(
                     items(filteredFolders, key = { "folder-$it" }) { folder ->
                         Row(
                             modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
-                                .clip(RoundedCornerShape(8.dp)).clickable { selectedFolder = folder }
+                                .clip(RoundedCornerShape(LauncherShapeTokens.medium)).clickable { selectedFolder = folder }
                                 .padding(horizontal = 8.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -337,7 +337,7 @@ internal fun AppsScreen(
                     Box(modifier = Modifier.fillMaxWidth()) {
                         Row(
                             modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
-                                .clip(RoundedCornerShape(8.dp)).combinedClickable(
+                                .clip(RoundedCornerShape(LauncherShapeTokens.medium)).combinedClickable(
                                     onClick = { onLaunch(app) },
                                     onLongClick = { if (!app.packageName.startsWith("internal:")) selectedApp = app }
                                 ).padding(horizontal = 8.dp, vertical = 8.dp),
@@ -412,7 +412,7 @@ internal fun AppsScreen(
                     item(key = "dislauncher-settings-entry") {
                         Row(
                             modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(LauncherShapeTokens.medium))
                                 .clickable(onClick = onOpenSettings)
                                 .padding(horizontal = 8.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -600,58 +600,32 @@ internal fun AppsScreen(
         }
         if (preferences.showSearchBar) {
             Spacer(Modifier.height(2.dp))
-            val searchShape = RoundedCornerShape(24.dp)
-            Row(
-                modifier = Modifier.fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .height(46.dp)
-                    .border(
-                        width = 1.dp,
-                        color = if (searchFocused || query.isNotEmpty()) {
-                            mainText.copy(alpha = 0.62f)
-                        } else {
-                            secondary.copy(alpha = 0.38f)
-                        },
-                        shape = searchShape
+            BuiltInToolSearchField(
+                value = query,
+                onValueChange = onQueryChange,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                pill = true,
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Outlined.SearchIcon,
+                        contentDescription = "Search apps",
+                        tint = searchColor,
+                        modifier = Modifier.size(20.dp)
                     )
-                    .padding(horizontal = 14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.SearchIcon,
-                    contentDescription = "Search apps",
-                    tint = searchColor,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(Modifier.width(10.dp))
-                Box(
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    if (query.isEmpty()) {
-                        Text(
-                            builtInToolText("Search apps", "Cari aplikasi"),
-                            color = searchColor,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontSize = 15.sp
-                        )
-                    }
-                    BasicTextField(
-                        value = query,
-                        onValueChange = onQueryChange,
-                        modifier = Modifier.fillMaxWidth()
-                            .focusRequester(focusRequester)
-                            .onFocusChanged { searchFocused = it.isFocused },
-                        singleLine = true,
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(
-                            color = mainText,
-                            fontFamily = fontFamily,
-                            fontSize = 15.sp
-                        ),
-                        cursorBrush = SolidColor(mainText)
-                    )
-                }
-            }
+                },
+                textColor = mainText,
+                placeholderColor = searchColor,
+                pillBorderColor = if (searchFocused || query.isNotEmpty()) {
+                    mainText.copy(alpha = 0.62f)
+                } else {
+                    secondary.copy(alpha = 0.38f)
+                },
+                fieldModifier = Modifier
+                    .focusRequester(focusRequester)
+                    .onFocusChanged { searchFocused = it.isFocused },
+                fontFamily = fontFamily,
+                fontSize = 15.sp
+            )
         }
     }
     selectedFolder?.let { folder ->
@@ -693,7 +667,7 @@ internal fun AppsScreen(
                 folderApps.forEach { folderApp ->
                     Row(
                         modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(LauncherShapeTokens.large))
                             .clickable {
                                 selectedFolder = null
                                 onLaunch(folderApp)

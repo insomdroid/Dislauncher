@@ -307,7 +307,7 @@ internal fun MarkdownNoteEditor(
 private fun MarkdownToolButton(label: String, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(LauncherShapeTokens.medium),
         color = MaterialTheme.colorScheme.surfaceVariant,
         contentColor = MaterialTheme.colorScheme.onSurfaceVariant
     ) {

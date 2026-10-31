@@ -202,7 +202,7 @@ internal fun SettingsScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
+            BuiltInToolHeader(
                 title = {
                     Text(
                         categoryTitle,
@@ -514,7 +514,7 @@ internal fun SettingsScreen(
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
+                                    .clip(RoundedCornerShape(LauncherShapeTokens.large))
                                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
                                     .padding(16.dp)
                             ) {
@@ -1196,7 +1196,7 @@ private fun SettingsCategoryRow(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(LauncherShapeTokens.large))
             .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 8.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -1204,7 +1204,7 @@ private fun SettingsCategoryRow(
     ) {
         Box(
             modifier = Modifier
-                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(14.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(LauncherShapeTokens.large))
                 .padding(horizontal = 13.dp, vertical = 10.dp),
             contentAlignment = Alignment.Center
         ) {

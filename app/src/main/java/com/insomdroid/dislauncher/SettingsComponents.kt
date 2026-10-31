@@ -92,7 +92,7 @@ internal fun IconPackChoice(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
-            .clip(RoundedCornerShape(8.dp)).clickable(onClick = onClick)
+            .clip(RoundedCornerShape(LauncherShapeTokens.medium)).clickable(onClick = onClick)
             .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -173,7 +173,7 @@ internal fun SettingToggle(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(LauncherShapeTokens.medium))
             .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
             .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -206,7 +206,7 @@ internal fun SettingAction(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(LauncherShapeTokens.medium))
             .clickable(onClick = onClick)
             .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
