@@ -68,7 +68,7 @@
     .preview-tab[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); }
     .preview-caption { min-height: 24px; margin-top: 10px; color: var(--quiet); font-size: 12px; }
     .statement { padding-block: clamp(110px, 17vw, 240px); background: var(--dark); color: var(--paper); }
-    .statement p { max-width: 1160px; font-size: clamp(34px, 6.2vw, 82px); font-weight: 600; letter-spacing: -.055em; line-height: 1.08; }
+    .statement h2 { max-width: 1160px; font-size: clamp(36px, 6vw, 82px); font-weight: 700; letter-spacing: -.055em; line-height: 1.02; }
     .section { padding-block: clamp(100px, 13vw, 190px); }
     .section-title { max-width: 760px; margin-bottom: 72px; font-size: clamp(42px, 6.2vw, 84px); line-height: .99; }
     .experience-row { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); align-items: center; gap: clamp(38px, 8vw, 130px); }
@@ -156,7 +156,7 @@
       .preview-image { height: min(66svh, 560px); }
       .preview-controls { gap: 20px; }
       .statement { padding-block: 100px; }
-      .statement p { font-size: clamp(34px, 9vw, 48px); }
+      .statement h2 { font-size: clamp(36px, 9vw, 48px); }
       .section { padding-block: 100px; }
       .section-title { margin-bottom: 46px; font-size: clamp(42px, 11vw, 58px); }
       .experience-row, .experience-row.reverse { grid-template-columns: 1fr; gap: 28px; }
@@ -235,9 +235,9 @@
       </div>
     </section>
 
-    <section class="statement" aria-label="Dislauncher approach">
+    <section class="statement" aria-labelledby="statement-title">
       <div class="wrap">
-        <p class="reveal">Your apps have names. Your Home screen can give them room to breathe.</p>
+        <h2 class="reveal" id="statement-title">Give your apps room to breathe.</h2>
       </div>
     </section>
 
