@@ -16,6 +16,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -867,7 +868,9 @@ internal fun BooksTool(onBack: () -> Unit) {
     val fg = MaterialTheme.colorScheme.onSurface
 
     if (selectedBook == null) {
-        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).navigationBarsPadding()) {
+        BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).navigationBarsPadding()) {
+          val contentMargin = builtInToolContentMargin(maxWidth)
+          val fabEnd = builtInToolFabEnd(maxWidth)
           Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
             BuiltInToolHeader(
                 title = {
@@ -931,7 +934,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                 }
             )
             Column(
-                Modifier.weight(1f).fillMaxWidth(),
+                Modifier.align(Alignment.CenterHorizontally).weight(1f).widthIn(max = BuiltInToolDesign.contentMaxWidth).fillMaxWidth().padding(horizontal = contentMargin),
                 verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)
             ) {
             val visibleBooks = books.filter { it.title.contains(searchQuery, ignoreCase = true) && (!pinnedOnly || it.pinned) }
@@ -1042,7 +1045,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                   picker.launch(arrayOf("application/epub+zip", "application/pdf", "text/plain", "application/octet-stream"))
               },
               modifier = Modifier.align(Alignment.BottomEnd)
-                  .padding(bottom = BuiltInToolDesign.fabBottomPadding)
+                  .padding(end = fabEnd, bottom = BuiltInToolDesign.fabBottomPadding)
                   .size(BuiltInToolDesign.fabSize),
               containerColor = MaterialTheme.colorScheme.primaryContainer,
               contentColor = MaterialTheme.colorScheme.onPrimaryContainer

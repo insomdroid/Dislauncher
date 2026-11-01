@@ -542,7 +542,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             .align(Alignment.TopCenter)
                             .padding(padding)
                             .padding(
-                                horizontal = if (tool == BuiltInTool.NOTES) 0.dp else if (maxWidth >= 600.dp) BuiltInToolDesign.contentHorizontalInsetWide else BuiltInToolDesign.contentHorizontalInset,
+                                horizontal = if (tool == BuiltInTool.NOTES) 0.dp else builtInToolContentMargin(maxWidth),
                                 vertical = 10.dp
                             )
                     ) {
@@ -803,7 +803,8 @@ private fun NotesTool(
     }
 
     BoxWithConstraints(modifier.fillMaxSize()) {
-        val contentMargin = if (maxWidth >= 600.dp) BuiltInToolDesign.contentHorizontalInsetWide else BuiltInToolDesign.contentHorizontalInset
+        val contentMargin = builtInToolContentMargin(maxWidth)
+        val fabEnd = builtInToolFabEnd(maxWidth)
         if (!notesLoaded) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("Loading notes…", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -873,7 +874,7 @@ private fun NotesTool(
                     }
                 )
                 Column(
-                    Modifier.weight(1f).fillMaxWidth().padding(horizontal = contentMargin),
+                    Modifier.align(Alignment.CenterHorizontally).weight(1f).widthIn(max = BuiltInToolDesign.contentMaxWidth).fillMaxWidth().padding(horizontal = contentMargin),
                     verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)
                 ) {
                 Row(
@@ -1020,7 +1021,7 @@ private fun NotesTool(
             }
             FloatingActionButton(
                 onClick = { createNote() },
-                modifier = Modifier.align(Alignment.BottomEnd).padding(end = contentMargin, bottom = BuiltInToolDesign.fabBottomPadding).size(BuiltInToolDesign.fabSize),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(end = fabEnd, bottom = BuiltInToolDesign.fabBottomPadding).size(BuiltInToolDesign.fabSize),
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             ) { Icon(painterResource(R.drawable.ic_symbol_note_add), contentDescription = "New note", modifier = Modifier.size(LauncherIconTokens.standard)) }

@@ -1,5 +1,6 @@
 package com.insomdroid.dislauncher
 
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import java.util.Locale
 
@@ -35,6 +36,15 @@ internal object BuiltInToolDesign {
     val calculatorMaxWidth = 560.dp
     val emptyStateHorizontalInset = 24.dp
 }
+
+/** Horizontal margin for tool content: 16 dp on phones, 24 dp from 600 dp wide. */
+internal fun builtInToolContentMargin(availableWidth: Dp): Dp =
+    if (availableWidth >= 600.dp) BuiltInToolDesign.contentHorizontalInsetWide else BuiltInToolDesign.contentHorizontalInset
+
+/** End offset for a FAB that lines up with tool content capped at [BuiltInToolDesign.contentMaxWidth]. */
+internal fun builtInToolFabEnd(availableWidth: Dp): Dp =
+    builtInToolContentMargin(availableWidth) +
+        ((availableWidth - BuiltInToolDesign.contentMaxWidth).coerceAtLeast(0.dp) / 2f)
 
 /** Follow the device language while keeping English as the fallback. */
 internal fun builtInToolText(english: String, indonesian: String): String =
