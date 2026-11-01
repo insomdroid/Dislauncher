@@ -541,7 +541,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             .align(Alignment.TopCenter)
                             .padding(padding)
                             .padding(
-                                horizontal = if (maxWidth >= 600.dp) 24.dp else 16.dp,
+                                horizontal = if (tool == BuiltInTool.NOTES) 0.dp else if (maxWidth >= 600.dp) 24.dp else 16.dp,
                                 vertical = 10.dp
                             )
                     ) {
@@ -807,7 +807,7 @@ private fun NotesTool(
                 Text("Loading notes…", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else if (selectedId == null) {
-            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
+            Column(Modifier.fillMaxSize()) {
                 BuiltInToolHeader(
                     title = {
                         if (searchExpanded) {
@@ -870,8 +870,12 @@ private fun NotesTool(
                         }
                     }
                 )
+                Column(
+                    Modifier.weight(1f).fillMaxWidth().padding(horizontal = BuiltInToolDesign.contentHorizontalInset),
+                    verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)
+                ) {
                 Row(
-                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 4.dp),
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = BuiltInToolDesign.filterHorizontalInset),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -1012,15 +1016,16 @@ private fun NotesTool(
                         }
                     }
                 }
+                }
             }
             FloatingActionButton(
                 onClick = { createNote() },
-                modifier = Modifier.align(Alignment.BottomEnd).padding(end = BuiltInToolDesign.fabEndPadding, bottom = BuiltInToolDesign.fabBottomPadding),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(end = BuiltInToolDesign.fabEndPadding, bottom = BuiltInToolDesign.fabBottomPadding).size(BuiltInToolDesign.fabSize),
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             ) { Icon(painterResource(R.drawable.ic_symbol_note_add), contentDescription = "New note", modifier = Modifier.size(LauncherIconTokens.standard)) }
         } else {
-            Column(Modifier.fillMaxSize().imePadding(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
+            Column(Modifier.fillMaxSize().imePadding().padding(horizontal = BuiltInToolDesign.contentHorizontalInset), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onBackRequested) { Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = "Back", modifier = Modifier.size(LauncherIconTokens.standard)) }
                     IconButton(
