@@ -16,7 +16,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,7 +24,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -868,73 +866,74 @@ internal fun BooksTool(onBack: () -> Unit) {
     val fg = MaterialTheme.colorScheme.onSurface
 
     if (selectedBook == null) {
-        BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).navigationBarsPadding()) {
-          val contentMargin = builtInToolContentMargin(maxWidth)
-          val fabEnd = builtInToolFabEnd(maxWidth)
-          Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
-            BuiltInToolHeader(
-                title = {
-                    if (searchExpanded) {
-                        BuiltInToolSearchField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = "Search books",
-                            textColor = fg,
-                            trailingIcon = {
-                                IconButton(onClick = { searchQuery = ""; searchExpanded = false }) {
-                                    Icon(painterResource(R.drawable.ic_symbol_close), contentDescription = "Close search", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
+        BuiltInToolScaffold(
+            header = {
+                BuiltInToolHeader(
+                    title = {
+                        if (searchExpanded) {
+                            BuiltInToolSearchField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                placeholder = "Search books",
+                                textColor = fg,
+                                trailingIcon = {
+                                    IconButton(onClick = { searchQuery = ""; searchExpanded = false }) {
+                                        Icon(painterResource(R.drawable.ic_symbol_close), contentDescription = "Close search", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
+                                    }
                                 }
+                            )
+                        } else {
+                            Text(
+                                "Library",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = fg,
+                                maxLines = 1
+                            )
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = "Back", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
+                        }
+                    },
+                    actions = {
+                        if (!searchExpanded) {
+                            IconButton(onClick = { searchExpanded = true }) {
+                                Icon(painterResource(R.drawable.ic_symbol_search), contentDescription = "Search books", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
                             }
-                        )
-                    } else {
-                        Text(
-                            "Library",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            color = fg,
-                            maxLines = 1
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = "Back", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
-                    }
-                },
-                actions = {
-                    if (!searchExpanded) {
-                        IconButton(onClick = { searchExpanded = true }) {
-                            Icon(painterResource(R.drawable.ic_symbol_search), contentDescription = "Search books", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
+                        }
+                        if (books.isNotEmpty()) {
+                            IconButton(onClick = {
+                                gridView = !gridView
+                                context.getSharedPreferences("dislauncher_books", Context.MODE_PRIVATE)
+                                    .edit().putBoolean("grid_view", gridView).apply()
+                            }) {
+                                Icon(painterResource(if (gridView) R.drawable.ic_symbol_view_list else R.drawable.ic_symbol_view_module),
+                                    contentDescription = if (gridView) "Switch to list view" else "Switch to grid view",
+                                    tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
+                            }
+                        }
+                        Box {
+                            IconButton(onClick = { showLibraryMenu = true }) {
+                                Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Library options", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
+                            }
+                            DropdownMenu(expanded = showLibraryMenu, onDismissRequest = { showLibraryMenu = false }) {
+                                DropdownMenuItem(text = { Text(if (sortByTitle) "Sort by recently opened" else "Sort by title") },
+                                    onClick = { sortByTitle = !sortByTitle; showLibraryMenu = false })
+                                DropdownMenuItem(text = { Text(if (pinnedOnly) "Show all books" else "Pinned books") },
+                                    leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
+                                    onClick = { pinnedOnly = !pinnedOnly; showLibraryMenu = false })
+                            }
                         }
                     }
-                    if (books.isNotEmpty()) {
-                        IconButton(onClick = {
-                            gridView = !gridView
-                            context.getSharedPreferences("dislauncher_books", Context.MODE_PRIVATE)
-                                .edit().putBoolean("grid_view", gridView).apply()
-                        }) {
-                            Icon(painterResource(if (gridView) R.drawable.ic_symbol_view_list else R.drawable.ic_symbol_view_module),
-                                contentDescription = if (gridView) "Switch to list view" else "Switch to grid view",
-                                tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
-                        }
-                    }
-                    Box {
-                        IconButton(onClick = { showLibraryMenu = true }) {
-                            Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Library options", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
-                        }
-                        DropdownMenu(expanded = showLibraryMenu, onDismissRequest = { showLibraryMenu = false }) {
-                            DropdownMenuItem(text = { Text(if (sortByTitle) "Sort by recently opened" else "Sort by title") },
-                                onClick = { sortByTitle = !sortByTitle; showLibraryMenu = false })
-                            DropdownMenuItem(text = { Text(if (pinnedOnly) "Show all books" else "Pinned books") },
-                                leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
-                                onClick = { pinnedOnly = !pinnedOnly; showLibraryMenu = false })
-                        }
-                    }
-                }
-            )
+                )
+            }
+        ) {
+          Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
             Column(
-                Modifier.align(Alignment.CenterHorizontally).weight(1f).widthIn(max = BuiltInToolDesign.contentMaxWidth).fillMaxWidth().padding(horizontal = contentMargin),
+                Modifier.weight(1f).fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)
             ) {
             val visibleBooks = books.filter { it.title.contains(searchQuery, ignoreCase = true) && (!pinnedOnly || it.pinned) }
@@ -1045,7 +1044,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                   picker.launch(arrayOf("application/epub+zip", "application/pdf", "text/plain", "application/octet-stream"))
               },
               modifier = Modifier.align(Alignment.BottomEnd)
-                  .padding(end = fabEnd, bottom = BuiltInToolDesign.fabBottomPadding)
+                  .padding(bottom = BuiltInToolDesign.fabBottomPadding)
                   .size(BuiltInToolDesign.fabSize),
               containerColor = MaterialTheme.colorScheme.primaryContainer,
               contentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -1055,40 +1054,44 @@ internal fun BooksTool(onBack: () -> Unit) {
         }
     } else {
         val book = selectedBook!!
-        Box(Modifier.fillMaxSize().background(bg).navigationBarsPadding()) {
+        BuiltInToolScaffold(
+            header = {
+                    BuiltInToolHeader(
+                        title = {
+                            Text(
+                                book.title,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                color = fg,
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = { selectedBook = null; bookContent = null; pdfBitmap = null }) {
+                                Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = "Library", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
+                            }
+                        },
+                        actions = {
+                            IconButton(onClick = {
+                                val saved = books.firstOrNull { it.id == book.id }?.bookmarks.orEmpty()
+                                val next = if (currentPage in saved) saved - currentPage else saved + currentPage
+                                books = books.map { if (it.id == book.id) it.copy(bookmarks = next.sorted()) else it }
+                                selectedBook = books.first { it.id == book.id }
+                                writeBookLibrary(context, books)
+                            }) {
+                                Icon(painterResource(if (currentPage in book.bookmarks) R.drawable.ic_symbol_bookmark else R.drawable.ic_symbol_bookmark_added),
+                                    contentDescription = if (currentPage in book.bookmarks) "Remove bookmark" else "Add bookmark",
+                                    tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
+                            }
+                            IconButton(onClick = { showMenu = true }) {
+                                Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Reader settings", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
+                            }
+                        }
+                    )
+            },
+            containerColor = bg
+        ) {
             Column(Modifier.fillMaxSize()) {
-                BuiltInToolHeader(
-                    title = {
-                        Text(
-                            book.title,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            color = fg,
-                            style = MaterialTheme.typography.titleSmall
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = { selectedBook = null; bookContent = null; pdfBitmap = null }) {
-                            Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = "Library", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = {
-                            val saved = books.firstOrNull { it.id == book.id }?.bookmarks.orEmpty()
-                            val next = if (currentPage in saved) saved - currentPage else saved + currentPage
-                            books = books.map { if (it.id == book.id) it.copy(bookmarks = next.sorted()) else it }
-                            selectedBook = books.first { it.id == book.id }
-                            writeBookLibrary(context, books)
-                        }) {
-                            Icon(painterResource(if (currentPage in book.bookmarks) R.drawable.ic_symbol_bookmark else R.drawable.ic_symbol_bookmark_added),
-                                contentDescription = if (currentPage in book.bookmarks) "Remove bookmark" else "Add bookmark",
-                                tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
-                        }
-                        IconButton(onClick = { showMenu = true }) {
-                            Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Reader settings", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
-                        }
-                    }
-                )
                 Box(
                     Modifier.weight(1f).fillMaxWidth().pointerInput(selectedBook?.id, currentPage) {
                         detectTapGestures(
@@ -1120,11 +1123,10 @@ internal fun BooksTool(onBack: () -> Unit) {
                             Text(
                                 currentPageText,
                                 modifier = Modifier
-                                    .widthIn(max = BuiltInToolDesign.contentMaxWidth)
                                     .fillMaxSize()
                                     .align(Alignment.TopCenter)
                                     .verticalScroll(pageScrollState)
-                                    .padding(horizontal = 28.dp, vertical = 28.dp),
+                                    .padding(horizontal = BuiltInToolSpacing.compact, vertical = 28.dp),
                                 color = fg, fontSize = fontSize.sp, lineHeight = (fontSize * 1.55f).sp,
                                 fontFamily = FontFamily.Serif
                             )

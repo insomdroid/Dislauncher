@@ -25,12 +25,14 @@ internal object BuiltInToolDesign {
     val cardCornerRadius = LauncherShapeTokens.medium
     val controlCornerRadius = LauncherShapeTokens.small
     val calculatorKeyCornerRadius = LauncherShapeTokens.medium
-    /** The tool wrapper already adds 10 dp of vertical inset, so 6 dp here gives a 16 dp bottom margin. */
+    /** The shared shell adds [contentVerticalInset]; with that, 6 dp here gives a 16 dp bottom margin. */
     val fabBottomPadding = 6.dp
     val fabSize = 56.dp
     val contentHorizontalInset = 16.dp
     val filterHorizontalInset = 4.dp
     val contentHorizontalInsetWide = 24.dp
+    /** Vertical inset of tool content inside the shared shell. */
+    val contentVerticalInset = 10.dp
     /** Maximum width of tool content on wide screens; the Books reader shares it. */
     val contentMaxWidth = 720.dp
     val calculatorMaxWidth = 560.dp
@@ -40,11 +42,6 @@ internal object BuiltInToolDesign {
 /** Horizontal margin for tool content: 16 dp on phones, 24 dp from 600 dp wide. */
 internal fun builtInToolContentMargin(availableWidth: Dp): Dp =
     if (availableWidth >= 600.dp) BuiltInToolDesign.contentHorizontalInsetWide else BuiltInToolDesign.contentHorizontalInset
-
-/** End offset for a FAB that lines up with tool content capped at [BuiltInToolDesign.contentMaxWidth]. */
-internal fun builtInToolFabEnd(availableWidth: Dp): Dp =
-    builtInToolContentMargin(availableWidth) +
-        ((availableWidth - BuiltInToolDesign.contentMaxWidth).coerceAtLeast(0.dp) / 2f)
 
 /** Follow the device language while keeping English as the fallback. */
 internal fun builtInToolText(english: String, indonesian: String): String =

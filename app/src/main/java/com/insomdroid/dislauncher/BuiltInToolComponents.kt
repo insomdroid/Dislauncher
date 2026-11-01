@@ -5,19 +5,24 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -178,6 +183,39 @@ internal fun BuiltInEmptyState(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+/**
+ * Shared shell for every built-in tool: the header sits in the top bar, and the content is capped at
+ * [BuiltInToolDesign.contentMaxWidth], centred, with one horizontal margin rule. Content runs in a
+ * [BoxScope], so overlays such as FABs align to the bottom end of the same column.
+ */
+@Composable
+internal fun BuiltInToolScaffold(
+    header: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.background,
+    content: @Composable BoxScope.() -> Unit
+) {
+    Scaffold(
+        modifier = modifier,
+        containerColor = containerColor,
+        topBar = header
+    ) { padding ->
+        BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
+            Box(
+                Modifier
+                    .widthIn(max = BuiltInToolDesign.contentMaxWidth)
+                    .fillMaxSize()
+                    .align(Alignment.TopCenter)
+                    .padding(
+                        horizontal = builtInToolContentMargin(maxWidth),
+                        vertical = BuiltInToolDesign.contentVerticalInset
+                    ),
+                content = content
             )
         }
     }

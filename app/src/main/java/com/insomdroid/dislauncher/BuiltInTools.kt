@@ -56,7 +56,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -455,10 +454,19 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
         BuiltInTool.CALENDAR -> "Calendar"
         BuiltInTool.UNIT_CONVERTER -> "Unit Converter"
     }
-    Scaffold(
-                containerColor = MaterialTheme.colorScheme.background,
-                topBar = {
-                    if (!(tool == BuiltInTool.NOTES)) BuiltInToolHeader(
+    if (tool == BuiltInTool.NOTES) {
+        NotesTool(
+            context = context,
+            backSignal = notesBackSignal,
+            onEditingChanged = { notesEditing = it },
+            onBackRequested = { if (notesEditing) notesBackSignal++ else requestClose() },
+            modifier = Modifier.fillMaxSize()
+        )
+        return
+    }
+    BuiltInToolScaffold(
+                header = {
+                    BuiltInToolHeader(
                         title = {
                             if (tool == BuiltInTool.UNIT_CONVERTER && converterSearchExpanded) {
                                 BuiltInToolSearchField(
@@ -533,27 +541,9 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                         colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
                     )
                 }
-            ) { padding ->
-                BoxWithConstraints(Modifier.fillMaxSize()) {
-                    Box(
-                        Modifier
-                            .widthIn(max = BuiltInToolDesign.contentMaxWidth)
-                            .fillMaxSize()
-                            .align(Alignment.TopCenter)
-                            .padding(padding)
-                            .padding(
-                                horizontal = if (tool == BuiltInTool.NOTES) 0.dp else builtInToolContentMargin(maxWidth),
-                                vertical = 10.dp
-                            )
-                    ) {
+            ) {
+                Box(Modifier.fillMaxSize()) {
                         when (tool) {
-                            BuiltInTool.NOTES -> NotesTool(
-                                context = context,
-                                backSignal = notesBackSignal,
-                                onEditingChanged = { notesEditing = it },
-                                onBackRequested = { if (notesEditing) notesBackSignal++ else requestClose() },
-                                modifier = Modifier.fillMaxSize()
-                            )
                             BuiltInTool.CALCULATOR -> Box(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.TopCenter
@@ -585,7 +575,6 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             }
                         }
                     }
-                }
             }
 }
 
@@ -802,79 +791,98 @@ private fun NotesTool(
         }
     }
 
-    BoxWithConstraints(modifier.fillMaxSize()) {
-        val contentMargin = builtInToolContentMargin(maxWidth)
-        val fabEnd = builtInToolFabEnd(maxWidth)
+    BuiltInToolScaffold(
+        modifier = modifier,
+        header = {
+            if (!notesLoaded || selectedId == null) {
+                    BuiltInToolHeader(
+                        title = {
+                            if (searchExpanded) {
+                                BuiltInToolSearchField(
+                                    value = searchQuery,
+                                    onValueChange = { searchQuery = it },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    placeholder = "Search notes",
+                                    trailingIcon = {
+                                        IconButton(onClick = { searchQuery = ""; searchExpanded = false }) {
+                                            Icon(painterResource(R.drawable.ic_symbol_close), contentDescription = "Close search", modifier = Modifier.size(LauncherIconTokens.standard))
+                                        }
+                                    }
+                                )
+                            } else {
+                                Text(
+                                    "Notes",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1
+                                )
+                            }
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = onBackRequested) {
+                                Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = builtInToolText("Back", "Kembali"), modifier = Modifier.size(LauncherIconTokens.standard))
+                            }
+                        },
+                        actions = {
+                            if (!searchExpanded) {
+                                IconButton(onClick = { searchExpanded = true }) {
+                                    Icon(painterResource(R.drawable.ic_symbol_search), contentDescription = "Search notes", modifier = Modifier.size(LauncherIconTokens.standard))
+                                }
+                            }
+                            IconButton(onClick = {
+                                gridView = !gridView
+                                context.getSharedPreferences("dislauncher_notes", Context.MODE_PRIVATE)
+                                    .edit().putBoolean("grid_view", gridView).apply()
+                            }) {
+                                Icon(painterResource(if (gridView) R.drawable.ic_symbol_view_list else R.drawable.ic_symbol_view_module),
+                                    contentDescription = if (gridView) "Switch to list view" else "Switch to grid view", modifier = Modifier.size(LauncherIconTokens.standard))
+                            }
+                            Box {
+                                IconButton(onClick = { menuTarget = "home" }) {
+                                    Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Notes options", modifier = Modifier.size(LauncherIconTokens.standard))
+                                }
+                                DropdownMenu(expanded = menuTarget == "home", onDismissRequest = { menuTarget = null }) {
+                                    DropdownMenuItem(text = { Text(if (pinnedOnly) "Show all notes" else "Pinned notes") },
+                                        leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
+                                        onClick = { pinnedOnly = !pinnedOnly; menuTarget = null })
+                                    DropdownMenuItem(text = { Text(if (sortByTitle) "Sort by modified" else "Sort by title") },
+                                        onClick = { sortByTitle = !sortByTitle; menuTarget = null })
+                                    DropdownMenuItem(text = { Text("Manage labels") },
+                                        onClick = { menuTarget = null; showLabelManager = true })
+                                    DropdownMenuItem(text = { Text("Import note archive") },
+                                        leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_file_open), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
+                                        onClick = { menuTarget = null; importLauncher.launch(arrayOf("application/zip", "application/octet-stream")) })
+                                }
+                            }
+                        }
+                    )
+            } else {
+                BuiltInToolHeader(
+                    title = {
+                        Text(
+                            title.ifBlank { builtInToolText("Untitled note", "Catatan tanpa judul") },
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBackRequested) {
+                            Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = builtInToolText("Back", "Kembali"), modifier = Modifier.size(LauncherIconTokens.standard))
+                        }
+                    }
+                )
+            }
+        }
+    ) {
         if (!notesLoaded) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("Loading notes…", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else if (selectedId == null) {
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
-                BuiltInToolHeader(
-                    title = {
-                        if (searchExpanded) {
-                            BuiltInToolSearchField(
-                                value = searchQuery,
-                                onValueChange = { searchQuery = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                placeholder = "Search notes",
-                                trailingIcon = {
-                                    IconButton(onClick = { searchQuery = ""; searchExpanded = false }) {
-                                        Icon(painterResource(R.drawable.ic_symbol_close), contentDescription = "Close search", modifier = Modifier.size(LauncherIconTokens.standard))
-                                    }
-                                }
-                            )
-                        } else {
-                            Text(
-                                "Notes",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1
-                            )
-                        }
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onBackRequested) {
-                            Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = builtInToolText("Back", "Kembali"), modifier = Modifier.size(LauncherIconTokens.standard))
-                        }
-                    },
-                    windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
-                    actions = {
-                        if (!searchExpanded) {
-                            IconButton(onClick = { searchExpanded = true }) {
-                                Icon(painterResource(R.drawable.ic_symbol_search), contentDescription = "Search notes", modifier = Modifier.size(LauncherIconTokens.standard))
-                            }
-                        }
-                        IconButton(onClick = {
-                            gridView = !gridView
-                            context.getSharedPreferences("dislauncher_notes", Context.MODE_PRIVATE)
-                                .edit().putBoolean("grid_view", gridView).apply()
-                        }) {
-                            Icon(painterResource(if (gridView) R.drawable.ic_symbol_view_list else R.drawable.ic_symbol_view_module),
-                                contentDescription = if (gridView) "Switch to list view" else "Switch to grid view", modifier = Modifier.size(LauncherIconTokens.standard))
-                        }
-                        Box {
-                            IconButton(onClick = { menuTarget = "home" }) {
-                                Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Notes options", modifier = Modifier.size(LauncherIconTokens.standard))
-                            }
-                            DropdownMenu(expanded = menuTarget == "home", onDismissRequest = { menuTarget = null }) {
-                                DropdownMenuItem(text = { Text(if (pinnedOnly) "Show all notes" else "Pinned notes") },
-                                    leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
-                                    onClick = { pinnedOnly = !pinnedOnly; menuTarget = null })
-                                DropdownMenuItem(text = { Text(if (sortByTitle) "Sort by modified" else "Sort by title") },
-                                    onClick = { sortByTitle = !sortByTitle; menuTarget = null })
-                                DropdownMenuItem(text = { Text("Manage labels") },
-                                    onClick = { menuTarget = null; showLabelManager = true })
-                                DropdownMenuItem(text = { Text("Import note archive") },
-                                    leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_file_open), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
-                                    onClick = { menuTarget = null; importLauncher.launch(arrayOf("application/zip", "application/octet-stream")) })
-                            }
-                        }
-                    }
-                )
                 Column(
-                    Modifier.align(Alignment.CenterHorizontally).weight(1f).widthIn(max = BuiltInToolDesign.contentMaxWidth).fillMaxWidth().padding(horizontal = contentMargin),
+                    Modifier.weight(1f).fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)
                 ) {
                 Row(
@@ -1021,14 +1029,13 @@ private fun NotesTool(
             }
             FloatingActionButton(
                 onClick = { createNote() },
-                modifier = Modifier.align(Alignment.BottomEnd).padding(end = fabEnd, bottom = BuiltInToolDesign.fabBottomPadding).size(BuiltInToolDesign.fabSize),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = BuiltInToolDesign.fabBottomPadding).size(BuiltInToolDesign.fabSize),
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             ) { Icon(painterResource(R.drawable.ic_symbol_note_add), contentDescription = "New note", modifier = Modifier.size(LauncherIconTokens.standard)) }
         } else {
-            Column(Modifier.fillMaxSize().imePadding().padding(horizontal = contentMargin), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
+            Column(Modifier.fillMaxSize().imePadding(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBackRequested) { Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = "Back", modifier = Modifier.size(LauncherIconTokens.standard)) }
                     IconButton(
                         onClick = {
                             editHistory.undo(markdownText, markdownCursor)?.let { transition ->
