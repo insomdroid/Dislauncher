@@ -21,6 +21,7 @@ internal object BuiltInToolDesign {
     val fabBottomPadding = 24.dp
     val fabSize = 56.dp
     val contentHorizontalInset = 16.dp
+    val contentVerticalInset = 10.dp
     val filterHorizontalInset = 4.dp
 }
 

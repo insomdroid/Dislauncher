@@ -542,7 +542,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             .padding(padding)
                             .padding(
                                 horizontal = if (tool == BuiltInTool.NOTES) 0.dp else if (maxWidth >= 600.dp) 24.dp else 16.dp,
-                                vertical = 10.dp
+                                vertical = if (tool == BuiltInTool.NOTES) 0.dp else BuiltInToolDesign.contentVerticalInset
                             )
                     ) {
                         when (tool) {
@@ -836,7 +836,6 @@ private fun NotesTool(
                             Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = builtInToolText("Back", "Kembali"), modifier = Modifier.size(LauncherIconTokens.standard))
                         }
                     },
-                    windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
                     actions = {
                         if (!searchExpanded) {
                             IconButton(onClick = { searchExpanded = true }) {
@@ -1613,7 +1612,7 @@ private fun CalendarTool(
         .thenBy { it.task?.completed ?: false }.thenByDescending { it.task?.priority ?: 0 })
 
     Box(modifier = modifier) {
-    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.compact)) {
         LaunchedEffect(month) {
             if (YearMonth.from(selectedDate) != month) selectedDate = month.atDay(1)
         }
