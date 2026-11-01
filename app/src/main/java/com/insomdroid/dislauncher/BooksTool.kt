@@ -998,7 +998,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                         }
                     }
                 } else {
-                    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Column(Modifier.weight(1f).padding(bottom = 96.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         visibleBooks.forEach { book ->
                             Row(
                                 Modifier.fillMaxWidth().clickable { selectedBook = book }.padding(vertical = BuiltInToolSpacing.listRowVertical, horizontal = BuiltInToolSpacing.listRowHorizontal),
