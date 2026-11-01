@@ -279,7 +279,7 @@ internal fun AppsScreen(
                                             } else {
                                                 androidx.compose.ui.graphics.Color(0xFF222222)
                                             },
-                                            modifier = Modifier.size(18.dp)
+                                            modifier = Modifier.size(LauncherIconTokens.compactSmall)
                                         )
                                     }
                                     Text(
@@ -309,7 +309,7 @@ internal fun AppsScreen(
                                 painter = painterResource(R.drawable.ic_symbol_folder),
                                 contentDescription = null,
                                 tint = mainText,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(LauncherIconTokens.compactSmall)
                             )
                             Spacer(Modifier.width(9.dp))
                             Text(
@@ -414,7 +414,7 @@ internal fun AppsScreen(
                                     painter = painterResource(R.drawable.ic_symbol_settings),
                                     contentDescription = null,
                                     tint = mainText,
-                                    modifier = Modifier.size(24.dp)
+                                    modifier = Modifier.size(LauncherIconTokens.standard)
                                 )
                                 Spacer(Modifier.width(9.dp))
                             }
@@ -603,7 +603,7 @@ internal fun AppsScreen(
                         painter = painterResource(R.drawable.ic_symbol_search),
                         contentDescription = "Search apps",
                         tint = searchColor,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(LauncherIconTokens.compact)
                     )
                 },
                 textColor = mainText,
@@ -734,7 +734,7 @@ internal fun AppsScreen(
                                 },
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Icon(painterResource(R.drawable.ic_symbol_folder), contentDescription = null)
+                                Icon(painterResource(R.drawable.ic_symbol_folder), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compactSmall))
                                 Spacer(Modifier.width(10.dp))
                                 Text(folder, modifier = Modifier.weight(1f), textAlign = TextAlign.Start)
                             }

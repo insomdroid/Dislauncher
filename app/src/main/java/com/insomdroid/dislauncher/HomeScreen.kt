@@ -381,7 +381,7 @@ internal fun HomeScreen(
                             painter = painterResource(R.drawable.ic_symbol_drag_indicator),
                             contentDescription = "Reorder favourite",
                             tint = secondaryText.copy(alpha = 0.82f),
-                            modifier = Modifier.padding(start = 8.dp).size(20.dp)
+                            modifier = Modifier.padding(start = 8.dp).size(LauncherIconTokens.compact)
                                 .pointerInput(itemId) {
                                     detectDragGestures(
                                         onDragStart = {
@@ -517,7 +517,7 @@ internal fun HomeScreen(
                     painter = painterResource(R.drawable.ic_symbol_settings),
                     contentDescription = "Dislauncher Settings",
                     tint = secondaryText,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(LauncherIconTokens.standard)
                 )
                 Text(
                     text = "Dislauncher Settings",

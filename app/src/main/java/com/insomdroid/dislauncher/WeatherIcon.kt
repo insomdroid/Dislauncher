@@ -52,7 +52,7 @@ internal fun WeatherIcon(
         fun point(x: Float, y: Float) = Offset(x * scale, y * scale)
         fun line(
             x1: Float, y1: Float, x2: Float, y2: Float,
-            width: Float = 2.8f, alpha: Float = 1f
+            width: Float = 3f, alpha: Float = 1f
         ) {
             drawLine(
                 color.copy(alpha = alpha),
@@ -97,7 +97,7 @@ internal fun WeatherIcon(
             drawPath(
                 path,
                 color,
-                style = Stroke(width = 3.5f * scale, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                style = Stroke(width = 3f * scale, cap = StrokeCap.Round, join = StrokeJoin.Round)
             )
         }
         fun rain() {

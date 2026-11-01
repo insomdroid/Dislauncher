@@ -484,7 +484,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                                     else -> requestClose()
                                 }
                             }) {
-                                Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = builtInToolText("Back", "Kembali"))
+                                Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = builtInToolText("Back", "Kembali"), modifier = Modifier.size(LauncherIconTokens.standard))
                             }
                         },
                         actions = {
@@ -494,20 +494,20 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                                         converterSearchQuery = ""
                                         converterSearchExpanded = false
                                     }) {
-                                        Icon(painterResource(R.drawable.ic_symbol_close), contentDescription = builtInToolText("Close search", "Tutup pencarian"))
+                                        Icon(painterResource(R.drawable.ic_symbol_close), contentDescription = builtInToolText("Close search", "Tutup pencarian"), modifier = Modifier.size(LauncherIconTokens.standard))
                                     }
                                 } else {
                                     IconButton(onClick = { converterSearchExpanded = true }) {
-                                        Icon(painterResource(R.drawable.ic_symbol_search), contentDescription = builtInToolText("Search converter", "Cari konverter"))
+                                        Icon(painterResource(R.drawable.ic_symbol_search), contentDescription = builtInToolText("Search converter", "Cari konverter"), modifier = Modifier.size(LauncherIconTokens.standard))
                                     }
                                 }
                             }
                             if (tool == BuiltInTool.CALENDAR) {
                                 IconButton(onClick = { calendarMonth = calendarMonth.minusMonths(1) }) {
-                                    Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = builtInToolText("Previous month", "Bulan sebelumnya"))
+                                    Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = builtInToolText("Previous month", "Bulan sebelumnya"), modifier = Modifier.size(LauncherIconTokens.standard))
                                 }
                                 IconButton(onClick = { calendarMonth = calendarMonth.plusMonths(1) }) {
-                                    Icon(painterResource(R.drawable.ic_symbol_arrow_forward), contentDescription = builtInToolText("Next month", "Bulan berikutnya"))
+                                    Icon(painterResource(R.drawable.ic_symbol_arrow_forward), contentDescription = builtInToolText("Next month", "Bulan berikutnya"), modifier = Modifier.size(LauncherIconTokens.standard))
                                 }
                             }
                             if (tool == BuiltInTool.CALCULATOR && !calculatorShowingHistory) {
@@ -521,11 +521,11 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                                         onClick = { calculatorClearHistorySignal++ },
                                         enabled = calculatorHistoryHasItems
                                     ) {
-                                        Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = builtInToolText("Clear calculator history", "Hapus riwayat kalkulator"))
+                                        Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = builtInToolText("Clear calculator history", "Hapus riwayat kalkulator"), modifier = Modifier.size(LauncherIconTokens.standard))
                                     }
                                 } else {
                                     IconButton(onClick = { calculatorShowingHistory = true }) {
-                                        Icon(painterResource(R.drawable.ic_symbol_history), contentDescription = builtInToolText("Open calculator history", "Buka riwayat kalkulator"))
+                                        Icon(painterResource(R.drawable.ic_symbol_history), contentDescription = builtInToolText("Open calculator history", "Buka riwayat kalkulator"), modifier = Modifier.size(LauncherIconTokens.standard))
                                     }
                                 }
                             }
@@ -818,7 +818,7 @@ private fun NotesTool(
                                 placeholder = "Search notes",
                                 trailingIcon = {
                                     IconButton(onClick = { searchQuery = ""; searchExpanded = false }) {
-                                        Icon(painterResource(R.drawable.ic_symbol_close), contentDescription = "Close search")
+                                        Icon(painterResource(R.drawable.ic_symbol_close), contentDescription = "Close search", modifier = Modifier.size(LauncherIconTokens.standard))
                                     }
                                 }
                             )
@@ -833,14 +833,14 @@ private fun NotesTool(
                     },
                     navigationIcon = {
                         IconButton(onClick = onBackRequested) {
-                            Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = builtInToolText("Back", "Kembali"))
+                            Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = builtInToolText("Back", "Kembali"), modifier = Modifier.size(LauncherIconTokens.standard))
                         }
                     },
                     windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
                     actions = {
                         if (!searchExpanded) {
                             IconButton(onClick = { searchExpanded = true }) {
-                                Icon(painterResource(R.drawable.ic_symbol_search), contentDescription = "Search notes")
+                                Icon(painterResource(R.drawable.ic_symbol_search), contentDescription = "Search notes", modifier = Modifier.size(LauncherIconTokens.standard))
                             }
                         }
                         IconButton(onClick = {
@@ -849,23 +849,22 @@ private fun NotesTool(
                                 .edit().putBoolean("grid_view", gridView).apply()
                         }) {
                             Icon(painterResource(if (gridView) R.drawable.ic_symbol_view_list else R.drawable.ic_symbol_view_module),
-                                contentDescription = if (gridView) "Switch to list view" else "Switch to grid view"
-                            )
+                                contentDescription = if (gridView) "Switch to list view" else "Switch to grid view", modifier = Modifier.size(LauncherIconTokens.standard))
                         }
                         Box {
                             IconButton(onClick = { menuTarget = "home" }) {
-                                Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Notes options")
+                                Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Notes options", modifier = Modifier.size(LauncherIconTokens.standard))
                             }
                             DropdownMenu(expanded = menuTarget == "home", onDismissRequest = { menuTarget = null }) {
                                 DropdownMenuItem(text = { Text(if (pinnedOnly) "Show all notes" else "Pinned notes") },
-                                    leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                    leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                     onClick = { pinnedOnly = !pinnedOnly; menuTarget = null })
                                 DropdownMenuItem(text = { Text(if (sortByTitle) "Sort by modified" else "Sort by title") },
                                     onClick = { sortByTitle = !sortByTitle; menuTarget = null })
                                 DropdownMenuItem(text = { Text("Manage labels") },
                                     onClick = { menuTarget = null; showLabelManager = true })
                                 DropdownMenuItem(text = { Text("Import note archive") },
-                                    leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_file_open), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                    leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_file_open), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                     onClick = { menuTarget = null; importLauncher.launch(arrayOf("application/zip", "application/octet-stream")) })
                             }
                         }
@@ -886,7 +885,7 @@ private fun NotesTool(
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.padding(horizontal = 24.dp)) {
-                            Icon(painterResource(R.drawable.ic_symbol_note_add), contentDescription = null, modifier = Modifier.size(38.dp),
+                            Icon(painterResource(R.drawable.ic_symbol_note_add), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.illustration),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             val notesLibraryIsEmpty = notes.isEmpty() &&
                                 searchQuery.isBlank() && !pinnedOnly && activeLabel == null
@@ -929,22 +928,22 @@ private fun NotesTool(
                                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         if (note.pinned) Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = "Pinned",
-                                            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(15.dp))
+                                            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(LauncherIconTokens.status))
                                         Text(note.title.ifBlank { "Untitled note" }, modifier = Modifier.weight(1f),
                                             style = MaterialTheme.typography.titleMedium, color = noteCardContentColor, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                         Box {
-                                            IconButton(onClick = { menuTarget = note.id }, modifier = Modifier.size(28.dp)) {
-                                                Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Note actions")
+                                            IconButton(onClick = { menuTarget = note.id }, modifier = Modifier.size(LauncherIconTokens.touchTarget)) {
+                                                Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Note actions", modifier = Modifier.size(LauncherIconTokens.standard))
                                             }
                                             DropdownMenu(expanded = menuTarget == note.id, onDismissRequest = { menuTarget = null }) {
                                                 DropdownMenuItem(text = { Text(if (note.pinned) "Unpin" else "Pin") },
-                                                    leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                                    leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                                     onClick = {
                                                         notes = notes.map { if (it.id == note.id) it.copy(pinned = !it.pinned) else it }
                                                         saveNotes(context, notes); menuTarget = null
                                                     })
                                                 DropdownMenuItem(text = { Text("Delete") },
-                                                    leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                                    leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                                     onClick = { deleteTarget = note.id; menuTarget = null })
                                             }
                                         }
@@ -979,7 +978,7 @@ private fun NotesTool(
                                 Column(Modifier.weight(1f).padding(end = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                         if (note.pinned) Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = "Pinned",
-                                            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+                                            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(LauncherIconTokens.status))
                                         Text(note.title.ifBlank { "Untitled note" }, style = MaterialTheme.typography.titleMedium,
                                             maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     }
@@ -994,17 +993,17 @@ private fun NotesTool(
                                 }
                                 Box {
                                     IconButton(onClick = { menuTarget = note.id }) {
-                                        Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Note actions")
+                                        Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Note actions", modifier = Modifier.size(LauncherIconTokens.standard))
                                     }
                                     DropdownMenu(expanded = menuTarget == note.id, onDismissRequest = { menuTarget = null }) {
                                         DropdownMenuItem(text = { Text(if (note.pinned) "Unpin" else "Pin") },
-                                            leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                            leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                             onClick = {
                                                 notes = notes.map { if (it.id == note.id) it.copy(pinned = !it.pinned) else it }
                                                 saveNotes(context, notes); menuTarget = null
                                             })
                                         DropdownMenuItem(text = { Text("Delete") },
-                                            leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                            leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                             onClick = { deleteTarget = note.id; menuTarget = null })
                                     }
                                 }
@@ -1019,11 +1018,11 @@ private fun NotesTool(
                 modifier = Modifier.align(Alignment.BottomEnd).padding(end = BuiltInToolDesign.fabEndPadding, bottom = BuiltInToolDesign.fabBottomPadding),
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            ) { Icon(painterResource(R.drawable.ic_symbol_note_add), contentDescription = "New note") }
+            ) { Icon(painterResource(R.drawable.ic_symbol_note_add), contentDescription = "New note", modifier = Modifier.size(LauncherIconTokens.standard)) }
         } else {
             Column(Modifier.fillMaxSize().imePadding(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBackRequested) { Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = "Back") }
+                    IconButton(onClick = onBackRequested) { Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = "Back", modifier = Modifier.size(LauncherIconTokens.standard)) }
                     IconButton(
                         onClick = {
                             editHistory.undo(markdownText, markdownCursor)?.let { transition ->
@@ -1033,7 +1032,7 @@ private fun NotesTool(
                             }
                         },
                         enabled = editHistory.undo.isNotEmpty()
-                    ) { Icon(painterResource(R.drawable.ic_symbol_undo), contentDescription = "Undo") }
+                    ) { Icon(painterResource(R.drawable.ic_symbol_undo), contentDescription = "Undo", modifier = Modifier.size(LauncherIconTokens.standard)) }
                     IconButton(
                         onClick = {
                             editHistory.redo(markdownText, markdownCursor)?.let { transition ->
@@ -1043,7 +1042,7 @@ private fun NotesTool(
                             }
                         },
                         enabled = editHistory.redo.isNotEmpty()
-                    ) { Icon(painterResource(R.drawable.ic_symbol_redo), contentDescription = "Redo") }
+                    ) { Icon(painterResource(R.drawable.ic_symbol_redo), contentDescription = "Redo", modifier = Modifier.size(LauncherIconTokens.standard)) }
                     Spacer(Modifier.weight(1f))
                     val pinned = notes.firstOrNull { it.id == selectedId }?.pinned == true
                     IconButton(onClick = {
@@ -1052,15 +1051,15 @@ private fun NotesTool(
                         saveNotes(context, notes)
                     }) {
                         Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = if (pinned) "Unpin note" else "Pin note",
-                            tint = if (pinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                            tint = if (pinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(LauncherIconTokens.standard))
                     }
                     Box {
                         IconButton(onClick = { menuTarget = "editor" }) {
-                            Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "More note actions")
+                            Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "More note actions", modifier = Modifier.size(LauncherIconTokens.standard))
                         }
                         DropdownMenu(expanded = menuTarget == "editor", onDismissRequest = { menuTarget = null }) {
                             DropdownMenuItem(text = { Text("Export Markdown (.md)") },
-                                leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_file_download), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_file_download), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                 onClick = {
                                     saveCurrent()
                                     val filename = title.ifBlank { "note" }.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim().ifBlank { "note" }
@@ -1068,7 +1067,7 @@ private fun NotesTool(
                                     markdownExportLauncher.launch("$filename.md")
                                 })
                             DropdownMenuItem(text = { Text("Export note archive") },
-                                leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_file_download), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_file_download), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                 onClick = {
                                     saveCurrent()
                                     pendingExport = PendingNoteExport(
@@ -1086,10 +1085,10 @@ private fun NotesTool(
                             DropdownMenuItem(text = { Text("Note color") },
                                 onClick = { menuTarget = null; showColorPicker = true })
                             DropdownMenuItem(text = { Text("Insert image") },
-                                leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_image), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_image), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                 onClick = { menuTarget = null; imageLauncher.launch(arrayOf("image/*")) })
                             DropdownMenuItem(text = { Text("Delete note") },
-                                leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                 onClick = { deleteTarget = selectedId; menuTarget = null })
                         }
                     }
@@ -1793,7 +1792,7 @@ private fun CalendarTool(
                         } else {
                             Icon(painterResource(R.drawable.ic_symbol_notifications), contentDescription = builtInToolText("Reminder", "Pengingat"),
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(horizontal = 10.dp).size(20.dp))
+                                modifier = Modifier.padding(horizontal = 10.dp).size(LauncherIconTokens.compact))
                         }
                         Column(Modifier.weight(1f).padding(vertical = 6.dp, horizontal = 4.dp),
                             verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -1817,11 +1816,11 @@ private fun CalendarTool(
                         }
                         IconButton(onClick = { beginEditTask(task) }) {
                             Icon(painterResource(R.drawable.ic_symbol_edit), contentDescription = builtInToolText("Edit task", "Edit tugas"),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(LauncherIconTokens.compact))
                         }
                         IconButton(onClick = { deleteTarget = task }) {
                             Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = builtInToolText("Delete task", "Hapus tugas"),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(LauncherIconTokens.compact))
                         }
                     }
                 }
@@ -1834,7 +1833,7 @@ private fun CalendarTool(
             modifier = Modifier.align(Alignment.BottomEnd).padding(end = BuiltInToolDesign.fabEndPadding, bottom = BuiltInToolDesign.fabBottomPadding),
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        ) { Icon(painterResource(R.drawable.ic_symbol_add), contentDescription = builtInToolText("Add task", "Tambah tugas")) }
+        ) { Icon(painterResource(R.drawable.ic_symbol_add), contentDescription = builtInToolText("Add task", "Tambah tugas"), modifier = Modifier.size(LauncherIconTokens.standard)) }
     }
 
     if (showEditor) {
@@ -1874,13 +1873,13 @@ private fun CalendarTool(
                         }
                     }
                     TextButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
-                        Icon(painterResource(R.drawable.ic_symbol_event), contentDescription = null, modifier = Modifier.size(20.dp))
+                        Icon(painterResource(R.drawable.ic_symbol_event), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact))
                         Spacer(Modifier.size(8.dp))
                         Text(date.format(DateTimeFormatter.ofPattern("d MMM yyyy", Locale.getDefault())))
                     }
                     if (type == "reminder") {
                         TextButton(onClick = { showTimePicker = true }, modifier = Modifier.fillMaxWidth()) {
-                            Icon(painterResource(R.drawable.ic_symbol_schedule), contentDescription = null, modifier = Modifier.size(20.dp))
+                            Icon(painterResource(R.drawable.ic_symbol_schedule), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact))
                             Spacer(Modifier.size(8.dp))
                             Text(time.format(DateTimeFormatter.ofPattern("HH:mm")))
                         }

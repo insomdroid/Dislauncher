@@ -226,7 +226,7 @@ internal fun MusicPlayerWidget(
                     painter = painterResource(if (playing) R.drawable.ic_symbol_pause else R.drawable.ic_symbol_play_arrow),
                     contentDescription = if (playing) "Pause" else "Play",
                     tint = foreground,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(LauncherIconTokens.compact)
                 )
             }
             Box(

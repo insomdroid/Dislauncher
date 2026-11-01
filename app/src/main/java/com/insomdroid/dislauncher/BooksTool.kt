@@ -880,7 +880,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                             textColor = fg,
                             trailingIcon = {
                                 IconButton(onClick = { searchQuery = ""; searchExpanded = false }) {
-                                    Icon(painterResource(R.drawable.ic_symbol_close), contentDescription = "Close search", tint = fg)
+                                    Icon(painterResource(R.drawable.ic_symbol_close), contentDescription = "Close search", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
                                 }
                             }
                         )
@@ -896,13 +896,13 @@ internal fun BooksTool(onBack: () -> Unit) {
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = "Back", tint = fg)
+                        Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = "Back", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
                     }
                 },
                 actions = {
                     if (!searchExpanded) {
                         IconButton(onClick = { searchExpanded = true }) {
-                            Icon(painterResource(R.drawable.ic_symbol_search), contentDescription = "Search books", tint = fg)
+                            Icon(painterResource(R.drawable.ic_symbol_search), contentDescription = "Search books", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
                         }
                     }
                     if (books.isNotEmpty()) {
@@ -913,19 +913,18 @@ internal fun BooksTool(onBack: () -> Unit) {
                         }) {
                             Icon(painterResource(if (gridView) R.drawable.ic_symbol_view_list else R.drawable.ic_symbol_view_module),
                                 contentDescription = if (gridView) "Switch to list view" else "Switch to grid view",
-                                tint = fg
-                            )
+                                tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
                         }
                     }
                     Box {
                         IconButton(onClick = { showLibraryMenu = true }) {
-                            Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Library options", tint = fg)
+                            Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Library options", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
                         }
                         DropdownMenu(expanded = showLibraryMenu, onDismissRequest = { showLibraryMenu = false }) {
                             DropdownMenuItem(text = { Text(if (sortByTitle) "Sort by recently opened" else "Sort by title") },
                                 onClick = { sortByTitle = !sortByTitle; showLibraryMenu = false })
                             DropdownMenuItem(text = { Text(if (pinnedOnly) "Show all books" else "Pinned books") },
-                                leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                 onClick = { pinnedOnly = !pinnedOnly; showLibraryMenu = false })
                         }
                     }
@@ -975,23 +974,23 @@ internal fun BooksTool(onBack: () -> Unit) {
                                     BookCover(book, Modifier.fillMaxWidth().height(148.dp))
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                         if (book.pinned) Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = "Pinned",
-                                            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+                                            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(LauncherIconTokens.status))
                                         Text(book.title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium,
                                             color = fg, maxLines = 3, overflow = TextOverflow.Ellipsis)
                                         Box {
-                                            IconButton(onClick = { bookMenuTarget = book.id }, modifier = Modifier.size(28.dp)) {
-                                                Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Book actions", tint = fg)
+                                            IconButton(onClick = { bookMenuTarget = book.id }, modifier = Modifier.size(LauncherIconTokens.touchTarget)) {
+                                                Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Book actions", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
                                             }
                                             DropdownMenu(expanded = bookMenuTarget == book.id, onDismissRequest = { bookMenuTarget = null }) {
                                                 DropdownMenuItem(text = { Text(if (book.pinned) "Unpin" else "Pin") },
-                                                    leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                                    leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                                     onClick = {
                                                         books = books.map { if (it.id == book.id) it.copy(pinned = !it.pinned) else it }
                                                         writeBookLibrary(context, books)
                                                         bookMenuTarget = null
                                                     })
                                                 DropdownMenuItem(text = { Text("Remove") },
-                                                    leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                                    leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                                     onClick = { pendingDelete = book; bookMenuTarget = null })
                                             }
                                         }
@@ -1012,7 +1011,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                                 BookCover(book, Modifier.size(width = 48.dp, height = 64.dp))
                                 Column(Modifier.weight(1f).padding(start = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        if (book.pinned) Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = "Pinned", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+                                        if (book.pinned) Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = "Pinned", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(LauncherIconTokens.status))
                                         Text(book.title, style = MaterialTheme.typography.titleMedium, color = fg, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                     }
                                     Text("${book.type.uppercase()} · ${if (book.position == 0) "Not started" else "Continue reading"}",
@@ -1020,18 +1019,18 @@ internal fun BooksTool(onBack: () -> Unit) {
                                 }
                                 Box {
                                     IconButton(onClick = { bookMenuTarget = book.id }) {
-                                        Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Book actions", tint = fg)
+                                        Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Book actions", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
                                     }
                                     DropdownMenu(expanded = bookMenuTarget == book.id, onDismissRequest = { bookMenuTarget = null }) {
                                         DropdownMenuItem(text = { Text(if (book.pinned) "Unpin" else "Pin") },
-                                            leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                            leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                             onClick = {
                                                 books = books.map { if (it.id == book.id) it.copy(pinned = !it.pinned) else it }
                                                 writeBookLibrary(context, books)
                                                 bookMenuTarget = null
                                             })
                                         DropdownMenuItem(text = { Text("Remove") },
-                                            leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                            leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                             onClick = { pendingDelete = book; bookMenuTarget = null })
                                     }
                                 }
@@ -1051,7 +1050,7 @@ internal fun BooksTool(onBack: () -> Unit) {
               containerColor = MaterialTheme.colorScheme.primaryContainer,
               contentColor = MaterialTheme.colorScheme.onPrimaryContainer
           ) {
-              Icon(painterResource(R.drawable.ic_symbol_add), contentDescription = "Add book")
+              Icon(painterResource(R.drawable.ic_symbol_add), contentDescription = "Add book", modifier = Modifier.size(LauncherIconTokens.standard))
           }
         }
     } else {
@@ -1070,7 +1069,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                     },
                     navigationIcon = {
                         IconButton(onClick = { selectedBook = null; bookContent = null; pdfBitmap = null }) {
-                            Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = "Library", tint = fg)
+                            Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = "Library", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
                         }
                     },
                     actions = {
@@ -1083,11 +1082,10 @@ internal fun BooksTool(onBack: () -> Unit) {
                         }) {
                             Icon(painterResource(if (currentPage in book.bookmarks) R.drawable.ic_symbol_bookmark else R.drawable.ic_symbol_bookmark_added),
                                 contentDescription = if (currentPage in book.bookmarks) "Remove bookmark" else "Add bookmark",
-                                tint = fg
-                            )
+                                tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
                         }
                         IconButton(onClick = { showMenu = true }) {
-                            Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Reader settings", tint = fg)
+                            Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Reader settings", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
                         }
                     }
                 )
@@ -1169,7 +1167,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                 ) {
                     Column(Modifier.fillMaxSize().padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = { menuSection = "" }) { Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = "Back") }
+                            IconButton(onClick = { menuSection = "" }) { Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = "Back", modifier = Modifier.size(LauncherIconTokens.standard)) }
                             Text(if (menuSection == "toc") "Table of contents" else "Bookmarks", style = MaterialTheme.typography.titleLarge)
                         }
                         val entries = if (menuSection == "toc") bookContent?.chapters.orEmpty() else

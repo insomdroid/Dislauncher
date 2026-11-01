@@ -217,7 +217,7 @@ internal fun SettingsScreen(
                         Icon(
                             painter = painterResource(R.drawable.ic_symbol_arrow_back),
                             contentDescription = tr("Back", "Kembali"),
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(LauncherIconTokens.standard)
                         )
                     }
                 },
@@ -1203,7 +1203,7 @@ private fun SettingsCategoryRow(
                 painter = painterResource(icon),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(LauncherIconTokens.standard)
             )
         }
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -1216,7 +1216,7 @@ private fun SettingsCategoryRow(
                 overflow = TextOverflow.Ellipsis
             )
         }
-        Icon(painterResource(R.drawable.ic_symbol_chevron_right), contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+        Icon(painterResource(R.drawable.ic_symbol_chevron_right), contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(LauncherIconTokens.compact))
     }
 }
 
