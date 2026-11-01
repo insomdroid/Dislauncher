@@ -1049,9 +1049,7 @@ internal fun BooksTool(onBack: () -> Unit) {
               onClick = {
                   picker.launch(arrayOf("application/epub+zip", "application/pdf", "text/plain", "application/octet-stream"))
               },
-              modifier = Modifier.align(Alignment.BottomEnd)
-                  .padding(end = BuiltInToolDesign.fabEndPadding, bottom = BuiltInToolDesign.fabBottomPadding)
-                  .size(BuiltInToolDesign.fabSize),
+              modifier = Modifier.builtInToolFab(),
               containerColor = MaterialTheme.colorScheme.primaryContainer,
               contentColor = MaterialTheme.colorScheme.onPrimaryContainer
           ) {

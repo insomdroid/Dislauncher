@@ -1,5 +1,9 @@
 package com.insomdroid.dislauncher
 
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.unit.dp
 import java.util.Locale
 
@@ -24,6 +28,12 @@ internal object BuiltInToolDesign {
     val contentVerticalInset = 10.dp
     val filterHorizontalInset = 4.dp
 }
+
+/** Shared placement and touch size for floating actions in built-in tools. */
+internal fun Modifier.builtInToolFab(): Modifier =
+    this.align(Alignment.BottomEnd)
+        .padding(end = BuiltInToolDesign.fabEndPadding, bottom = BuiltInToolDesign.fabBottomPadding)
+        .size(BuiltInToolDesign.fabSize)
 
 /** Follow the device language while keeping English as the fallback. */
 internal fun builtInToolText(english: String, indonesian: String): String =
