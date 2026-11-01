@@ -807,7 +807,7 @@ private fun NotesTool(
                 Text("Loading notes…", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else if (selectedId == null) {
-            Column(Modifier.fillMaxSize()) {
+            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
                 BuiltInToolHeader(
                     title = {
                         if (searchExpanded) {
