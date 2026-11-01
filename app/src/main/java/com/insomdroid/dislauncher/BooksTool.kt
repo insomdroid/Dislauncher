@@ -933,7 +933,7 @@ internal fun BooksTool(onBack: () -> Unit) {
             val visibleBooks = books.filter { it.title.contains(searchQuery, ignoreCase = true) && (!pinnedOnly || it.pinned) }
                 .let { list -> if (sortByTitle) list.sortedWith(compareByDescending<BookEntry> { it.pinned }.thenBy { it.title.lowercase() })
                     else list.sortedWith(compareByDescending<BookEntry> { it.pinned }) }
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = BuiltInToolDesign.filterHorizontalInset), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(selected = !pinnedOnly, onClick = { pinnedOnly = false }, label = { Text("All books") })
                 FilterChip(selected = pinnedOnly, onClick = { pinnedOnly = true }, label = { Text("Pinned") })
             }
@@ -1046,7 +1046,7 @@ internal fun BooksTool(onBack: () -> Unit) {
               },
               modifier = Modifier.align(Alignment.BottomEnd)
                   .padding(end = BuiltInToolDesign.fabEndPadding, bottom = BuiltInToolDesign.fabBottomPadding)
-                  .size(56.dp),
+                  .size(BuiltInToolDesign.fabSize),
               containerColor = MaterialTheme.colorScheme.primaryContainer,
               contentColor = MaterialTheme.colorScheme.onPrimaryContainer
           ) {
