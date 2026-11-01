@@ -930,6 +930,10 @@ internal fun BooksTool(onBack: () -> Unit) {
                     }
                 }
             )
+            Column(
+                Modifier.weight(1f).fillMaxWidth().padding(horizontal = BuiltInToolDesign.contentHorizontalInset),
+                verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)
+            ) {
             val visibleBooks = books.filter { it.title.contains(searchQuery, ignoreCase = true) && (!pinnedOnly || it.pinned) }
                 .let { list -> if (sortByTitle) list.sortedWith(compareByDescending<BookEntry> { it.pinned }.thenBy { it.title.lowercase() })
                     else list.sortedWith(compareByDescending<BookEntry> { it.pinned }) }
@@ -1038,6 +1042,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                         }
                     }
                 }
+            }
             }
           }
           FloatingActionButton(
