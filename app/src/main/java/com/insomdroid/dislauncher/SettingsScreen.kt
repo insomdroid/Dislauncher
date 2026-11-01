@@ -459,9 +459,7 @@ internal fun SettingsScreen(
                                     listOf(
                                         "original" to tr("Original", "Asli"),
                                         "circle" to tr("Circle", "Lingkaran"),
-                                        "outline_square" to tr("Outline square", "Kotak outline"),
-                                        "filled_square" to tr("Filled square", "Kotak penuh"),
-                                        "filled_rectangle" to tr("Rectangle", "Persegi panjang")
+                                        "filled_square" to "Square"
                                     )
                                 ) { onPreferencesChange(preferences.copy(iconShape = it)) }
                                 SettingAction(
@@ -540,7 +538,7 @@ internal fun SettingsScreen(
                                 tr("Clock style", "Gaya jam"),
                                 preferences.clockStyle,
                                 listOf(
-                                    "default" to tr("Dislauncher Default", "Bawaan Dislauncher"),
+                                    "default" to tr("Default", "Default"),
                                     "compact" to tr("Dot Matrix Compact", "Dot Matrix Ringkas"),
                                     "date_focus" to tr("Date Focus", "Fokus Tanggal"),
                                     "split" to tr("Split Layout", "Dua Kolom"),
