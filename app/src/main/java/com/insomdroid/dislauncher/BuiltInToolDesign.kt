@@ -24,8 +24,8 @@ internal object BuiltInToolDesign {
     val cardCornerRadius = LauncherShapeTokens.medium
     val controlCornerRadius = LauncherShapeTokens.small
     val calculatorKeyCornerRadius = LauncherShapeTokens.medium
-    val fabEndPadding = 8.dp
-    val fabBottomPadding = 24.dp
+    /** The tool wrapper already adds 10 dp of vertical inset, so 6 dp here gives a 16 dp bottom margin. */
+    val fabBottomPadding = 6.dp
     val fabSize = 56.dp
     val contentHorizontalInset = 16.dp
     val filterHorizontalInset = 4.dp

@@ -542,7 +542,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             .align(Alignment.TopCenter)
                             .padding(padding)
                             .padding(
-                                horizontal = if (tool == BuiltInTool.NOTES) 0.dp else if (maxWidth >= 600.dp) BuiltInToolDesign.contentHorizontalInsetWide else BuiltInToolDesign.contentHorizontalInset,
+                                horizontal = if (maxWidth >= 600.dp) BuiltInToolDesign.contentHorizontalInsetWide else BuiltInToolDesign.contentHorizontalInset,
                                 vertical = 10.dp
                             )
                     ) {
@@ -872,7 +872,7 @@ private fun NotesTool(
                     }
                 )
                 Column(
-                    Modifier.weight(1f).fillMaxWidth().padding(horizontal = BuiltInToolDesign.contentHorizontalInset),
+                    Modifier.weight(1f).fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)
                 ) {
                 Row(
@@ -902,7 +902,7 @@ private fun NotesTool(
                     LazyVerticalGrid(
                         columns = GridCells.Adaptive(minSize = 156.dp),
                         modifier = Modifier.weight(1f).fillMaxWidth(),
-                        contentPadding = PaddingValues(start = 4.dp, top = 8.dp, end = 4.dp, bottom = 96.dp),
+                        contentPadding = PaddingValues(top = 8.dp, bottom = 96.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
@@ -1019,12 +1019,12 @@ private fun NotesTool(
             }
             FloatingActionButton(
                 onClick = { createNote() },
-                modifier = Modifier.align(Alignment.BottomEnd).padding(end = BuiltInToolDesign.fabEndPadding, bottom = BuiltInToolDesign.fabBottomPadding).size(BuiltInToolDesign.fabSize),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = BuiltInToolDesign.fabBottomPadding).size(BuiltInToolDesign.fabSize),
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             ) { Icon(painterResource(R.drawable.ic_symbol_note_add), contentDescription = "New note", modifier = Modifier.size(LauncherIconTokens.standard)) }
         } else {
-            Column(Modifier.fillMaxSize().imePadding().padding(horizontal = BuiltInToolDesign.contentHorizontalInset), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
+            Column(Modifier.fillMaxSize().imePadding(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onBackRequested) { Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = "Back", modifier = Modifier.size(LauncherIconTokens.standard)) }
                     IconButton(
@@ -1824,7 +1824,7 @@ private fun CalendarTool(
     }
         FloatingActionButton(
             onClick = ::beginNewTask,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(end = BuiltInToolDesign.fabEndPadding, bottom = BuiltInToolDesign.fabBottomPadding).size(BuiltInToolDesign.fabSize),
+            modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = BuiltInToolDesign.fabBottomPadding).size(BuiltInToolDesign.fabSize),
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         ) { Icon(painterResource(R.drawable.ic_symbol_add), contentDescription = builtInToolText("Add task", "Tambah tugas"), modifier = Modifier.size(LauncherIconTokens.standard)) }

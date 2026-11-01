@@ -931,7 +931,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                 }
             )
             Column(
-                Modifier.weight(1f).fillMaxWidth().padding(horizontal = BuiltInToolDesign.contentHorizontalInset),
+                Modifier.weight(1f).fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)
             ) {
             val visibleBooks = books.filter { it.title.contains(searchQuery, ignoreCase = true) && (!pinnedOnly || it.pinned) }
@@ -955,7 +955,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                     LazyVerticalGrid(
                         columns = GridCells.Adaptive(minSize = 150.dp),
                         modifier = Modifier.weight(1f).fillMaxWidth(),
-                        contentPadding = PaddingValues(start = 4.dp, top = 8.dp, end = 4.dp, bottom = 96.dp),
+                        contentPadding = PaddingValues(top = 8.dp, bottom = 96.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
@@ -1042,7 +1042,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                   picker.launch(arrayOf("application/epub+zip", "application/pdf", "text/plain", "application/octet-stream"))
               },
               modifier = Modifier.align(Alignment.BottomEnd)
-                  .padding(end = BuiltInToolDesign.fabEndPadding, bottom = BuiltInToolDesign.fabBottomPadding)
+                  .padding(bottom = BuiltInToolDesign.fabBottomPadding)
                   .size(BuiltInToolDesign.fabSize),
               containerColor = MaterialTheme.colorScheme.primaryContainer,
               contentColor = MaterialTheme.colorScheme.onPrimaryContainer
