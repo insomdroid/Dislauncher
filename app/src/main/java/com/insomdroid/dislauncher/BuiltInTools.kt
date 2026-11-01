@@ -542,7 +542,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                             .padding(padding)
                             .padding(
                                 horizontal = if (tool == BuiltInTool.NOTES) 0.dp else if (maxWidth >= 600.dp) 24.dp else 16.dp,
-                                vertical = if (tool == BuiltInTool.NOTES) 0.dp else BuiltInToolDesign.contentVerticalInset
+                                vertical = 10.dp
                             )
                     ) {
                         when (tool) {
@@ -836,6 +836,7 @@ private fun NotesTool(
                             Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = builtInToolText("Back", "Kembali"), modifier = Modifier.size(LauncherIconTokens.standard))
                         }
                     },
+                    windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
                     actions = {
                         if (!searchExpanded) {
                             IconButton(onClick = { searchExpanded = true }) {
@@ -1019,7 +1020,7 @@ private fun NotesTool(
             }
             FloatingActionButton(
                 onClick = { createNote() },
-                modifier = builtInToolFab(),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(end = BuiltInToolDesign.fabEndPadding, bottom = BuiltInToolDesign.fabBottomPadding).size(BuiltInToolDesign.fabSize),
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             ) { Icon(painterResource(R.drawable.ic_symbol_note_add), contentDescription = "New note", modifier = Modifier.size(LauncherIconTokens.standard)) }
@@ -1612,7 +1613,7 @@ private fun CalendarTool(
         .thenBy { it.task?.completed ?: false }.thenByDescending { it.task?.priority ?: 0 })
 
     Box(modifier = modifier) {
-    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.compact)) {
+    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         LaunchedEffect(month) {
             if (YearMonth.from(selectedDate) != month) selectedDate = month.atDay(1)
         }
@@ -1834,7 +1835,7 @@ private fun CalendarTool(
     }
         FloatingActionButton(
             onClick = ::beginNewTask,
-            modifier = builtInToolFab(),
+            modifier = Modifier.align(Alignment.BottomEnd).padding(end = BuiltInToolDesign.fabEndPadding, bottom = BuiltInToolDesign.fabBottomPadding).size(BuiltInToolDesign.fabSize),
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         ) { Icon(painterResource(R.drawable.ic_symbol_add), contentDescription = builtInToolText("Add task", "Tambah tugas"), modifier = Modifier.size(LauncherIconTokens.standard)) }
