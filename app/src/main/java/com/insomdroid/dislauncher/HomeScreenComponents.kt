@@ -72,7 +72,7 @@ internal fun HomeHeader(
     when (preferences.clockStyle) {
         "compact" -> {
             if (preferences.showClock) Text(timeText, color=primaryText, fontSize=HomeDesign.clockSize, lineHeight=HomeDesign.clockLineHeight, letterSpacing=(-0.6).sp, fontWeight=FontWeight.Light, fontFamily=dotMatrixFont, maxLines=1, softWrap=false, modifier=clockModifier)
-            if (preferences.showDate) { Spacer(Modifier.height(4.dp)); Text(shortDate, color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = interFont, maxLines=1, overflow=TextOverflow.Ellipsis, modifier=dateModifier) }
+            if (preferences.showDate) { Spacer(Modifier.height(4.dp)); Text(shortDate, color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = fontFamily, maxLines=1, overflow=TextOverflow.Ellipsis, modifier=dateModifier) }
         }
         "date_focus" -> {
             if (preferences.showDate) {
@@ -95,17 +95,17 @@ internal fun HomeHeader(
         }
         "editorial" -> {
             if (preferences.showDate) {
-                Text(day.uppercase(locale), color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = interFont, maxLines=1, modifier=dateModifier)
-                Text(month.uppercase(locale), color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = interFont, maxLines=1, modifier=dateModifier)
-                Text(today.dayOfMonth.toString(), color=primaryText, fontSize=HomeDesign.clockSize * 1.35f, lineHeight=HomeDesign.clockLineHeight * 1.25f, fontWeight=FontWeight.Light, fontFamily = FontFamily.Serif, maxLines=1, modifier=dateModifier)
+                Text(day.uppercase(locale), color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = fontFamily, maxLines=1, modifier=dateModifier)
+                Text(month.uppercase(locale), color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = fontFamily, maxLines=1, modifier=dateModifier)
+                Text(today.dayOfMonth.toString(), color=primaryText, fontSize=HomeDesign.clockSize * 1.35f, lineHeight=HomeDesign.clockLineHeight * 1.25f, fontWeight=FontWeight.Light, fontFamily = fontFamily, maxLines=1, modifier=dateModifier)
                 Row(verticalAlignment=Alignment.CenterVertically, horizontalArrangement=Arrangement.spacedBy(12.dp)) {
-                    Text(today.year.toString(), color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = interFont)
-                    if (preferences.showClock) Text(timeText, color=primaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = interFont, modifier=clockModifier)
+                    Text(today.year.toString(), color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = fontFamily)
+                    if (preferences.showClock) Text(timeText, color=primaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = fontFamily, modifier=clockModifier)
                 }
-            } else if (preferences.showClock) Text(timeText, color=primaryText, fontSize=HomeDesign.clockSize, lineHeight=HomeDesign.clockLineHeight, fontWeight=FontWeight.Light, fontFamily = interFont, maxLines=1, modifier=clockModifier)
+            } else if (preferences.showClock) Text(timeText, color=primaryText, fontSize=HomeDesign.clockSize, lineHeight=HomeDesign.clockLineHeight, fontWeight=FontWeight.Light, fontFamily = fontFamily, maxLines=1, modifier=clockModifier)
         }
         "digital" -> {
-            if (preferences.showDate) Text(shortDate.uppercase(locale), color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = interFont, maxLines=1, overflow=TextOverflow.Ellipsis, modifier=dateModifier)
+            if (preferences.showDate) Text(shortDate.uppercase(locale), color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = fontFamily, maxLines=1, overflow=TextOverflow.Ellipsis, modifier=dateModifier)
             if (preferences.showClock) { Spacer(Modifier.height(4.dp)); Box(Modifier.fillMaxWidth(HomeDesign.progressTrackWidth).height(1.dp).background(secondaryText.copy(alpha=0.45f))); Spacer(Modifier.height(4.dp)); Text(timeText, color=primaryText, fontSize=HomeDesign.clockSize, lineHeight=HomeDesign.clockLineHeight, letterSpacing=(-0.6).sp, fontWeight=FontWeight.Light, fontFamily = geistMonoFont, maxLines=1, softWrap=false, modifier=clockModifier); Spacer(Modifier.height(4.dp)); Box(Modifier.fillMaxWidth(HomeDesign.progressTrackWidth).height(1.dp).background(secondaryText.copy(alpha=0.45f))) }
         }
         "vertical_stack" -> {
@@ -117,11 +117,11 @@ internal fun HomeHeader(
                     Text(minutePart, color = primaryText, fontSize = HomeDesign.clockSize * 1.15f, lineHeight = HomeDesign.clockLineHeight * 1.08f, letterSpacing = (-0.6).sp, fontWeight = FontWeight.Light, fontFamily = dotMatrixFont, maxLines = 1, softWrap = false)
                 }
             }
-            if (preferences.showDate) { Spacer(Modifier.height(4.dp)); Text(shortDate, color = secondaryText, fontSize = HomeDesign.dateSize, lineHeight = HomeDesign.dateLineHeight, fontFamily = interFont, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = dateModifier) }
+            if (preferences.showDate) { Spacer(Modifier.height(4.dp)); Text(shortDate, color = secondaryText, fontSize = HomeDesign.dateSize, lineHeight = HomeDesign.dateLineHeight, fontFamily = fontFamily, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = dateModifier) }
         }
         "binary_dot_minimal" -> {
             if (preferences.showClock) {
-                Text(timeText, color = secondaryText, fontSize = HomeDesign.dateSize * 0.78f, lineHeight = HomeDesign.dateLineHeight * 0.82f, fontFamily = interFont, maxLines = 1, softWrap = false, modifier = clockModifier)
+                Text(timeText, color = secondaryText, fontSize = HomeDesign.dateSize * 0.78f, lineHeight = HomeDesign.dateLineHeight * 0.82f, fontFamily = fontFamily, maxLines = 1, softWrap = false, modifier = clockModifier)
                 Spacer(Modifier.height(6.dp))
                 BinaryDotClock(hour = now.hour, minute = now.minute, activeColor = MaterialTheme.colorScheme.primary, inactiveColor = secondaryText.copy(alpha = 0.24f))
             }
@@ -130,9 +130,9 @@ internal fun HomeHeader(
                 Text(
                     today.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", locale)),
                     color = secondaryText,
-                    fontSize = HomeDesign.dateSize,
-                    lineHeight = HomeDesign.dateLineHeight,
-                    fontFamily = interFont,
+                    fontSize = 10.sp,
+                    lineHeight = 13.sp,
+                    fontFamily = fontFamily,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = dateModifier
@@ -146,7 +146,7 @@ internal fun HomeHeader(
                     Text(timeText, color = secondaryText, fontSize = HomeDesign.dateSize, lineHeight = HomeDesign.dateLineHeight, fontFamily = dotMatrixFont, maxLines = 1, softWrap = false, modifier = clockModifier)
                 }
             }
-            if (preferences.showDate) { Spacer(Modifier.height(4.dp)); Text(shortDate, color = secondaryText, fontSize = HomeDesign.dateSize, lineHeight = HomeDesign.dateLineHeight, fontFamily = interFont, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = dateModifier) }
+            if (preferences.showDate) { Spacer(Modifier.height(4.dp)); Text(shortDate, color = secondaryText, fontSize = HomeDesign.dateSize, lineHeight = HomeDesign.dateLineHeight, fontFamily = fontFamily, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = dateModifier) }
         }
         "text_clock" -> {
             val hourWord = numberWord(if (now.hour % 12 == 0) 12 else now.hour % 12)
@@ -156,7 +156,7 @@ internal fun HomeHeader(
             }
             if (preferences.showDate) {
                 Spacer(Modifier.height(1.dp))
-                Text(today.format(DateTimeFormatter.ofPattern("d MMM yyyy", locale)), color=secondaryText, fontSize=10.sp, lineHeight=13.sp, fontFamily=interFont, maxLines=1, modifier=dateModifier)
+                Text(today.format(DateTimeFormatter.ofPattern("d MMM yyyy", locale)), color=secondaryText, fontSize=10.sp, lineHeight=13.sp, fontFamily=fontFamily, maxLines=1, modifier=dateModifier)
             }
             if (preferences.showClock) {
                 Spacer(Modifier.height(1.dp))
@@ -164,9 +164,9 @@ internal fun HomeHeader(
             }
         }
         else -> {
-            if (preferences.showDate) Text(day.uppercase(locale), color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = interFont, maxLines=1, overflow=TextOverflow.Ellipsis, modifier=dateModifier)
+            if (preferences.showDate) Text(day.uppercase(locale), color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = fontFamily, maxLines=1, overflow=TextOverflow.Ellipsis, modifier=dateModifier)
             if (preferences.showClock) Text(timeText, color=primaryText, fontSize=HomeDesign.clockSize, lineHeight=HomeDesign.clockLineHeight, letterSpacing=(-0.6).sp, fontWeight=FontWeight.Light, fontFamily = fontFamily, maxLines=1, softWrap=false, modifier=clockModifier)
-            if (preferences.showDate) { Spacer(Modifier.height(HomeDesign.clockToDate)); Text(dateText, color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = interFont, maxLines=1, overflow=TextOverflow.Ellipsis, modifier=dateModifier) }
+            if (preferences.showDate) { Spacer(Modifier.height(HomeDesign.clockToDate)); Text(dateText, color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily = fontFamily, maxLines=1, overflow=TextOverflow.Ellipsis, modifier=dateModifier) }
         }
     }
     if (preferences.showYearProgress || preferences.showDayProgress) {
