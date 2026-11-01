@@ -411,7 +411,7 @@ internal fun AppsScreen(
                                     painter = painterResource(R.drawable.ic_symbol_settings),
                                     contentDescription = null,
                                     tint = mainText,
-                                    modifier = Modifier.size(LauncherIconTokens.standard)
+                                    modifier = Modifier.size(LauncherIconTokens.compactSmall)
                                 )
                                 Spacer(Modifier.width(9.dp))
                             }
