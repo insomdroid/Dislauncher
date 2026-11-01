@@ -11,14 +11,12 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,9 +24,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -39,13 +35,11 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
@@ -646,8 +640,9 @@ private fun BookCover(book: BookEntry, modifier: Modifier = Modifier) {
         shape = RoundedCornerShape(BuiltInToolDesign.cardCornerRadius),
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
     ) {
-        if (cover != null) {
-            Image(bitmap = cover!!.asImageBitmap(), contentDescription = "Cover of ${book.title}", modifier = Modifier.fillMaxSize())
+        val coverBitmap = cover
+        if (coverBitmap != null) {
+            Image(bitmap = coverBitmap.asImageBitmap(), contentDescription = "Cover of ${book.title}", modifier = Modifier.fillMaxSize())
         } else {
             Box(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.Center) {
                 Text(book.type.uppercase(), style = MaterialTheme.typography.labelLarge,
@@ -865,7 +860,8 @@ internal fun BooksTool(onBack: () -> Unit) {
     val bg = MaterialTheme.colorScheme.surface
     val fg = MaterialTheme.colorScheme.onSurface
 
-    if (selectedBook == null) {
+    val readerBook = selectedBook
+    if (readerBook == null) {
         BuiltInToolScaffold(
             header = {
                 BuiltInToolHeader(
@@ -1053,7 +1049,7 @@ internal fun BooksTool(onBack: () -> Unit) {
           }
         }
     } else {
-        val book = selectedBook!!
+        val book = readerBook
         BuiltInToolScaffold(
             header = {
                     BuiltInToolHeader(
@@ -1099,13 +1095,21 @@ internal fun BooksTool(onBack: () -> Unit) {
                                 val x = offset.x / size.width
                                 when {
                                     x < 0.22f -> if (currentPage > 0) { pageDirection = -1; currentPage--; saveProgress(currentPage) }
-                                    x > 0.78f -> if (bookContent != null && currentPage < bookContent!!.pages.lastIndex) { pageDirection = 1; currentPage++; saveProgress(currentPage) }
+                                    x > 0.78f -> {
+                                        val lastPage = bookContent?.pages?.lastIndex ?: -1
+                                        if (lastPage >= 0 && currentPage < lastPage) {
+                                            pageDirection = 1
+                                            currentPage++
+                                            saveProgress(currentPage)
+                                        }
+                                    }
                                 }
                             }
                         )
                     },
                     contentAlignment = Alignment.Center
                 ) {
+                    val displayedPdfBitmap = pdfBitmap
                     when {
                         loading -> Text("Opening book…", color = fg)
                         error != null -> Text(error ?: "", color = fg, modifier = Modifier.padding(24.dp), textAlign = TextAlign.Center)
@@ -1115,8 +1119,8 @@ internal fun BooksTool(onBack: () -> Unit) {
                             modifier = Modifier.padding(24.dp),
                             textAlign = TextAlign.Center
                         )
-                        book.type == "pdf" && pdfBitmap != null -> Image(
-                            bitmap = pdfBitmap!!.asImageBitmap(), contentDescription = "PDF page ${currentPage + 1}",
+                        book.type == "pdf" && displayedPdfBitmap != null -> Image(
+                            bitmap = displayedPdfBitmap.asImageBitmap(), contentDescription = "PDF page ${currentPage + 1}",
                             modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 12.dp)
                         )
                         else -> Box(Modifier.fillMaxSize()) {
@@ -1195,8 +1199,8 @@ internal fun BooksTool(onBack: () -> Unit) {
         }
     }
 
-    if (pendingDelete != null) {
-        val target = pendingDelete!!
+    val target = pendingDelete
+    if (target != null) {
         AlertDialog(
             onDismissRequest = { pendingDelete = null },
             title = { Text("Remove book?") },

@@ -2,6 +2,8 @@ package com.insomdroid.dislauncher
 
 import android.content.SharedPreferences
 
+internal const val DISLAUNCHER_PREFERENCES_NAME = DISLAUNCHER_PREFERENCES_NAME
+
 internal data class LauncherPreferences(
     val themeMode: String = "system",
     val wallpaperMode: String = "default",

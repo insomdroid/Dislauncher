@@ -1,6 +1,5 @@
 package com.insomdroid.dislauncher
 
-import android.content.Context
 import android.content.Intent
 import android.provider.Settings
 import androidx.compose.animation.AnimatedContent
@@ -36,7 +35,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton

@@ -268,7 +268,7 @@ internal object NotificationDotState {
     }
 
     fun refresh() {
-        listener?.refreshDotPackages()
+        listener?.refreshDotPackages(reloadActiveNotifications = true)
     }
 
     fun countFor(packageName: String): Int = notificationCounts[packageName] ?: 0
@@ -330,7 +330,21 @@ internal class DislauncherNotificationListener : android.service.notification.No
         NotificationDotState.attach(this)
     }
 
+    private fun areNotificationDotsEnabled(): Boolean =
+        getSharedPreferences(DISLAUNCHER_PREFERENCES_NAME, Context.MODE_PRIVATE)
+            .getBoolean("notification_dots_enabled", false)
+
+    private fun clearTrackedDotNotifications() {
+        synchronized(trackedNotifications) { trackedNotifications.clear() }
+        cancelScheduledDotRefresh()
+        NotificationDotState.update(emptyMap())
+    }
+
     override fun onNotificationPosted(sbn: StatusBarNotification) {
+        if (!areNotificationDotsEnabled()) {
+            clearTrackedDotNotifications()
+            return
+        }
         synchronized(trackedNotifications) {
             trackedNotifications[sbn.key] = sbn.toTrackedDotNotification()
         }
@@ -338,6 +352,10 @@ internal class DislauncherNotificationListener : android.service.notification.No
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
+        if (!areNotificationDotsEnabled()) {
+            clearTrackedDotNotifications()
+            return
+        }
         synchronized(trackedNotifications) {
             trackedNotifications.remove(sbn.key)
         }
@@ -359,6 +377,12 @@ internal class DislauncherNotificationListener : android.service.notification.No
     }
 
     internal fun refreshDotPackages(reloadActiveNotifications: Boolean = false) {
+        val prefs = getSharedPreferences(DISLAUNCHER_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("notification_dots_enabled", false)) {
+            clearTrackedDotNotifications()
+            return
+        }
+
         if (reloadActiveNotifications) {
             val current = runCatching { activeNotifications.orEmpty().toList() }.getOrDefault(emptyList())
             synchronized(trackedNotifications) {
@@ -367,12 +391,6 @@ internal class DislauncherNotificationListener : android.service.notification.No
                     trackedNotifications[sbn.key] = sbn.toTrackedDotNotification()
                 }
             }
-        }
-
-        val prefs = getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
-        if (!prefs.getBoolean("notification_dots_enabled", false)) {
-            NotificationDotState.update(emptyMap())
-            return
         }
 
         val selectedPackages = prefs.getStringSet("notification_dot_packages", emptySet()).orEmpty()

@@ -59,7 +59,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -1535,7 +1534,7 @@ private fun CalendarTool(
         if (schedule && task.type == "reminder" && task.reminderAt > System.currentTimeMillis()) {
             scheduleLocalReminder(context, task.id, task.title, task.reminderAt)
         }
-        selectedDate = LocalDate.parse(task.date)
+        selectedDate = parseLocalTaskDate(task.date) ?: selectedDate
         onMonthChange(YearMonth.from(selectedDate))
     }
 
@@ -1564,8 +1563,8 @@ private fun CalendarTool(
         editingTaskId = task.id
         title = task.title
         type = task.type
-        date = runCatching { LocalDate.parse(task.date) }.getOrDefault(selectedDate)
-        time = runCatching { LocalTime.parse(task.time) }.getOrDefault(LocalTime.of(9, 0))
+        date = parseLocalTaskDate(task.date) ?: selectedDate
+        time = parseLocalTaskTime(task.time) ?: LocalTime.of(9, 0)
         priority = task.priority
         showEditor = true
     }
@@ -1601,10 +1600,9 @@ private fun CalendarTool(
         }
         dayTasks.forEach { task ->
             val timed = task.time.isNotBlank()
-            val timestamp = if (timed) runCatching {
-                LocalDate.parse(task.date).atTime(LocalTime.parse(task.time))
-                    .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-            }.getOrDefault(Long.MAX_VALUE) else Long.MAX_VALUE
+            val timestamp = if (timed) {
+                localTaskDateTimeToEpochMillis(task.date, task.time) ?: Long.MAX_VALUE
+            } else Long.MAX_VALUE
             add(CalendarAgendaItem(
                 key = "task-${task.id}",
                 group = if (timed) 1 else 2,

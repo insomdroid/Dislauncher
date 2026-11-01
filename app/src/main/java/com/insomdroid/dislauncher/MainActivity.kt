@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
 
         // Set a theme-appropriate launch background before Compose draws its first frame.
         // This avoids a black flash in Light mode and respects an explicitly selected solid wallpaper.
-        val preferences = getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
+        val preferences = getSharedPreferences(DISLAUNCHER_PREFERENCES_NAME, Context.MODE_PRIVATE)
         val themeMode = preferences.getString("theme_mode", "system") ?: "system"
         val systemNight = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
             Configuration.UI_MODE_NIGHT_YES
@@ -51,7 +51,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun applyStatusBarPreference() {
-        val hidden = getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
+        val hidden = getSharedPreferences(DISLAUNCHER_PREFERENCES_NAME, Context.MODE_PRIVATE)
             .getBoolean("hide_status_bar", false)
         val controller = WindowCompat.getInsetsController(window, window.decorView)
         controller.systemBarsBehavior =

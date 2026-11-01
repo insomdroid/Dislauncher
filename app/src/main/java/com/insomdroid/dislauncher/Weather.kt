@@ -40,7 +40,7 @@ private val WEATHER_RETRY_DELAYS_MS = longArrayOf(
 )
 
 internal fun shouldBackoffWeatherFetch(context: Context): Boolean {
-    val prefs = context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
+    val prefs = context.getSharedPreferences(DISLAUNCHER_PREFERENCES_NAME, Context.MODE_PRIVATE)
     val failedAt = prefs.getLong(WEATHER_FAILURE_TIMESTAMP_KEY, 0L)
     if (failedAt <= 0L) return false
     val age = System.currentTimeMillis() - failedAt
@@ -51,7 +51,7 @@ internal fun shouldBackoffWeatherFetch(context: Context): Boolean {
 }
 
 internal fun recordWeatherFetchResult(context: Context, succeeded: Boolean) {
-    val prefs = context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
+    val prefs = context.getSharedPreferences(DISLAUNCHER_PREFERENCES_NAME, Context.MODE_PRIVATE)
     val editor = prefs.edit()
     if (succeeded) {
         editor.remove(WEATHER_FAILURE_TIMESTAMP_KEY)
@@ -66,7 +66,7 @@ internal fun recordWeatherFetchResult(context: Context, succeeded: Boolean) {
 }
 
 internal fun isWeatherCacheFresh(context: Context): Boolean {
-    val savedAt = context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
+    val savedAt = context.getSharedPreferences(DISLAUNCHER_PREFERENCES_NAME, Context.MODE_PRIVATE)
         .getLong(WEATHER_CACHE_TIMESTAMP_KEY, 0L)
     val age = System.currentTimeMillis() - savedAt
     return savedAt > 0L && age in 0..WEATHER_CACHE_MAX_AGE_MS
@@ -80,7 +80,7 @@ internal fun saveWeatherCache(context: Context, weather: WeatherInfo) {
         .put("high", weather.high ?: JSONObject.NULL)
         .put("low", weather.low ?: JSONObject.NULL)
         .put("locationName", weather.locationName ?: JSONObject.NULL)
-    context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
+    context.getSharedPreferences(DISLAUNCHER_PREFERENCES_NAME, Context.MODE_PRIVATE)
         .edit()
         .putString(WEATHER_CACHE_KEY, json.toString())
         .putLong(WEATHER_CACHE_TIMESTAMP_KEY, System.currentTimeMillis())
@@ -88,7 +88,7 @@ internal fun saveWeatherCache(context: Context, weather: WeatherInfo) {
 }
 
 internal fun loadWeatherCache(context: Context, unit: String): WeatherInfo? = runCatching {
-    val raw = context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
+    val raw = context.getSharedPreferences(DISLAUNCHER_PREFERENCES_NAME, Context.MODE_PRIVATE)
         .getString(WEATHER_CACHE_KEY, null) ?: return null
     val json = JSONObject(raw)
     fun optionalString(key: String) = json.optString(key).takeIf { it.isNotBlank() && it != "null" }
@@ -155,9 +155,11 @@ internal suspend fun fetchWeather(context: Context, unit: String): WeatherInfo? 
 
     return runCatching {
         val temperatureUnit = if (unit == "F") "fahrenheit" else "celsius"
+        val requestLatitude = String.format(Locale.US, "%.2f", location.latitude)
+        val requestLongitude = String.format(Locale.US, "%.2f", location.longitude)
         val url = URL(
-            "https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}" +
-                "&longitude=${location.longitude}" +
+            "https://api.open-meteo.com/v1/forecast?latitude=$requestLatitude" +
+                "&longitude=$requestLongitude" +
                 "&current=temperature_2m,apparent_temperature,weather_code" +
                 "&daily=temperature_2m_max,temperature_2m_min&forecast_days=1" +
                 "&temperature_unit=$temperatureUnit&timezone=auto"

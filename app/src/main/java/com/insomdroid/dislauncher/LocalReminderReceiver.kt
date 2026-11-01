@@ -10,9 +10,6 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import org.json.JSONArray
-import java.time.LocalDate
-import java.time.LocalTime
-import java.time.ZoneId
 
 private const val REMINDER_CHANNEL_ID = "dislauncher_local_reminders"
 private const val EXTRA_REMINDER_ID = "reminder_id"
@@ -91,13 +88,10 @@ class ReminderBootReceiver : AndroidBroadcastReceiver() {
                 val id = task.optString("id")
                 val title = task.optString("title")
                 val storedTime = task.optLong("reminderAt")
-                val atMillis = runCatching {
-                    LocalDate.parse(task.optString("date"))
-                        .atTime(LocalTime.parse(task.optString("time")))
-                        .atZone(ZoneId.systemDefault())
-                        .toInstant()
-                        .toEpochMilli()
-                }.getOrDefault(storedTime)
+                val atMillis = localTaskDateTimeToEpochMillis(
+                    task.optString("date"),
+                    task.optString("time")
+                ) ?: storedTime
                 if (id.isNotBlank()) {
                     cancelLocalReminder(context, id)
                     if (atMillis > System.currentTimeMillis()) {

@@ -72,7 +72,7 @@ internal fun DislauncherRoot() {
     val lifecycleOwner = LocalLifecycleOwner.current
     val baseDensity = LocalDensity.current
     val prefsStore = remember {
-        context.getSharedPreferences("dislauncher_preferences", Context.MODE_PRIVATE)
+        context.getSharedPreferences(DISLAUNCHER_PREFERENCES_NAME, Context.MODE_PRIVATE)
     }
     var preferences by remember { mutableStateOf(LauncherPreferences.load(prefsStore)) }
     var favorites by remember {
@@ -596,7 +596,9 @@ internal fun DislauncherRoot() {
                                         val stream = if (solidWallpaperBytes != null) {
                                             ByteArrayInputStream(solidWallpaperBytes)
                                         } else {
-                                            context.contentResolver.openInputStream(selectedWallpaper!!)
+                                            val wallpaperUri = selectedWallpaper
+                                                ?: error("No wallpaper was selected.")
+                                            context.contentResolver.openInputStream(wallpaperUri)
                                                 ?: error("Unable to open the selected wallpaper.")
                                         }
                                         stream.use {

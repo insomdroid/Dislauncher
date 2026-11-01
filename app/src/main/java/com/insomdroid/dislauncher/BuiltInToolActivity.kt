@@ -27,7 +27,7 @@ internal class BuiltInToolActivity : ComponentActivity() {
         }
 
         val preferences = LauncherPreferences.load(
-            getSharedPreferences("dislauncher_preferences", MODE_PRIVATE)
+            getSharedPreferences(DISLAUNCHER_PREFERENCES_NAME, MODE_PRIVATE)
         )
         setContent {
             val systemDark = isSystemInDarkTheme()
