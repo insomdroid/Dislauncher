@@ -1835,7 +1835,7 @@ private fun CalendarTool(
     }
         FloatingActionButton(
             onClick = ::beginNewTask,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(end = BuiltInToolDesign.fabEndPadding, bottom = BuiltInToolDesign.fabBottomPadding),
+            modifier = Modifier.align(Alignment.BottomEnd).padding(end = BuiltInToolDesign.fabEndPadding, bottom = BuiltInToolDesign.fabBottomPadding).size(BuiltInToolDesign.fabSize),
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         ) { Icon(painterResource(R.drawable.ic_symbol_add), contentDescription = builtInToolText("Add task", "Tambah tugas"), modifier = Modifier.size(LauncherIconTokens.standard)) }
