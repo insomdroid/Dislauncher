@@ -19,6 +19,9 @@ internal object BuiltInToolDesign {
     val calculatorKeyCornerRadius = LauncherShapeTokens.medium
     val fabEndPadding = 8.dp
     val fabBottomPadding = 24.dp
+    val fabSize = 56.dp
+    val contentHorizontalInset = 16.dp
+    val filterHorizontalInset = 4.dp
 }
 
 /** Follow the device language while keeping English as the fallback. */
