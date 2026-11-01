@@ -189,11 +189,7 @@ internal fun UnitConverterTool(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    "No matching categories or units.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                BuiltInEmptyState(title = "No matching categories or units.")
             }
         } else Column(verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
         Column(verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.compact)) {

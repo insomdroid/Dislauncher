@@ -537,11 +537,12 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                 BoxWithConstraints(Modifier.fillMaxSize()) {
                     Box(
                         Modifier
+                            .widthIn(max = BuiltInToolDesign.contentMaxWidth)
                             .fillMaxSize()
                             .align(Alignment.TopCenter)
                             .padding(padding)
                             .padding(
-                                horizontal = if (tool == BuiltInTool.NOTES) 0.dp else if (maxWidth >= 600.dp) 24.dp else 16.dp,
+                                horizontal = if (tool == BuiltInTool.NOTES) 0.dp else if (maxWidth >= 600.dp) BuiltInToolDesign.contentHorizontalInsetWide else BuiltInToolDesign.contentHorizontalInset,
                                 vertical = 10.dp
                             )
                     ) {
@@ -558,7 +559,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                                 contentAlignment = Alignment.TopCenter
                             ) {
                                 CalculatorTool(
-                                    modifier = Modifier.widthIn(max = 560.dp).fillMaxSize(),
+                                    modifier = Modifier.widthIn(max = BuiltInToolDesign.calculatorMaxWidth).fillMaxSize(),
                                     showHistory = calculatorShowingHistory,
                                     onShowHistoryChange = { calculatorShowingHistory = it },
                                     clearHistorySignal = calculatorClearHistorySignal,
@@ -578,7 +579,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                                 contentAlignment = Alignment.TopCenter
                             ) {
                                 UnitConverterTool(
-                                    Modifier.widthIn(max = 760.dp).fillMaxSize(),
+                                    Modifier.fillMaxSize(),
                                     converterSearchQuery
                                 )
                             }
@@ -887,17 +888,15 @@ private fun NotesTool(
                 }
                 if (visibleNotes.isEmpty()) {
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.padding(horizontal = 24.dp)) {
-                            Icon(painterResource(R.drawable.ic_symbol_note_add), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.illustration),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                            val notesLibraryIsEmpty = notes.isEmpty() &&
-                                searchQuery.isBlank() && !pinnedOnly && activeLabel == null
-                            Text(
-                                if (notesLibraryIsEmpty) "No notes yet" else "No matching notes",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        }
+                        val notesLibraryIsEmpty = notes.isEmpty() &&
+                            searchQuery.isBlank() && !pinnedOnly && activeLabel == null
+                        BuiltInEmptyState(
+                            title = if (notesLibraryIsEmpty) "No notes yet" else "No matching notes",
+                            icon = {
+                                Icon(painterResource(R.drawable.ic_symbol_note_add), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.illustration),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        )
                     }
                 } else if (gridView) {
                     LazyVerticalGrid(
@@ -929,7 +928,7 @@ private fun NotesTool(
                                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
                                 tonalElevation = 0.dp
                             ) {
-                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
+                                Column(Modifier.padding(BuiltInToolSpacing.card), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         if (note.pinned) Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = "Pinned",
                                             tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(LauncherIconTokens.status))
@@ -975,8 +974,8 @@ private fun NotesTool(
                     LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         items(visibleNotes, key = { it.id }) { note ->
                             Row(
-                                Modifier.fillMaxWidth().clip(RoundedCornerShape(LauncherShapeTokens.medium)).clickable { openNote(note) }
-                                    .padding(horizontal = 8.dp, vertical = 12.dp),
+                                Modifier.fillMaxWidth().clip(RoundedCornerShape(BuiltInToolDesign.cardCornerRadius)).clickable { openNote(note) }
+                                    .padding(horizontal = BuiltInToolSpacing.listRowHorizontal, vertical = BuiltInToolSpacing.listRowVertical),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(Modifier.weight(1f).padding(end = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -1335,12 +1334,7 @@ private fun CalculatorTool(
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
                 if (history.isEmpty()) {
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Text("No calculations yet", style = MaterialTheme.typography.titleMedium)
-                        }
+                        BuiltInEmptyState(title = "No calculations yet")
                     }
                 } else {
                     LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
@@ -1355,7 +1349,7 @@ private fun CalculatorTool(
                                 shape = RoundedCornerShape(BuiltInToolDesign.cardCornerRadius)
                             ) {
                                 Column(
-                                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                                    Modifier.fillMaxWidth().padding(horizontal = BuiltInToolSpacing.cardHorizontal, vertical = BuiltInToolSpacing.card),
                                     verticalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
                                     Text(entry.expression, style = MaterialTheme.typography.bodyLarge,
@@ -1697,7 +1691,7 @@ private fun CalendarTool(
         } else {
             Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(BuiltInToolDesign.cardCornerRadius),
             color = MaterialTheme.colorScheme.surfaceContainerLow) {
-            Column(Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
+            Column(Modifier.padding(BuiltInToolSpacing.gridInset)) {
                 Row(Modifier.fillMaxWidth()) {
                     (0..6).map { calendarFirstDay.plus(it.toLong()) }.forEach { weekDay ->
                         Text(weekDay.getDisplayName(java.time.format.TextStyle.NARROW, Locale.getDefault()),
@@ -1754,12 +1748,7 @@ private fun CalendarTool(
         }
         if (dayTasks.isEmpty() && dayEvents.isEmpty()) {
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Text(
-                    if (!calendarPermission) "Calendar access is off" else "Nothing scheduled",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 24.dp)
-                )
+                BuiltInEmptyState(title = if (!calendarPermission) "Calendar access is off" else "Nothing scheduled")
             }
         } else {
             LazyColumn(
@@ -1772,7 +1761,7 @@ private fun CalendarTool(
                     val task = item.task
                     if (event != null) {
                         Row(Modifier.fillMaxWidth().clickable { openDeviceCalendarEvent(context, event) }
-                            .padding(horizontal = 4.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            .padding(horizontal = BuiltInToolSpacing.agendaRowHorizontal, vertical = BuiltInToolSpacing.agendaRowVertical), verticalAlignment = Alignment.CenterVertically) {
                             Text(if (event.allDay) builtInToolText("All day", "Sepanjang hari") else SimpleDateFormat(
                                 if (android.text.format.DateFormat.is24HourFormat(context)) "HH:mm" else "h:mm a",
                                 Locale.getDefault()).format(Date(event.begin)),
@@ -1786,7 +1775,7 @@ private fun CalendarTool(
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
                     } else if (task != null) {
                     Row(
-                        Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 2.dp),
+                        Modifier.fillMaxWidth().padding(horizontal = BuiltInToolSpacing.agendaRowHorizontal, vertical = BuiltInToolSpacing.agendaRowVertical),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (task.type == "todo") {
@@ -1799,7 +1788,7 @@ private fun CalendarTool(
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(horizontal = 10.dp).size(LauncherIconTokens.compact))
                         }
-                        Column(Modifier.weight(1f).padding(vertical = 6.dp, horizontal = 4.dp),
+                        Column(Modifier.weight(1f).padding(start = BuiltInToolSpacing.compact),
                             verticalArrangement = Arrangement.spacedBy(3.dp)) {
                             Text(task.title, style = MaterialTheme.typography.bodyLarge,
                                 textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None,

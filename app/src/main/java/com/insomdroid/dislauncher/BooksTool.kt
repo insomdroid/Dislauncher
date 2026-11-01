@@ -943,20 +943,12 @@ internal fun BooksTool(onBack: () -> Unit) {
             }
             if (visibleBooks.isEmpty()) {
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(
-                            if (books.isEmpty() && searchQuery.isBlank() && !pinnedOnly) "No books yet" else "No matching books",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = fg
-                        )
-                        if (books.isEmpty() && searchQuery.isBlank() && !pinnedOnly) {
-                            Text(
-                                "Supports EPUB, PDF, and TXT",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
+                    val booksLibraryIsEmpty = books.isEmpty() && searchQuery.isBlank() && !pinnedOnly
+                    BuiltInEmptyState(
+                        title = if (booksLibraryIsEmpty) "No books yet" else "No matching books",
+                        message = if (booksLibraryIsEmpty) "Supports EPUB, PDF, and TXT" else null,
+                        titleColor = fg
+                    )
                 }
             } else {
                 if (gridView) {
@@ -974,7 +966,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                                 color = MaterialTheme.colorScheme.surfaceContainerLow,
                                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
                             ) {
-                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
+                                Column(Modifier.padding(BuiltInToolSpacing.card), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
                                     BookCover(book, Modifier.fillMaxWidth().height(148.dp))
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                         if (book.pinned) Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = "Pinned",
@@ -1009,7 +1001,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                     Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         visibleBooks.forEach { book ->
                             Row(
-                                Modifier.fillMaxWidth().clickable { selectedBook = book }.padding(vertical = 14.dp, horizontal = 8.dp),
+                                Modifier.fillMaxWidth().clickable { selectedBook = book }.padding(vertical = BuiltInToolSpacing.listRowVertical, horizontal = BuiltInToolSpacing.listRowHorizontal),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 BookCover(book, Modifier.size(width = 48.dp, height = 64.dp))
@@ -1125,7 +1117,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                             Text(
                                 currentPageText,
                                 modifier = Modifier
-                                    .widthIn(max = 720.dp)
+                                    .widthIn(max = BuiltInToolDesign.contentMaxWidth)
                                     .fillMaxSize()
                                     .align(Alignment.TopCenter)
                                     .verticalScroll(pageScrollState)
