@@ -1,5 +1,6 @@
 package com.insomdroid.dislauncher
 
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.padding
@@ -30,8 +31,8 @@ internal object BuiltInToolDesign {
 }
 
 /** Shared placement and touch size for floating actions in built-in tools. */
-internal fun Modifier.builtInToolFab(): Modifier =
-    this.align(Alignment.BottomEnd)
+internal fun BoxScope.builtInToolFab(): Modifier =
+    Modifier.align(Alignment.BottomEnd)
         .padding(end = BuiltInToolDesign.fabEndPadding, bottom = BuiltInToolDesign.fabBottomPadding)
         .size(BuiltInToolDesign.fabSize)
 
