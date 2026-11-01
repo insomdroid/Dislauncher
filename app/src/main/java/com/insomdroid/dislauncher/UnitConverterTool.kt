@@ -165,7 +165,7 @@ internal fun UnitConverterTool(
         verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = BuiltInToolDesign.filterHorizontalInset),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
