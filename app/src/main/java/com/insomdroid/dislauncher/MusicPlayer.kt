@@ -1,5 +1,6 @@
 package com.insomdroid.dislauncher
 
+import androidx.compose.ui.res.painterResource
 import android.app.Notification
 import android.content.ComponentName
 import android.content.Context
@@ -19,9 +20,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Pause
-import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -225,7 +223,7 @@ internal fun MusicPlayerWidget(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = if (playing) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
+                    painter = painterResource(if (playing) R.drawable.ic_symbol_pause else R.drawable.ic_symbol_play_arrow),
                     contentDescription = if (playing) "Pause" else "Play",
                     tint = foreground,
                     modifier = Modifier.size(20.dp)

@@ -1,5 +1,6 @@
 package com.insomdroid.dislauncher
 
+import androidx.compose.ui.res.painterResource
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -26,9 +27,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.DragIndicator
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -380,7 +378,7 @@ internal fun HomeScreen(
                     }
                     if (movingFavoriteId == itemId) {
                         Icon(
-                            imageVector = Icons.Outlined.DragIndicator,
+                            painter = painterResource(R.drawable.ic_symbol_drag_indicator),
                             contentDescription = "Reorder favourite",
                             tint = secondaryText.copy(alpha = 0.82f),
                             modifier = Modifier.padding(start = 8.dp).size(20.dp)
@@ -516,7 +514,7 @@ internal fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.Settings,
+                    painter = painterResource(R.drawable.ic_symbol_settings),
                     contentDescription = "Dislauncher Settings",
                     tint = secondaryText,
                     modifier = Modifier.size(24.dp)

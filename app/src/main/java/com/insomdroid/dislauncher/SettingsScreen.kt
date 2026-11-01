@@ -1,5 +1,6 @@
 package com.insomdroid.dislauncher
 
+import androidx.compose.ui.res.painterResource
 import android.Manifest
 import android.app.admin.DevicePolicyManager
 import android.app.role.RoleManager
@@ -27,15 +28,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Apps
-import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.ChevronRight
-import androidx.compose.material.icons.outlined.Gesture
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Palette
-import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -65,7 +57,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -224,7 +215,7 @@ internal fun SettingsScreen(
                         }
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.ArrowBack,
+                            painter = painterResource(R.drawable.ic_symbol_arrow_back),
                             contentDescription = tr("Back", "Kembali"),
                             modifier = Modifier.size(24.dp)
                         )
@@ -257,17 +248,17 @@ internal fun SettingsScreen(
                     modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
                 )
                 val categories = listOf(
-                    Triple(SettingsCategory.APPEARANCE, Icons.Outlined.Palette, tr("Appearance", "Tampilan")) to
+                    Triple(SettingsCategory.APPEARANCE, R.drawable.ic_symbol_palette, tr("Appearance", "Tampilan")) to
                         tr("Theme, wallpaper, fonts and app icons", "Tema, wallpaper, font, dan ikon aplikasi"),
-                    Triple(SettingsCategory.HOME, Icons.Outlined.Home, tr("Home screen", "Layar utama")) to
+                    Triple(SettingsCategory.HOME, R.drawable.ic_symbol_home, tr("Home screen", "Layar utama")) to
                         tr("Home information, indicators and formats", "Info Home, indikator, dan format"),
-                    Triple(SettingsCategory.APPS, Icons.Outlined.Apps, tr("Apps", "Aplikasi")) to
+                    Triple(SettingsCategory.APPS, R.drawable.ic_symbol_apps, tr("Apps", "Aplikasi")) to
                         tr("Folders, app visibility and app drawer", "Folder, visibilitas aplikasi, dan laci aplikasi"),
-                    Triple(SettingsCategory.GESTURES, Icons.Outlined.Gesture, tr("Gestures", "Gestur")) to
+                    Triple(SettingsCategory.GESTURES, R.drawable.ic_symbol_gesture, tr("Gestures", "Gestur")) to
                         tr("Quick actions for the Home screen", "Aksi cepat pada layar utama"),
-                    Triple(SettingsCategory.ACCESS, Icons.Outlined.Security, tr("Permissions and access", "Izin dan akses")) to
+                    Triple(SettingsCategory.ACCESS, R.drawable.ic_symbol_security, tr("Permissions and access", "Izin dan akses")) to
                         tr("Check access required by features", "Periksa akses yang diperlukan fitur"),
-                    Triple(SettingsCategory.ABOUT, Icons.Outlined.Info, tr("About", "Tentang")) to
+                    Triple(SettingsCategory.ABOUT, R.drawable.ic_symbol_info, tr("About", "Tentang")) to
                         tr("Version and project information", "Versi dan informasi proyek")
                 )
                 categories.forEach { entry ->
@@ -1189,7 +1180,7 @@ internal fun SettingsScreen(
 
 @Composable
 private fun SettingsCategoryRow(
-    icon: ImageVector,
+    icon: Int,
     title: String,
     description: String,
     onClick: () -> Unit
@@ -1209,7 +1200,7 @@ private fun SettingsCategoryRow(
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = icon,
+                painter = painterResource(icon),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(24.dp)
@@ -1225,7 +1216,7 @@ private fun SettingsCategoryRow(
                 overflow = TextOverflow.Ellipsis
             )
         }
-        Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+        Icon(painterResource(R.drawable.ic_symbol_chevron_right), contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
     }
 }
 

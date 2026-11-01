@@ -164,7 +164,6 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.material:material-icons-extended")
     implementation("com.kizitonwose.calendar:compose:2.9.1")
 
     implementation("io.noties.markwon:core:4.6.2")

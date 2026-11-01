@@ -1,5 +1,6 @@
 package com.insomdroid.dislauncher
 
+import androidx.compose.ui.res.painterResource
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -47,15 +48,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.MenuBook
-import androidx.compose.material.icons.outlined.Calculate
-import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.Folder
-import androidx.compose.material.icons.outlined.SwapHoriz
-import androidx.compose.material.icons.outlined.Search as SearchIcon
-import androidx.compose.material.icons.outlined.Settings as SettingsIcon
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -260,11 +252,11 @@ internal fun AppsScreen(
                         ) {
                             filteredBuiltIns.forEach { app ->
                                 val toolIcon = when (app.packageName) {
-                                    "internal:calculator" -> androidx.compose.material.icons.Icons.Outlined.Calculate
-                                    "internal:calendar" -> androidx.compose.material.icons.Icons.Outlined.CalendarMonth
-                                    "internal:converter" -> androidx.compose.material.icons.Icons.Outlined.SwapHoriz
-                                    "internal:books" -> androidx.compose.material.icons.Icons.Outlined.MenuBook
-                                    else -> androidx.compose.material.icons.Icons.Outlined.Description
+                                    "internal:calculator" -> R.drawable.ic_symbol_calculate
+                                    "internal:calendar" -> R.drawable.ic_symbol_calendar_month
+                                    "internal:converter" -> R.drawable.ic_symbol_swap_horiz
+                                    "internal:books" -> R.drawable.ic_symbol_menu_book
+                                    else -> R.drawable.ic_symbol_description
                                 }
                                 Column(
                                     modifier = Modifier.weight(1f).heightIn(min = 56.dp).clip(RoundedCornerShape(LauncherShapeTokens.medium))
@@ -278,7 +270,7 @@ internal fun AppsScreen(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
-                                            imageVector = toolIcon,
+                                            painter = painterResource(toolIcon),
                                             contentDescription = app.label,
                                             // Keep built-in tool glyphs visibly distinct from their neutral icon circles
                                             // even if a device's dynamic theme supplies unexpected icon colors.
@@ -314,7 +306,7 @@ internal fun AppsScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.Folder,
+                                painter = painterResource(R.drawable.ic_symbol_folder),
                                 contentDescription = null,
                                 tint = mainText,
                                 modifier = Modifier.size(18.dp)
@@ -419,7 +411,7 @@ internal fun AppsScreen(
                         ) {
                             if (preferences.showAppIcons) {
                                 Icon(
-                                    imageVector = Icons.Outlined.SettingsIcon,
+                                    painter = painterResource(R.drawable.ic_symbol_settings),
                                     contentDescription = null,
                                     tint = mainText,
                                     modifier = Modifier.size(24.dp)
@@ -608,7 +600,7 @@ internal fun AppsScreen(
                 placeholder = "Search apps",
                 leadingIcon = {
                     Icon(
-                        imageVector = Icons.Outlined.SearchIcon,
+                        painter = painterResource(R.drawable.ic_symbol_search),
                         contentDescription = "Search apps",
                         tint = searchColor,
                         modifier = Modifier.size(20.dp)
@@ -742,7 +734,7 @@ internal fun AppsScreen(
                                 },
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Icon(Icons.Outlined.Folder, contentDescription = null)
+                                Icon(painterResource(R.drawable.ic_symbol_folder), contentDescription = null)
                                 Spacer(Modifier.width(10.dp))
                                 Text(folder, modifier = Modifier.weight(1f), textAlign = TextAlign.Start)
                             }
