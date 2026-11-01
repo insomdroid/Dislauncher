@@ -117,11 +117,11 @@ internal fun HomeHeader(
                     Text(minutePart, color = primaryText, fontSize = HomeDesign.clockSize * 1.15f, lineHeight = HomeDesign.clockLineHeight * 1.08f, letterSpacing = (-0.6).sp, fontWeight = FontWeight.Light, fontFamily = dotMatrixFont, maxLines = 1, softWrap = false)
                 }
             }
-            if (preferences.showDate) { Spacer(Modifier.height(4.dp)); Text(shortDate, color = secondaryText, fontSize = HomeDesign.dateSize, lineHeight = HomeDesign.dateLineHeight, fontFamily = fontFamily, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = dateModifier) }
+            if (preferences.showDate) { Spacer(Modifier.height(1.dp)); Text(shortDate, color = secondaryText, fontSize = HomeDesign.dateSize, lineHeight = HomeDesign.dateLineHeight, fontFamily = fontFamily, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = dateModifier) }
         }
         "binary_dot_minimal" -> {
             if (preferences.showClock) {
-                Text(timeText, color = secondaryText, fontSize = HomeDesign.dateSize * 0.78f, lineHeight = HomeDesign.dateLineHeight * 0.82f, fontFamily = fontFamily, maxLines = 1, softWrap = false, modifier = clockModifier)
+                Text(timeText, color = secondaryText, fontSize = HomeDesign.dateSize * 0.9f, lineHeight = HomeDesign.dateLineHeight * 0.95f, fontFamily = fontFamily, maxLines = 1, softWrap = false, modifier = clockModifier)
                 Spacer(Modifier.height(6.dp))
                 BinaryDotClock(hour = now.hour, minute = now.minute, activeColor = MaterialTheme.colorScheme.primary, inactiveColor = secondaryText.copy(alpha = 0.24f))
             }
@@ -130,8 +130,8 @@ internal fun HomeHeader(
                 Text(
                     today.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", locale)),
                     color = secondaryText,
-                    fontSize = 10.sp,
-                    lineHeight = 13.sp,
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
                     fontFamily = fontFamily,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -143,7 +143,9 @@ internal fun HomeHeader(
             if (preferences.showClock) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     DualBarClock(hour = now.hour, minute = now.minute, activeColor = MaterialTheme.colorScheme.primary, inactiveColor = secondaryText.copy(alpha = 0.24f))
-                    Text(timeText, color = secondaryText, fontSize = HomeDesign.dateSize, lineHeight = HomeDesign.dateLineHeight, fontFamily = dotMatrixFont, maxLines = 1, softWrap = false, modifier = clockModifier)
+                    Box(modifier = Modifier.height(22.dp), contentAlignment = Alignment.Center) {
+                        Text(timeText, color = secondaryText, fontSize = HomeDesign.dateSize, lineHeight = HomeDesign.dateLineHeight, fontFamily = dotMatrixFont, maxLines = 1, softWrap = false, modifier = clockModifier)
+                    }
                 }
             }
             if (preferences.showDate) { Spacer(Modifier.height(4.dp)); Text(shortDate, color = secondaryText, fontSize = HomeDesign.dateSize, lineHeight = HomeDesign.dateLineHeight, fontFamily = fontFamily, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = dateModifier) }
@@ -215,24 +217,21 @@ private fun DualBarClock(hour: Int, minute: Int, activeColor: Color, inactiveCol
     Canvas(modifier = Modifier.width(64.dp).height(22.dp)) {
         val barHeight = 6.dp.toPx()
         val rowGap = 5.dp.toPx()
-        val cornerRadius = androidx.compose.ui.geometry.CornerRadius(barHeight / 2f)
         val values = listOf(
             hour.coerceIn(0, 23) / 23f,
             minute.coerceIn(0, 59) / 59f
         )
         values.forEachIndexed { index, fraction ->
             val top = index * (barHeight + rowGap)
-            drawRoundRect(
+            drawRect(
                 color = inactiveColor,
                 topLeft = Offset(0f, top),
-                size = androidx.compose.ui.geometry.Size(size.width, barHeight),
-                cornerRadius = cornerRadius
+                size = androidx.compose.ui.geometry.Size(size.width, barHeight)
             )
-            drawRoundRect(
+            drawRect(
                 color = activeColor,
                 topLeft = Offset(0f, top),
-                size = androidx.compose.ui.geometry.Size(size.width * fraction, barHeight),
-                cornerRadius = cornerRadius
+                size = androidx.compose.ui.geometry.Size(size.width * fraction, barHeight)
             )
         }
     }
