@@ -4,7 +4,7 @@ private val supportedAccentPresets = setOf(
     "default", "red", "yellow", "blue", "green", "purple", "orange", "pink"
 )
 private val supportedIconShapes = setOf(
-    "original", "circle", "outline_square", "filled_square", "filled_rectangle"
+    "original", "circle", "filled_square"
 )
 private val wallpaperColorPattern = Regex("^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")
 
@@ -31,7 +31,10 @@ internal fun normalizeTimeFormat(value: String): String =
     value.takeIf { it in setOf("system", "12", "24") } ?: "system"
 
 internal fun normalizeIconShape(value: String): String =
-    value.takeIf { it in supportedIconShapes } ?: "original"
+    when (value) {
+        "outline_square", "filled_rectangle" -> "filled_square"
+        else -> value.takeIf { it in supportedIconShapes } ?: "original"
+    }
 
 internal fun normalizeNotificationDotColor(value: String): String =
     (if (value == "white") "default" else value)
