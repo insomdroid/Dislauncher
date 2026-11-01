@@ -162,16 +162,6 @@ internal fun AppIcon(
                 val rectHeight = side * 0.31f
                 when (iconShape) {
                     "circle" -> drawCircle(color = iconColor, radius = iconSize / 2f)
-                    "outline_square" -> drawRect(
-                        color = iconColor,
-                        topLeft = androidx.compose.ui.geometry.Offset(
-                            (this.size.width - iconSize) / 2f, (this.size.height - iconSize) / 2f
-                        ),
-                        size = androidx.compose.ui.geometry.Size(iconSize, iconSize),
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(
-                            width = (iconSize * 0.075f).coerceAtLeast(1.dp.toPx())
-                        )
-                    )
                     "filled_square" -> drawRect(
                         color = iconColor,
                         topLeft = androidx.compose.ui.geometry.Offset(
@@ -179,13 +169,7 @@ internal fun AppIcon(
                         ),
                         size = androidx.compose.ui.geometry.Size(iconSize, iconSize)
                     )
-                    "filled_rectangle" -> drawRect(
-                        color = iconColor,
-                        topLeft = androidx.compose.ui.geometry.Offset(
-                            (this.size.width - rectWidth) / 2f, (this.size.height - rectHeight) / 2f
-                        ),
-                        size = androidx.compose.ui.geometry.Size(rectWidth, rectHeight)
-                    )
+
                 }
             }
         }
