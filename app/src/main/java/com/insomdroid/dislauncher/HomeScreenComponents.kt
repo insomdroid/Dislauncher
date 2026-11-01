@@ -67,7 +67,7 @@ internal fun HomeHeader(
     val dateModifier = Modifier.clip(RoundedCornerShape(5.dp)).clickable(onClick = onOpenCalendar)
     val locale = Locale.getDefault()
     val day = today.format(DateTimeFormatter.ofPattern("EEEE", locale))
-    val shortDate = today.format(DateTimeFormatter.ofPattern("EEE, d MMM", locale))
+    val shortDate = today.format(DateTimeFormatter.ofPattern("EEEE, d MMM", locale))
     val month = today.format(DateTimeFormatter.ofPattern("MMMM", locale))
     when (preferences.clockStyle) {
         "compact" -> {
@@ -125,10 +125,23 @@ internal fun HomeHeader(
                 Spacer(Modifier.height(6.dp))
                 BinaryDotClock(hour = now.hour, minute = now.minute, activeColor = MaterialTheme.colorScheme.primary, inactiveColor = secondaryText.copy(alpha = 0.24f))
             }
+            if (preferences.showDate) {
+                Spacer(Modifier.height(5.dp))
+                Text(
+                    today.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", locale)),
+                    color = secondaryText,
+                    fontSize = HomeDesign.dateSize,
+                    lineHeight = HomeDesign.dateLineHeight,
+                    fontFamily = interFont,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = dateModifier
+                )
+            }
         }
         "dual_bar" -> {
             if (preferences.showClock) {
-                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     DualBarClock(hour = now.hour, minute = now.minute, activeColor = MaterialTheme.colorScheme.primary, inactiveColor = secondaryText.copy(alpha = 0.24f))
                     Text(timeText, color = secondaryText, fontSize = HomeDesign.dateSize, lineHeight = HomeDesign.dateLineHeight, fontFamily = dotMatrixFont, maxLines = 1, softWrap = false, modifier = clockModifier)
                 }
@@ -143,7 +156,7 @@ internal fun HomeHeader(
             }
             if (preferences.showDate) {
                 Spacer(Modifier.height(1.dp))
-                Text(today.format(DateTimeFormatter.ofPattern("d MMM yyyy", locale)), color=secondaryText, fontSize=HomeDesign.dateSize, lineHeight=HomeDesign.dateLineHeight, fontFamily=interFont, maxLines=1, modifier=dateModifier)
+                Text(today.format(DateTimeFormatter.ofPattern("d MMM yyyy", locale)), color=secondaryText, fontSize=10.sp, lineHeight=13.sp, fontFamily=interFont, maxLines=1, modifier=dateModifier)
             }
             if (preferences.showClock) {
                 Spacer(Modifier.height(1.dp))
@@ -199,29 +212,27 @@ private fun BinaryDotClock(hour: Int, minute: Int, activeColor: Color, inactiveC
 
 @Composable
 private fun DualBarClock(hour: Int, minute: Int, activeColor: Color, inactiveColor: Color) {
-    Canvas(modifier = Modifier.width(30.dp).height(34.dp)) {
-        val barWidth = 8.dp.toPx()
-        val gap = 6.dp.toPx()
-        val maxHeight = size.height
-        val baseline = size.height
+    Canvas(modifier = Modifier.width(64.dp).height(22.dp)) {
+        val barHeight = 6.dp.toPx()
+        val rowGap = 5.dp.toPx()
+        val cornerRadius = androidx.compose.ui.geometry.CornerRadius(barHeight / 2f)
         val values = listOf(
             hour.coerceIn(0, 23) / 23f,
             minute.coerceIn(0, 59) / 59f
         )
         values.forEachIndexed { index, fraction ->
-            val barHeight = maxHeight * (0.18f + 0.82f * fraction)
-            val x = index * (barWidth + gap)
-            drawRoundRect(
-                color = activeColor,
-                topLeft = Offset(x, baseline - barHeight),
-                size = androidx.compose.ui.geometry.Size(barWidth, barHeight),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(0f)
-            )
+            val top = index * (barHeight + rowGap)
             drawRoundRect(
                 color = inactiveColor,
-                topLeft = Offset(x, 0f),
-                size = androidx.compose.ui.geometry.Size(barWidth, maxHeight - barHeight),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(barWidth / 2f)
+                topLeft = Offset(0f, top),
+                size = androidx.compose.ui.geometry.Size(size.width, barHeight),
+                cornerRadius = cornerRadius
+            )
+            drawRoundRect(
+                color = activeColor,
+                topLeft = Offset(0f, top),
+                size = androidx.compose.ui.geometry.Size(size.width * fraction, barHeight),
+                cornerRadius = cornerRadius
             )
         }
     }
