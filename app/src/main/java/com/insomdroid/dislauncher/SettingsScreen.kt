@@ -823,11 +823,11 @@ internal fun SettingsScreen(
                         }
                         SettingsGroup("Community & Support") {
                             SettingAction(
-                                "Ko-fi",
-                                "Support the development of Dislauncher.",
+                                "GitHub",
+                                "Source code and project issues.",
                                 "Open"
                             ) {
-                                openSystemPage(Intent(Intent.ACTION_VIEW, Uri.parse("https://ko-fi.com/insomdroid")))
+                                openSystemPage(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/insomdroid/Dislauncher")))
                             }
                             SettingAction(
                                 "Website",
@@ -844,11 +844,11 @@ internal fun SettingsScreen(
                                 openSystemPage(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.reddit.com/r/Dislauncher/")))
                             }
                             SettingAction(
-                                "GitHub",
-                                "Source code and project issues.",
+                                "Ko-fi",
+                                "Support the development of Dislauncher.",
                                 "Open"
                             ) {
-                                openSystemPage(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/insomdroid/Dislauncher")))
+                                openSystemPage(Intent(Intent.ACTION_VIEW, Uri.parse("https://ko-fi.com/insomdroid")))
                             }
                         }
                     }
