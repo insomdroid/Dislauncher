@@ -196,12 +196,14 @@ internal fun BuiltInToolScaffold(
     header: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     containerColor: Color = MaterialTheme.colorScheme.background,
+    bottomBar: @Composable () -> Unit = {},
     content: @Composable BoxScope.() -> Unit
 ) {
     Scaffold(
         modifier = modifier,
         containerColor = containerColor,
-        topBar = header
+        topBar = header,
+        bottomBar = bottomBar
     ) { padding ->
         BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
             Box(

@@ -31,6 +31,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
@@ -558,6 +559,81 @@ internal fun NotesTool(
                     }
                 )
             }
+        },
+        bottomBar = {
+            if (notesLoaded && selectedId != null) {
+                BottomAppBar(modifier = Modifier.imePadding(), actions = {
+                    IconButton(
+                        onClick = {
+                            editHistory.undo(markdownText, markdownCursor)?.let { transition ->
+                                editHistory = transition.history
+                                markdownText = transition.text
+                                markdownCursor = transition.cursor
+                            }
+                        },
+                        enabled = editHistory.undo.isNotEmpty()
+                    ) { Icon(painterResource(R.drawable.ic_symbol_undo), contentDescription = "Undo", modifier = Modifier.size(LauncherIconTokens.standard)) }
+                    IconButton(
+                        onClick = {
+                            editHistory.redo(markdownText, markdownCursor)?.let { transition ->
+                                editHistory = transition.history
+                                markdownText = transition.text
+                                markdownCursor = transition.cursor
+                            }
+                        },
+                        enabled = editHistory.redo.isNotEmpty()
+                    ) { Icon(painterResource(R.drawable.ic_symbol_redo), contentDescription = "Redo", modifier = Modifier.size(LauncherIconTokens.standard)) }
+                    Spacer(Modifier.weight(1f))
+                    val pinned = notes.firstOrNull { it.id == selectedId }?.pinned == true
+                    IconButton(onClick = {
+                        notes = notes.map { if (it.id == selectedId) it.copy(pinned = !pinned) else it }
+                            .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
+                        saveNotes(context, notes)
+                    }) {
+                        Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = if (pinned) "Unpin note" else "Pin note",
+                            tint = if (pinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(LauncherIconTokens.standard))
+                    }
+                    Box {
+                        IconButton(onClick = { menuTarget = "editor" }) {
+                            Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "More note actions", modifier = Modifier.size(LauncherIconTokens.standard))
+                        }
+                        DropdownMenu(expanded = menuTarget == "editor", onDismissRequest = { menuTarget = null }) {
+                            DropdownMenuItem(text = { Text("Export Markdown (.md)") },
+                                leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_file_download), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
+                                onClick = {
+                                    saveCurrent()
+                                    val filename = title.ifBlank { "note" }.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim().ifBlank { "note" }
+                                    menuTarget = null
+                                    markdownExportLauncher.launch("$filename.md")
+                                })
+                            DropdownMenuItem(text = { Text("Export note archive") },
+                                leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_file_download), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
+                                onClick = {
+                                    saveCurrent()
+                                    pendingExport = PendingNoteExport(
+                                        title,
+                                        NoteDocumentCodec.fromLegacyContent(markdownText),
+                                        currentLabels.toList(),
+                                        currentColor
+                                    )
+                                    val filename = title.ifBlank { "note" }.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim().ifBlank { "note" }
+                                    menuTarget = null
+                                    exportLauncher.launch("$filename.zip")
+                                })
+                            DropdownMenuItem(text = { Text("Labels") },
+                                onClick = { menuTarget = null; showNoteLabels = true })
+                            DropdownMenuItem(text = { Text("Note color") },
+                                onClick = { menuTarget = null; showColorPicker = true })
+                            DropdownMenuItem(text = { Text("Insert image") },
+                                leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_image), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
+                                onClick = { menuTarget = null; imageLauncher.launch(arrayOf("image/*")) })
+                            DropdownMenuItem(text = { Text("Delete note") },
+                                leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
+                                onClick = { deleteTarget = selectedId; menuTarget = null })
+                        }
+                    }
+                })
+            }
         }
     ) {
         if (!notesLoaded) {
@@ -719,78 +795,7 @@ internal fun NotesTool(
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             ) { Icon(painterResource(R.drawable.ic_symbol_note_add), contentDescription = "New note", modifier = Modifier.size(LauncherIconTokens.standard)) }
         } else {
-            Column(Modifier.fillMaxSize().imePadding(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
-                        onClick = {
-                            editHistory.undo(markdownText, markdownCursor)?.let { transition ->
-                                editHistory = transition.history
-                                markdownText = transition.text
-                                markdownCursor = transition.cursor
-                            }
-                        },
-                        enabled = editHistory.undo.isNotEmpty()
-                    ) { Icon(painterResource(R.drawable.ic_symbol_undo), contentDescription = "Undo", modifier = Modifier.size(LauncherIconTokens.standard)) }
-                    IconButton(
-                        onClick = {
-                            editHistory.redo(markdownText, markdownCursor)?.let { transition ->
-                                editHistory = transition.history
-                                markdownText = transition.text
-                                markdownCursor = transition.cursor
-                            }
-                        },
-                        enabled = editHistory.redo.isNotEmpty()
-                    ) { Icon(painterResource(R.drawable.ic_symbol_redo), contentDescription = "Redo", modifier = Modifier.size(LauncherIconTokens.standard)) }
-                    Spacer(Modifier.weight(1f))
-                    val pinned = notes.firstOrNull { it.id == selectedId }?.pinned == true
-                    IconButton(onClick = {
-                        notes = notes.map { if (it.id == selectedId) it.copy(pinned = !pinned) else it }
-                            .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
-                        saveNotes(context, notes)
-                    }) {
-                        Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = if (pinned) "Unpin note" else "Pin note",
-                            tint = if (pinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(LauncherIconTokens.standard))
-                    }
-                    Box {
-                        IconButton(onClick = { menuTarget = "editor" }) {
-                            Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "More note actions", modifier = Modifier.size(LauncherIconTokens.standard))
-                        }
-                        DropdownMenu(expanded = menuTarget == "editor", onDismissRequest = { menuTarget = null }) {
-                            DropdownMenuItem(text = { Text("Export Markdown (.md)") },
-                                leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_file_download), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
-                                onClick = {
-                                    saveCurrent()
-                                    val filename = title.ifBlank { "note" }.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim().ifBlank { "note" }
-                                    menuTarget = null
-                                    markdownExportLauncher.launch("$filename.md")
-                                })
-                            DropdownMenuItem(text = { Text("Export note archive") },
-                                leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_file_download), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
-                                onClick = {
-                                    saveCurrent()
-                                    pendingExport = PendingNoteExport(
-                                        title,
-                                        NoteDocumentCodec.fromLegacyContent(markdownText),
-                                        currentLabels.toList(),
-                                        currentColor
-                                    )
-                                    val filename = title.ifBlank { "note" }.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim().ifBlank { "note" }
-                                    menuTarget = null
-                                    exportLauncher.launch("$filename.zip")
-                                })
-                            DropdownMenuItem(text = { Text("Labels") },
-                                onClick = { menuTarget = null; showNoteLabels = true })
-                            DropdownMenuItem(text = { Text("Note color") },
-                                onClick = { menuTarget = null; showColorPicker = true })
-                            DropdownMenuItem(text = { Text("Insert image") },
-                                leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_image), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
-                                onClick = { menuTarget = null; imageLauncher.launch(arrayOf("image/*")) })
-                            DropdownMenuItem(text = { Text("Delete note") },
-                                leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
-                                onClick = { deleteTarget = selectedId; menuTarget = null })
-                        }
-                    }
-                }
+            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
                 Surface(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = BuiltInToolSpacing.space12, vertical = BuiltInToolSpacing.space4),
                     shape = RoundedCornerShape(BuiltInToolDesign.cardCornerRadius),
