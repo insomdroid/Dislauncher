@@ -1,5 +1,15 @@
 # Dislauncher Changelog
 
+## 1.3.7 | 2 November 2026
+#### What's New
+- **Manual Update Checker:** Check for the latest stable Dislauncher release directly from Settings.
+- **Community & Support Links:** Added direct links to GitHub, the project website, Reddit, and Ko-fi.
+
+#### Improvements
+- Added a clear update status dialog with the installed and latest versions, release date, and release notes.
+- Kept update checks manual and limited them to stable releases; viewing an update opens the official GitHub Release page without automatically downloading or installing an APK.
+- Reordered Community & Support links to make GitHub the first entry.
+
 ## 1.3.6 | 1 November 2026
 #### What's New
 - **Expanded Markdown Preview:** Added support for task lists, strikethrough, HTML content, and images in Notes.
