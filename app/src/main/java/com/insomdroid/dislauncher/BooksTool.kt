@@ -562,9 +562,9 @@ private fun loadBookCover(context: Context, book: BookEntry): Bitmap? {
     val result = runCatching {
         when (book.type) {
             "pdf" -> runCatching {
-                renderPdfThumbnail(context, Uri.parse(book.uri), 0)
+                renderPdfCoverFromUri(context, Uri.parse(book.uri), 0)
             }.getOrElse {
-                cachedBookFile(context, Uri.parse(book.uri), "pdf")?.let { renderPdfThumbnail(it, 0) }
+                cachedBookFile(context, Uri.parse(book.uri), "pdf")?.let { renderPdfCoverFromFile(it, 0) }
             }
             "epub" -> {
                 val file = cachedBookFile(context, Uri.parse(book.uri), "epub") ?: return@runCatching null
@@ -638,13 +638,13 @@ private fun BookCover(book: BookEntry, modifier: Modifier = Modifier) {
         modifier = modifier,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         shape = RoundedCornerShape(BuiltInToolDesign.cardCornerRadius),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
+        border = androidx.compose.foundation.BorderStroke(BuiltInToolSpacing.space1, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
     ) {
         val coverBitmap = cover
         if (coverBitmap != null) {
-            Image(bitmap = coverBitmap.asImageBitmap(), contentDescription = "Cover of ${book.title}", modifier = Modifier.fillMaxSize())
+            Image(bitmap = coverBitmap.asImageBitmap(), contentDescription = builtInToolText("Cover of ${book.title}", "Sampul ${book.title}"), modifier = Modifier.fillMaxSize())
         } else {
-            Box(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxSize().padding(BuiltInToolSpacing.space8), contentAlignment = Alignment.Center) {
                 Text(book.type.uppercase(), style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -656,7 +656,7 @@ private fun renderPdfPage(file: File, pageIndex: Int): Bitmap {
     val cacheKey = "${file.absolutePath}:$pageIndex"
     pdfPageCache.get(cacheKey)?.let { return it }
     val descriptor = android.os.ParcelFileDescriptor.open(file, android.os.ParcelFileDescriptor.MODE_READ_ONLY)
-    return renderPdfPage(descriptor, cacheKey, pageIndex, 900f, cache = true)
+    return rasterizePdfPage(descriptor, cacheKey, pageIndex, 900f, cache = true)
 }
 
 private fun renderPdfPage(context: Context, uri: Uri, pageIndex: Int): Bitmap {
@@ -664,21 +664,21 @@ private fun renderPdfPage(context: Context, uri: Uri, pageIndex: Int): Bitmap {
     pdfPageCache.get(cacheKey)?.let { return it }
     val descriptor = context.contentResolver.openFileDescriptor(uri, "r")
         ?: error("Unable to open PDF document")
-    return renderPdfPage(descriptor, cacheKey, pageIndex, 900f, cache = true)
+    return rasterizePdfPage(descriptor, cacheKey, pageIndex, 900f, cache = true)
 }
 
-private fun renderPdfThumbnail(context: Context, uri: Uri, pageIndex: Int): Bitmap {
+private fun renderPdfCoverFromUri(context: Context, uri: Uri, pageIndex: Int): Bitmap {
     val descriptor = context.contentResolver.openFileDescriptor(uri, "r")
         ?: error("Unable to open PDF document")
-    return renderPdfPage(descriptor, "cover:${uri}", pageIndex, 300f, cache = false)
+    return rasterizePdfPage(descriptor, "cover:${uri}", pageIndex, 300f, cache = false)
 }
 
-private fun renderPdfThumbnail(file: File, pageIndex: Int): Bitmap {
+private fun renderPdfCoverFromFile(file: File, pageIndex: Int): Bitmap {
     val descriptor = android.os.ParcelFileDescriptor.open(file, android.os.ParcelFileDescriptor.MODE_READ_ONLY)
-    return renderPdfPage(descriptor, "cover:${file.absolutePath}", pageIndex, 300f, cache = false)
+    return rasterizePdfPage(descriptor, "cover:${file.absolutePath}", pageIndex, 300f, cache = false)
 }
 
-private fun renderPdfPage(
+private fun rasterizePdfPage(
     descriptor: android.os.ParcelFileDescriptor,
     cacheKey: String,
     pageIndex: Int,
@@ -745,7 +745,7 @@ internal fun BooksTool(onBack: () -> Unit) {
             val name = displayName(context, uri)
             val type = bookType(name)
             if (type !in listOf("pdf", "epub", "txt", "text")) {
-                error = "Choose an EPUB, PDF, or TXT file."
+                error = builtInToolText("Choose an EPUB, PDF, or TXT file.", "Pilih file EPUB, PDF, atau TXT.")
             } else {
                 if (uri.scheme == "content") {
                     runCatching {
@@ -798,22 +798,24 @@ internal fun BooksTool(onBack: () -> Unit) {
         } catch (e: OutOfMemoryError) {
             bookContent = null
             pdfBitmap = null
-            error = "This book could not be opened because the device ran out of memory. Close other apps and try again."
+            error = builtInToolText("This book could not be opened because the device ran out of memory. Close other apps and try again.", "Buku ini tidak dapat dibuka karena memori perangkat habis. Tutup aplikasi lain dan coba lagi.")
             System.gc()
         } catch (e: Exception) {
+            // Intentional UI boundary: any failure while parsing a user-selected file must become
+            // a readable message instead of crashing the launcher. Cancellation is rethrown above.
             val detail = e.message.orEmpty()
             error = when {
                 detail.contains("too large", ignoreCase = true) ->
-                    "$detail Choose a smaller file; the maximum supported size is 100 MB."
+                    builtInToolText("$detail Choose a smaller file; the maximum supported size is 100 MB.", "$detail Pilih file yang lebih kecil; ukuran maksimum yang didukung adalah 100 MB.")
                 detail.contains("oversized section", ignoreCase = true) ->
-                    "This EPUB contains a section that is too large to load. Try another copy of the book."
+                    builtInToolText("This EPUB contains a section that is too large to load. Try another copy of the book.", "EPUB ini berisi bagian yang terlalu besar untuk dimuat. Coba salinan buku lain.")
                 detail.contains("permission", ignoreCase = true) ||
                     detail.contains("access", ignoreCase = true) ->
-                    "The app can no longer access this file. Add the book again and select the file from your device."
+                    builtInToolText("The app can no longer access this file. Add the book again and select the file from your device.", "Aplikasi tidak lagi dapat mengakses file ini. Tambahkan buku lagi dan pilih file dari perangkat Anda.")
                 detail.isNotBlank() ->
-                    "Could not open this ${book.type.uppercase()} file. It may be damaged or use unsupported content. Select another file and try again. Details: $detail"
+                    builtInToolText("Could not open this ${book.type.uppercase()} file. It may be damaged or use unsupported content. Select another file and try again. Details: $detail", "Tidak dapat membuka file ${book.type.uppercase()} ini. File mungkin rusak atau berisi konten yang tidak didukung. Pilih file lain dan coba lagi. Rincian: $detail")
                 else ->
-                    "Could not open this ${book.type.uppercase()} file. Check that the file is available, then add it again."
+                    builtInToolText("Could not open this ${book.type.uppercase()} file. Check that the file is available, then add it again.", "Tidak dapat membuka file ${book.type.uppercase()} ini. Pastikan file tersedia, lalu tambahkan lagi.")
             }
         } finally {
             loading = false
@@ -871,17 +873,17 @@ internal fun BooksTool(onBack: () -> Unit) {
                                 value = searchQuery,
                                 onValueChange = { searchQuery = it },
                                 modifier = Modifier.fillMaxWidth(),
-                                placeholder = "Search books",
+                                placeholder = builtInToolText("Search books", "Cari buku"),
                                 textColor = fg,
                                 trailingIcon = {
                                     IconButton(onClick = { searchQuery = ""; searchExpanded = false }) {
-                                        Icon(painterResource(R.drawable.ic_symbol_close), contentDescription = "Close search", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
+                                        Icon(painterResource(R.drawable.ic_symbol_close), contentDescription = builtInToolText("Close search", "Tutup pencarian"), tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
                                     }
                                 }
                             )
                         } else {
                             Text(
-                                "Library",
+                                builtInToolText("Library", "Perpustakaan"),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.SemiBold,
                                 color = fg,
@@ -891,13 +893,13 @@ internal fun BooksTool(onBack: () -> Unit) {
                     },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = "Back", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
+                            Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = builtInToolText("Back", "Kembali"), tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
                         }
                     },
                     actions = {
                         if (!searchExpanded) {
                             IconButton(onClick = { searchExpanded = true }) {
-                                Icon(painterResource(R.drawable.ic_symbol_search), contentDescription = "Search books", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
+                                Icon(painterResource(R.drawable.ic_symbol_search), contentDescription = builtInToolText("Search books", "Cari buku"), tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
                             }
                         }
                         if (books.isNotEmpty()) {
@@ -907,18 +909,18 @@ internal fun BooksTool(onBack: () -> Unit) {
                                     .edit().putBoolean("grid_view", gridView).apply()
                             }) {
                                 Icon(painterResource(if (gridView) R.drawable.ic_symbol_view_list else R.drawable.ic_symbol_view_module),
-                                    contentDescription = if (gridView) "Switch to list view" else "Switch to grid view",
+                                    contentDescription = if (gridView) builtInToolText("Switch to list view", "Beralih ke tampilan daftar") else builtInToolText("Switch to grid view", "Beralih ke tampilan kisi"),
                                     tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
                             }
                         }
                         Box {
                             IconButton(onClick = { showLibraryMenu = true }) {
-                                Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Library options", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
+                                Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = builtInToolText("Library options", "Opsi perpustakaan"), tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
                             }
                             DropdownMenu(expanded = showLibraryMenu, onDismissRequest = { showLibraryMenu = false }) {
-                                DropdownMenuItem(text = { Text(if (sortByTitle) "Sort by recently opened" else "Sort by title") },
+                                DropdownMenuItem(text = { Text(if (sortByTitle) builtInToolText("Sort by recently opened", "Urutkan menurut terakhir dibuka") else builtInToolText("Sort by title", "Urutkan menurut judul")) },
                                     onClick = { sortByTitle = !sortByTitle; showLibraryMenu = false })
-                                DropdownMenuItem(text = { Text(if (pinnedOnly) "Show all books" else "Pinned books") },
+                                DropdownMenuItem(text = { Text(if (pinnedOnly) builtInToolText("Show all books", "Tampilkan semua buku") else builtInToolText("Pinned books", "Buku tersemat")) },
                                     leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                     onClick = { pinnedOnly = !pinnedOnly; showLibraryMenu = false })
                             }
@@ -935,15 +937,15 @@ internal fun BooksTool(onBack: () -> Unit) {
             val visibleBooks = books.filter { it.title.contains(searchQuery, ignoreCase = true) && (!pinnedOnly || it.pinned) }
                 .let { list -> if (sortByTitle) list.sortedWith(compareByDescending<BookEntry> { it.pinned }.thenBy { it.title.lowercase() })
                     else list.sortedWith(compareByDescending<BookEntry> { it.pinned }) }
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = BuiltInToolDesign.filterHorizontalInset), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(selected = !pinnedOnly, onClick = { pinnedOnly = false }, label = { Text("All books") })
-                FilterChip(selected = pinnedOnly, onClick = { pinnedOnly = true }, label = { Text("Pinned") })
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = BuiltInToolDesign.filterHorizontalInset), horizontalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space8)) {
+                FilterChip(selected = !pinnedOnly, onClick = { pinnedOnly = false }, label = { Text(builtInToolText("All books", "Semua buku")) })
+                FilterChip(selected = pinnedOnly, onClick = { pinnedOnly = true }, label = { Text(builtInToolText("Pinned", "Tersemat")) })
             }
             if (visibleBooks.isEmpty()) {
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     val booksLibraryIsEmpty = books.isEmpty() && searchQuery.isBlank() && !pinnedOnly
                     BuiltInEmptyState(
-                        title = if (booksLibraryIsEmpty) "No books yet" else "No matching books",
+                        title = if (booksLibraryIsEmpty) builtInToolText("No books yet", "Belum ada buku") else builtInToolText("No matching books", "Tidak ada buku yang cocok"),
                         message = if (booksLibraryIsEmpty) "Supports EPUB, PDF, and TXT" else null,
                         titleColor = fg
                     )
@@ -953,27 +955,27 @@ internal fun BooksTool(onBack: () -> Unit) {
                     LazyVerticalGrid(
                         columns = GridCells.Adaptive(minSize = 150.dp),
                         modifier = Modifier.weight(1f).fillMaxWidth(),
-                        contentPadding = PaddingValues(top = 8.dp, bottom = 96.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        contentPadding = PaddingValues(top = BuiltInToolSpacing.space8, bottom = 96.dp),
+                        horizontalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space10),
+                        verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space10)
                     ) {
                         items(visibleBooks, key = { it.id }) { book ->
                             Surface(
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 144.dp).clickable { selectedBook = book },
                                 shape = RoundedCornerShape(BuiltInToolDesign.cardCornerRadius),
                                 color = MaterialTheme.colorScheme.surfaceContainerLow,
-                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
+                                border = androidx.compose.foundation.BorderStroke(BuiltInToolSpacing.space1, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
                             ) {
                                 Column(Modifier.padding(BuiltInToolSpacing.card), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
                                     BookCover(book, Modifier.fillMaxWidth().height(148.dp))
-                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                        if (book.pinned) Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = "Pinned",
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space4)) {
+                                        if (book.pinned) Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = builtInToolText("Pinned", "Tersemat"),
                                             tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(LauncherIconTokens.status))
                                         Text(book.title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium,
                                             color = fg, maxLines = 3, overflow = TextOverflow.Ellipsis)
                                         Box {
                                             IconButton(onClick = { bookMenuTarget = book.id }, modifier = Modifier.size(LauncherIconTokens.touchTarget)) {
-                                                Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Book actions", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
+                                                Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = builtInToolText("Book actions", "Tindakan buku"), tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
                                             }
                                             DropdownMenu(expanded = bookMenuTarget == book.id, onDismissRequest = { bookMenuTarget = null }) {
                                                 DropdownMenuItem(text = { Text(if (book.pinned) "Unpin" else "Pin") },
@@ -983,37 +985,37 @@ internal fun BooksTool(onBack: () -> Unit) {
                                                         writeBookLibrary(context, books)
                                                         bookMenuTarget = null
                                                     })
-                                                DropdownMenuItem(text = { Text("Remove") },
+                                                DropdownMenuItem(text = { Text(builtInToolText("Remove", "Hapus")) },
                                                     leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                                     onClick = { pendingDelete = book; bookMenuTarget = null })
                                             }
                                         }
                                     }
-                                    Text("${book.type.uppercase()} · ${if (book.position == 0) "Not started" else "Continue reading"}",
+                                    Text("${book.type.uppercase()} · ${if (book.position == 0) builtInToolText("Not started", "Belum dibaca") else builtInToolText("Continue reading", "Lanjutkan membaca")}",
                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
                     }
                 } else {
-                    Column(Modifier.weight(1f).padding(bottom = 96.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Column(Modifier.weight(1f).padding(bottom = 96.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space2)) {
                         visibleBooks.forEach { book ->
                             Row(
                                 Modifier.fillMaxWidth().clickable { selectedBook = book }.padding(vertical = BuiltInToolSpacing.listRowVertical, horizontal = BuiltInToolSpacing.listRowHorizontal),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 BookCover(book, Modifier.size(width = 48.dp, height = 64.dp))
-                                Column(Modifier.weight(1f).padding(start = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        if (book.pinned) Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = "Pinned", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(LauncherIconTokens.status))
+                                Column(Modifier.weight(1f).padding(start = BuiltInToolSpacing.space12), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space4)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space6)) {
+                                        if (book.pinned) Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = builtInToolText("Pinned", "Tersemat"), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(LauncherIconTokens.status))
                                         Text(book.title, style = MaterialTheme.typography.titleMedium, color = fg, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                     }
-                                    Text("${book.type.uppercase()} · ${if (book.position == 0) "Not started" else "Continue reading"}",
+                                    Text("${book.type.uppercase()} · ${if (book.position == 0) builtInToolText("Not started", "Belum dibaca") else builtInToolText("Continue reading", "Lanjutkan membaca")}",
                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Box {
                                     IconButton(onClick = { bookMenuTarget = book.id }) {
-                                        Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Book actions", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
+                                        Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = builtInToolText("Book actions", "Tindakan buku"), tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
                                     }
                                     DropdownMenu(expanded = bookMenuTarget == book.id, onDismissRequest = { bookMenuTarget = null }) {
                                         DropdownMenuItem(text = { Text(if (book.pinned) "Unpin" else "Pin") },
@@ -1023,7 +1025,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                                                 writeBookLibrary(context, books)
                                                 bookMenuTarget = null
                                             })
-                                        DropdownMenuItem(text = { Text("Remove") },
+                                        DropdownMenuItem(text = { Text(builtInToolText("Remove", "Hapus")) },
                                             leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                             onClick = { pendingDelete = book; bookMenuTarget = null })
                                     }
@@ -1045,7 +1047,7 @@ internal fun BooksTool(onBack: () -> Unit) {
               containerColor = MaterialTheme.colorScheme.primaryContainer,
               contentColor = MaterialTheme.colorScheme.onPrimaryContainer
           ) {
-              Icon(painterResource(R.drawable.ic_symbol_add), contentDescription = "Add book", modifier = Modifier.size(LauncherIconTokens.standard))
+              Icon(painterResource(R.drawable.ic_symbol_add), contentDescription = builtInToolText("Add book", "Tambah buku"), modifier = Modifier.size(LauncherIconTokens.standard))
           }
         }
     } else {
@@ -1064,7 +1066,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                         },
                         navigationIcon = {
                             IconButton(onClick = { selectedBook = null; bookContent = null; pdfBitmap = null }) {
-                                Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = "Library", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
+                                Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = builtInToolText("Library", "Perpustakaan"), tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
                             }
                         },
                         actions = {
@@ -1076,11 +1078,11 @@ internal fun BooksTool(onBack: () -> Unit) {
                                 writeBookLibrary(context, books)
                             }) {
                                 Icon(painterResource(if (currentPage in book.bookmarks) R.drawable.ic_symbol_bookmark else R.drawable.ic_symbol_bookmark_added),
-                                    contentDescription = if (currentPage in book.bookmarks) "Remove bookmark" else "Add bookmark",
+                                    contentDescription = if (currentPage in book.bookmarks) builtInToolText("Remove bookmark", "Hapus penanda") else builtInToolText("Add bookmark", "Tambah penanda"),
                                     tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
                             }
                             IconButton(onClick = { showMenu = true }) {
-                                Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Reader settings", tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
+                                Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = builtInToolText("Reader settings", "Pengaturan pembaca"), tint = fg, modifier = Modifier.size(LauncherIconTokens.standard))
                             }
                         }
                     )
@@ -1111,17 +1113,17 @@ internal fun BooksTool(onBack: () -> Unit) {
                 ) {
                     val displayedPdfBitmap = pdfBitmap
                     when {
-                        loading -> Text("Opening book…", color = fg)
-                        error != null -> Text(error ?: "", color = fg, modifier = Modifier.padding(24.dp), textAlign = TextAlign.Center)
+                        loading -> Text(builtInToolText("Opening book…", "Membuka buku…"), color = fg)
+                        error != null -> Text(error ?: "", color = fg, modifier = Modifier.padding(BuiltInToolSpacing.space24), textAlign = TextAlign.Center)
                         bookContent == null -> Text(
-                            "This file has no readable content. Try another EPUB, PDF, or TXT file.",
+                            builtInToolText("This file has no readable content. Try another EPUB, PDF, or TXT file.", "File ini tidak memiliki isi yang dapat dibaca. Coba file EPUB, PDF, atau TXT lain."),
                             color = fg,
-                            modifier = Modifier.padding(24.dp),
+                            modifier = Modifier.padding(BuiltInToolSpacing.space24),
                             textAlign = TextAlign.Center
                         )
                         book.type == "pdf" && displayedPdfBitmap != null -> Image(
                             bitmap = displayedPdfBitmap.asImageBitmap(), contentDescription = "PDF page ${currentPage + 1}",
-                            modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 12.dp)
+                            modifier = Modifier.fillMaxSize().padding(horizontal = BuiltInToolSpacing.space8, vertical = BuiltInToolSpacing.space12)
                         )
                         else -> Box(Modifier.fillMaxSize()) {
                             Text(
@@ -1139,7 +1141,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                 }
                 Text(
                     "${currentPage + 1} / ${bookContent?.pages?.size ?: "—"}",
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = BuiltInToolSpacing.space8),
                     color = fg.copy(alpha = 0.55f), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center
                 )
             }
@@ -1147,40 +1149,40 @@ internal fun BooksTool(onBack: () -> Unit) {
             if (showMenu) {
                 AlertDialog(
                     onDismissRequest = { showMenu = false },
-                    title = { Text("Reader options") },
+                    title = { Text(builtInToolText("Reader options", "Opsi pembaca")) },
                     text = {
                         Column(verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
                             Text(book.title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
                             TextButton(onClick = { menuSection = "toc"; showMenu = false }, modifier = Modifier.fillMaxWidth()) {
-                                Text("Table of contents", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
+                                Text(builtInToolText("Table of contents", "Daftar isi"), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
                             }
                             TextButton(onClick = { menuSection = "bookmarks"; showMenu = false }, modifier = Modifier.fillMaxWidth()) {
-                                Text("Bookmarks", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
+                                Text(builtInToolText("Bookmarks", "Penanda"), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
                             }
-                            Text("Text size", style = MaterialTheme.typography.labelLarge)
+                            Text(builtInToolText("Text size", "Ukuran teks"), style = MaterialTheme.typography.labelLarge)
                             Slider(value = fontSize, onValueChange = { fontSize = it }, valueRange = 15f..30f)
                         }
                     },
-                    confirmButton = { TextButton(onClick = { showMenu = false }) { Text("Done") } }
+                    confirmButton = { TextButton(onClick = { showMenu = false }) { Text(builtInToolText("Done", "Selesai")) } }
                 )
             }
 
             if (menuSection.isNotEmpty()) {
                 Surface(
-                    modifier = Modifier.fillMaxSize().padding(12.dp),
+                    modifier = Modifier.fillMaxSize().padding(BuiltInToolSpacing.space12),
                     shape = RoundedCornerShape(BuiltInToolDesign.cardCornerRadius),
                     color = MaterialTheme.colorScheme.surfaceContainerHigh
                 ) {
-                    Column(Modifier.fillMaxSize().padding(16.dp)) {
+                    Column(Modifier.fillMaxSize().padding(BuiltInToolSpacing.space16)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = { menuSection = "" }) { Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = "Back", modifier = Modifier.size(LauncherIconTokens.standard)) }
-                            Text(if (menuSection == "toc") "Table of contents" else "Bookmarks", style = MaterialTheme.typography.titleLarge)
+                            IconButton(onClick = { menuSection = "" }) { Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = builtInToolText("Back", "Kembali"), modifier = Modifier.size(LauncherIconTokens.standard)) }
+                            Text(if (menuSection == "toc") builtInToolText("Table of contents", "Daftar isi") else builtInToolText("Bookmarks", "Penanda"), style = MaterialTheme.typography.titleLarge)
                         }
                         val entries = if (menuSection == "toc") bookContent?.chapters.orEmpty() else
                             book.bookmarks.map { "Page ${it + 1}" to it }
                         if (entries.isEmpty()) {
-                            Text(if (menuSection == "toc") "No table of contents available." else "No bookmarks yet.",
-                                modifier = Modifier.padding(12.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(if (menuSection == "toc") builtInToolText("No table of contents available.", "Daftar isi tidak tersedia.") else builtInToolText("No bookmarks yet.", "Belum ada penanda."),
+                                modifier = Modifier.padding(BuiltInToolSpacing.space12), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         } else {
                             Column(Modifier.verticalScroll(rememberScrollState())) {
                                 entries.forEach { (label, position) ->
@@ -1189,7 +1191,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                                         currentPage = position.coerceIn(0, bookContent?.pages?.lastIndex ?: 0)
                                         saveProgress(currentPage)
                                         menuSection = ""
-                                    }.padding(vertical = 12.dp, horizontal = 8.dp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                    }.padding(vertical = BuiltInToolSpacing.space12, horizontal = BuiltInToolSpacing.space8), maxLines = 2, overflow = TextOverflow.Ellipsis)
                                 }
                             }
                         }
@@ -1203,8 +1205,8 @@ internal fun BooksTool(onBack: () -> Unit) {
     if (target != null) {
         AlertDialog(
             onDismissRequest = { pendingDelete = null },
-            title = { Text("Remove book?") },
-            text = { Text("Remove \"${target.title}\" from your library? The original file will not be deleted.") },
+            title = { Text(builtInToolText("Remove book?", "Hapus buku?")) },
+            text = { Text(builtInToolText("Remove \"${target.title}\" from your library? The original file will not be deleted.", "Hapus \"${target.title}\" dari perpustakaan Anda? File asli tidak akan dihapus.")) },
             confirmButton = {
                 TextButton(onClick = {
                     val remaining = books.filterNot { it.id == target.id }
@@ -1212,13 +1214,13 @@ internal fun BooksTool(onBack: () -> Unit) {
                     writeBookLibrary(context, books)
                     removeBookResources(context, target, remaining)
                     pendingDelete = null
-                }) { Text("Remove") }
+                }) { Text(builtInToolText("Remove", "Hapus")) }
             },
-            dismissButton = { TextButton(onClick = { pendingDelete = null }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { pendingDelete = null }) { Text(builtInToolText("Cancel", "Batal")) } }
         )
     }
     if (error != null && selectedBook == null) {
-        AlertDialog(onDismissRequest = { error = null }, title = { Text("Unable to add book") },
-            text = { Text(error ?: "") }, confirmButton = { TextButton(onClick = { error = null }) { Text("OK") } })
+        AlertDialog(onDismissRequest = { error = null }, title = { Text(builtInToolText("Unable to add book", "Tidak dapat menambahkan buku")) },
+            text = { Text(error ?: "") }, confirmButton = { TextButton(onClick = { error = null }) { Text(builtInToolText("OK", builtInToolText("OK", "OK"))) } })
     }
 }

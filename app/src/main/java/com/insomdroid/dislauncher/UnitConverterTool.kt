@@ -166,7 +166,7 @@ internal fun UnitConverterTool(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = BuiltInToolDesign.filterHorizontalInset),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space8),
             verticalAlignment = Alignment.CenterVertically
         ) {
             converterCategories.forEachIndexed { index, item ->
@@ -189,7 +189,7 @@ internal fun UnitConverterTool(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
                 contentAlignment = Alignment.Center
             ) {
-                BuiltInEmptyState(title = "No matching categories or units.")
+                BuiltInEmptyState(title = builtInToolText("No matching categories or units.", "Tidak ada kategori atau satuan yang cocok."))
             }
         } else Column(verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
         Column(verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.compact)) {
@@ -235,7 +235,7 @@ internal fun UnitConverterTool(
             ) {
                 Text(
                     builtInToolText("Swap units", "Tukar satuan"),
-                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = BuiltInToolSpacing.space10),
                     style = MaterialTheme.typography.labelLarge
                 )
             }
@@ -259,7 +259,7 @@ internal fun UnitConverterTool(
                 shape = RoundedCornerShape(BuiltInToolDesign.cardCornerRadius),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh
             ) {
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 18.dp)) {
+                Column(modifier = Modifier.padding(horizontal = BuiltInToolSpacing.space16, vertical = 18.dp)) {
                     Text(
                         result.ifBlank { "—" },
                         style = MaterialTheme.typography.headlineLarge,
@@ -297,7 +297,7 @@ private fun ConverterDropdown(
             contentColor = MaterialTheme.colorScheme.onSurface
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 14.dp),
+                modifier = Modifier.padding(horizontal = BuiltInToolSpacing.space12, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -316,7 +316,7 @@ private fun ConverterDropdown(
             BuiltInToolSearchField(
                 value = query,
                 onValueChange = { query = it },
-                modifier = Modifier.width(240.dp).padding(horizontal = 8.dp),
+                modifier = Modifier.width(240.dp).padding(horizontal = BuiltInToolSpacing.space8),
                 placeholder = builtInToolText("Search unit", "Cari satuan")
             )
             filteredOptions.forEach { (index, option) ->

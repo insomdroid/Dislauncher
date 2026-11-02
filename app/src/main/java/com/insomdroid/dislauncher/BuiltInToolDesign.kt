@@ -15,6 +15,19 @@ internal object BuiltInToolSpacing {
     val agendaRowHorizontal = 4.dp
     val agendaRowVertical = 8.dp
     val gridInset = 8.dp
+
+    // Raw 4-dp-grid steps used by built-in tools in place of inline literals. Values are unchanged.
+    val space1 = 1.dp
+    val space2 = 2.dp
+    val space3 = 3.dp
+    val space4 = 4.dp
+    val space5 = 5.dp
+    val space6 = 6.dp
+    val space8 = 8.dp
+    val space10 = 10.dp
+    val space12 = 12.dp
+    val space16 = 16.dp
+    val space24 = 24.dp
 }
 
 /**

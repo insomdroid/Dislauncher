@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import java.io.File
+import java.io.IOException
 
 private const val MAX_CUSTOM_WALLPAPER_BYTES = 10L * 1024L * 1024L
 private const val MAX_CUSTOM_WALLPAPER_SOURCE_PIXELS = 250_000_000L
@@ -86,7 +87,9 @@ internal fun copyWallpaperToInternalStorage(context: Context, sourceUri: Uri): U
         val target = File(directory, "custom-wallpaper-${System.currentTimeMillis()}.img")
         if (!temporaryFile.renameTo(target)) return null
         return Uri.fromFile(target)
-    } catch (_: Exception) {
+    } catch (_: IOException) {
+        return null
+    } catch (_: SecurityException) {
         return null
     } finally {
         runCatching { temporaryFile.delete() }

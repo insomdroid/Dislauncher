@@ -132,10 +132,10 @@ internal fun CalendarAgenda(timeFormat: String, compact: Boolean = false, modifi
                         }.padding(vertical = 5.dp)
                     )
                 }
-                loading -> Text("Loading calendar…", color = secondary, fontSize = 11.sp)
+                loading -> Text(builtInToolText("Loading calendar…", "Memuat kalender…"), color = secondary, fontSize = 11.sp)
                 events.isEmpty() -> {
                     Text(
-                        "No upcoming events",
+                        builtInToolText("No upcoming events", "Tidak ada acara mendatang"),
                         color = secondary,
                         fontSize = 11.sp,
                         modifier = Modifier.clickable {
@@ -196,16 +196,16 @@ internal fun CalendarAgenda(timeFormat: String, compact: Boolean = false, modifi
         val host = runCatching { java.net.URI(url).host }.getOrNull().orEmpty()
         AlertDialog(
             onDismissRequest = { pendingMeetingUrl = null },
-            title = { Text("Open meeting link?") },
-            text = { Text("This event links to $host. Continue only if you trust this destination.") },
+            title = { Text(builtInToolText("Open meeting link?", "Buka tautan rapat?")) },
+            text = { Text(builtInToolText("This event links to $host. Continue only if you trust this destination.", "Acara ini menautkan ke $host. Lanjutkan hanya jika Anda mempercayai tujuan ini.")) },
             confirmButton = {
                 TextButton(onClick = {
                     pendingMeetingUrl = null
                     openMeetingUrl(context, url)
-                }) { Text("Open link") }
+                }) { Text(builtInToolText("Open link", "Buka tautan")) }
             },
             dismissButton = {
-                TextButton(onClick = { pendingMeetingUrl = null }) { Text("Cancel") }
+                TextButton(onClick = { pendingMeetingUrl = null }) { Text(builtInToolText("Cancel", "Batal")) }
             }
         )
     }
@@ -267,7 +267,7 @@ private fun readUpcomingCalendarEvents(context: Context): List<CalendarAgendaEve
                 val url = validateCalendarMeetingUrl(candidateUrl)
                 events += CalendarAgendaEvent(
                     id = id,
-                    title = cursor.getString(titleIndex)?.trim().takeUnless { it.isNullOrEmpty() } ?: "Untitled event",
+                    title = cursor.getString(titleIndex)?.trim().takeUnless { it.isNullOrEmpty() } ?: builtInToolText("Untitled event", "Acara tanpa judul"),
                     begin = cursor.getLong(beginIndex),
                     end = end,
                     allDay = cursor.getInt(allDayIndex) != 0,
