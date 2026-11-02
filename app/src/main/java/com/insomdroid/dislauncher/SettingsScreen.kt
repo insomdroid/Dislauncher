@@ -117,14 +117,6 @@ internal fun SettingsScreen(
     var updateDialogState by remember { mutableStateOf<UpdateCheckResult?>(null) }
     var updateCheckRequested by remember { mutableStateOf(false) }
 
-    LaunchedEffect(updateCheckRequested) {
-        if (updateCheckRequested) {
-            updateDialogState = ReleaseUpdateResult.Checking
-            updateDialogState = ReleaseUpdateChecker.check(appVersion)
-            updateCheckRequested = false
-        }
-    }
-
     BackHandler(enabled = showChangelog || selectedCategory != null) {
         if (showChangelog) {
             showChangelog = false
@@ -168,6 +160,14 @@ internal fun SettingsScreen(
             @Suppress("DEPRECATION")
             context.packageManager.getPackageInfo(context.packageName, 0).versionName
         }.getOrNull() ?: "—"
+    }
+
+    LaunchedEffect(updateCheckRequested) {
+        if (updateCheckRequested) {
+            updateDialogState = ReleaseUpdateResult.Checking
+            updateDialogState = ReleaseUpdateChecker.check(appVersion)
+            updateCheckRequested = false
+        }
     }
 
     fun openSystemPage(intent: Intent) {
@@ -1110,7 +1110,10 @@ internal fun SettingsScreen(
     when (val result = updateDialogState) {
         ReleaseUpdateResult.Checking -> {
             AlertDialog(
-                onDismissRequest = { updateDialogState = null },
+                onDismissRequest = {
+                    updateDialogState = null
+                    updateCheckRequested = false
+                },
                 title = { Text("Checking for updates") },
                 text = {
                     Row(
@@ -1123,7 +1126,10 @@ internal fun SettingsScreen(
                     }
                 },
                 confirmButton = {
-                    TextButton(onClick = { updateDialogState = null }) {
+                    TextButton(onClick = {
+                        updateDialogState = null
+                        updateCheckRequested = false
+                    }) {
                         Text("Cancel")
                     }
                 }
