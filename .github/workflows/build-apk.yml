@@ -1,5 +1,5 @@
 name: Dislauncher Nightly
-# Nightly pipeline intentionally excludes automated test stages.
+# Nightly pipeline runs lint, APK assembly, and unit tests.
 
 on:
   push:
