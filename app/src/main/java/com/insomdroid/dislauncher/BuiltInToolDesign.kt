@@ -40,6 +40,11 @@ internal object BuiltInToolDesign {
     /** The shared shell adds [contentVerticalInset]; with that, 6 dp here gives a 16 dp bottom margin. */
     val fabBottomPadding = 6.dp
     val fabSize = 56.dp
+    /**
+     * Bottom space that lists and grids keep free so the last row is never hidden behind the FAB:
+     * FAB height, its bottom offset, and a 34 dp gap. Evaluates to 96 dp, matching the previous literal.
+     */
+    val fabClearance = fabSize + fabBottomPadding + 34.dp
     val contentHorizontalInset = 16.dp
     val filterHorizontalInset = 4.dp
     val contentHorizontalInsetWide = 24.dp

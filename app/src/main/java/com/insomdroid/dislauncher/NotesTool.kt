@@ -597,7 +597,7 @@ internal fun NotesTool(
                     LazyVerticalGrid(
                         columns = GridCells.Adaptive(minSize = 156.dp),
                         modifier = Modifier.weight(1f).fillMaxWidth(),
-                        contentPadding = PaddingValues(top = BuiltInToolSpacing.space8, bottom = 96.dp),
+                        contentPadding = PaddingValues(top = BuiltInToolSpacing.space8, bottom = BuiltInToolDesign.fabClearance),
                         horizontalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space10),
                         verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space10)
                     ) {

@@ -35,7 +35,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -53,7 +52,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.semantics.Role
@@ -92,7 +90,6 @@ internal fun SettingsScreen(
     onRestartLauncher: () -> Unit
 ) {
     val context = LocalContext.current
-    val configuration = LocalConfiguration.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
     var selectedCategory by remember { mutableStateOf<SettingsCategory?>(null) }
@@ -187,9 +184,9 @@ internal fun SettingsScreen(
         null -> "Settings"
     }
 
-    Scaffold(
+    BuiltInToolScaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
+        header = {
             BuiltInToolHeader(
                 title = {
                     Text(
@@ -223,17 +220,10 @@ internal fun SettingsScreen(
                 )
             )
         }
-    ) { innerPadding ->
+    ) {
         Column(
-            modifier = Modifier.fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = when {
-                    configuration.screenWidthDp > 888 -> ((configuration.screenWidthDp - 840) / 2).dp
-                    configuration.screenWidthDp >= 600 -> 24.dp
-                    else -> 20.dp
-                }),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)
         ) {
             if (showChangelog) {
                 ChangelogScreen()

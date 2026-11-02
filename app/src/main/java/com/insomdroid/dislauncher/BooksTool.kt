@@ -955,7 +955,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                     LazyVerticalGrid(
                         columns = GridCells.Adaptive(minSize = 150.dp),
                         modifier = Modifier.weight(1f).fillMaxWidth(),
-                        contentPadding = PaddingValues(top = BuiltInToolSpacing.space8, bottom = 96.dp),
+                        contentPadding = PaddingValues(top = BuiltInToolSpacing.space8, bottom = BuiltInToolDesign.fabClearance),
                         horizontalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space10),
                         verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space10)
                     ) {
@@ -998,7 +998,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                         }
                     }
                 } else {
-                    Column(Modifier.weight(1f).padding(bottom = 96.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space2)) {
+                    Column(Modifier.weight(1f).padding(bottom = BuiltInToolDesign.fabClearance).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space2)) {
                         visibleBooks.forEach { book ->
                             Row(
                                 Modifier.fillMaxWidth().clickable { selectedBook = book }.padding(vertical = BuiltInToolSpacing.listRowVertical, horizontal = BuiltInToolSpacing.listRowHorizontal),
