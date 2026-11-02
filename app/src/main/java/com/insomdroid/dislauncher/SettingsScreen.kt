@@ -29,6 +29,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -113,6 +114,16 @@ internal fun SettingsScreen(
     }
 
     var showChangelog by remember { mutableStateOf(false) }
+    var updateDialogState by remember { mutableStateOf<UpdateCheckResult?>(null) }
+    var updateCheckRequested by remember { mutableStateOf(false) }
+
+    LaunchedEffect(updateCheckRequested) {
+        if (updateCheckRequested) {
+            updateDialogState = ReleaseUpdateResult.Checking
+            updateDialogState = ReleaseUpdateChecker.check(appVersion)
+            updateCheckRequested = false
+        }
+    }
 
     BackHandler(enabled = showChangelog || selectedCategory != null) {
         if (showChangelog) {
@@ -784,16 +795,11 @@ internal fun SettingsScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    "Version" + " " + appVersion,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
+                            Text(
+                                "Version $appVersion",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                            )
                             SettingAction(
                                 "What's New",
                                 "See what's changed in every release.",
@@ -804,14 +810,45 @@ internal fun SettingsScreen(
                                 "Reloads the launcher interface.",
                                 "Restart"
                             ) { showRestartConfirmation = true }
+                        }
+                        SettingsGroup("Updates") {
                             SettingAction(
-                                "Project on GitHub",
-                                "github.com/insomdroid/dislauncher",
+                                "Check for Updates",
+                                "Check the latest stable release on GitHub.",
+                                "Check"
+                            ) {
+                                updateDialogState = ReleaseUpdateResult.Checking
+                                updateCheckRequested = true
+                            }
+                        }
+                        SettingsGroup("Community & Support") {
+                            SettingAction(
+                                "Ko-fi",
+                                "Support the development of Dislauncher.",
                                 "Open"
                             ) {
-                                openSystemPage(
-                                    Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/insomdroid/dislauncher"))
-                                )
+                                openSystemPage(Intent(Intent.ACTION_VIEW, Uri.parse("https://ko-fi.com/insomdroid")))
+                            }
+                            SettingAction(
+                                "Website",
+                                "Project information and documentation.",
+                                "Open"
+                            ) {
+                                openSystemPage(Intent(Intent.ACTION_VIEW, Uri.parse("https://insomdroid.github.io/Dislauncher/")))
+                            }
+                            SettingAction(
+                                "Reddit",
+                                "Join the Dislauncher community.",
+                                "Open"
+                            ) {
+                                openSystemPage(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.reddit.com/r/Dislauncher/")))
+                            }
+                            SettingAction(
+                                "GitHub",
+                                "Source code and project issues.",
+                                "Open"
+                            ) {
+                                openSystemPage(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/insomdroid/Dislauncher")))
                             }
                         }
                     }
@@ -1068,6 +1105,96 @@ internal fun SettingsScreen(
                 TextButton(onClick = { openDialog = "" }) { Text("Done") }
             }
         )
+    }
+
+    when (val result = updateDialogState) {
+        ReleaseUpdateResult.Checking -> {
+            AlertDialog(
+                onDismissRequest = { updateDialogState = null },
+                title = { Text("Checking for updates") },
+                text = {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        Text("Checking the latest stable release on GitHub.")
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { updateDialogState = null }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+        is ReleaseUpdateResult.Success -> {
+            val title = when {
+                result.updateAvailable -> "Update available"
+                result.isDevelopmentBuild -> "Development build"
+                else -> "You're up to date"
+            }
+            val message = when {
+                result.updateAvailable -> buildString {
+                    append("Dislauncher ")
+                    append(result.release.version)
+                    append(" is available.")
+                    if (result.release.publishedAt.isNotBlank()) {
+                        append("\\n\\nReleased: ")
+                        append(result.release.publishedAt.take(10))
+                    }
+                    if (result.release.notes.isNotBlank()) {
+                        append("\\n\\n")
+                        append(result.release.notes.take(700))
+                        if (result.release.notes.length > 700) append("…")
+                    }
+                }
+                result.isDevelopmentBuild -> "Installed: ${result.installedVersion}\\nLatest stable: ${result.release.version}\\n\\nThis development build is newer than the latest stable release. No downgrade is offered."
+                else -> "Installed: ${result.installedVersion}\\nLatest stable: ${result.release.version}"
+            }
+            AlertDialog(
+                onDismissRequest = { updateDialogState = null },
+                title = { Text(title) },
+                text = { Text(message) },
+                confirmButton = {
+                    if (result.updateAvailable) {
+                        TextButton(
+                            onClick = {
+                                updateDialogState = null
+                                openSystemPage(Intent(Intent.ACTION_VIEW, Uri.parse(result.release.releaseUrl)))
+                            }
+                        ) { Text("View Release") }
+                    } else {
+                        TextButton(onClick = { updateDialogState = null }) { Text("Done") }
+                    }
+                },
+                dismissButton = {
+                    if (result.updateAvailable) {
+                        TextButton(onClick = { updateDialogState = null }) { Text("Later") }
+                    }
+                }
+            )
+        }
+        is ReleaseUpdateResult.Failure -> {
+            AlertDialog(
+                onDismissRequest = { updateDialogState = null },
+                title = { Text("Couldn't check for updates") },
+                text = { Text(result.message) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            updateDialogState = ReleaseUpdateResult.Checking
+                            updateCheckRequested = true
+                        }
+                    ) { Text("Retry") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { updateDialogState = null }) { Text("Close") }
+                }
+            )
+        }
+        null -> Unit
     }
 
     if (showRestartConfirmation) {
