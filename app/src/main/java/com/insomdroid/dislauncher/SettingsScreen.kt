@@ -13,6 +13,7 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -164,7 +165,7 @@ internal fun SettingsScreen(
 
     LaunchedEffect(updateCheckRequested) {
         if (updateCheckRequested) {
-            updateDialogState = ReleaseUpdateResult.Checking
+            updateDialogState = UpdateCheckResult.Checking
             updateDialogState = ReleaseUpdateChecker.check(appVersion)
             updateCheckRequested = false
         }
@@ -239,6 +240,34 @@ internal fun SettingsScreen(
             if (showChangelog) {
                 ChangelogScreen()
             } else if (selectedCategory == null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Image(
+                        painter = painterResource(R.mipmap.ic_launcher),
+                        contentDescription = "Dislauncher",
+                        modifier = Modifier.size(44.dp)
+                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(
+                            "Dislauncher",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            "Minimal. Functional. Personal.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            "Version " + appVersion,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
                 Text(
                     "Choose a category",
                     style = MaterialTheme.typography.bodyMedium,
@@ -817,7 +846,7 @@ internal fun SettingsScreen(
                                 "Check the latest stable release on GitHub.",
                                 "Check"
                             ) {
-                                updateDialogState = ReleaseUpdateResult.Checking
+                                updateDialogState = UpdateCheckResult.Checking
                                 updateCheckRequested = true
                             }
                         }
@@ -1108,7 +1137,7 @@ internal fun SettingsScreen(
     }
 
     when (val result = updateDialogState) {
-        ReleaseUpdateResult.Checking -> {
+        UpdateCheckResult.Checking -> {
             AlertDialog(
                 onDismissRequest = {
                     updateDialogState = null
@@ -1135,7 +1164,7 @@ internal fun SettingsScreen(
                 }
             )
         }
-        is ReleaseUpdateResult.Success -> {
+        is UpdateCheckResult.Success -> {
             val title = when {
                 result.updateAvailable -> "Update available"
                 result.isDevelopmentBuild -> "Development build"
@@ -1182,7 +1211,7 @@ internal fun SettingsScreen(
                 }
             )
         }
-        is ReleaseUpdateResult.Failure -> {
+        is UpdateCheckResult.Failure -> {
             AlertDialog(
                 onDismissRequest = { updateDialogState = null },
                 title = { Text("Couldn't check for updates") },
@@ -1190,7 +1219,7 @@ internal fun SettingsScreen(
                 confirmButton = {
                     TextButton(
                         onClick = {
-                            updateDialogState = ReleaseUpdateResult.Checking
+                            updateDialogState = UpdateCheckResult.Checking
                             updateCheckRequested = true
                         }
                     ) { Text("Retry") }

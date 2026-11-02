@@ -106,9 +106,20 @@ internal object ReleaseUpdateChecker {
                     throw IOException("GitHub returned HTTP ${connection.responseCode}.")
                 }
 
-                val response = connection.inputStream.bufferedReader().use { it.readText() }
-                if (response.length > 1_000_000) {
-                    throw IOException("The GitHub response was too large.")
+                val response = connection.inputStream.bufferedReader().use { reader ->
+                    buildString {
+                        val buffer = CharArray(8192)
+                        var totalCharacters = 0
+                        while (true) {
+                            val count = reader.read(buffer)
+                            if (count < 0) break
+                            totalCharacters += count
+                            if (totalCharacters > 1_000_000) {
+                                throw IOException("The GitHub response was too large.")
+                            }
+                            append(buffer, 0, count)
+                        }
+                    }
                 }
                 val releaseJson = JSONObject(response)
                 if (releaseJson.optBoolean("draft", false) ||
