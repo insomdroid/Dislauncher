@@ -1147,17 +1147,17 @@ internal fun SettingsScreen(
                     append(result.release.version)
                     append(" is available.")
                     if (result.release.publishedAt.isNotBlank()) {
-                        append("\\n\\nReleased: ")
+                        append("\n\nReleased: ")
                         append(result.release.publishedAt.take(10))
                     }
                     if (result.release.notes.isNotBlank()) {
-                        append("\\n\\n")
+                        append("\n\n")
                         append(result.release.notes.take(700))
                         if (result.release.notes.length > 700) append("…")
                     }
                 }
-                result.isDevelopmentBuild -> "Installed: ${result.installedVersion}\\nLatest stable: ${result.release.version}\\n\\nThis development build is newer than the latest stable release. No downgrade is offered."
-                else -> "Installed: ${result.installedVersion}\\nLatest stable: ${result.release.version}"
+                result.isDevelopmentBuild -> "Installed: ${result.installedVersion}\nLatest stable: ${result.release.version}\n\nThis development build is newer than the latest stable release. No downgrade is offered."
+                else -> "Installed: ${result.installedVersion}\nLatest stable: ${result.release.version}"
             }
             AlertDialog(
                 onDismissRequest = { updateDialogState = null },
