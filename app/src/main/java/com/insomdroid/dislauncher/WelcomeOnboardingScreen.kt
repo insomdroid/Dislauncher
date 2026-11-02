@@ -66,9 +66,6 @@ internal fun WelcomeOnboardingScreen(
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
-    val isIndonesian = configuration.locales[0]?.language == "id"
-    fun tx(english: String, indonesian: String): String =
-        if (isIndonesian) indonesian else english
     var page by remember { mutableStateOf(0) }
     var selectedFavorites by remember { mutableStateOf(favorites.toSet()) }
     val pageCount = 3
@@ -116,7 +113,7 @@ internal fun WelcomeOnboardingScreen(
                     letterSpacing = 1.4.sp
                 )
                 Text(
-                    tx("A calmer Android Home", "Layar utama Android yang lebih tenang"),
+                    "A calmer Android Home",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -146,7 +143,7 @@ internal fun WelcomeOnboardingScreen(
                     when (currentPage) {
                         2 -> {
                             Text(
-                                tx("Choose your six favourites", "Pilih enam aplikasi favorit"),
+                                "Choose your six favourites",
                                 modifier = Modifier.fillMaxWidth(),
                                 style = MaterialTheme.typography.headlineMedium,
                                 color = MaterialTheme.colorScheme.onBackground,
@@ -155,7 +152,7 @@ internal fun WelcomeOnboardingScreen(
                             )
                             Spacer(Modifier.height(8.dp))
                             Text(
-                                tx("Choose up to six apps to appear on Home. Only your selected favourites will appear.", "Pilih hingga enam aplikasi untuk ditampilkan di Home. Hanya aplikasi pilihan Anda yang akan muncul."),
+                                "Choose up to six apps to appear on Home. Only your selected favourites will appear.",
                                 modifier = Modifier.fillMaxWidth(),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -167,7 +164,7 @@ internal fun WelcomeOnboardingScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
-                                    tx("Selected", "Dipilih"),
+                                    "Selected",
                                     style = MaterialTheme.typography.titleSmall,
                                     color = MaterialTheme.colorScheme.onBackground
                                 )
@@ -222,7 +219,7 @@ internal fun WelcomeOnboardingScreen(
                                 if (apps.isEmpty()) {
                                     item {
                                         Text(
-                                            tx("Loading apps…", "Memuat aplikasi…"),
+                                            "Loading apps…",
                                             modifier = Modifier.padding(vertical = 12.dp),
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -266,10 +263,10 @@ internal fun WelcomeOnboardingScreen(
                             Spacer(Modifier.height(22.dp))
                             Text(
                                 when (currentPage) {
-                                    0 -> tx("Less noise. More intention.", "Lebih sedikit gangguan. Lebih fokus.")
+                                    0 -> "Less noise. More intention."
                                     2 -> "A useful Home screen."
                                     3 -> "Find apps without the clutter."
-                                    else -> tx("Make it feel like yours.", "Sesuaikan dengan gaya Anda.")
+                                    else -> "Make it feel like yours."
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 style = MaterialTheme.typography.headlineLarge,
@@ -281,8 +278,8 @@ internal fun WelcomeOnboardingScreen(
                             Spacer(Modifier.height(12.dp))
                             Text(
                                 when (currentPage) {
-                                    0 -> tx("A text-first launcher for the things you check every day—not another feed to scroll.", "Launcher berbasis teks untuk hal yang Anda perlukan setiap hari, tanpa feed yang terus digulir.")
-                                    1 -> tx("Use Android's wallpaper colors, or choose system, light, dark, or black.", "Gunakan warna wallpaper Android atau pilih tema sistem, terang, gelap, maupun AMOLED.")
+                                    0 -> "A text-first launcher for the things you check every day—not another feed to scroll."
+                                    1 -> "Use Android's wallpaper colors, or choose system, light, dark, or black."
                                     else -> "A text-first launcher for the things you check every day—not another feed to scroll."
                                 },
                                 modifier = Modifier.fillMaxWidth(),
@@ -294,7 +291,7 @@ internal fun WelcomeOnboardingScreen(
                             if (currentPage == 1) {
                                 Spacer(Modifier.height(18.dp))
                                 Text(
-                                    tx("THEME", "TEMA"),
+                                    "THEME",
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Bold,
@@ -305,7 +302,7 @@ internal fun WelcomeOnboardingScreen(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     verticalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    listOf("system" to tx("System", "Sistem"), "light" to tx("Light", "Terang"), "dark" to tx("Dark", "Gelap"), "black" to "AMOLED").forEach { (value, label) ->
+                                    listOf("system" to "System", "light" to "Light", "dark" to "Dark", "black" to "AMOLED").forEach { (value, label) ->
                                         FilterChip(
                                             selected = preferences.themeMode == value,
                                             onClick = { onPreferencesChange(preferences.copy(themeMode = value)) },
@@ -315,7 +312,7 @@ internal fun WelcomeOnboardingScreen(
                                 }
                                 Spacer(Modifier.height(8.dp))
                                 TextButton(onClick = { openSystemSettings(Settings.ACTION_HOME_SETTINGS) }) {
-                                    Text(tx("Set as default Home", "Jadikan Home default"))
+                                    Text("Set as default Home")
                                 }
                             }
                         }
@@ -349,7 +346,7 @@ internal fun WelcomeOnboardingScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (page > 0) {
-                    TextButton(onClick = { page-- }) { Text(tx("Back", "Kembali")) }
+                    TextButton(onClick = { page-- }) { Text("Back") }
                 } else {
                     Text(
                         "STEP ${page + 1} OF $pageCount",
@@ -370,7 +367,7 @@ internal fun WelcomeOnboardingScreen(
                     colors = ButtonDefaults.buttonColors(),
                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp)
                 ) {
-                    Text(if (page == pageCount - 1) tx("Finish setup", "Selesai") else tx("Continue", "Lanjutkan"))
+                    Text(if (page == pageCount - 1) "Finish setup" else "Continue")
                 }
             }
         }

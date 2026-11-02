@@ -140,10 +140,7 @@ internal fun saveTasks(context: Context, tasks: List<LocalTask>) {
     if (!existingStoreIsSafe) {
         Toast.makeText(
             context,
-            builtInToolText(
-                "Calendar data could not be saved because existing data is invalid. Original data was preserved.",
-                "Data kalender tidak dapat disimpan karena data lama tidak valid. Data asli tetap dipertahankan."
-            ),
+            "Calendar data could not be saved because existing data is invalid. Original data was preserved.",
             Toast.LENGTH_LONG
         ).show()
         return
@@ -222,7 +219,7 @@ internal fun CalendarTool(
         pendingReminder = null
         if (task != null) {
             addTask(task, granted)
-            if (!granted) Toast.makeText(context, builtInToolText("Reminder saved without a notification. Allow notifications in Android settings to receive reminders.", "Pengingat disimpan tanpa notifikasi. Izinkan notifikasi di pengaturan Android untuk menerima pengingat."), Toast.LENGTH_LONG).show()
+            if (!granted) Toast.makeText(context, "Reminder saved without a notification. Allow notifications in Android settings to receive reminders.", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -305,10 +302,10 @@ internal fun CalendarTool(
                     maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
                 TextButton(onClick = { showWeekView = !showWeekView }) {
-                    Text(if (showWeekView) builtInToolText("Month", "Bulan") else builtInToolText("Week", "Minggu"))
+                    Text(if (showWeekView) "Month" else "Week")
                 }
                 TextButton(onClick = { onMonthChange(YearMonth.now()); selectedDate = LocalDate.now() }) {
-                    Text(builtInToolText("Today", "Hari ini"))
+                    Text("Today")
                 }
             }
         val calendarFirstDay = remember { WeekFields.of(Locale.getDefault()).firstDayOfWeek }
@@ -416,7 +413,7 @@ internal fun CalendarTool(
         }
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space3)) {
-                Text(if (selectedDate == LocalDate.now()) builtInToolText("Today", "Hari ini") else selectedDate.format(dateFormatter),
+                Text(if (selectedDate == LocalDate.now()) "Today" else selectedDate.format(dateFormatter),
                     style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
                 Text(buildString {
                     if (dayEvents.isNotEmpty()) append(dayEvents.size).append(if (dayEvents.size == 1) " event" else " events")
@@ -427,12 +424,12 @@ internal fun CalendarTool(
         }
         if (!calendarPermission) {
             TextButton(onClick = { calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR) }) {
-                Text(builtInToolText("Allow calendar access to show device events", "Izinkan akses kalender untuk menampilkan acara perangkat"))
+                Text("Allow calendar access to show device events")
             }
         }
         if (dayTasks.isEmpty() && dayEvents.isEmpty()) {
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                BuiltInEmptyState(title = if (!calendarPermission) builtInToolText("Calendar access is off", "Akses kalender nonaktif") else builtInToolText("Nothing scheduled", "Tidak ada jadwal"))
+                BuiltInEmptyState(title = if (!calendarPermission) "Calendar access is off" else "Nothing scheduled")
             }
         } else {
             LazyColumn(
@@ -446,7 +443,7 @@ internal fun CalendarTool(
                     if (event != null) {
                         Row(Modifier.fillMaxWidth().clickable { openDeviceCalendarEvent(context, event) }
                             .padding(horizontal = BuiltInToolSpacing.agendaRowHorizontal, vertical = BuiltInToolSpacing.agendaRowVertical), verticalAlignment = Alignment.CenterVertically) {
-                            Text(if (event.allDay) builtInToolText("All day", "Sepanjang hari") else SimpleDateFormat(
+                            Text(if (event.allDay) "All day" else SimpleDateFormat(
                                 if (android.text.format.DateFormat.is24HourFormat(context)) "HH:mm" else "h:mm a",
                                 Locale.getDefault()).format(Date(event.begin)),
                                 modifier = Modifier.width(72.dp), style = MaterialTheme.typography.labelMedium,
@@ -468,7 +465,7 @@ internal fun CalendarTool(
                                 saveTasks(context, tasks)
                             })
                         } else {
-                            Icon(painterResource(R.drawable.ic_symbol_notifications), contentDescription = builtInToolText("Reminder", "Pengingat"),
+                            Icon(painterResource(R.drawable.ic_symbol_notifications), contentDescription = "Reminder",
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(horizontal = BuiltInToolSpacing.space10).size(LauncherIconTokens.compact))
                         }
@@ -485,19 +482,19 @@ internal fun CalendarTool(
                                     Text(task.time, style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 } else {
-                                    Text(builtInToolText("No time", "Tanpa waktu"), style = MaterialTheme.typography.labelSmall,
+                                    Text("No time", style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                                if (task.type == "reminder") Text(builtInToolText("Reminder", "Pengingat"), style = MaterialTheme.typography.labelSmall,
+                                if (task.type == "reminder") Text("Reminder", style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.primary)
                             }
                         }
                         IconButton(onClick = { beginEditTask(task) }) {
-                            Icon(painterResource(R.drawable.ic_symbol_edit), contentDescription = builtInToolText("Edit task", "Edit tugas"),
+                            Icon(painterResource(R.drawable.ic_symbol_edit), contentDescription = "Edit task",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(LauncherIconTokens.compact))
                         }
                         IconButton(onClick = { deleteTarget = task }) {
-                            Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = builtInToolText("Delete task", "Hapus tugas"),
+                            Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = "Delete task",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(LauncherIconTokens.compact))
                         }
                     }
@@ -511,43 +508,43 @@ internal fun CalendarTool(
             modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = BuiltInToolDesign.fabBottomPadding).size(BuiltInToolDesign.fabSize),
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        ) { Icon(painterResource(R.drawable.ic_symbol_add), contentDescription = builtInToolText("Add task", "Tambah tugas"), modifier = Modifier.size(LauncherIconTokens.standard)) }
+        ) { Icon(painterResource(R.drawable.ic_symbol_add), contentDescription = "Add task", modifier = Modifier.size(LauncherIconTokens.standard)) }
     }
 
     if (showEditor) {
         AlertDialog(
             onDismissRequest = { showEditor = false },
-            title = { Text(if (editingTaskId == null) builtInToolText("New task", "Tugas baru") else builtInToolText("Edit task", "Edit tugas")) },
+            title = { Text(if (editingTaskId == null) "New task" else "Edit task") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space10)) {
                     OutlinedTextField(value = title, onValueChange = { title = it },
-                        modifier = Modifier.fillMaxWidth(), label = { Text(builtInToolText("Title", "Judul")) }, singleLine = true)
+                        modifier = Modifier.fillMaxWidth(), label = { Text("Title") }, singleLine = true)
                     Row(horizontalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space8)) {
                         if (type == "todo") {
                             Button(
                                 onClick = { type = "todo" },
                                 modifier = Modifier.weight(1f),
                                 contentPadding = PaddingValues(horizontal = BuiltInToolSpacing.space8, vertical = BuiltInToolSpacing.space10)
-                            ) { Text(builtInToolText("To-do", "Tugas"), maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge) }
+                            ) { Text("To-do", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge) }
                         } else {
                             FilledTonalButton(
                                 onClick = { type = "todo" },
                                 modifier = Modifier.weight(1f),
                                 contentPadding = PaddingValues(horizontal = BuiltInToolSpacing.space8, vertical = BuiltInToolSpacing.space10)
-                            ) { Text(builtInToolText("To-do", "Tugas"), maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge) }
+                            ) { Text("To-do", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge) }
                         }
                         if (type == "reminder") {
                             Button(
                                 onClick = { type = "reminder" },
                                 modifier = Modifier.weight(1f),
                                 contentPadding = PaddingValues(horizontal = BuiltInToolSpacing.space8, vertical = BuiltInToolSpacing.space10)
-                            ) { Text(builtInToolText("Reminder", "Pengingat"), maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge) }
+                            ) { Text("Reminder", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge) }
                         } else {
                             FilledTonalButton(
                                 onClick = { type = "reminder" },
                                 modifier = Modifier.weight(1f),
                                 contentPadding = PaddingValues(horizontal = BuiltInToolSpacing.space8, vertical = BuiltInToolSpacing.space10)
-                            ) { Text(builtInToolText("Reminder", "Pengingat"), maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge) }
+                            ) { Text("Reminder", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge) }
                         }
                     }
                     TextButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
@@ -562,7 +559,7 @@ internal fun CalendarTool(
                             Text(time.format(DateTimeFormatter.ofPattern("HH:mm")))
                         }
                     }
-                    Text(builtInToolText("Priority", "Prioritas"), style = MaterialTheme.typography.labelLarge)
+                    Text("Priority", style = MaterialTheme.typography.labelLarge)
                     Row(horizontalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space6)) {
                         (1..3).forEach { level ->
                             val label = priorityLabel(level)
@@ -598,11 +595,11 @@ internal fun CalendarTool(
             confirmButton = {
                 TextButton(onClick = {
                     if (title.isBlank()) {
-                        Toast.makeText(context, builtInToolText("Enter a task title", "Masukkan judul tugas"), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Enter a task title", Toast.LENGTH_SHORT).show()
                     } else {
                         val at = if (type == "reminder") date.atTime(time).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() else 0L
                         if (type == "reminder" && at <= System.currentTimeMillis()) {
-                            Toast.makeText(context, builtInToolText("Choose a future time for the reminder", "Pilih waktu mendatang untuk pengingat"), Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Choose a future time for the reminder", Toast.LENGTH_SHORT).show()
                         } else {
                             val existing = editingTaskId?.let { id -> tasks.firstOrNull { it.id == id } }
                             val task = LocalTask(
@@ -627,9 +624,9 @@ internal fun CalendarTool(
                             }
                         }
                     }
-                }) { Text(builtInToolText("Save", "Simpan")) }
+                }) { Text("Save") }
             },
-            dismissButton = { TextButton(onClick = { showEditor = false; editingTaskId = null }) { Text(builtInToolText("Cancel", "Batal")) } }
+            dismissButton = { TextButton(onClick = { showEditor = false; editingTaskId = null }) { Text("Cancel") } }
         )
     }
 
@@ -652,7 +649,7 @@ internal fun CalendarTool(
                         title = null,
                         headline = {
                             Text(
-                                builtInToolText("Select date", "Pilih tanggal"),
+                                "Select date",
                                 style = MaterialTheme.typography.titleLarge,
                                 modifier = Modifier.padding(horizontal = BuiltInToolSpacing.space24, vertical = BuiltInToolSpacing.space12)
                             )
@@ -664,7 +661,7 @@ internal fun CalendarTool(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         TextButton(onClick = { showDatePicker = false }) {
-                            Text(builtInToolText("Cancel", "Batal"))
+                            Text("Cancel")
                         }
                         TextButton(onClick = {
                             datePickerState.selectedDateMillis?.let { millis ->
@@ -672,7 +669,7 @@ internal fun CalendarTool(
                             }
                             showDatePicker = false
                         }) {
-                            Text(builtInToolText("Select", "Pilih"))
+                            Text("Select")
                         }
                     }
                 }
@@ -688,17 +685,17 @@ internal fun CalendarTool(
         )
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
-            title = { Text(builtInToolText("Select time", "Pilih waktu")) },
+            title = { Text("Select time") },
             text = { TimePicker(state = timePickerState) },
             confirmButton = {
                 TextButton(onClick = {
                     time = LocalTime.of(timePickerState.hour, timePickerState.minute)
                     showTimePicker = false
-                }) { Text(builtInToolText("Select", "Pilih")) }
+                }) { Text("Select") }
             },
             dismissButton = {
                 TextButton(onClick = { showTimePicker = false }) {
-                    Text(builtInToolText("Cancel", "Batal"))
+                    Text("Cancel")
                 }
             }
         )
@@ -707,8 +704,8 @@ internal fun CalendarTool(
     if (deleteTarget != null) {
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text(builtInToolText("Delete task?", "Hapus tugas?")) },
-            text = { Text(builtInToolText("This task will be removed from your local calendar.", "Tugas ini akan dihapus dari kalender lokal Anda.")) },
+            title = { Text("Delete task?") },
+            text = { Text("This task will be removed from your local calendar.") },
             confirmButton = {
                 TextButton(onClick = {
                     val task = deleteTarget
@@ -718,9 +715,9 @@ internal fun CalendarTool(
                         saveTasks(context, tasks)
                     }
                     deleteTarget = null
-                }) { Text(builtInToolText("Delete", "Hapus")) }
+                }) { Text("Delete") }
             },
-            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text(builtInToolText("Cancel", "Batal")) } }
+            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancel") } }
         )
     }
 }

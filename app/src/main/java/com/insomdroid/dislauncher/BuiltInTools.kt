@@ -98,7 +98,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                                     value = converterSearchQuery,
                                     onValueChange = { converterSearchQuery = it },
                                     modifier = Modifier.fillMaxWidth(),
-                                    placeholder = builtInToolText("Search units and categories", "Cari satuan dan kategori")
+                                    placeholder = "Search units and categories"
                                 )
                             } else {
                                 Text(
@@ -117,7 +117,7 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                                     else -> requestClose()
                                 }
                             }) {
-                                Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = builtInToolText("Back", "Kembali"), modifier = Modifier.size(LauncherIconTokens.standard))
+                                Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = "Back", modifier = Modifier.size(LauncherIconTokens.standard))
                             }
                         },
                         actions = {
@@ -127,25 +127,25 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                                         converterSearchQuery = ""
                                         converterSearchExpanded = false
                                     }) {
-                                        Icon(painterResource(R.drawable.ic_symbol_close), contentDescription = builtInToolText("Close search", "Tutup pencarian"), modifier = Modifier.size(LauncherIconTokens.standard))
+                                        Icon(painterResource(R.drawable.ic_symbol_close), contentDescription = "Close search", modifier = Modifier.size(LauncherIconTokens.standard))
                                     }
                                 } else {
                                     IconButton(onClick = { converterSearchExpanded = true }) {
-                                        Icon(painterResource(R.drawable.ic_symbol_search), contentDescription = builtInToolText("Search converter", "Cari konverter"), modifier = Modifier.size(LauncherIconTokens.standard))
+                                        Icon(painterResource(R.drawable.ic_symbol_search), contentDescription = "Search converter", modifier = Modifier.size(LauncherIconTokens.standard))
                                     }
                                 }
                             }
                             if (tool == BuiltInTool.CALENDAR) {
                                 IconButton(onClick = { calendarMonth = calendarMonth.minusMonths(1) }) {
-                                    Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = builtInToolText("Previous month", "Bulan sebelumnya"), modifier = Modifier.size(LauncherIconTokens.standard))
+                                    Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = "Previous month", modifier = Modifier.size(LauncherIconTokens.standard))
                                 }
                                 IconButton(onClick = { calendarMonth = calendarMonth.plusMonths(1) }) {
-                                    Icon(painterResource(R.drawable.ic_symbol_arrow_forward), contentDescription = builtInToolText("Next month", "Bulan berikutnya"), modifier = Modifier.size(LauncherIconTokens.standard))
+                                    Icon(painterResource(R.drawable.ic_symbol_arrow_forward), contentDescription = "Next month", modifier = Modifier.size(LauncherIconTokens.standard))
                                 }
                             }
                             if (tool == BuiltInTool.CALCULATOR && !calculatorShowingHistory) {
                                 TextButton(onClick = { calculatorScientificMode = !calculatorScientificMode }) {
-                                    Text(if (calculatorScientificMode) builtInToolText("Basic", "Dasar") else builtInToolText("Scientific", "Ilmiah"))
+                                    Text(if (calculatorScientificMode) "Basic" else "Scientific")
                                 }
                             }
                             if (tool == BuiltInTool.CALCULATOR) {
@@ -154,11 +154,11 @@ internal fun BuiltInToolScreen(tool: BuiltInTool, onBack: () -> Unit) {
                                         onClick = { calculatorClearHistorySignal++ },
                                         enabled = calculatorHistoryHasItems
                                     ) {
-                                        Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = builtInToolText("Clear calculator history", "Hapus riwayat kalkulator"), modifier = Modifier.size(LauncherIconTokens.standard))
+                                        Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = "Clear calculator history", modifier = Modifier.size(LauncherIconTokens.standard))
                                     }
                                 } else {
                                     IconButton(onClick = { calculatorShowingHistory = true }) {
-                                        Icon(painterResource(R.drawable.ic_symbol_history), contentDescription = builtInToolText("Open calculator history", "Buka riwayat kalkulator"), modifier = Modifier.size(LauncherIconTokens.standard))
+                                        Icon(painterResource(R.drawable.ic_symbol_history), contentDescription = "Open calculator history", modifier = Modifier.size(LauncherIconTokens.standard))
                                     }
                                 }
                             }

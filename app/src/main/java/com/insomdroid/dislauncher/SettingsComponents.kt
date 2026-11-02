@@ -1,6 +1,5 @@
 package com.insomdroid.dislauncher
 
-import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.ui.semantics.Role
@@ -30,9 +29,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-
-internal fun settingsLocalizedText(context: Context, english: String, indonesian: String): String =
-    if (context.resources.configuration.locales[0]?.language == "id") indonesian else english
 
 @Composable
 internal fun AppSelectionDialog(
@@ -77,7 +73,7 @@ internal fun AppSelectionDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text(settingsLocalizedText(context, "Done", "Selesai"))
+                Text("Done")
             }
         }
     )

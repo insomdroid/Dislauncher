@@ -109,7 +109,7 @@ internal fun preserveCorruptNotes(context: Context, rawJson: String) {
     }
     showNotesWarning(
         context,
-        builtInToolText("Notes data could not be read safely. A recovery copy was preserved; the original data was not overwritten.", "Data catatan tidak dapat dibaca dengan aman. Salinan pemulihan telah disimpan; data asli tidak ditimpa.")
+        "Notes data could not be read safely. A recovery copy was preserved; the original data was not overwritten."
     )
 }
 
@@ -403,7 +403,7 @@ internal fun NotesTool(
                 }.onFailure {
                     Toast.makeText(
                         context,
-                        builtInToolText("Could not import note archive: ", "Gagal mengimpor arsip catatan: ") + it.message.orEmpty(),
+                        "Could not import note archive: " + it.message.orEmpty(),
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -417,8 +417,8 @@ internal fun NotesTool(
                 val result = withContext(Dispatchers.IO) {
                     runCatching { writeStructuredNoteArchive(context, uri, request.title, request.document, request.labels, request.color) }
                 }
-                result.onSuccess { Toast.makeText(context, builtInToolText("Note archive exported", "Arsip catatan diekspor"), Toast.LENGTH_SHORT).show() }
-                    .onFailure { Toast.makeText(context, builtInToolText("Could not export note archive: ", "Gagal mengekspor arsip catatan: ") + it.message.orEmpty(), Toast.LENGTH_LONG).show() }
+                result.onSuccess { Toast.makeText(context, "Note archive exported", Toast.LENGTH_SHORT).show() }
+                    .onFailure { Toast.makeText(context, "Could not export note archive: " + it.message.orEmpty(), Toast.LENGTH_LONG).show() }
             }
         }
         pendingExport = null
@@ -435,8 +435,8 @@ internal fun NotesTool(
                         } ?: error("Unable to write Markdown file")
                     }
                 }
-                result.onSuccess { Toast.makeText(context, builtInToolText("Markdown exported", "Markdown diekspor"), Toast.LENGTH_SHORT).show() }
-                    .onFailure { Toast.makeText(context, builtInToolText("Could not export Markdown: ", "Gagal mengekspor Markdown: ") + it.message.orEmpty(), Toast.LENGTH_LONG).show() }
+                result.onSuccess { Toast.makeText(context, "Markdown exported", Toast.LENGTH_SHORT).show() }
+                    .onFailure { Toast.makeText(context, "Could not export Markdown: " + it.message.orEmpty(), Toast.LENGTH_LONG).show() }
             }
         }
     }
@@ -449,7 +449,7 @@ internal fun NotesTool(
             markdownText = markdownText.trimEnd() + "\n\n![Image](" + uri.toString() + ")"
             markdownCursor = markdownText.length
         }.onFailure {
-            Toast.makeText(context, builtInToolText("Could not add image", "Tidak dapat menambahkan gambar"), Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "Could not add image", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -487,10 +487,10 @@ internal fun NotesTool(
                                     value = searchQuery,
                                     onValueChange = { searchQuery = it },
                                     modifier = Modifier.fillMaxWidth(),
-                                    placeholder = builtInToolText("Search notes", "Cari catatan"),
+                                    placeholder = "Search notes",
                                     trailingIcon = {
                                         IconButton(onClick = { searchQuery = ""; searchExpanded = false }) {
-                                            Icon(painterResource(R.drawable.ic_symbol_close), contentDescription = builtInToolText("Close search", "Tutup pencarian"), modifier = Modifier.size(LauncherIconTokens.standard))
+                                            Icon(painterResource(R.drawable.ic_symbol_close), contentDescription = "Close search", modifier = Modifier.size(LauncherIconTokens.standard))
                                         }
                                     }
                                 )
@@ -505,13 +505,13 @@ internal fun NotesTool(
                         },
                         navigationIcon = {
                             IconButton(onClick = onBackRequested) {
-                                Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = builtInToolText("Back", "Kembali"), modifier = Modifier.size(LauncherIconTokens.standard))
+                                Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = "Back", modifier = Modifier.size(LauncherIconTokens.standard))
                             }
                         },
                         actions = {
                             if (!searchExpanded) {
                                 IconButton(onClick = { searchExpanded = true }) {
-                                    Icon(painterResource(R.drawable.ic_symbol_search), contentDescription = builtInToolText("Search notes", "Cari catatan"), modifier = Modifier.size(LauncherIconTokens.standard))
+                                    Icon(painterResource(R.drawable.ic_symbol_search), contentDescription = "Search notes", modifier = Modifier.size(LauncherIconTokens.standard))
                                 }
                             }
                             IconButton(onClick = {
@@ -520,21 +520,21 @@ internal fun NotesTool(
                                     .edit().putBoolean("grid_view", gridView).apply()
                             }) {
                                 Icon(painterResource(if (gridView) R.drawable.ic_symbol_view_list else R.drawable.ic_symbol_view_module),
-                                    contentDescription = if (gridView) builtInToolText("Switch to list view", "Beralih ke tampilan daftar") else builtInToolText("Switch to grid view", "Beralih ke tampilan kisi"), modifier = Modifier.size(LauncherIconTokens.standard))
+                                    contentDescription = if (gridView) "Switch to list view" else "Switch to grid view", modifier = Modifier.size(LauncherIconTokens.standard))
                             }
                             Box {
                                 IconButton(onClick = { menuTarget = "home" }) {
-                                    Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = builtInToolText("Notes options", "Opsi catatan"), modifier = Modifier.size(LauncherIconTokens.standard))
+                                    Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Notes options", modifier = Modifier.size(LauncherIconTokens.standard))
                                 }
                                 DropdownMenu(expanded = menuTarget == "home", onDismissRequest = { menuTarget = null }) {
-                                    DropdownMenuItem(text = { Text(if (pinnedOnly) builtInToolText("Show all notes", "Tampilkan semua catatan") else builtInToolText("Pinned notes", "Catatan tersemat")) },
+                                    DropdownMenuItem(text = { Text(if (pinnedOnly) "Show all notes" else "Pinned notes") },
                                         leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                         onClick = { pinnedOnly = !pinnedOnly; menuTarget = null })
-                                    DropdownMenuItem(text = { Text(if (sortByTitle) builtInToolText("Sort by modified", "Urutkan menurut perubahan") else builtInToolText("Sort by title", "Urutkan menurut judul")) },
+                                    DropdownMenuItem(text = { Text(if (sortByTitle) "Sort by modified" else "Sort by title") },
                                         onClick = { sortByTitle = !sortByTitle; menuTarget = null })
-                                    DropdownMenuItem(text = { Text(builtInToolText("Manage labels", "Kelola label")) },
+                                    DropdownMenuItem(text = { Text("Manage labels") },
                                         onClick = { menuTarget = null; showLabelManager = true })
-                                    DropdownMenuItem(text = { Text(builtInToolText("Import note archive", "Impor arsip catatan")) },
+                                    DropdownMenuItem(text = { Text("Import note archive") },
                                         leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_file_open), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                         onClick = { menuTarget = null; importLauncher.launch(arrayOf("application/zip", "application/octet-stream")) })
                                 }
@@ -545,7 +545,7 @@ internal fun NotesTool(
                 BuiltInToolHeader(
                     title = {
                         Text(
-                            title.ifBlank { builtInToolText("Untitled note", "Catatan tanpa judul") },
+                            title.ifBlank { "Untitled note" },
                             style = MaterialTheme.typography.titleMedium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -553,7 +553,7 @@ internal fun NotesTool(
                     },
                     navigationIcon = {
                         IconButton(onClick = onBackRequested) {
-                            Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = builtInToolText("Back", "Kembali"), modifier = Modifier.size(LauncherIconTokens.standard))
+                            Icon(painterResource(R.drawable.ic_symbol_arrow_back), contentDescription = "Back", modifier = Modifier.size(LauncherIconTokens.standard))
                         }
                     }
                 )
@@ -562,7 +562,7 @@ internal fun NotesTool(
     ) {
         if (!notesLoaded) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(builtInToolText("Loading notes…", "Memuat catatan…"), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Loading notes…", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else if (selectedId == null) {
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
@@ -575,8 +575,8 @@ internal fun NotesTool(
                     horizontalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space8),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    FilterChip(selected = activeLabel == null && !pinnedOnly, onClick = { activeLabel = null; pinnedOnly = false }, label = { Text(builtInToolText("All notes", "Semua catatan")) })
-                    FilterChip(selected = pinnedOnly, onClick = { pinnedOnly = !pinnedOnly; activeLabel = null }, label = { Text(builtInToolText("Pinned", "Tersemat")) })
+                    FilterChip(selected = activeLabel == null && !pinnedOnly, onClick = { activeLabel = null; pinnedOnly = false }, label = { Text("All notes") })
+                    FilterChip(selected = pinnedOnly, onClick = { pinnedOnly = !pinnedOnly; activeLabel = null }, label = { Text("Pinned") })
                     allLabels.sorted().forEach { label ->
                         FilterChip(selected = activeLabel == label, onClick = { activeLabel = if (activeLabel == label) null else label; pinnedOnly = false }, label = { Text(label) })
                     }
@@ -586,7 +586,7 @@ internal fun NotesTool(
                         val notesLibraryIsEmpty = notes.isEmpty() &&
                             searchQuery.isBlank() && !pinnedOnly && activeLabel == null
                         BuiltInEmptyState(
-                            title = if (notesLibraryIsEmpty) builtInToolText("No notes yet", "Belum ada catatan") else builtInToolText("No matching notes", "Tidak ada catatan yang cocok"),
+                            title = if (notesLibraryIsEmpty) "No notes yet" else "No matching notes",
                             icon = {
                                 Icon(painterResource(R.drawable.ic_symbol_note_add), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.illustration),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -625,13 +625,13 @@ internal fun NotesTool(
                             ) {
                                 Column(Modifier.padding(BuiltInToolSpacing.card), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        if (note.pinned) Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = builtInToolText("Pinned", "Tersemat"),
+                                        if (note.pinned) Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = "Pinned",
                                             tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(LauncherIconTokens.status))
-                                        Text(note.title.ifBlank { builtInToolText("Untitled note", "Catatan tanpa judul") }, modifier = Modifier.weight(1f),
+                                        Text(note.title.ifBlank { "Untitled note" }, modifier = Modifier.weight(1f),
                                             style = MaterialTheme.typography.titleMedium, color = noteCardContentColor, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                         Box {
                                             IconButton(onClick = { menuTarget = note.id }, modifier = Modifier.size(LauncherIconTokens.touchTarget)) {
-                                                Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = builtInToolText("Note actions", "Tindakan catatan"), modifier = Modifier.size(LauncherIconTokens.standard))
+                                                Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Note actions", modifier = Modifier.size(LauncherIconTokens.standard))
                                             }
                                             DropdownMenu(expanded = menuTarget == note.id, onDismissRequest = { menuTarget = null }) {
                                                 DropdownMenuItem(text = { Text(if (note.pinned) "Unpin" else "Pin") },
@@ -640,13 +640,13 @@ internal fun NotesTool(
                                                         notes = notes.map { if (it.id == note.id) it.copy(pinned = !it.pinned) else it }
                                                         saveNotes(context, notes); menuTarget = null
                                                     })
-                                                DropdownMenuItem(text = { Text(builtInToolText("Delete", "Hapus")) },
+                                                DropdownMenuItem(text = { Text("Delete") },
                                                     leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                                     onClick = { deleteTarget = note.id; menuTarget = null })
                                             }
                                         }
                                     }
-                                    Text(note.content.ifBlank { builtInToolText("No content", "Tidak ada isi") }, style = MaterialTheme.typography.bodyMedium,
+                                    Text(note.content.ifBlank { "No content" }, style = MaterialTheme.typography.bodyMedium,
                                         color = noteCardContentColor.copy(alpha = 0.82f), maxLines = 5, overflow = TextOverflow.Ellipsis)
                                     if (note.labels.isNotEmpty()) {
                                         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space4)) {
@@ -675,12 +675,12 @@ internal fun NotesTool(
                             ) {
                                 Column(Modifier.weight(1f).padding(end = BuiltInToolSpacing.space8), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space4)) {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space6)) {
-                                        if (note.pinned) Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = builtInToolText("Pinned", "Tersemat"),
+                                        if (note.pinned) Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = "Pinned",
                                             tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(LauncherIconTokens.status))
-                                        Text(note.title.ifBlank { builtInToolText("Untitled note", "Catatan tanpa judul") }, style = MaterialTheme.typography.titleMedium,
+                                        Text(note.title.ifBlank { "Untitled note" }, style = MaterialTheme.typography.titleMedium,
                                             maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     }
-                                    Text(note.content.ifBlank { builtInToolText("No content", "Tidak ada isi") }, style = MaterialTheme.typography.bodyMedium,
+                                    Text(note.content.ifBlank { "No content" }, style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                     if (note.labels.isNotEmpty()) {
                                         Text(note.labels.joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -691,7 +691,7 @@ internal fun NotesTool(
                                 }
                                 Box {
                                     IconButton(onClick = { menuTarget = note.id }) {
-                                        Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = builtInToolText("Note actions", "Tindakan catatan"), modifier = Modifier.size(LauncherIconTokens.standard))
+                                        Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "Note actions", modifier = Modifier.size(LauncherIconTokens.standard))
                                     }
                                     DropdownMenu(expanded = menuTarget == note.id, onDismissRequest = { menuTarget = null }) {
                                         DropdownMenuItem(text = { Text(if (note.pinned) "Unpin" else "Pin") },
@@ -700,7 +700,7 @@ internal fun NotesTool(
                                                 notes = notes.map { if (it.id == note.id) it.copy(pinned = !it.pinned) else it }
                                                 saveNotes(context, notes); menuTarget = null
                                             })
-                                        DropdownMenuItem(text = { Text(builtInToolText("Delete", "Hapus")) },
+                                        DropdownMenuItem(text = { Text("Delete") },
                                             leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                             onClick = { deleteTarget = note.id; menuTarget = null })
                                     }
@@ -717,7 +717,7 @@ internal fun NotesTool(
                 modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = BuiltInToolDesign.fabBottomPadding).size(BuiltInToolDesign.fabSize),
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            ) { Icon(painterResource(R.drawable.ic_symbol_note_add), contentDescription = builtInToolText("New note", "Catatan baru"), modifier = Modifier.size(LauncherIconTokens.standard)) }
+            ) { Icon(painterResource(R.drawable.ic_symbol_note_add), contentDescription = "New note", modifier = Modifier.size(LauncherIconTokens.standard)) }
         } else {
             Column(Modifier.fillMaxSize().imePadding(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -730,7 +730,7 @@ internal fun NotesTool(
                             }
                         },
                         enabled = editHistory.undo.isNotEmpty()
-                    ) { Icon(painterResource(R.drawable.ic_symbol_undo), contentDescription = builtInToolText("Undo", "Urungkan"), modifier = Modifier.size(LauncherIconTokens.standard)) }
+                    ) { Icon(painterResource(R.drawable.ic_symbol_undo), contentDescription = "Undo", modifier = Modifier.size(LauncherIconTokens.standard)) }
                     IconButton(
                         onClick = {
                             editHistory.redo(markdownText, markdownCursor)?.let { transition ->
@@ -740,7 +740,7 @@ internal fun NotesTool(
                             }
                         },
                         enabled = editHistory.redo.isNotEmpty()
-                    ) { Icon(painterResource(R.drawable.ic_symbol_redo), contentDescription = builtInToolText("Redo", "Ulangi"), modifier = Modifier.size(LauncherIconTokens.standard)) }
+                    ) { Icon(painterResource(R.drawable.ic_symbol_redo), contentDescription = "Redo", modifier = Modifier.size(LauncherIconTokens.standard)) }
                     Spacer(Modifier.weight(1f))
                     val pinned = notes.firstOrNull { it.id == selectedId }?.pinned == true
                     IconButton(onClick = {
@@ -748,15 +748,15 @@ internal fun NotesTool(
                             .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
                         saveNotes(context, notes)
                     }) {
-                        Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = if (pinned) builtInToolText("Unpin note", "Lepas sematan catatan") else builtInToolText("Pin note", "Sematkan catatan"),
+                        Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = if (pinned) "Unpin note" else "Pin note",
                             tint = if (pinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(LauncherIconTokens.standard))
                     }
                     Box {
                         IconButton(onClick = { menuTarget = "editor" }) {
-                            Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = builtInToolText("More note actions", "Tindakan catatan lain"), modifier = Modifier.size(LauncherIconTokens.standard))
+                            Icon(painterResource(R.drawable.ic_symbol_more_vert), contentDescription = "More note actions", modifier = Modifier.size(LauncherIconTokens.standard))
                         }
                         DropdownMenu(expanded = menuTarget == "editor", onDismissRequest = { menuTarget = null }) {
-                            DropdownMenuItem(text = { Text(builtInToolText("Export Markdown (.md)", "Ekspor Markdown (.md)")) },
+                            DropdownMenuItem(text = { Text("Export Markdown (.md)") },
                                 leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_file_download), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                 onClick = {
                                     saveCurrent()
@@ -764,7 +764,7 @@ internal fun NotesTool(
                                     menuTarget = null
                                     markdownExportLauncher.launch("$filename.md")
                                 })
-                            DropdownMenuItem(text = { Text(builtInToolText("Export note archive", "Ekspor arsip catatan")) },
+                            DropdownMenuItem(text = { Text("Export note archive") },
                                 leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_file_download), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                 onClick = {
                                     saveCurrent()
@@ -778,14 +778,14 @@ internal fun NotesTool(
                                     menuTarget = null
                                     exportLauncher.launch("$filename.zip")
                                 })
-                            DropdownMenuItem(text = { Text(builtInToolText("Labels", "Label")) },
+                            DropdownMenuItem(text = { Text("Labels") },
                                 onClick = { menuTarget = null; showNoteLabels = true })
-                            DropdownMenuItem(text = { Text(builtInToolText("Note color", "Warna catatan")) },
+                            DropdownMenuItem(text = { Text("Note color") },
                                 onClick = { menuTarget = null; showColorPicker = true })
-                            DropdownMenuItem(text = { Text(builtInToolText("Insert image", "Sisipkan gambar")) },
+                            DropdownMenuItem(text = { Text("Insert image") },
                                 leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_image), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                 onClick = { menuTarget = null; imageLauncher.launch(arrayOf("image/*")) })
-                            DropdownMenuItem(text = { Text(builtInToolText("Delete note", "Hapus catatan")) },
+                            DropdownMenuItem(text = { Text("Delete note") },
                                 leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                 onClick = { deleteTarget = selectedId; menuTarget = null })
                         }
@@ -803,7 +803,7 @@ internal fun NotesTool(
                         verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space4)
                     ) {
                         Text(
-                            text = builtInToolText("NOTE TITLE", "JUDUL CATATAN"),
+                            text = "NOTE TITLE",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             letterSpacing = 1.sp
@@ -819,7 +819,7 @@ internal fun NotesTool(
                             decorationBox = { inner ->
                                 if (title.isBlank()) {
                                     Text(
-                                        builtInToolText("Add a note title…", "Tambahkan judul catatan…"),
+                                        "Add a note title…",
                                         style = MaterialTheme.typography.bodyLarge,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f)
                                     )
@@ -871,10 +871,10 @@ internal fun NotesTool(
     if (showLabelManager) {
         AlertDialog(
             onDismissRequest = { showLabelManager = false; newLabel = "" },
-            title = { Text(builtInToolText("Manage labels", "Kelola label")) },
+            title = { Text("Manage labels") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space8)) {
-                    OutlinedTextField(value = newLabel, onValueChange = { newLabel = it }, singleLine = true, label = { Text(builtInToolText("New label", "Label baru")) })
+                    OutlinedTextField(value = newLabel, onValueChange = { newLabel = it }, singleLine = true, label = { Text("New label") })
                     allLabels.sorted().forEach { label ->
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             Text(label, Modifier.weight(1f))
@@ -885,7 +885,7 @@ internal fun NotesTool(
                                 notesStore(context).edit().putString("note_labels", allLabels.sorted().joinToString(",")).apply()
                                 if (activeLabel == label) activeLabel = null
                                 currentLabels = currentLabels - label
-                            }) { Text(builtInToolText("Remove", "Hapus")) }
+                            }) { Text("Remove") }
                         }
                     }
                 }
@@ -897,15 +897,15 @@ internal fun NotesTool(
                     notesStore(context).edit().putString("note_labels", allLabels.sorted().joinToString(",")).apply()
                     newLabel = ""
                     showLabelManager = false
-                }) { Text(builtInToolText("Save", "Simpan")) }
+                }) { Text("Save") }
             },
-            dismissButton = { TextButton(onClick = { showLabelManager = false; newLabel = "" }) { Text(builtInToolText("Cancel", "Batal")) } }
+            dismissButton = { TextButton(onClick = { showLabelManager = false; newLabel = "" }) { Text("Cancel") } }
         )
     }
     if (showColorPicker) {
         AlertDialog(
             onDismissRequest = { showColorPicker = false },
-            title = { Text(builtInToolText("Note color", "Warna catatan")) },
+            title = { Text("Note color") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space8)) {
                     listOf("default", "red", "yellow", "green", "blue", "purple").forEach { color ->
@@ -931,17 +931,17 @@ internal fun NotesTool(
                     notes = notes.map { if (it.id == selectedId) it.copy(color = currentColor) else it }
                     saveNotes(context, notes)
                     showColorPicker = false
-                }) { Text(builtInToolText("Done", "Selesai")) }
+                }) { Text("Done") }
             }
         )
     }
     if (showNoteLabels) {
         AlertDialog(
             onDismissRequest = { showNoteLabels = false },
-            title = { Text(builtInToolText("Labels", "Label")) },
+            title = { Text("Labels") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space2)) {
-                    if (allLabels.isEmpty()) Text(builtInToolText("Create labels from the Notes menu first.", "Buat label dari menu Catatan terlebih dahulu."), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (allLabels.isEmpty()) Text("Create labels from the Notes menu first.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     allLabels.sorted().forEach { label ->
                         Row(Modifier.fillMaxWidth().clickable {
                             currentLabels = if (label in currentLabels) currentLabels - label else currentLabels + label
@@ -959,7 +959,7 @@ internal fun NotesTool(
                     notes = notes.map { if (it.id == selectedId) it.copy(labels = currentLabels.toList()) else it }
                     saveNotes(context, notes)
                     showNoteLabels = false
-                }) { Text(builtInToolText("Done", "Selesai")) }
+                }) { Text("Done") }
             }
         )
     }
@@ -967,8 +967,8 @@ internal fun NotesTool(
     if (deleteTarget != null) {
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text(builtInToolText("Delete note?", "Hapus catatan?")) },
-            text = { Text(builtInToolText("This note will be permanently deleted from this device.", "Catatan ini akan dihapus permanen dari perangkat ini.")) },
+            title = { Text("Delete note?") },
+            text = { Text("This note will be permanently deleted from this device.") },
             confirmButton = {
                 TextButton(onClick = {
                     val target = deleteTarget
@@ -983,9 +983,9 @@ internal fun NotesTool(
                         onEditingChanged(false)
                     }
                     deleteTarget = null
-                }) { Text(builtInToolText("Delete", "Hapus")) }
+                }) { Text("Delete") }
             },
-            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text(builtInToolText("Cancel", "Batal")) } }
+            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancel") } }
         )
     }
 }

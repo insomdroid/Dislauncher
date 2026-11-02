@@ -125,7 +125,7 @@ internal fun CalculatorTool(
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
                 if (history.isEmpty()) {
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        BuiltInEmptyState(title = builtInToolText("No calculations yet", "Belum ada perhitungan"))
+                        BuiltInEmptyState(title = "No calculations yet")
                     }
                 } else {
                     LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
@@ -214,7 +214,7 @@ internal fun CalculatorTool(
                                                 formatCalculation(ExpressionParser(expression).parse())
                                             }.getOrNull()
                                             if (calculated == null) {
-                                                result = builtInToolText("Invalid expression", "Ekspresi tidak valid")
+                                                result = "Invalid expression"
                                             } else {
                                                 result = calculated
                                                 val entry = CalculatorHistoryEntry(
@@ -267,16 +267,16 @@ internal fun CalculatorTool(
     if (showClearHistoryDialog) {
         AlertDialog(
             onDismissRequest = { showClearHistoryDialog = false },
-            title = { Text(builtInToolText("Clear calculator history?", "Hapus riwayat kalkulator?")) },
-            text = { Text(builtInToolText("Saved calculations will be removed from this device.", "Perhitungan tersimpan akan dihapus dari perangkat ini.")) },
+            title = { Text("Clear calculator history?") },
+            text = { Text("Saved calculations will be removed from this device.") },
             confirmButton = {
                 TextButton(onClick = {
                     history = emptyList()
                     saveCalculatorHistory(context, history)
                     showClearHistoryDialog = false
-                }) { Text(builtInToolText("Clear", "Bersihkan")) }
+                }) { Text("Clear") }
             },
-            dismissButton = { TextButton(onClick = { showClearHistoryDialog = false }) { Text(builtInToolText("Cancel", "Batal")) } }
+            dismissButton = { TextButton(onClick = { showClearHistoryDialog = false }) { Text("Cancel") } }
         )
     }
 }

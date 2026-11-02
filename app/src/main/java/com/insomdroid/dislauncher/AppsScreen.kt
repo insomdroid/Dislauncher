@@ -231,7 +231,7 @@ internal fun AppsScreen(
                 ) {
                     item(key = "empty-app-list") {
                         Text(
-                            if (apps.isEmpty()) builtInToolText("Loading apps…", "Memuat aplikasi…") else builtInToolText("No matching apps. Try another name.", "Aplikasi tidak ditemukan. Coba nama lain."),
+                            if (apps.isEmpty()) "Loading apps…" else "No matching apps. Try another name.",
                             color = secondary,
                             fontSize = 13.sp,
                             modifier = Modifier.padding(vertical = 18.dp)

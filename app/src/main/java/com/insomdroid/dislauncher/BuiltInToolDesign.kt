@@ -2,7 +2,6 @@ package com.insomdroid.dislauncher
 
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import java.util.Locale
 
 /** Shared spacing rhythm for the built-in tools. */
 internal object BuiltInToolSpacing {
@@ -55,7 +54,3 @@ internal object BuiltInToolDesign {
 /** Horizontal margin for tool content: 16 dp on phones, 24 dp from 600 dp wide. */
 internal fun builtInToolContentMargin(availableWidth: Dp): Dp =
     if (availableWidth >= 600.dp) BuiltInToolDesign.contentHorizontalInsetWide else BuiltInToolDesign.contentHorizontalInset
-
-/** Follow the device language while keeping English as the fallback. */
-internal fun builtInToolText(english: String, indonesian: String): String =
-    if (Locale.getDefault().language == "id") indonesian else english

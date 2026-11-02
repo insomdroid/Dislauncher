@@ -48,56 +48,56 @@ private data class ConverterCategory(
 )
 
 private val converterCategories = listOf(
-    ConverterCategory(builtInToolText("Length", "Panjang"), listOf(
-        ConverterUnit(builtInToolText("Millimeter", "Milimeter"), "mm", 0.001),
-        ConverterUnit(builtInToolText("Centimeter", "Sentimeter"), "cm", 0.01),
+    ConverterCategory("Length", listOf(
+        ConverterUnit("Millimeter", "mm", 0.001),
+        ConverterUnit("Centimeter", "cm", 0.01),
         ConverterUnit("Meter", "m", 1.0),
         ConverterUnit("Kilometer", "km", 1000.0),
-        ConverterUnit(builtInToolText("Inch", "Inci"), "in", 0.0254),
-        ConverterUnit(builtInToolText("Foot", "Kaki"), "ft", 0.3048),
-        ConverterUnit(builtInToolText("Mile", "Mil"), "mi", 1609.344)
+        ConverterUnit("Inch", "in", 0.0254),
+        ConverterUnit("Foot", "ft", 0.3048),
+        ConverterUnit("Mile", "mi", 1609.344)
     )),
-    ConverterCategory(builtInToolText("Mass", "Massa"), listOf(
-        ConverterUnit(builtInToolText("Milligram", "Miligram"), "mg", 0.001),
+    ConverterCategory("Mass", listOf(
+        ConverterUnit("Milligram", "mg", 0.001),
         ConverterUnit("Gram", "g", 1.0),
         ConverterUnit("Kilogram", "kg", 1000.0),
-        ConverterUnit(builtInToolText("Metric ton", "Ton metrik"), "t", 1_000_000.0),
-        ConverterUnit(builtInToolText("Pound", "Pon"), "lb", 453.59237),
-        ConverterUnit(builtInToolText("Ounce", "Ons"), "oz", 28.349523125)
+        ConverterUnit("Metric ton", "t", 1_000_000.0),
+        ConverterUnit("Pound", "lb", 453.59237),
+        ConverterUnit("Ounce", "oz", 28.349523125)
     )),
-    ConverterCategory(builtInToolText("Temperature", "Suhu"), listOf(
+    ConverterCategory("Temperature", listOf(
         ConverterUnit("Celsius", "°C", 1.0, 273.15),
         ConverterUnit("Fahrenheit", "°F", 5.0 / 9.0, 459.67),
         ConverterUnit("Kelvin", "K", 1.0)
     )),
-    ConverterCategory(builtInToolText("Speed", "Kecepatan"), listOf(
-        ConverterUnit(builtInToolText("Meter per second", "Meter per detik"), "m/s", 1.0),
-        ConverterUnit(builtInToolText("Kilometer per hour", "Kilometer per jam"), "km/h", 1.0 / 3.6),
-        ConverterUnit(builtInToolText("Mile per hour", "Mil per jam"), "mph", 0.44704),
+    ConverterCategory("Speed", listOf(
+        ConverterUnit("Meter per second", "m/s", 1.0),
+        ConverterUnit("Kilometer per hour", "km/h", 1.0 / 3.6),
+        ConverterUnit("Mile per hour", "mph", 0.44704),
         ConverterUnit("Knot", "kn", 0.514444444444)
     )),
-    ConverterCategory(builtInToolText("Area", "Luas"), listOf(
-        ConverterUnit(builtInToolText("Square centimeter", "Sentimeter persegi"), "cm²", 0.0001),
-        ConverterUnit(builtInToolText("Square meter", "Meter persegi"), "m²", 1.0),
-        ConverterUnit(builtInToolText("Square kilometer", "Kilometer persegi"), "km²", 1_000_000.0),
-        ConverterUnit(builtInToolText("Hectare", "Hektare"), "ha", 10_000.0),
-        ConverterUnit(builtInToolText("Acre", "Ekar"), "ac", 4046.8564224)
+    ConverterCategory("Area", listOf(
+        ConverterUnit("Square centimeter", "cm²", 0.0001),
+        ConverterUnit("Square meter", "m²", 1.0),
+        ConverterUnit("Square kilometer", "km²", 1_000_000.0),
+        ConverterUnit("Hectare", "ha", 10_000.0),
+        ConverterUnit("Acre", "ac", 4046.8564224)
     )),
-    ConverterCategory(builtInToolText("Volume", "Volume"), listOf(
+    ConverterCategory("Volume", listOf(
         ConverterUnit("Milliliter", "mL", 0.001),
         ConverterUnit("Liter", "L", 1.0),
-        ConverterUnit(builtInToolText("Cubic meter", "Meter kubik"), "m³", 1000.0),
-        ConverterUnit(builtInToolText("US gallon", "Galon AS"), "gal", 3.785411784),
-        ConverterUnit(builtInToolText("US cup", "Cangkir AS"), "cup", 0.2365882365)
+        ConverterUnit("Cubic meter", "m³", 1000.0),
+        ConverterUnit("US gallon", "gal", 3.785411784),
+        ConverterUnit("US cup", "cup", 0.2365882365)
     )),
-    ConverterCategory(builtInToolText("Time", "Waktu"), listOf(
-        ConverterUnit(builtInToolText("Millisecond", "Milidetik"), "ms", 0.001),
-        ConverterUnit(builtInToolText("Second", "Detik"), "s", 1.0),
-        ConverterUnit(builtInToolText("Minute", "Menit"), "min", 60.0),
-        ConverterUnit(builtInToolText("Hour", "Jam"), "h", 3600.0),
-        ConverterUnit(builtInToolText("Day", "Hari"), "d", 86400.0)
+    ConverterCategory("Time", listOf(
+        ConverterUnit("Millisecond", "ms", 0.001),
+        ConverterUnit("Second", "s", 1.0),
+        ConverterUnit("Minute", "min", 60.0),
+        ConverterUnit("Hour", "h", 3600.0),
+        ConverterUnit("Day", "d", 86400.0)
     )),
-    ConverterCategory(builtInToolText("Energy", "Energi"), listOf(
+    ConverterCategory("Energy", listOf(
         ConverterUnit("Joule", "J", 1.0),
         ConverterUnit("Kilojoule", "kJ", 1000.0),
         ConverterUnit("Calorie", "cal", 4.184),
@@ -105,13 +105,13 @@ private val converterCategories = listOf(
         ConverterUnit("Watt-hour", "Wh", 3600.0),
         ConverterUnit("Kilowatt-hour", "kWh", 3600000.0)
     )),
-    ConverterCategory(builtInToolText("Power", "Daya"), listOf(
+    ConverterCategory("Power", listOf(
         ConverterUnit("Watt", "W", 1.0),
         ConverterUnit("Kilowatt", "kW", 1000.0),
         ConverterUnit("Metric horsepower", "hp", 735.49875),
         ConverterUnit("Mechanical horsepower", "hp (US)", 745.699872)
     )),
-    ConverterCategory(builtInToolText("Data storage", "Penyimpanan data"), listOf(
+    ConverterCategory("Data storage", listOf(
         ConverterUnit("Byte", "B", 1.0),
         ConverterUnit("Kilobyte", "kB", 1000.0),
         ConverterUnit("Megabyte", "MB", 1000000.0),
@@ -189,12 +189,12 @@ internal fun UnitConverterTool(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
                 contentAlignment = Alignment.Center
             ) {
-                BuiltInEmptyState(title = builtInToolText("No matching categories or units.", "Tidak ada kategori atau satuan yang cocok."))
+                BuiltInEmptyState(title = "No matching categories or units.")
             }
         } else Column(verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
         Column(verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.compact)) {
             Text(
-                builtInToolText("From", "Dari"),
+                "From",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -234,7 +234,7 @@ internal fun UnitConverterTool(
                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer
             ) {
                 Text(
-                    builtInToolText("Swap units", "Tukar satuan"),
+                    "Swap units",
                     modifier = Modifier.padding(horizontal = 18.dp, vertical = BuiltInToolSpacing.space10),
                     style = MaterialTheme.typography.labelLarge
                 )
@@ -243,7 +243,7 @@ internal fun UnitConverterTool(
 
         Column(verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.compact)) {
             Text(
-                builtInToolText("Result", "Hasil"),
+                "Result",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -317,7 +317,7 @@ private fun ConverterDropdown(
                 value = query,
                 onValueChange = { query = it },
                 modifier = Modifier.width(240.dp).padding(horizontal = BuiltInToolSpacing.space8),
-                placeholder = builtInToolText("Search unit", "Cari satuan")
+                placeholder = "Search unit"
             )
             filteredOptions.forEach { (index, option) ->
                 DropdownMenuItem(
