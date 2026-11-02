@@ -20,9 +20,8 @@ class BookPageStoreTest {
         val file = temporaryFile()
         val writer = DiskBackedBookPages.Writer(file, pageLimit = 32)
         writer.append("First paragraph with enough words to create pages.\n\nSecond paragraph.")
-        val written = writer.finish()
+        val written = writer.finish() as DiskBackedBookPages
 
-        assertTrue(written is DiskBackedBookPages)
         assertEquals(written.toList(), DiskBackedBookPages.open(file)!!.toList())
         assertTrue(written.isAvailable)
     }
