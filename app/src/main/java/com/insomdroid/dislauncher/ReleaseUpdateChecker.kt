@@ -1,5 +1,6 @@
 package com.insomdroid.dislauncher
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -151,6 +152,8 @@ internal object ReleaseUpdateChecker {
             } finally {
                 connection.disconnect()
             }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (_: Exception) {
             UpdateCheckResult.Failure(
                 "Check your internet connection and try again. GitHub may also be temporarily unavailable."
