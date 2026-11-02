@@ -45,6 +45,22 @@ class ReleaseVersionTest {
     }
 
     @Test
+    fun comparesPrereleaseIdentifiersNumerically() {
+        assertTrue(
+            SemanticVersion.parse("1.3.7-alpha.10")!! >
+                SemanticVersion.parse("1.3.7-alpha.2")!!
+        )
+        assertTrue(
+            SemanticVersion.parse("1.3.7-alpha")!! >
+                SemanticVersion.parse("1.3.7-1")!!
+        )
+        assertTrue(
+            SemanticVersion.parse("1.3.7-alpha.1")!! >
+                SemanticVersion.parse("1.3.7-alpha")!!
+        )
+    }
+
+    @Test
     fun newerNightlyIsNotDowngradedToOlderStableRelease() {
         val installed = SemanticVersion.parse("1.3.7-dev.854")!!
         val latestStable = SemanticVersion.parse("1.3.6")!!
