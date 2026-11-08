@@ -135,3 +135,7 @@ Dislauncher does not require an account. Optional features may request permissio
 Dislauncher is open source under the [MIT License](LICENSE).
 
 ---
+
+## Development workflow
+
+For the project-specific ChatGPT workflow, audit checklist, copy-ready prompts, and verification rules, see [CHATGPT_DEVELOPMENT_GUIDE.md](CHATGPT_DEVELOPMENT_GUIDE.md).
