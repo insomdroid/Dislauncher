@@ -851,11 +851,16 @@ internal fun BooksTool(onBack: () -> Unit) {
         }
     }
 
-    BackHandler(enabled = selectedBook != null || showMenu || menuSection.isNotEmpty()) {
+    BackHandler(enabled = true) {
         when {
             menuSection.isNotEmpty() -> menuSection = ""
             showMenu -> showMenu = false
-            else -> { selectedBook = null; bookContent = null; pdfBitmap = null }
+            selectedBook != null -> {
+                selectedBook = null
+                bookContent = null
+                pdfBitmap = null
+            }
+            else -> onBack()
         }
     }
 
