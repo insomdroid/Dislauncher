@@ -859,7 +859,7 @@ internal fun BooksTool(onBack: () -> Unit) {
         }
     }
 
-    val bg = MaterialTheme.colorScheme.surface
+    val bg = MaterialTheme.colorScheme.background
     val fg = MaterialTheme.colorScheme.onSurface
 
     val readerBook = selectedBook
