@@ -98,7 +98,7 @@ internal fun WelcomeOnboardingScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(R.drawable.dislauncher_icon_foreground),
+                    painter = painterResource(R.drawable.ic_launcher_monochrome),
                     contentDescription = "Dislauncher logo",
                     modifier = Modifier.size(32.dp)
                 )
@@ -243,7 +243,7 @@ internal fun WelcomeOnboardingScreen(
                             ) {
                                 if (currentPage == 0) {
                                     Image(
-                                        painter = painterResource(R.drawable.dislauncher_icon_foreground),
+                                        painter = painterResource(R.drawable.ic_launcher_monochrome),
                                         contentDescription = "Dislauncher app icon",
                                         modifier = Modifier.size(96.dp)
                                     )
