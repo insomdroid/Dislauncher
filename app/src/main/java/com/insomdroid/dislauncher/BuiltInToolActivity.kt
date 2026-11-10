@@ -1,5 +1,8 @@
 package com.insomdroid.dislauncher
 
+import android.content.res.Configuration
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -29,6 +32,17 @@ internal class BuiltInToolActivity : ComponentActivity() {
         val preferences = LauncherPreferences.load(
             getSharedPreferences(DISLAUNCHER_PREFERENCES_NAME, MODE_PRIVATE)
         )
+        val systemNight = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
+            Configuration.UI_MODE_NIGHT_YES
+        val darkLaunchBackground = when (preferences.themeMode) {
+            "light" -> false
+            "dark", "black" -> true
+            else -> systemNight
+        }
+        window.setBackgroundDrawable(
+            ColorDrawable(if (darkLaunchBackground) Color.rgb(17, 17, 17) else Color.rgb(242, 242, 242))
+        )
+
         setContent {
             val systemDark = isSystemInDarkTheme()
             val isDark = when (preferences.themeMode) {

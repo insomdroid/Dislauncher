@@ -53,15 +53,6 @@ val appVersionCode = (parsedVersion?.value ?: developmentVersionName)
         }
     }
 
-// Generate the adaptive-icon foreground from the original transparent PNG.
-// The source image remains untouched in Screenshot/Minimalist Dislauncher Logo on Black.png.
-val generatedLauncherResources = layout.buildDirectory.dir("generated/res/launcherIcon")
-val generateLauncherForeground by tasks.registering(Copy::class) {
-    from(rootProject.file("Screenshot/Minimalist Dislauncher Logo on Black.png"))
-    into(generatedLauncherResources.map { it.dir("drawable-nodpi") })
-    rename { "dislauncher_icon_foreground.png" }
-}
-
 // Keep font sources checked into the repository and decode them locally into Android resources.
 // This avoids runtime and build-time font downloads.
 val generatedBundledFonts = layout.buildDirectory.dir("generated/res/bundledFonts")
@@ -128,7 +119,6 @@ android {
         }
     }
 
-    sourceSets.getByName("main").res.srcDir(generatedLauncherResources)
     sourceSets.getByName("main").res.srcDir(generatedBundledFonts)
     sourceSets.getByName("main").assets.srcDir(generatedChangelogAssets)
 
@@ -149,7 +139,7 @@ kotlin {
 }
 
 tasks.named("preBuild").configure {
-    dependsOn(generateLauncherForeground, prepareChangelogAsset, generateBundledFonts)
+    dependsOn(prepareChangelogAsset, generateBundledFonts)
 }
 
 dependencies {
