@@ -12,6 +12,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.view.WindowCompat
 
 internal class BuiltInToolActivity : ComponentActivity() {
@@ -51,7 +52,12 @@ internal class BuiltInToolActivity : ComponentActivity() {
                 else -> systemDark
             }
             val view = LocalView.current
+            val windowBackground = androidx.compose.material3.MaterialTheme.colorScheme.background
             SideEffect {
+                // Keep the Android window fallback pixel identical to the Compose surface.
+                // If Compose briefly exposes the window during a screen transition, it must
+                // not reveal the XML theme's different background color.
+                window.setBackgroundDrawable(ColorDrawable(windowBackground.toArgb()))
                 val controller = WindowCompat.getInsetsController(window, view)
                 controller.isAppearanceLightStatusBars = !isDark
                 controller.isAppearanceLightNavigationBars = !isDark
