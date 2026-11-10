@@ -51,22 +51,22 @@ internal class BuiltInToolActivity : ComponentActivity() {
                 "dark", "black" -> true
                 else -> systemDark
             }
-            val view = LocalView.current
-            val windowBackground = androidx.compose.material3.MaterialTheme.colorScheme.background
-            SideEffect {
-                // Keep the Android window fallback pixel identical to the Compose surface.
-                // If Compose briefly exposes the window during a screen transition, it must
-                // not reveal the XML theme's different background color.
-                window.setBackgroundDrawable(ColorDrawable(windowBackground.toArgb()))
-                val controller = WindowCompat.getInsetsController(window, view)
-                controller.isAppearanceLightStatusBars = !isDark
-                controller.isAppearanceLightNavigationBars = !isDark
-            }
             DislauncherTheme(
                 preferences = preferences,
                 isDark = isDark,
                 baseDensity = LocalDensity.current
             ) {
+                val view = LocalView.current
+                val windowBackground = androidx.compose.material3.MaterialTheme.colorScheme.background
+                SideEffect {
+                    // Keep the Android window fallback pixel identical to the Compose surface.
+                    // If Compose briefly exposes the window during a screen transition, it must
+                    // not reveal the XML theme's different background color.
+                    window.setBackgroundDrawable(ColorDrawable(windowBackground.toArgb()))
+                    val controller = WindowCompat.getInsetsController(window, view)
+                    controller.isAppearanceLightStatusBars = !isDark
+                    controller.isAppearanceLightNavigationBars = !isDark
+                }
                 BuiltInToolScreen(tool = tool, onBack = { finish() })
             }
         }
