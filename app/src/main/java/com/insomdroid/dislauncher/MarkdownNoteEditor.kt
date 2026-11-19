@@ -64,7 +64,8 @@ internal fun MarkdownNoteEditor(
     onValueChange: (String) -> Unit,
     onSelectionChange: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    onInsertImage: (() -> Unit)? = null
+    onInsertImage: (() -> Unit)? = null,
+    enabled: Boolean = true
 ) {
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
@@ -143,35 +144,36 @@ internal fun MarkdownNoteEditor(
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            TextButton(onClick = { preview = false }, enabled = preview) { Text("Edit") }
-            TextButton(onClick = { preview = true }, enabled = !preview) { Text("Preview") }
+            TextButton(onClick = { preview = false }, enabled = enabled && preview) { Text("Edit") }
+            TextButton(onClick = { preview = true }, enabled = enabled && !preview) { Text("Preview") }
         }
         if (!preview) {
             Row(
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                MarkdownToolButton("B") { replaceSelection("**", "**") }
-                MarkdownToolButton("I") { replaceSelection("*", "*") }
-                MarkdownToolButton("S") { replaceSelection("~~", "~~") }
-                MarkdownToolButton("H2") { prefixLine("## ") }
-                MarkdownToolButton("• List") { prefixLine("- ") }
-                MarkdownToolButton("1. List") { prefixLine("1. ") }
-                MarkdownToolButton("☐ Task") { prefixLine("- [ ] ") }
-                MarkdownToolButton("> Quote") { prefixLine("> ") }
-                MarkdownToolButton("`Code`") { replaceSelection("`", "`") }
-                MarkdownToolButton("Link") { replaceSelection("[", "](https://)", "link text") }
-                MarkdownToolButton("---") {
+                MarkdownToolButton("B", enabled = enabled) { replaceSelection("**", "**") }
+                MarkdownToolButton("I", enabled = enabled) { replaceSelection("*", "*") }
+                MarkdownToolButton("S", enabled = enabled) { replaceSelection("~~", "~~") }
+                MarkdownToolButton("H2", enabled = enabled) { prefixLine("## ") }
+                MarkdownToolButton("• List", enabled = enabled) { prefixLine("- ") }
+                MarkdownToolButton("1. List", enabled = enabled) { prefixLine("1. ") }
+                MarkdownToolButton("☐ Task", enabled = enabled) { prefixLine("- [ ] ") }
+                MarkdownToolButton("> Quote", enabled = enabled) { prefixLine("> ") }
+                MarkdownToolButton("`Code`", enabled = enabled) { replaceSelection("`", "`") }
+                MarkdownToolButton("Link", enabled = enabled) { replaceSelection("[", "](https://)", "link text") }
+                MarkdownToolButton("---", enabled = enabled) {
                     val start = field.selection.min.coerceIn(0, field.text.length)
                     val next = field.text.replaceRange(start, start, "---\n")
                     field = TextFieldValue(next, selection = TextRange(start + 4))
                     onValueChange(next)
                     onSelectionChange(field.selection.end)
                 }
-                if (onInsertImage != null) MarkdownToolButton("Image") { onInsertImage() }
+                if (onInsertImage != null) MarkdownToolButton("Image", enabled = enabled) { onInsertImage() }
             }
             BasicTextField(
                 value = field,
+                enabled = enabled,
                 onValueChange = { incoming ->
                     val previous = field
                     val cursorAfterNewline = incoming.selection.min
@@ -212,6 +214,7 @@ internal fun MarkdownNoteEditor(
                 },
                 modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)
                     .onPreviewKeyEvent { event ->
+                        if (!enabled) return@onPreviewKeyEvent false
                         if (event.type != KeyEventType.KeyDown || event.key != Key.Enter || !field.selection.collapsed) {
                             return@onPreviewKeyEvent false
                         }
@@ -304,12 +307,13 @@ internal fun MarkdownNoteEditor(
 }
 
 @Composable
-private fun MarkdownToolButton(label: String, onClick: () -> Unit) {
+private fun MarkdownToolButton(label: String, enabled: Boolean = true, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(LauncherShapeTokens.medium),
         color = MaterialTheme.colorScheme.surfaceVariant,
-        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        enabled = enabled
     ) {
         Text(label, Modifier.padding(horizontal = 10.dp, vertical = 8.dp), style = MaterialTheme.typography.labelLarge)
     }
