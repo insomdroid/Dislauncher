@@ -363,6 +363,12 @@ internal fun NotesTool(
         }
     }
 
+    fun persistNotesSnapshotAsync(snapshot: List<LocalNote>) {
+        scope.launch {
+            persistNotesSnapshot(snapshot)
+        }
+    }
+
     fun saveCurrentAsync(afterSave: () -> Unit = {}) {
         scope.launch {
             saveCurrent()
@@ -426,7 +432,7 @@ internal fun NotesTool(
                     notes = (notes + importedNote).sortedWith(
                         compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt }
                     )
-                    persistNotesSnapshot(notes)
+                    persistNotesSnapshotAsync(notes)
                     openNote(importedNote)
                 }.onFailure {
                     Toast.makeText(
@@ -615,7 +621,7 @@ internal fun NotesTool(
                     IconButton(onClick = {
                         notes = notes.map { if (it.id == selectedId) it.copy(pinned = !pinned) else it }
                             .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
-                        persistNotesSnapshot(notes)
+                        persistNotesSnapshotAsync(notes)
                     }) {
                         Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = if (pinned) "Unpin note" else "Pin note",
                             tint = if (pinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(LauncherIconTokens.standard))
@@ -743,7 +749,7 @@ internal fun NotesTool(
                                                     leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                                     onClick = {
                                                         notes = notes.map { if (it.id == note.id) it.copy(pinned = !it.pinned) else it }
-                                                        persistNotesSnapshot(notes); menuTarget = null
+                                                        persistNotesSnapshotAsync(notes); menuTarget = null
                                                     })
                                                 DropdownMenuItem(text = { Text("Delete") },
                                                     leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
@@ -803,7 +809,7 @@ internal fun NotesTool(
                                             leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_push_pin), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                             onClick = {
                                                 notes = notes.map { if (it.id == note.id) it.copy(pinned = !it.pinned) else it }
-                                                persistNotesSnapshot(notes); menuTarget = null
+                                                persistNotesSnapshotAsync(notes); menuTarget = null
                                             })
                                         DropdownMenuItem(text = { Text("Delete") },
                                             leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_delete), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
@@ -915,7 +921,7 @@ internal fun NotesTool(
                             TextButton(onClick = {
                                 allLabels = allLabels - label
                                 notes = notes.map { it.copy(labels = it.labels - label) }
-                                persistNotesSnapshot(notes)
+                                persistNotesSnapshotAsync(notes)
                                 notesStore(context).edit().putString("note_labels", allLabels.sorted().joinToString(",")).apply()
                                 if (activeLabel == label) activeLabel = null
                                 currentLabels = currentLabels - label
@@ -963,7 +969,7 @@ internal fun NotesTool(
             confirmButton = {
                 TextButton(onClick = {
                     notes = notes.map { if (it.id == selectedId) it.copy(color = currentColor) else it }
-                    persistNotesSnapshot(notes)
+                    persistNotesSnapshotAsync(notes)
                     showColorPicker = false
                 }) { Text("Done") }
             }
@@ -991,7 +997,7 @@ internal fun NotesTool(
             confirmButton = {
                 TextButton(onClick = {
                     notes = notes.map { if (it.id == selectedId) it.copy(labels = currentLabels.toList()) else it }
-                    persistNotesSnapshot(notes)
+                    persistNotesSnapshotAsync(notes)
                     showNoteLabels = false
                 }) { Text("Done") }
             }
@@ -1008,7 +1014,7 @@ internal fun NotesTool(
                     val target = deleteTarget
                     val removed = notes.firstOrNull { it.id == target }
                     notes = notes.filterNot { it.id == target }
-                    persistNotesSnapshot(notes)
+                    persistNotesSnapshotAsync(notes)
                     removed?.let { releaseUnusedNoteImageResources(context, it, notes) }
                     if (selectedId == target) {
                         selectedId = null
