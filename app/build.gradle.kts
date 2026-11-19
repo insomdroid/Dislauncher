@@ -147,6 +147,8 @@ dependencies {
     implementation(composeBom)
 
     testImplementation("junit:junit:4.13.2")
+    // Use the real org.json implementation in JVM tests instead of Android's mocked stubs.
+    testImplementation("org.json:json:20260814")
 
     implementation("androidx.core:core-ktx:1.17.0")
     implementation("androidx.activity:activity-compose:1.10.1")
