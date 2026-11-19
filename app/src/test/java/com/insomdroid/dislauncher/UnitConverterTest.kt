@@ -6,11 +6,12 @@ import org.junit.Test
 class UnitConverterTest {
     @Test
     fun convertsLengthUsingBaseUnitFactors() {
+        val millimeter = ConverterUnit("Millimeter", "mm", 0.001)
         val meter = ConverterUnit("Meter", "m", 1.0)
         val kilometer = ConverterUnit("Kilometer", "km", 1000.0)
         val inch = ConverterUnit("Inch", "in", 0.0254)
 
-        assertEquals(1.0, convertUnitValue(1000.0, meter.copy(factor = 1.0 / 1000.0), meter), 0.0000001)
+        assertEquals(1.0, convertUnitValue(1000.0, millimeter, meter), 0.0000001)
         assertEquals(1.0, convertUnitValue(1000.0, meter, kilometer), 0.0000001)
         assertEquals(0.0254, convertUnitValue(1.0, meter, inch), 0.0000001)
     }
