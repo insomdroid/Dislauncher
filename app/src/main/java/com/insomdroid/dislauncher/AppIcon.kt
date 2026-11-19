@@ -377,9 +377,9 @@ internal fun invalidateAppIconCaches(packageName: String?) {
     }
     synchronized(dominantColorCache) {
         dominantColorCache.remove(packageName)
-        dominantColorCache.snapshot().keys
-            .filter { it.startsWith("$packageName@") }
-            .forEach(dominantColorCache::remove)
+        val versionedKeys = dominantColorCache.keys
+            .filter { key -> key.startsWith("$packageName@") }
+        versionedKeys.forEach { key -> dominantColorCache.remove(key) }
     }
     synchronized(iconPackMappings) { iconPackMappings.remove(packageName) }
 }
