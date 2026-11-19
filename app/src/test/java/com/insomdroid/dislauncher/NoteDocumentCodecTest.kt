@@ -87,7 +87,7 @@ class NoteDocumentCodecTest {
             """{"version":1,"blocks":[{"id":"","type":"HEADING","level":99,"orderedIndex":0,"indentLevel":99,"spans":[]}]}"""
         )
 
-        assertEquals(1, decoded?.blocks?.single()?.level)
+        assertEquals(6, decoded?.blocks?.single()?.level)
         assertEquals(1, decoded?.blocks?.single()?.orderedIndex)
         assertEquals(5, decoded?.blocks?.single()?.indentLevel)
         assertEquals("b1", decoded?.blocks?.single()?.id)
