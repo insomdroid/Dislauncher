@@ -108,38 +108,51 @@ internal fun AppsScreen(
     val searching = query.isNotBlank()
     // Keep Dislauncher's own tools in a dedicated section so they cannot get lost
     // among installed apps or be affected by the system-app visibility preference.
-    val builtInOrder = mapOf(
-        "internal:calculator" to 0,
-        "internal:notes" to 1,
-        "internal:calendar" to 2,
-        "internal:books" to 3,
-        "internal:converter" to 4
-    )
-    val filteredBuiltIns = remember(apps, query, preferences.showBuiltInApps) {
-        if (!preferences.showBuiltInApps) emptyList() else apps.filter {
-            it.packageName.startsWith("internal:") &&
-                it.label.contains(query.trim(), ignoreCase = true)
-        }.sortedWith(
-            compareBy<LauncherApp> { builtInOrder[it.packageName] ?: Int.MAX_VALUE }
-                .thenBy { it.label.lowercase(Locale.getDefault()) }
+    val builtInOrder = remember {
+        mapOf(
+            "internal:calculator" to 0,
+            "internal:notes" to 1,
+            "internal:calendar" to 2,
+            "internal:books" to 3,
+            "internal:converter" to 4
         )
     }
-    val showSettingsEntry = "Dislauncher Settings".contains(query.trim(), ignoreCase = true)
-    val filtered = remember(apps, query) {
-        apps.filter {
-            !it.packageName.startsWith("internal:") &&
-                it.label.contains(query.trim(), ignoreCase = true)
-        }.sortedBy { it.label.lowercase(Locale.getDefault()) }
+    val normalizedQuery = query.trim()
+    // Sort the source lists only when their contents change. Previously every
+    // keystroke repeated O(n log n) sorting before the filtered rows were shown.
+    val sortedBuiltIns = remember(apps, builtInOrder) {
+        apps.asSequence()
+            .filter { it.packageName.startsWith("internal:") }
+            .sortedWith(
+                compareBy<LauncherApp> { builtInOrder[it.packageName] ?: Int.MAX_VALUE }
+                    .thenBy { it.label.lowercase(Locale.getDefault()) }
+            )
+            .toList()
+    }
+    val sortedInstalledApps = remember(apps) {
+        apps.asSequence()
+            .filterNot { it.packageName.startsWith("internal:") }
+            .sortedBy { it.label.lowercase(Locale.getDefault()) }
+            .toList()
+    }
+    val filteredBuiltIns = remember(sortedBuiltIns, normalizedQuery, preferences.showBuiltInApps) {
+        if (!preferences.showBuiltInApps) emptyList() else sortedBuiltIns.filter {
+            it.label.contains(normalizedQuery, ignoreCase = true)
+        }
+    }
+    val showSettingsEntry = "Dislauncher Settings".contains(normalizedQuery, ignoreCase = true)
+    val filtered = remember(sortedInstalledApps, normalizedQuery) {
+        sortedInstalledApps.filter {
+            it.label.contains(normalizedQuery, ignoreCase = true)
+        }
     }
     // Folders participate in app-drawer search by their names, just like apps.
-    // With an empty query, show every folder; while searching, show matching folders.
-    val filteredFolders = remember(preferences.appFolders, query) {
-        preferences.appFolders
-            .filter { it.contains(query.trim(), ignoreCase = true) }
-            .sortedBy { it.lowercase(Locale.getDefault()) }
-    }
+    // Keep the sorted source cached; typing only filters this stable ordering.
     val sortedFolders = remember(preferences.appFolders) {
         preferences.appFolders.sortedBy { it.lowercase(Locale.getDefault()) }
+    }
+    val filteredFolders = remember(sortedFolders, normalizedQuery) {
+        sortedFolders.filter { it.contains(normalizedQuery, ignoreCase = true) }
     }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -151,7 +164,7 @@ internal fun AppsScreen(
     val allAlphabetLetters = remember { listOf("#") + ('A'..'Z').map(Char::toString) }
     var scrubberProgress by remember { mutableStateOf<Float?>(null) }
     var scrubberScrollJob by remember { mutableStateOf<Job?>(null) }
-    val firstIndexByLetter = remember(filtered, filteredBuiltIns, preferences.showBuiltInApps, preferences.appFolders, searching) {
+    val firstIndexByLetter = remember(filtered, filteredBuiltIns, filteredFolders, preferences.showBuiltInApps, searching) {
         val result = linkedMapOf<String, Int>()
         // A dedicated top marker returns to the start of the list, including
         // Built-in Tools and folders before the installed apps.
