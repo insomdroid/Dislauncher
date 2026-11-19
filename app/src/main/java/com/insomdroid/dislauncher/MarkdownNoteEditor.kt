@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -62,6 +63,7 @@ private val MARKDOWN_NUMBER_REGEX: Regex = Regex("\\d+")
 
 /** Markdown-native editor. The Markdown source is canonical; preview is rendered locally. */
 @Composable
+@OptIn(ExperimentalFoundationApi::class)
 internal fun MarkdownNoteEditor(
     value: String,
     selection: Int,
@@ -159,16 +161,16 @@ internal fun MarkdownNoteEditor(
                         val marker = match.groupValues[2]
                         val content = match.groupValues[3]
                         if (content.isBlank()) {
-                            delete(lineStart, insertedRange.end)
-                            selection = TextRange(lineStart)
+                            replace(lineStart, insertedRange.end, "")
+                            this.selection = TextRange(lineStart)
                         } else {
                             val nextMarker = if (marker.trimStart().firstOrNull()?.isDigit() == true) {
                                 val number = MARKDOWN_NUMBER_REGEX.find(marker)?.value?.toIntOrNull() ?: 1
                                 marker.replace(MARKDOWN_NUMBER_REGEX, (number + 1).toString())
                             } else marker
                             val continuation = indent + nextMarker
-                            insert(insertedRange.end, continuation)
-                            selection = TextRange(insertedRange.end + continuation.length)
+                            replace(insertedRange.end, insertedRange.end, continuation)
+                            this.selection = TextRange(insertedRange.end + continuation.length)
                         }
                     }
                 }
@@ -178,23 +180,23 @@ internal fun MarkdownNoteEditor(
 
     fun replaceSelection(before: String, after: String, placeholder: String = "text") {
         field.edit {
-            val start = selection.min.coerceIn(0, length)
-            val end = selection.max.coerceIn(start, length)
+            val start = minOf(this.selection.start, this.selection.end).coerceIn(0, length)
+            val end = maxOf(this.selection.start, this.selection.end).coerceIn(start, length)
             val selected = asCharSequence().subSequence(start, end).toString().ifEmpty { placeholder }
             replace(start, end, before + selected + after)
             val selectionStart = start + before.length
-            selection = TextRange(selectionStart, selectionStart + selected.length)
+            this.selection = TextRange(selectionStart, selectionStart + selected.length)
         }
     }
 
     fun prefixLine(prefix: String) {
         field.edit {
-            val start = selection.min.coerceIn(0, length)
-            val end = selection.max.coerceIn(start, length)
+            val start = minOf(this.selection.start, this.selection.end).coerceIn(0, length)
+            val end = maxOf(this.selection.start, this.selection.end).coerceIn(start, length)
             val currentText = asCharSequence()
             val lineStart = if (start == 0) 0 else currentText.lastIndexOf('\n', start - 1).let { it + 1 }
-            insert(lineStart, prefix)
-            selection = TextRange(start + prefix.length, end + prefix.length)
+            replace(lineStart, lineStart, prefix)
+            this.selection = TextRange(start + prefix.length, end + prefix.length)
         }
     }
 
@@ -224,9 +226,9 @@ internal fun MarkdownNoteEditor(
                 MarkdownToolButton("Link", enabled = enabled) { replaceSelection("[", "](https://)", "link text") }
                 MarkdownToolButton("---", enabled = enabled) {
                     field.edit {
-                        val start = selection.min.coerceIn(0, length)
-                        insert(start, "---\n")
-                        selection = TextRange(start + 4)
+                        val start = minOf(this.selection.start, this.selection.end).coerceIn(0, length)
+                        replace(start, start, "---\n")
+                        this.selection = TextRange(start + 4)
                     }
                 }
                 if (onInsertImage != null) MarkdownToolButton("Image", enabled = enabled) { onInsertImage() }
@@ -242,7 +244,7 @@ internal fun MarkdownNoteEditor(
                             return@onPreviewKeyEvent false
                         }
                         val text = field.text.toString()
-                        val cursor = field.selection.min.coerceIn(0, text.length)
+                        val cursor = minOf(field.selection.start, field.selection.end).coerceIn(0, text.length)
                         val lineStart = if (cursor == 0) 0 else text.lastIndexOf('\n', cursor - 1) + 1
                         val lineEnd = text.indexOf('\n', cursor).let { if (it < 0) text.length else it }
                         val line = text.substring(lineStart, lineEnd)
@@ -253,16 +255,16 @@ internal fun MarkdownNoteEditor(
                         val content = match.groupValues[3]
                         field.edit {
                             if (content.isBlank()) {
-                                delete(lineStart, lineEnd)
-                                selection = TextRange(lineStart)
+                                replace(lineStart, lineEnd, "")
+                                this.selection = TextRange(lineStart)
                             } else {
                                 val nextMarker = if (marker.trimStart().firstOrNull()?.isDigit() == true) {
                                     val number = MARKDOWN_NUMBER_REGEX.find(marker)?.value?.toIntOrNull() ?: 1
                                     marker.replace(MARKDOWN_NUMBER_REGEX, (number + 1).toString())
                                 } else marker
                                 val insertion = "\n" + indent + nextMarker
-                                insert(cursor, insertion)
-                                selection = TextRange(cursor + insertion.length)
+                                replace(cursor, cursor, insertion)
+                                this.selection = TextRange(cursor + insertion.length)
                             }
                         }
                         true
