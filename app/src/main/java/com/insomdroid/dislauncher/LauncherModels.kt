@@ -6,5 +6,6 @@ internal data class LauncherApp(
     val packageName: String,
     val activityName: String,
     val label: String,
-    val isSystem: Boolean
+    val isSystem: Boolean,
+    val versionCode: Long = 0L
 )
