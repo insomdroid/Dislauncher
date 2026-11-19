@@ -118,9 +118,11 @@ internal fun loadLauncherApps(context: Context): List<LauncherApp> {
     // Resolve one record per package before reading package metadata. Some apps expose
     // multiple launcher activities, but they share one installed package version.
     return results.asSequence()
-        .mapNotNull { it.activityInfo }
-        .distinctBy { it.packageName }
-        .mapNotNull { activity ->
+        .mapNotNull { resolveInfo ->
+            resolveInfo.activityInfo?.let { activity -> resolveInfo to activity }
+        }
+        .distinctBy { (_, activity) -> activity.packageName }
+        .mapNotNull { (resolveInfo, activity) ->
             val pkg = activity.packageName
             if (pkg == context.packageName) return@mapNotNull null
             val info = activity.applicationInfo ?: return@mapNotNull null
@@ -130,9 +132,7 @@ internal fun loadLauncherApps(context: Context): List<LauncherApp> {
             LauncherApp(
                 packageName = pkg,
                 activityName = activity.name,
-                label = runCatching { activity.loadLabel(pm).toString() }
-                    .getOrDefault(pkg)
-                    .ifBlank { pkg },
+                label = resolveInfo.loadLabel(pm).toString().ifBlank { pkg },
                 isSystem = (info.flags and systemFlags) != 0,
                 versionCode = versionCode
             )
