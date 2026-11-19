@@ -28,7 +28,7 @@ class NotePersistenceTest {
 
         assertEquals("note-1", result.id)
         assertEquals("Updated title", result.title)
-        assertEquals("Heading\n\n• First item\n• Second item", result.content)
+        assertEquals("Heading\n• First item\n• Second item", result.content)
         assertEquals(20L, result.updatedAt)
         assertTrue(result.pinned)
         assertEquals(listOf("work", "ideas"), result.labels)
