@@ -17,7 +17,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.input.InputTransformation
-import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -30,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -37,8 +37,8 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
-import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.ui.text.font.FontFamily
+import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.input.key.Key
@@ -73,6 +73,8 @@ internal fun MarkdownNoteEditor(
 ) {
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
+    val currentOnValueChange by rememberUpdatedState(onValueChange)
+    val currentOnSelectionChange by rememberUpdatedState(onSelectionChange)
     var preview by remember { mutableStateOf(false) }
     val field = rememberTextFieldState(
         initialText = value,
@@ -132,8 +134,8 @@ internal fun MarkdownNoteEditor(
         snapshotFlow { field.text.toString() to field.selection.end }
             .distinctUntilChanged()
             .collect { (text, cursor) ->
-                onValueChange(text)
-                onSelectionChange(cursor)
+                currentOnValueChange(text)
+                currentOnSelectionChange(cursor)
             }
     }
 
