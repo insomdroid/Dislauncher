@@ -94,7 +94,7 @@ internal fun WeatherScreen(
             weather = fetched ?: cachedWeather?.let { convertWeatherUnit(it, weatherUnit) }
             status = if (fetched == null) "Weather is unavailable. Showing saved weather if available." else ""
             loading = false
-            onWeatherChange(fetched)
+            onWeatherChange(fetched ?: cachedWeather)
         }
     }
 
