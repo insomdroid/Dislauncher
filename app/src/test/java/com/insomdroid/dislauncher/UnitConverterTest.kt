@@ -13,7 +13,7 @@ class UnitConverterTest {
 
         assertEquals(1.0, convertUnitValue(1000.0, millimeter, meter), 0.0000001)
         assertEquals(1.0, convertUnitValue(1000.0, meter, kilometer), 0.0000001)
-        assertEquals(0.0254, convertUnitValue(1.0, meter, inch), 0.0000001)
+        assertEquals(39.3700787, convertUnitValue(1.0, meter, inch), 0.0000001)
     }
 
     @Test
