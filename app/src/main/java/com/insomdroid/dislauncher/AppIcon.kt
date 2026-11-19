@@ -348,7 +348,7 @@ private fun loadCachedAppIconBitmap(
     app: LauncherApp,
     iconPack: String
 ): Bitmap? {
-    val cacheKey = "${app.packageName}/${app.activityName}|$iconPack"
+    val cacheKey = "${app.packageName}/${app.activityName}@${app.versionCode}|$iconPack"
     appIconBitmapCache.get(cacheKey)?.let { return it }
 
     val bitmap = drawableToBitmap(resolveAppDrawable(context, app, iconPack)) ?: return null
