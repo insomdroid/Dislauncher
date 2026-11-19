@@ -16,6 +16,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -25,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,8 +37,8 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
+import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.input.key.Key
@@ -70,7 +74,10 @@ internal fun MarkdownNoteEditor(
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
     var preview by remember { mutableStateOf(false) }
-    var field by remember { mutableStateOf(TextFieldValue(value, selection = TextRange(selection.coerceIn(0, value.length)))) }
+    val field = rememberTextFieldState(
+        initialText = value,
+        initialSelection = TextRange(selection.coerceIn(0, value.length))
+    )
     val markwon = remember(context) {
         Markwon.builder(context)
             .usePlugin(StrikethroughPlugin.create())
@@ -113,29 +120,80 @@ internal fun MarkdownNoteEditor(
 
     LaunchedEffect(value, selection) {
         val safeSelection = selection.coerceIn(0, value.length)
-        if (field.text != value || field.selection.end != safeSelection) {
-            field = TextFieldValue(value, selection = TextRange(safeSelection))
+        if (field.text.toString() != value || field.selection.end != safeSelection) {
+            field.edit {
+                replace(0, length, value)
+                this.selection = TextRange(safeSelection)
+            }
+        }
+    }
+
+    LaunchedEffect(field) {
+        snapshotFlow { field.text.toString() to field.selection.end }
+            .distinctUntilChanged()
+            .collect { (text, cursor) ->
+                onValueChange(text)
+                onSelectionChange(cursor)
+            }
+    }
+
+    val markdownInputTransformation = remember {
+        InputTransformation {
+            if (changes.changeCount == 1) {
+                val insertedRange = changes.getRange(0)
+                val replacedRange = changes.getOriginalRange(0)
+                val currentText = asCharSequence()
+                val insertedNewline = replacedRange.collapsed &&
+                    insertedRange.length == 1 &&
+                    currentText.getOrNull(insertedRange.start) == '\n'
+                if (insertedNewline) {
+                    val cursorBeforeNewline = insertedRange.start
+                    val lineStart = if (cursorBeforeNewline == 0) 0
+                        else currentText.lastIndexOf('\n', cursorBeforeNewline - 1) + 1
+                    val line = currentText.subSequence(lineStart, cursorBeforeNewline).toString()
+                    val match = MARKDOWN_LIST_LINE_REGEX.matchEntire(line)
+                    if (match != null) {
+                        val indent = match.groupValues[1]
+                        val marker = match.groupValues[2]
+                        val content = match.groupValues[3]
+                        if (content.isBlank()) {
+                            delete(lineStart, insertedRange.end)
+                            selection = TextRange(lineStart)
+                        } else {
+                            val nextMarker = if (marker.trimStart().firstOrNull()?.isDigit() == true) {
+                                val number = MARKDOWN_NUMBER_REGEX.find(marker)?.value?.toIntOrNull() ?: 1
+                                marker.replace(MARKDOWN_NUMBER_REGEX, (number + 1).toString())
+                            } else marker
+                            val continuation = indent + nextMarker
+                            insert(insertedRange.end, continuation)
+                            selection = TextRange(insertedRange.end + continuation.length)
+                        }
+                    }
+                }
+            }
         }
     }
 
     fun replaceSelection(before: String, after: String, placeholder: String = "text") {
-        val start = field.selection.min.coerceIn(0, field.text.length)
-        val end = field.selection.max.coerceIn(start, field.text.length)
-        val selected = field.text.substring(start, end).ifEmpty { placeholder }
-        val nextText = field.text.replaceRange(start, end, before + selected + after)
-        val selectionStart = start + before.length
-        field = TextFieldValue(nextText, selection = TextRange(selectionStart, selectionStart + selected.length))
-        onValueChange(nextText)
-        onSelectionChange(field.selection.end)
+        field.edit {
+            val start = selection.min.coerceIn(0, length)
+            val end = selection.max.coerceIn(start, length)
+            val selected = asCharSequence().subSequence(start, end).toString().ifEmpty { placeholder }
+            replace(start, end, before + selected + after)
+            val selectionStart = start + before.length
+            selection = TextRange(selectionStart, selectionStart + selected.length)
+        }
     }
 
     fun prefixLine(prefix: String) {
-        val start = field.selection.min.coerceIn(0, field.text.length)
-        val lineStart = if (start == 0) 0 else field.text.lastIndexOf('\n', start - 1).let { it + 1 }
-        val nextText = field.text.substring(0, lineStart) + prefix + field.text.substring(lineStart)
-        field = TextFieldValue(nextText, selection = TextRange(start + prefix.length, field.selection.max + prefix.length))
-        onValueChange(nextText)
-        onSelectionChange(field.selection.end)
+        field.edit {
+            val start = selection.min.coerceIn(0, length)
+            val end = selection.max.coerceIn(start, length)
+            val currentText = asCharSequence()
+            val lineStart = if (start == 0) 0 else currentText.lastIndexOf('\n', start - 1).let { it + 1 }
+            insert(lineStart, prefix)
+            selection = TextRange(start + prefix.length, end + prefix.length)
+        }
     }
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -163,62 +221,25 @@ internal fun MarkdownNoteEditor(
                 MarkdownToolButton("`Code`", enabled = enabled) { replaceSelection("`", "`") }
                 MarkdownToolButton("Link", enabled = enabled) { replaceSelection("[", "](https://)", "link text") }
                 MarkdownToolButton("---", enabled = enabled) {
-                    val start = field.selection.min.coerceIn(0, field.text.length)
-                    val next = field.text.replaceRange(start, start, "---\n")
-                    field = TextFieldValue(next, selection = TextRange(start + 4))
-                    onValueChange(next)
-                    onSelectionChange(field.selection.end)
+                    field.edit {
+                        val start = selection.min.coerceIn(0, length)
+                        insert(start, "---\n")
+                        selection = TextRange(start + 4)
+                    }
                 }
                 if (onInsertImage != null) MarkdownToolButton("Image", enabled = enabled) { onInsertImage() }
             }
             BasicTextField(
-                value = field,
+                state = field,
                 enabled = enabled,
-                onValueChange = { incoming ->
-                    val previous = field
-                    val cursorAfterNewline = incoming.selection.min
-                    val insertedNewline = incoming.text.length == previous.text.length + 1 &&
-                        cursorAfterNewline > 0 && incoming.text.getOrNull(cursorAfterNewline - 1) == '\n'
-                    if (insertedNewline && previous.selection.collapsed) {
-                        val cursorBeforeNewline = previous.selection.min.coerceIn(0, previous.text.length)
-                        val lineStart = if (cursorBeforeNewline == 0) 0 else previous.text.lastIndexOf('\n', cursorBeforeNewline - 1) + 1
-                        val line = previous.text.substring(lineStart, cursorBeforeNewline)
-                        val match = MARKDOWN_LIST_LINE_REGEX.matchEntire(line)
-                        if (match != null) {
-                            val indent = match.groupValues[1]
-                            val marker = match.groupValues[2]
-                            val content = match.groupValues[3]
-                            if (content.isBlank()) {
-                                val nextText = incoming.text.removeRange(lineStart, cursorBeforeNewline + 1)
-                                field = TextFieldValue(nextText, selection = TextRange(lineStart))
-                                onValueChange(nextText)
-                                onSelectionChange(field.selection.end)
-                            } else {
-                                val nextMarker = if (marker.trimStart().firstOrNull()?.isDigit() == true) {
-                                    val number = MARKDOWN_NUMBER_REGEX.find(marker)?.value?.toIntOrNull() ?: 1
-                                    marker.replace(MARKDOWN_NUMBER_REGEX, (number + 1).toString())
-                                } else marker
-                                val continuation = indent + nextMarker
-                                val insertionPoint = cursorAfterNewline
-                                val nextText = incoming.text.replaceRange(insertionPoint, insertionPoint, continuation)
-                                field = TextFieldValue(nextText, selection = TextRange(insertionPoint + continuation.length))
-                                onValueChange(nextText)
-                                onSelectionChange(field.selection.end)
-                            }
-                            return@BasicTextField
-                        }
-                    }
-                    field = incoming
-                    onValueChange(incoming.text)
-                    onSelectionChange(incoming.selection.end)
-                },
+                inputTransformation = markdownInputTransformation,
                 modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)
                     .onPreviewKeyEvent { event ->
                         if (!enabled) return@onPreviewKeyEvent false
                         if (event.type != KeyEventType.KeyDown || event.key != Key.Enter || !field.selection.collapsed) {
                             return@onPreviewKeyEvent false
                         }
-                        val text = field.text
+                        val text = field.text.toString()
                         val cursor = field.selection.min.coerceIn(0, text.length)
                         val lineStart = if (cursor == 0) 0 else text.lastIndexOf('\n', cursor - 1) + 1
                         val lineEnd = text.indexOf('\n', cursor).let { if (it < 0) text.length else it }
@@ -228,21 +249,19 @@ internal fun MarkdownNoteEditor(
                         val indent = match.groupValues[1]
                         val marker = match.groupValues[2]
                         val content = match.groupValues[3]
-                        if (content.isBlank()) {
-                            val nextText = text.removeRange(lineStart, lineEnd)
-                            field = TextFieldValue(nextText, selection = TextRange(lineStart))
-                            onValueChange(nextText)
-                            onSelectionChange(field.selection.end)
-                        } else {
-                            val nextMarker = if (marker.trimStart().firstOrNull()?.isDigit() == true) {
-                                val number = MARKDOWN_NUMBER_REGEX.find(marker)?.value?.toIntOrNull() ?: 1
-                                marker.replace(MARKDOWN_NUMBER_REGEX, (number + 1).toString())
-                            } else marker
-                            val insertion = "\n" + indent + nextMarker
-                            val nextText = text.replaceRange(cursor, cursor, insertion)
-                            field = TextFieldValue(nextText, selection = TextRange(cursor + insertion.length))
-                            onValueChange(nextText)
-                            onSelectionChange(field.selection.end)
+                        field.edit {
+                            if (content.isBlank()) {
+                                delete(lineStart, lineEnd)
+                                selection = TextRange(lineStart)
+                            } else {
+                                val nextMarker = if (marker.trimStart().firstOrNull()?.isDigit() == true) {
+                                    val number = MARKDOWN_NUMBER_REGEX.find(marker)?.value?.toIntOrNull() ?: 1
+                                    marker.replace(MARKDOWN_NUMBER_REGEX, (number + 1).toString())
+                                } else marker
+                                val insertion = "\n" + indent + nextMarker
+                                insert(cursor, insertion)
+                                selection = TextRange(cursor + insertion.length)
+                            }
                         }
                         true
                     },
@@ -251,7 +270,7 @@ internal fun MarkdownNoteEditor(
                     fontFamily = FontFamily.Monospace
                 ),
                 cursorBrush = SolidColor(colors.primary),
-                decorationBox = { inner ->
+                decorator = { inner ->
                     Column {
                         if (field.text.isEmpty()) {
                             Text(
@@ -296,9 +315,9 @@ internal fun MarkdownNoteEditor(
 
                     // Re-render only when the Markdown source actually changes.
                     // Theme/recomposition updates should not parse the whole document again.
-                    if (scrollView.tag != field.text) {
-                        markwon.setMarkdown(textView, field.text)
-                        scrollView.tag = field.text
+                    if (scrollView.tag != field.text.toString()) {
+                        markwon.setMarkdown(textView, field.text.toString())
+                        scrollView.tag = field.text.toString()
                     }
                 }
             )
