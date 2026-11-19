@@ -9,6 +9,7 @@ import android.graphics.Typeface
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.provider.Settings
+import androidx.core.content.pm.PackageInfoCompat
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -113,18 +114,31 @@ internal fun loadLauncherApps(context: Context): List<LauncherApp> {
     val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
     val results = pm.queryIntentActivities(intent, 0)
     val systemFlags = ApplicationInfo.FLAG_SYSTEM or ApplicationInfo.FLAG_UPDATED_SYSTEM_APP
-    return results.mapNotNull { resolveInfo ->
-        val activity = resolveInfo.activityInfo ?: return@mapNotNull null
-        val pkg = activity.packageName
-        if (pkg == context.packageName) return@mapNotNull null
-        val info = activity.applicationInfo ?: return@mapNotNull null
-        LauncherApp(
-            packageName = pkg,
-            activityName = activity.name,
-            label = resolveInfo.loadLabel(pm).toString().ifBlank { pkg },
-            isSystem = (info.flags and systemFlags) != 0
-        )
-    }.distinctBy { it.packageName }.sortedBy { it.label.lowercase(Locale.getDefault()) }
+
+    // Resolve one record per package before reading package metadata. Some apps expose
+    // multiple launcher activities, but they share one installed package version.
+    return results.asSequence()
+        .mapNotNull { resolveInfo ->
+            resolveInfo.activityInfo?.let { activity -> resolveInfo to activity }
+        }
+        .distinctBy { (_, activity) -> activity.packageName }
+        .mapNotNull { (resolveInfo, activity) ->
+            val pkg = activity.packageName
+            if (pkg == context.packageName) return@mapNotNull null
+            val info = activity.applicationInfo ?: return@mapNotNull null
+            val versionCode = runCatching {
+                PackageInfoCompat.getLongVersionCode(pm.getPackageInfo(pkg, 0))
+            }.getOrDefault(0L)
+            LauncherApp(
+                packageName = pkg,
+                activityName = activity.name,
+                label = resolveInfo.loadLabel(pm).toString().ifBlank { pkg },
+                isSystem = (info.flags and systemFlags) != 0,
+                versionCode = versionCode
+            )
+        }
+        .sortedBy { it.label.lowercase(Locale.getDefault()) }
+        .toList()
 }
 
 internal fun launchApp(context: Context, app: LauncherApp) {

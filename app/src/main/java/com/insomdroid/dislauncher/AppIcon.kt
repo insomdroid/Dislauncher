@@ -125,7 +125,7 @@ internal fun AppIcon(
     val context = androidx.compose.ui.platform.LocalContext.current
     if (iconShape == "original") {
         val image by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
-            initialValue = null, context, app.packageName, app.activityName, iconPack
+            initialValue = null, context, app.packageName, app.activityName, app.versionCode, iconPack
         ) {
             value = withContext(Dispatchers.IO) {
                 loadCachedAppIconBitmap(context, app, iconPack)?.asImageBitmap()
@@ -150,9 +150,9 @@ internal fun AppIcon(
         }
     } else {
         val iconColor by produceState(
-            initialValue = androidx.compose.ui.graphics.Color(0xFF6488B8), context, app.packageName
+            initialValue = androidx.compose.ui.graphics.Color(0xFF6488B8), context, app.packageName, app.versionCode
         ) {
-            value = withContext(Dispatchers.IO) { dominantAppIconColor(context, app.packageName) }
+            value = withContext(Dispatchers.IO) { dominantAppIconColor(context, app) }
         }
         Box(modifier = Modifier.size(size), contentAlignment = Alignment.Center) {
             androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
@@ -190,13 +190,14 @@ private class BoundedLruCache<K, V>(private val maxSize: Int) :
 private val dominantColorCache =
     BoundedLruCache<String, androidx.compose.ui.graphics.Color>(256)
 
-private fun dominantAppIconColor(context: Context, packageName: String): androidx.compose.ui.graphics.Color {
+private fun dominantAppIconColor(context: Context, app: LauncherApp): androidx.compose.ui.graphics.Color {
+    val cacheKey = "${app.packageName}@${app.versionCode}"
     synchronized(dominantColorCache) {
-        dominantColorCache[packageName]?.let { return it }
+        dominantColorCache[cacheKey]?.let { return it }
     }
 
     val bitmap = runCatching {
-        drawableToBitmap(context.packageManager.getApplicationIcon(packageName))
+        drawableToBitmap(context.packageManager.getApplicationIcon(app.packageName))
     }.getOrNull() ?: return fallbackIconColor
 
     val buckets = HashMap<Int, Int>()
@@ -241,7 +242,7 @@ private fun dominantAppIconColor(context: Context, packageName: String): android
         }
     }
     synchronized(dominantColorCache) {
-        dominantColorCache[packageName] = result
+        dominantColorCache[cacheKey] = result
     }
     return result
 }
@@ -348,7 +349,7 @@ private fun loadCachedAppIconBitmap(
     app: LauncherApp,
     iconPack: String
 ): Bitmap? {
-    val cacheKey = "${app.packageName}/${app.activityName}|$iconPack"
+    val cacheKey = "${app.packageName}/${app.activityName}@${app.versionCode}|$iconPack"
     appIconBitmapCache.get(cacheKey)?.let { return it }
 
     val bitmap = drawableToBitmap(resolveAppDrawable(context, app, iconPack)) ?: return null
@@ -374,7 +375,12 @@ internal fun invalidateAppIconCaches(packageName: String?) {
         }
         keys.forEach { appIconBitmapCache.remove(it) }
     }
-    synchronized(dominantColorCache) { dominantColorCache.remove(packageName) }
+    synchronized(dominantColorCache) {
+        dominantColorCache.remove(packageName)
+        val versionedKeys = dominantColorCache.keys
+            .filter { key -> key.startsWith("$packageName@") }
+        versionedKeys.forEach { key -> dominantColorCache.remove(key) }
+    }
     synchronized(iconPackMappings) { iconPackMappings.remove(packageName) }
 }
 
