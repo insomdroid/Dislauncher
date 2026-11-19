@@ -67,6 +67,8 @@ import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -298,6 +300,7 @@ internal fun NotesTool(
     var editHistory by remember { mutableStateOf(MarkdownEditHistory()) }
     var pendingExport by remember { mutableStateOf<PendingNoteExport?>(null) }
     val scope = rememberCoroutineScope()
+    val noteSaveMutex = remember(context) { Mutex() }
 
     LaunchedEffect(context) {
         notes = withContext(Dispatchers.IO) { loadNotes(context) }
@@ -305,43 +308,58 @@ internal fun NotesTool(
     }
 
     fun plainText(doc: NoteDocument): String = NoteDocumentCodec.plainText(doc)
-    fun isEmptyMarkdown(markdown: String): Boolean = markdown.isBlank()
-    fun saveCurrent() {
+    suspend fun saveCurrent() {
         val id = selectedId ?: return
-        if (title.isBlank() && isEmptyMarkdown(markdownText)) {
-            if (notes.any { it.id == id }) {
-                notes = notes.filterNot { it.id == id }
-                saveNotes(context, notes)
+        val currentTitle = title
+        val currentMarkdown = markdownText
+        val currentLabelsSnapshot = currentLabels.toList()
+        val currentColorSnapshot = currentColor
+        val currentNotes = notes
+        val existing = currentNotes.firstOrNull { it.id == id }
+
+        val updatedNotes = if (currentTitle.isBlank() && currentMarkdown.isBlank()) {
+            if (existing == null) return
+            currentNotes.filterNot { it.id == id }
+        } else {
+            val normalizedTitle = currentTitle.trim()
+            if (existing != null &&
+                existing.title == normalizedTitle &&
+                existing.markdown == currentMarkdown &&
+                existing.labels.toSet() == currentLabels &&
+                existing.color == currentColorSnapshot
+            ) {
+                return
             }
-            return
+
+            val current = withContext(Dispatchers.Default) {
+                buildLocalNoteSnapshot(
+                    id = id,
+                    title = normalizedTitle,
+                    markdown = currentMarkdown,
+                    existing = existing,
+                    labels = currentLabelsSnapshot,
+                    color = currentColorSnapshot,
+                    updatedAt = System.currentTimeMillis()
+                )
+            }
+            (currentNotes.filterNot { it.id == id } + current)
+                .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
         }
-        val existing = notes.firstOrNull { it.id == id }
-        val normalizedTitle = title.trim()
-        if (existing != null &&
-            existing.title == normalizedTitle &&
-            existing.markdown == markdownText &&
-            existing.labels.toSet() == currentLabels &&
-            existing.color == currentColor
-        ) {
-            return
+
+        markdownCursor = markdownCursor.coerceIn(0, currentMarkdown.length)
+        notes = updatedNotes
+        noteSaveMutex.withLock {
+            withContext(Dispatchers.IO) {
+                saveNotes(context, updatedNotes)
+            }
         }
-        val parsedDocument = NoteDocumentCodec.fromLegacyContent(markdownText)
-        markdownCursor = markdownCursor.coerceIn(0, markdownText.length)
-        val pinned = existing?.pinned ?: false
-        val current = LocalNote(
-            id = id,
-            title = normalizedTitle,
-            content = plainText(parsedDocument),
-            updatedAt = System.currentTimeMillis(),
-            pinned = pinned,
-            documentJson = NoteDocumentCodec.encode(parsedDocument),
-            labels = currentLabels.toList(),
-            color = currentColor,
-            markdown = markdownText
-        )
-        notes = (notes.filterNot { it.id == id } + current)
-            .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
-        saveNotes(context, notes)
+    }
+
+    fun saveCurrentAsync(afterSave: () -> Unit = {}) {
+        scope.launch {
+            saveCurrent()
+            afterSave()
+        }
     }
     fun openNote(note: LocalNote) {
         selectedId = note.id
@@ -366,9 +384,10 @@ internal fun NotesTool(
         onEditingChanged(true)
     }
     fun closeEditor() {
-        saveCurrent()
-        selectedId = null
-        onEditingChanged(false)
+        saveCurrentAsync {
+            selectedId = null
+            onEditingChanged(false)
+        }
     }
 
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -601,24 +620,26 @@ internal fun NotesTool(
                             DropdownMenuItem(text = { Text("Export Markdown (.md)") },
                                 leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_file_download), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                 onClick = {
-                                    saveCurrent()
-                                    val filename = title.ifBlank { "note" }.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim().ifBlank { "note" }
-                                    menuTarget = null
-                                    markdownExportLauncher.launch("$filename.md")
+                                    saveCurrentAsync {
+                                        val filename = title.ifBlank { "note" }.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim().ifBlank { "note" }
+                                        menuTarget = null
+                                        markdownExportLauncher.launch("$filename.md")
+                                    }
                                 })
                             DropdownMenuItem(text = { Text("Export note archive") },
                                 leadingIcon = { Icon(painterResource(R.drawable.ic_symbol_file_download), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact)) },
                                 onClick = {
-                                    saveCurrent()
-                                    pendingExport = PendingNoteExport(
-                                        title,
-                                        NoteDocumentCodec.fromLegacyContent(markdownText),
-                                        currentLabels.toList(),
-                                        currentColor
-                                    )
-                                    val filename = title.ifBlank { "note" }.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim().ifBlank { "note" }
-                                    menuTarget = null
-                                    exportLauncher.launch("$filename.zip")
+                                    saveCurrentAsync {
+                                        pendingExport = PendingNoteExport(
+                                            title,
+                                            NoteDocumentCodec.fromLegacyContent(markdownText),
+                                            currentLabels.toList(),
+                                            currentColor
+                                        )
+                                        val filename = title.ifBlank { "note" }.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim().ifBlank { "note" }
+                                        menuTarget = null
+                                        exportLauncher.launch("$filename.zip")
+                                    }
                                 })
                             DropdownMenuItem(text = { Text("Labels") },
                                 onClick = { menuTarget = null; showNoteLabels = true })
