@@ -125,7 +125,7 @@ internal fun AppIcon(
     val context = androidx.compose.ui.platform.LocalContext.current
     if (iconShape == "original") {
         val image by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
-            initialValue = null, context, app.packageName, app.activityName, iconPack
+            initialValue = null, context, app.packageName, app.activityName, app.versionCode, iconPack
         ) {
             value = withContext(Dispatchers.IO) {
                 loadCachedAppIconBitmap(context, app, iconPack)?.asImageBitmap()
