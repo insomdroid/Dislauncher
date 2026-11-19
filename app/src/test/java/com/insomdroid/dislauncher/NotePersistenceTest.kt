@@ -33,7 +33,7 @@ class NotePersistenceTest {
         assertTrue(result.pinned)
         assertEquals(listOf("work", "ideas"), result.labels)
         assertEquals("blue", result.color)
-        assertEquals("# Heading\n\n- First item\n\n- Second item", result.markdown)
+        assertEquals("# Heading\n\n- First item\n- Second item", result.markdown)
         assertEquals(result.documentJson, NoteDocumentCodec.encode(
             NoteDocumentCodec.decode(result.documentJson)!!
         ))
