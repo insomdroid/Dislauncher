@@ -166,13 +166,47 @@ internal fun moveWidgetItem(
     return swapped.takeIf { allInsideGrid && !hasOverlap }
 }
 
+internal fun findWidgetPlacement(
+    items: List<WidgetPageItem>,
+    width: Int,
+    height: Int
+): Pair<Int, Int>? {
+    if (width !in 1..WIDGET_PAGE_COLUMNS || height !in 1..WIDGET_PAGE_ROWS) return null
+    for (y in 0..(WIDGET_PAGE_ROWS - height)) {
+        for (x in 0..(WIDGET_PAGE_COLUMNS - width)) {
+            val candidate = WidgetPageItem("placement-check", "quick_notes", x, y, width, height)
+            if (canPlaceWidgetItem(items, candidate)) return x to y
+        }
+    }
+    return null
+}
+
 internal fun resizeWidgetItem(
     items: List<WidgetPageItem>,
     itemId: String,
     newHeight: Int
 ): List<WidgetPageItem>? {
     val item = items.firstOrNull { it.id == itemId } ?: return null
+    if (newHeight !in 1..WIDGET_PAGE_ROWS) return null
+    val heightDelta = newHeight - item.height
     val candidate = item.copy(height = newHeight)
-    if (!canPlaceWidgetItem(items, candidate)) return null
-    return items.map { if (it.id == itemId) candidate else it }
+    val adjusted = items.map { other ->
+        if (other.id != itemId && other.y >= item.y + item.height) {
+            other.copy(y = other.y + heightDelta)
+        } else {
+            other
+        }
+    }.map { if (it.id == itemId) candidate else it }
+
+    val allInsideGrid = adjusted.all { value ->
+        value.x >= 0 && value.y >= 0 &&
+            value.x + value.width <= WIDGET_PAGE_COLUMNS &&
+            value.y + value.height <= WIDGET_PAGE_ROWS
+    }
+    val hasOverlap = adjusted.indices.any { index ->
+        (index + 1 until adjusted.size).any { otherIndex ->
+            widgetItemsOverlap(adjusted[index], adjusted[otherIndex])
+        }
+    }
+    return adjusted.takeIf { allInsideGrid && !hasOverlap }
 }
