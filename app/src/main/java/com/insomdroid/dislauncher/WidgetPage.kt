@@ -345,6 +345,8 @@ internal fun WidgetPage(
                         modifier = itemModifier,
                         isActive = isActive,
                         selected = selectedWidgetId == item.id,
+                        currentHeight = item.height,
+                        cellHeightDp = gridCellHeightDp,
                         onRemove = { updateItems(items.filterNot { it.id == item.id }) },
                         onResize = { height ->
                             resizeWidgetItem(items, item.id, height)?.let(::updateItems)
@@ -356,6 +358,8 @@ internal fun WidgetPage(
                         context = context,
                         isActive = isActive,
                         selected = selectedWidgetId == item.id,
+                        currentHeight = item.height,
+                        cellHeightDp = gridCellHeightDp,
                         onRemove = { updateItems(items.filterNot { it.id == item.id }) },
                         onResize = { height ->
                             resizeWidgetItem(items, item.id, height)?.let(::updateItems)
@@ -623,6 +627,8 @@ private fun QuickNotesWidget(
     modifier: Modifier,
     isActive: Boolean,
     selected: Boolean,
+    currentHeight: Int,
+    cellHeightDp: Float,
     onRemove: () -> Unit,
     onResize: (Int) -> Unit
 ) {
@@ -645,7 +651,8 @@ private fun QuickNotesWidget(
         withContext(Dispatchers.IO) { saveQuickWidgetNote(context, noteText) }
     }
 
-    WidgetCard(modifier = modifier) {
+    Box(modifier = modifier) {
+        WidgetCard(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -695,6 +702,16 @@ private fun QuickNotesWidget(
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
             shape = RoundedCornerShape(12.dp)
         )
+        }
+        if (selected) {
+            VerticalWidgetResizeHandle(
+                currentHeight = currentHeight,
+                cellHeightDp = cellHeightDp,
+                minimum = 2,
+                maximum = WIDGET_PAGE_ROWS,
+                onResize = onResize
+            )
+        }
     }
 }
 
@@ -737,6 +754,8 @@ private fun MonthCalendarWidget(
     context: Context,
     isActive: Boolean,
     selected: Boolean,
+    currentHeight: Int,
+    cellHeightDp: Float,
     onRemove: () -> Unit,
     onResize: (Int) -> Unit
 ) {
@@ -791,7 +810,8 @@ private fun MonthCalendarWidget(
     val taskDates = tasks.mapNotNull { runCatching { LocalDate.parse(it.date) }.getOrNull() }.toSet()
     val markedDates = eventDates + taskDates
 
-    WidgetCard(modifier = modifier) {
+    Box(modifier = modifier) {
+        WidgetCard(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -912,6 +932,109 @@ private fun MonthCalendarWidget(
                 Text("Allow calendar access", fontSize = 11.sp)
             }
         }
+        }
+        if (selected) {
+            VerticalWidgetResizeHandle(
+                currentHeight = currentHeight,
+                cellHeightDp = cellHeightDp,
+                minimum = 3,
+                maximum = WIDGET_PAGE_ROWS,
+                onResize = onResize
+            )
+        }
+    }
+}
+
+@Composable
+private fun VerticalWidgetResizeHandle(
+    currentHeight: Int,
+    cellHeightDp: Float,
+    minimum: Int,
+    maximum: Int,
+    onResize: (Int) -> Unit
+) {
+    val density = LocalDensity.current
+    Surface(
+        modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .padding(8.dp)
+            .size(30.dp)
+            .pointerInput(currentHeight, cellHeightDp, minimum, maximum) {
+                var accumulated = 0f
+                detectDragGestures(
+                    onDragEnd = {
+                        val cellPx = with(density) { cellHeightDp.dp.toPx() }.coerceAtLeast(1f)
+                        val delta = (accumulated / cellPx).roundToInt()
+                        if (delta != 0) onResize((currentHeight + delta).coerceIn(minimum, maximum))
+                    },
+                    onDrag = { change, amount ->
+                        accumulated += amount.y
+                        change.consume()
+                    }
+                )
+            },
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        shadowElevation = 3.dp
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text("↕", color = MaterialTheme.colorScheme.onPrimaryContainer, fontSize = 18.sp)
+        }
+    }
+}
+
+@Composable
+private fun WidgetResizeHandle(
+    currentWidth: Int,
+    currentHeight: Int,
+    minimumWidth: Int,
+    minimumHeight: Int,
+    maximumWidth: Int,
+    maximumHeight: Int,
+    cellWidthDp: Float,
+    cellHeightDp: Float,
+    resizeMode: Int,
+    onResize: (Int, Int) -> Unit
+) {
+    val density = LocalDensity.current
+    Surface(
+        modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .padding(8.dp)
+            .size(32.dp)
+            .pointerInput(
+                currentWidth, currentHeight, minimumWidth, minimumHeight,
+                cellWidthDp, cellHeightDp, resizeMode
+            ) {
+                var accumulated = Offset.Zero
+                detectDragGestures(
+                    onDragEnd = {
+                        val widthPx = with(density) { cellWidthDp.dp.toPx() }.coerceAtLeast(1f)
+                        val heightPx = with(density) { cellHeightDp.dp.toPx() }.coerceAtLeast(1f)
+                        val horizontal = resizeMode and AppWidgetProviderInfo.RESIZE_HORIZONTAL != 0
+                        val vertical = resizeMode and AppWidgetProviderInfo.RESIZE_VERTICAL != 0
+                        val widthDelta = if (horizontal) (accumulated.x / widthPx).roundToInt() else 0
+                        val heightDelta = if (vertical) (accumulated.y / heightPx).roundToInt() else 0
+                        if (widthDelta != 0 || heightDelta != 0) {
+                            onResize(
+                                (currentWidth + widthDelta).coerceIn(minimumWidth, maximumWidth),
+                                (currentHeight + heightDelta).coerceIn(minimumHeight, maximumHeight)
+                            )
+                        }
+                    },
+                    onDrag = { change, amount ->
+                        accumulated += amount
+                        change.consume()
+                    }
+                )
+            },
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        shadowElevation = 3.dp
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text("↘", color = MaterialTheme.colorScheme.onPrimaryContainer, fontSize = 18.sp)
+        }
     }
 }
 
@@ -957,6 +1080,18 @@ private fun AndroidWidgetCard(
         )
 
         if (selected) {
+            WidgetResizeHandle(
+                currentWidth = item.width,
+                currentHeight = item.height,
+                minimumWidth = item.minWidthCells,
+                minimumHeight = item.minHeightCells,
+                maximumWidth = WIDGET_PAGE_COLUMNS,
+                maximumHeight = WIDGET_PAGE_ROWS,
+                cellWidthDp = cellWidthDp,
+                cellHeightDp = cellHeightDp,
+                resizeMode = item.resizeMode,
+                onResize = onResize
+            )
             Box(modifier = Modifier.align(Alignment.TopEnd)) {
                 IconButton(onClick = { actionsExpanded = true }) {
                     Text("⋮", fontSize = 22.sp)
