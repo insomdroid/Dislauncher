@@ -21,26 +21,11 @@ internal data class WidgetPageItem(
 private const val WIDGET_PAGE_STORE = "dislauncher_widget_page"
 private const val WIDGET_PAGE_LAYOUT_KEY = "layout_json"
 private const val WIDGET_PAGE_INITIALIZED_KEY = "layout_initialized"
-private const val WIDGET_PAGE_BUILTINS_CLEARED_KEY = "builtin_widgets_cleared"
 internal const val WIDGET_PAGE_COLUMNS = 5
 internal const val WIDGET_PAGE_ROWS = 7
-internal const val QUICK_NOTES_WIDGET_ID = "builtin_quick_notes"
-internal const val MONTH_CALENDAR_WIDGET_ID = "builtin_month_calendar"
-
-private fun defaultWidgetPageItems(): List<WidgetPageItem> = emptyList()
 
 internal fun loadWidgetPageItems(context: Context): List<WidgetPageItem> {
     val store = context.getSharedPreferences(WIDGET_PAGE_STORE, Context.MODE_PRIVATE)
-    if (!store.getBoolean(WIDGET_PAGE_INITIALIZED_KEY, false)) {
-        val defaults = defaultWidgetPageItems()
-        saveWidgetPageItems(context, defaults)
-        store.edit()
-            .putBoolean(WIDGET_PAGE_INITIALIZED_KEY, true)
-            .putBoolean(WIDGET_PAGE_BUILTINS_CLEARED_KEY, true)
-            .apply()
-        return defaults
-    }
-
     val raw = store.getString(WIDGET_PAGE_LAYOUT_KEY, "[]") ?: "[]"
     val parsedItems = runCatching {
         val array = JSONArray(raw)
@@ -61,8 +46,8 @@ internal fun loadWidgetPageItems(context: Context): List<WidgetPageItem> {
             )
             item.takeIf {
                 it.id.isNotBlank() &&
-                    it.kind in setOf("quick_notes", "month_calendar", "android_widget") &&
-                    (it.kind != "android_widget" || it.appWidgetId >= 0) &&
+                    it.kind == "android_widget" &&
+                    it.appWidgetId >= 0 &&
                     it.width in 1..WIDGET_PAGE_COLUMNS &&
                     it.height in 1..WIDGET_PAGE_ROWS &&
                     it.x >= 0 && it.y >= 0 &&
@@ -81,45 +66,15 @@ internal fun loadWidgetPageItems(context: Context): List<WidgetPageItem> {
         emptyList()
     }
 
-    if (!store.getBoolean(WIDGET_PAGE_BUILTINS_CLEARED_KEY, false)) {
-        val withoutDefaults = parsedItems.filterNot {
-            it.kind == "quick_notes" || it.kind == "month_calendar"
-        }
-        if (withoutDefaults != parsedItems) saveWidgetPageItems(context, withoutDefaults)
-        store.edit().putBoolean(WIDGET_PAGE_BUILTINS_CLEARED_KEY, true).apply()
-        return withoutDefaults
+    // Drop legacy Quick Notes / Calendar entries and any unknown built-in kinds.
+    // Android widgets are retained with their existing appWidgetId and placement.
+    if (parsedItems.size != runCatching { JSONArray(raw).length() }.getOrDefault(0) ||
+        !store.getBoolean(WIDGET_PAGE_INITIALIZED_KEY, false)
+    ) {
+        saveWidgetPageItems(context, parsedItems)
     }
     return parsedItems
 }
-
-internal fun restoreDefaultWidgetItems(context: Context): Boolean {
-    val current = loadWidgetPageItems(context).toMutableList()
-    if (current.none { it.id == QUICK_NOTES_WIDGET_ID }) {
-        val position = findWidgetPlacement(current, 2, 2) ?: return false
-        current += WidgetPageItem(
-            id = QUICK_NOTES_WIDGET_ID,
-            kind = "quick_notes",
-            x = position.first,
-            y = position.second,
-            width = 2,
-            height = 2
-        )
-    }
-    if (current.none { it.id == MONTH_CALENDAR_WIDGET_ID }) {
-        val position = findWidgetPlacement(current, 3, 4) ?: return false
-        current += WidgetPageItem(
-            id = MONTH_CALENDAR_WIDGET_ID,
-            kind = "month_calendar",
-            x = position.first,
-            y = position.second,
-            width = 3,
-            height = 4
-        )
-    }
-    saveWidgetPageItems(context, current)
-    return true
-}
-
 internal fun resetWidgetPageLayout(context: Context) {
     val host = android.appwidget.AppWidgetHost(context, DISLAUNCHER_APP_WIDGET_HOST_ID)
     loadWidgetPageItems(context)
@@ -219,7 +174,7 @@ internal fun findWidgetPlacement(
     if (width !in 1..WIDGET_PAGE_COLUMNS || height !in 1..WIDGET_PAGE_ROWS) return null
     for (y in 0..(WIDGET_PAGE_ROWS - height)) {
         for (x in 0..(WIDGET_PAGE_COLUMNS - width)) {
-            val candidate = WidgetPageItem("placement-check", "quick_notes", x, y, width, height)
+            val candidate = WidgetPageItem("placement-check", "android_widget", x, y, width, height, appWidgetId = Int.MAX_VALUE)
             if (canPlaceWidgetItem(items, candidate)) return x to y
         }
     }
@@ -281,8 +236,8 @@ internal fun resizeWidgetBounds(
     newHeight: Int
 ): List<WidgetPageItem>? {
     val item = items.firstOrNull { it.id == itemId } ?: return null
-    val minWidth = when (item.kind) { "quick_notes" -> 2; "month_calendar" -> 3; else -> item.minWidthCells.coerceAtLeast(1) }
-    val minHeight = when (item.kind) { "quick_notes" -> 2; "month_calendar" -> 3; else -> item.minHeightCells.coerceAtLeast(1) }
+    val minWidth = item.minWidthCells.coerceAtLeast(1)
+    val minHeight = item.minHeightCells.coerceAtLeast(1)
     if (newWidth !in minWidth..WIDGET_PAGE_COLUMNS || newHeight !in minHeight..WIDGET_PAGE_ROWS) return null
     val candidate = item.copy(x = newX, y = newY, width = newWidth, height = newHeight)
     if (!canPlaceWidgetItem(items, candidate)) return null
