@@ -847,7 +847,15 @@ internal fun DislauncherRoot() {
                         )
                     }
                 }
-                if (screen == LauncherScreen.HOME || screen == LauncherScreen.WIDGET) {
+                if (
+                    (screen == LauncherScreen.HOME || screen == LauncherScreen.WIDGET) &&
+                    pagerState.targetPage != appsPageIndex
+                ) {
+                    val indicatorPages = if (preferences.showWidgetPage) {
+                        listOf(0, homePageIndex)
+                    } else {
+                        listOf(homePageIndex)
+                    }
                     Row(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
@@ -855,8 +863,8 @@ internal fun DislauncherRoot() {
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        repeat(pagerState.pageCount) { index ->
-                            val selected = pagerState.currentPage == index
+                        indicatorPages.forEach { pageIndex ->
+                            val selected = pagerState.currentPage == pageIndex
                             Box(
                                 modifier = Modifier
                                     .padding(horizontal = 4.dp)
