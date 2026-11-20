@@ -32,16 +32,16 @@ private fun defaultWidgetPageItems(): List<WidgetPageItem> = listOf(
         kind = "quick_notes",
         x = 0,
         y = 0,
-        width = WIDGET_PAGE_COLUMNS,
+        width = 2,
         height = 2
     ),
     WidgetPageItem(
         id = MONTH_CALENDAR_WIDGET_ID,
         kind = "month_calendar",
-        x = 0,
-        y = 2,
-        width = WIDGET_PAGE_COLUMNS,
-        height = 5
+        x = 2,
+        y = 0,
+        width = 3,
+        height = 4
     )
 )
 
@@ -98,25 +98,25 @@ internal fun loadWidgetPageItems(context: Context): List<WidgetPageItem> {
 internal fun restoreDefaultWidgetItems(context: Context): Boolean {
     val current = loadWidgetPageItems(context).toMutableList()
     if (current.none { it.id == QUICK_NOTES_WIDGET_ID }) {
-        val position = findWidgetPlacement(current, WIDGET_PAGE_COLUMNS, 2) ?: return false
+        val position = findWidgetPlacement(current, 2, 2) ?: return false
         current += WidgetPageItem(
             id = QUICK_NOTES_WIDGET_ID,
             kind = "quick_notes",
             x = position.first,
             y = position.second,
-            width = WIDGET_PAGE_COLUMNS,
+            width = 2,
             height = 2
         )
     }
     if (current.none { it.id == MONTH_CALENDAR_WIDGET_ID }) {
-        val position = findWidgetPlacement(current, WIDGET_PAGE_COLUMNS, 5) ?: return false
+        val position = findWidgetPlacement(current, 3, 4) ?: return false
         current += WidgetPageItem(
             id = MONTH_CALENDAR_WIDGET_ID,
             kind = "month_calendar",
             x = position.first,
             y = position.second,
-            width = WIDGET_PAGE_COLUMNS,
-            height = 5
+            width = 3,
+            height = 4
         )
     }
     saveWidgetPageItems(context, current)
