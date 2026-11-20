@@ -160,26 +160,22 @@ internal fun moveWidgetItem(
             newY < it.y + it.height && newY + moving.height > it.y
     } ?: return null
 
-    val swappedMoving = moving.copy(x = target.x, y = target.y)
-    val swappedTarget = target.copy(x = moving.x, y = moving.y)
-    val swapped = items.map {
-        when (it.id) {
-            moving.id -> swappedMoving
-            target.id -> swappedTarget
-            else -> it
-        }
+    // Dropping onto another widget changes their order. Re-pack the page from the
+    // top-left so different widget sizes can exchange positions without overlap.
+    val ordered = items.sortedWith(compareBy<WidgetPageItem> { it.y }.thenBy { it.x })
+        .toMutableList()
+    val sourceIndex = ordered.indexOfFirst { it.id == itemId }
+    val targetIndex = ordered.indexOfFirst { it.id == target.id }
+    if (sourceIndex < 0 || targetIndex < 0) return null
+    ordered.removeAt(sourceIndex)
+    ordered.add(targetIndex.coerceAtMost(ordered.size), moving)
+
+    val placed = mutableListOf<WidgetPageItem>()
+    ordered.forEach { item ->
+        val position = findWidgetPlacement(placed, item.width, item.height) ?: return null
+        placed += item.copy(x = position.first, y = position.second)
     }
-    val allInsideGrid = swapped.all { item ->
-        item.x >= 0 && item.y >= 0 &&
-            item.x + item.width <= WIDGET_PAGE_COLUMNS &&
-            item.y + item.height <= WIDGET_PAGE_ROWS
-    }
-    val hasOverlap = swapped.indices.any { index ->
-        (index + 1 until swapped.size).any { otherIndex ->
-            widgetItemsOverlap(swapped[index], swapped[otherIndex])
-        }
-    }
-    return swapped.takeIf { allInsideGrid && !hasOverlap }
+    return placed
 }
 
 internal fun findWidgetPlacement(
