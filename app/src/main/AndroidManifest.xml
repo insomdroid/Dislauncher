@@ -20,6 +20,9 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
         <intent>
+            <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        </intent>
+        <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.APP_CALENDAR" />
         </intent>
