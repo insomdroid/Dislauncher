@@ -66,8 +66,7 @@ internal fun loadWidgetPageItems(context: Context): List<WidgetPageItem> {
         emptyList()
     }
 
-    // Drop legacy Quick Notes / Calendar entries and any unknown built-in kinds.
-    // Android widgets are retained with their existing appWidgetId and placement.
+    // Discard unsupported legacy built-in entries while retaining Android widgets.
     if (parsedItems.size != runCatching { JSONArray(raw).length() }.getOrDefault(0) ||
         !store.getBoolean(WIDGET_PAGE_INITIALIZED_KEY, false)
     ) {
@@ -180,52 +179,6 @@ internal fun findWidgetPlacement(
     }
     return null
 }
-
-internal fun resizeWidgetDimensions(
-    items: List<WidgetPageItem>,
-    itemId: String,
-    newWidth: Int,
-    newHeight: Int
-): List<WidgetPageItem>? {
-    val item = items.firstOrNull { it.id == itemId } ?: return null
-    if (newWidth !in item.minWidthCells..WIDGET_PAGE_COLUMNS ||
-        newHeight !in item.minHeightCells..WIDGET_PAGE_ROWS
-    ) return null
-    val candidate = item.copy(width = newWidth, height = newHeight)
-    if (!canPlaceWidgetItem(items, candidate)) return null
-    return items.map { if (it.id == itemId) candidate else it }
-}
-
-internal fun resizeWidgetItem(
-    items: List<WidgetPageItem>,
-    itemId: String,
-    newHeight: Int
-): List<WidgetPageItem>? {
-    val item = items.firstOrNull { it.id == itemId } ?: return null
-    if (newHeight !in 1..WIDGET_PAGE_ROWS) return null
-    val heightDelta = newHeight - item.height
-    val candidate = item.copy(height = newHeight)
-    val adjusted = items.map { other ->
-        if (other.id != itemId && other.y >= item.y + item.height) {
-            other.copy(y = other.y + heightDelta)
-        } else {
-            other
-        }
-    }.map { if (it.id == itemId) candidate else it }
-
-    val allInsideGrid = adjusted.all { value ->
-        value.x >= 0 && value.y >= 0 &&
-            value.x + value.width <= WIDGET_PAGE_COLUMNS &&
-            value.y + value.height <= WIDGET_PAGE_ROWS
-    }
-    val hasOverlap = adjusted.indices.any { index ->
-        (index + 1 until adjusted.size).any { otherIndex ->
-            widgetItemsOverlap(adjusted[index], adjusted[otherIndex])
-        }
-    }
-    return adjusted.takeIf { allInsideGrid && !hasOverlap }
-}
-
 
 internal fun resizeWidgetBounds(
     items: List<WidgetPageItem>,
