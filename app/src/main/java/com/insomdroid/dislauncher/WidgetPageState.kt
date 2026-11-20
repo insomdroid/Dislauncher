@@ -153,9 +153,17 @@ internal fun moveWidgetItem(
             else -> it
         }
     }
-    return swapped.takeIf {
-        canPlaceWidgetItem(it, swappedMoving) && canPlaceWidgetItem(it, swappedTarget)
+    val allInsideGrid = swapped.all { item ->
+        item.x >= 0 && item.y >= 0 &&
+            item.x + item.width <= WIDGET_PAGE_COLUMNS &&
+            item.y + item.height <= WIDGET_PAGE_ROWS
     }
+    val hasOverlap = swapped.indices.any { index ->
+        (index + 1 until swapped.size).any { otherIndex ->
+            widgetItemsOverlap(swapped[index], swapped[otherIndex])
+        }
+    }
+    return swapped.takeIf { allInsideGrid && !hasOverlap }
 }
 
 internal fun resizeWidgetItem(
