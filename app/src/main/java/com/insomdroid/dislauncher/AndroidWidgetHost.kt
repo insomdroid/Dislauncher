@@ -76,7 +76,8 @@ internal fun AndroidAppWidgetContent(
     item: WidgetPageItem,
     cellWidthDp: Float,
     cellHeightDp: Float,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onHostViewReady: (AppWidgetHostView) -> Unit = {}
 ) {
     val providerInfo = remember(item.appWidgetId) {
         runCatching { manager.getAppWidgetInfo(item.appWidgetId) }.getOrNull()
@@ -112,9 +113,10 @@ internal fun AndroidAppWidgetContent(
     AndroidView(
         modifier = modifier.fillMaxSize(),
         factory = {
-            host.createView(context, item.appWidgetId, providerInfo)
+            host.createView(context, item.appWidgetId, providerInfo).also(onHostViewReady)
         },
         update = { view: AppWidgetHostView ->
+            onHostViewReady(view)
             // The host owns the view lifecycle; the system delivers subsequent widget updates.
             if (view.appWidgetId != item.appWidgetId) {
                 view.setAppWidget(item.appWidgetId, providerInfo)
