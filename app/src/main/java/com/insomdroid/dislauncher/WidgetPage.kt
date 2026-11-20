@@ -3,6 +3,8 @@ package com.insomdroid.dislauncher
 import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProviderInfo
+import android.appwidget.AppWidgetHostView
+import android.graphics.Bitmap
 import android.content.Intent
 import android.content.Context
 import android.widget.Toast
@@ -61,6 +63,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.graphics.drawable.toBitmap
+import androidx.core.view.drawToBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -91,7 +94,10 @@ internal fun WidgetPage(
     var addWidgetDialog by remember { mutableStateOf(false) }
     var editingWidgetId by remember { mutableStateOf<String?>(null) }
     var draggingWidgetId by remember { mutableStateOf<String?>(null) }
-    var dragOffset by remember { mutableStateOf(Offset.Zero) }
+    var dragPreview by remember { mutableStateOf<Bitmap?>(null) }
+    var dragPosition by remember { mutableStateOf(Offset.Zero) }
+    var grabFraction by remember { mutableStateOf(Offset.Zero) }
+    val widgetHostViews = remember { mutableMapOf<Int, AppWidgetHostView>() }
     var pendingAppWidgetId by remember { mutableStateOf(AppWidgetManager.INVALID_APPWIDGET_ID) }
     var gridCellWidthDp by remember { mutableStateOf(0f) }
     var gridCellHeightDp by remember { mutableStateOf(0f) }
@@ -248,17 +254,43 @@ internal fun WidgetPage(
         val cellHeightPx = with(LocalDensity.current) { cellHeight.toPx() }
         val removeZoneHeightPx = with(LocalDensity.current) { 76.dp.toPx() }
 
+        fun liftWidget(item: WidgetPageItem, localPosition: Offset) {
+            val widgetWidthPx = cellWidthPx * item.width
+            val widgetHeightPx = cellHeightPx * item.height
+            grabFraction = Offset(
+                (localPosition.x / widgetWidthPx.coerceAtLeast(1f)).coerceIn(0f, 1f),
+                (localPosition.y / widgetHeightPx.coerceAtLeast(1f)).coerceIn(0f, 1f)
+            )
+            dragPosition = Offset(
+                item.x * cellWidthPx + localPosition.x,
+                item.y * cellHeightPx + localPosition.y
+            )
+            dragPreview = widgetHostViews[item.appWidgetId]
+                ?.let { view -> runCatching { view.drawToBitmap() }.getOrNull() }
+        }
+
+        fun dragPreviewTopLeft(item: WidgetPageItem): Offset = Offset(
+            dragPosition.x - item.width * cellWidthPx * grabFraction.x,
+            dragPosition.y - item.height * cellHeightPx * grabFraction.y
+        )
+
+        fun clearWidgetDrag() {
+            draggingWidgetId = null
+            dragPreview = null
+            dragPosition = Offset.Zero
+            grabFraction = Offset.Zero
+        }
+
         fun finishWidgetDrag(item: WidgetPageItem) {
-            val finalOffset = dragOffset
-            val draggedTopPx = item.y * cellHeightPx + finalOffset.y
-            val dropOnRemove = draggedTopPx <= removeZoneHeightPx
+            val previewTopLeft = dragPreviewTopLeft(item)
+            val dropOnRemove = previewTopLeft.y <= removeZoneHeightPx
             if (dropOnRemove) {
                 if (item.appWidgetId >= 0) appWidgetHost.deleteAppWidgetId(item.appWidgetId)
                 updateItems(items.filterNot { it.id == item.id })
                 editingWidgetId = null
             } else {
-                val targetX = (item.x + finalOffset.x / cellWidthPx).roundToInt()
-                val targetY = (item.y + finalOffset.y / cellHeightPx).roundToInt()
+                val targetX = (previewTopLeft.x / cellWidthPx).roundToInt()
+                val targetY = (previewTopLeft.y / cellHeightPx).roundToInt()
                 val moved = moveWidgetItem(items, item.id, targetX, targetY)
                 if (moved != null) {
                     updateItems(moved)
@@ -272,8 +304,7 @@ internal fun WidgetPage(
                     editingWidgetId = item.id
                 }
             }
-            draggingWidgetId = null
-            dragOffset = Offset.Zero
+            clearWidgetDrag()
         }
         SideEffect {
             gridCellWidthDp = cellWidth.value
@@ -287,19 +318,11 @@ internal fun WidgetPage(
                     .width(cellWidth * item.width)
                     .height(cellHeight * item.height)
                     .graphicsLayer {
-                        if (draggingWidgetId == item.id) {
-                            translationX = dragOffset.x
-                            translationY = dragOffset.y
-                            alpha = 0.90f
-                            scaleX = 1.02f
-                            scaleY = 1.02f
-                        } else {
-                            translationX = 0f
-                            translationY = 0f
-                            alpha = 1f
-                            scaleX = 1f
-                            scaleY = 1f
-                        }
+                        translationX = 0f
+                        translationY = 0f
+                        alpha = if (draggingWidgetId == item.id && dragPreview != null) 0f else 1f
+                        scaleX = 1f
+                        scaleY = 1f
                     }
                     .pointerInput(item.id, items, cellWidthPx, cellHeightPx) {
                         awaitEachGesture {
@@ -321,13 +344,17 @@ internal fun WidgetPage(
                             }
                             if (releasedOrMoved != null) return@awaitEachGesture
 
+                            liftWidget(item, down.position)
                             var moving = false
                             var lastPosition = down.position
                             while (true) {
                                 val event = awaitPointerEvent(PointerEventPass.Initial)
                                 val change = event.changes.firstOrNull { it.id == down.id }
                                     ?: break
-                                if (!change.pressed && change.isConsumed) break
+                                if (!change.pressed && change.isConsumed) {
+                                    clearWidgetDrag()
+                                    break
+                                }
 
                                 val delta = change.position - lastPosition
                                 lastPosition = change.position
@@ -337,11 +364,10 @@ internal fun WidgetPage(
                                     moving = true
                                     editingWidgetId = null
                                     draggingWidgetId = item.id
-                                    dragOffset = Offset.Zero
                                 }
 
                                 if (moving) {
-                                    dragOffset += delta
+                                    dragPosition += delta
                                     event.changes.forEach { it.consume() }
                                 }
 
@@ -350,6 +376,7 @@ internal fun WidgetPage(
                                         finishWidgetDrag(item)
                                     } else {
                                         editingWidgetId = item.id
+                                        clearWidgetDrag()
                                     }
                                     break
                                 }
@@ -365,7 +392,8 @@ internal fun WidgetPage(
                         manager = appWidgetManager,
                         item = item,
                         cellWidthDp = gridCellWidthDp,
-                        cellHeightDp = gridCellHeightDp
+                        cellHeightDp = gridCellHeightDp,
+                        onHostViewReady = { view -> widgetHostViews[item.appWidgetId] = view }
                     )
                 }
             }
@@ -373,7 +401,7 @@ internal fun WidgetPage(
 
         val draggedItem = items.firstOrNull { it.id == draggingWidgetId }
         if (draggedItem != null) {
-            val overRemove = draggedItem.y * cellHeightPx + dragOffset.y <= removeZoneHeightPx
+            val overRemove = dragPreviewTopLeft(draggedItem).y <= removeZoneHeightPx
             Surface(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -395,6 +423,33 @@ internal fun WidgetPage(
                     )
                 }
             }
+        }
+
+        val floatingItem = items.firstOrNull { it.id == draggingWidgetId }
+        val floatingBitmap = dragPreview
+        if (floatingItem != null && floatingBitmap != null) {
+            val topLeft = dragPreviewTopLeft(floatingItem)
+            Image(
+                bitmap = floatingBitmap.asImageBitmap(),
+                contentDescription = null,
+                modifier = Modifier
+                    .offset {
+                        androidx.compose.ui.unit.IntOffset(
+                            topLeft.x.roundToInt(),
+                            topLeft.y.roundToInt()
+                        )
+                    }
+                    .size(
+                        width = cellWidth * floatingItem.width,
+                        height = cellHeight * floatingItem.height
+                    )
+                    .graphicsLayer {
+                        alpha = 0.90f
+                        scaleX = 1.02f
+                        scaleY = 1.02f
+                    },
+                contentScale = ContentScale.FillBounds
+            )
         }
 
         val editingItem = items.firstOrNull { it.id == editingWidgetId }
@@ -427,18 +482,17 @@ internal fun WidgetPage(
                         detectDragGestures(
                             onDragStart = {
                                 editingWidgetId = null
+                                liftWidget(editingItem, it)
                                 draggingWidgetId = editingItem.id
-                                dragOffset = Offset.Zero
                             },
                             onDragEnd = { finishWidgetDrag(editingItem) },
                             onDragCancel = {
-                                draggingWidgetId = null
-                                dragOffset = Offset.Zero
+                                clearWidgetDrag()
                                 editingWidgetId = editingItem.id
                             }
                         ) { change, amount ->
                             change.consume()
-                            dragOffset += amount
+                            dragPosition += amount
                         }
                     }
             ) {
