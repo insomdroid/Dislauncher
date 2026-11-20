@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.items as lazyItems
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -299,60 +298,72 @@ internal fun WidgetPage(
                         translationX = dragDelta.x
                         translationY = dragDelta.y
                     }
-                    .pointerInput(item.id) {
+                    .pointerInput(item.id, items, cellWidthPx, cellHeightPx) {
                         awaitEachGesture {
                             val down = awaitFirstDown(requireUnconsumed = false)
                             val longPress = awaitLongPressOrCancellation(down.id)
-                            if (longPress != null) {
-                                selectedWidgetId = item.id
+                                ?: return@awaitEachGesture
+
+                            // A stationary long press opens the edit controls. Moving only starts
+                            // relocation after touch slop, matching the pickup/release flow in Nomina.
+                            selectedWidgetId = item.id
+                            dragDelta = Offset.Zero
+                            var dragging = false
+                            var lastPosition = longPress.position
+
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                val change = event.changes.firstOrNull { it.id == down.id }
+                                    ?: break
+                                val delta = change.position - lastPosition
+                                lastPosition = change.position
+
+                                if (!dragging &&
+                                    (change.position - longPress.position).getDistance() > viewConfiguration.touchSlop
+                                ) {
+                                    dragging = true
+                                    draggingWidgetId = item.id
+                                }
+
+                                if (dragging) {
+                                    dragDelta += delta
+                                    change.consume()
+                                }
+
+                                if (!change.pressed) {
+                                    if (dragging) {
+                                        val draggedTopPx = item.y * cellHeightPx + dragDelta.y
+                                        val droppedInDeleteTarget =
+                                            dragDelta.y < -cellHeightPx * 0.45f &&
+                                                draggedTopPx < cellHeightPx * 0.75f
+                                        if (droppedInDeleteTarget) {
+                                            if (item.kind == "android_widget" && item.appWidgetId >= 0) {
+                                                appWidgetHost.deleteAppWidgetId(item.appWidgetId)
+                                            }
+                                            updateItems(items.filterNot { it.id == item.id })
+                                            selectedWidgetId = null
+                                        } else {
+                                            val targetX = (item.x + dragDelta.x / cellWidthPx).roundToInt()
+                                            val targetY = (item.y + dragDelta.y / cellHeightPx).roundToInt()
+                                            val moved = moveWidgetItem(items, item.id, targetX, targetY)
+                                            if (moved != null) {
+                                                updateItems(moved)
+                                                selectedWidgetId = item.id
+                                            } else if (targetX != item.x || targetY != item.y) {
+                                                Toast.makeText(
+                                                    context,
+                                                    "That position is outside the available widget space.",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }
+                                        draggingWidgetId = null
+                                        dragDelta = Offset.Zero
+                                    }
+                                    break
+                                }
                             }
                         }
-                    }
-                    .pointerInput(item.id, items, cellWidthPx, cellHeightPx) {
-                        detectDragGesturesAfterLongPress(
-                            onDragStart = {
-                                dragDelta = Offset.Zero
-                                selectedWidgetId = item.id
-                                draggingWidgetId = item.id
-                            },
-                            onDragEnd = {
-                                val draggedTopPx = item.y * cellHeightPx + dragDelta.y
-                                val droppedInDeleteTarget =
-                                    dragDelta.y < -cellHeightPx * 0.45f &&
-                                        draggedTopPx < cellHeightPx * 0.75f
-                                if (droppedInDeleteTarget) {
-                                    if (item.kind == "android_widget" && item.appWidgetId >= 0) {
-                                        appWidgetHost.deleteAppWidgetId(item.appWidgetId)
-                                    }
-                                    updateItems(items.filterNot { it.id == item.id })
-                                    selectedWidgetId = null
-                                } else {
-                                    val targetX = (item.x + dragDelta.x / cellWidthPx).roundToInt()
-                                    val targetY = (item.y + dragDelta.y / cellHeightPx).roundToInt()
-                                    val moved = moveWidgetItem(items, item.id, targetX, targetY)
-                                    if (moved != null) {
-                                        updateItems(moved)
-                                        selectedWidgetId = item.id
-                                    } else if (targetX != item.x || targetY != item.y) {
-                                        Toast.makeText(
-                                            context,
-                                            "That position is outside the available widget space.",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                }
-                                draggingWidgetId = null
-                                dragDelta = Offset.Zero
-                            },
-                            onDragCancel = {
-                                draggingWidgetId = null
-                                dragDelta = Offset.Zero
-                            },
-                            onDrag = { change, amount ->
-                                change.consume()
-                                dragDelta += amount
-                            }
-                        )
                     }
 
                 when (item.kind) {
@@ -426,15 +437,46 @@ internal fun WidgetPage(
         } else if (selectedWidgetId != null) {
             val selectedItem = items.firstOrNull { it.id == selectedWidgetId }
             if (selectedItem != null) {
+                val toolbarWidth = minOf(236.dp, (maxWidth - 16.dp).coerceAtLeast(0.dp))
+                val toolbarHeight = 56.dp
+                val rawX = cellWidth * selectedItem.x
+                val toolbarX = rawX.coerceIn(
+                    8.dp,
+                    (maxWidth - toolbarWidth - 8.dp).coerceAtLeast(8.dp)
+                )
+                val aboveY = cellHeight * selectedItem.y - toolbarHeight - 8.dp
+                val belowY = cellHeight * (selectedItem.y + selectedItem.height) + 8.dp
+                val rawY = if (aboveY >= 8.dp) aboveY else belowY
+                val toolbarY = rawY.coerceIn(
+                    8.dp,
+                    (maxHeight - toolbarHeight - 8.dp).coerceAtLeast(8.dp)
+                )
                 Surface(
-                    modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().height(54.dp),
-                    shape = RoundedCornerShape(bottomStart = 18.dp, bottomEnd = 18.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh
+                    modifier = Modifier.offset(x = toolbarX, y = toolbarY)
+                        .width(toolbarWidth)
+                        .height(toolbarHeight),
+                    shape = RoundedCornerShape(18.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    shadowElevation = 8.dp
                 ) {
-                    Row(Modifier.fillMaxSize().padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("Widget selected", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
+                    Row(
+                        Modifier.fillMaxSize().padding(horizontal = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Edit widget", style = MaterialTheme.typography.labelLarge)
+                            Text(
+                                "Drag to move · handles to resize",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1
+                            )
+                        }
                         TextButton(onClick = {
-                            if (selectedItem.kind == "android_widget" && selectedItem.appWidgetId >= 0) appWidgetHost.deleteAppWidgetId(selectedItem.appWidgetId)
+                            if (selectedItem.kind == "android_widget" && selectedItem.appWidgetId >= 0) {
+                                appWidgetHost.deleteAppWidgetId(selectedItem.appWidgetId)
+                            }
                             updateItems(items.filterNot { it.id == selectedItem.id })
                             selectedWidgetId = null
                         }) { Text("Remove", color = MaterialTheme.colorScheme.error) }
@@ -467,8 +509,22 @@ internal fun WidgetPage(
     }
 
     if (addWidgetDialog) {
-        val hasQuickNotes = items.any { it.id == QUICK_NOTES_WIDGET_ID }
-        val hasCalendar = items.any { it.id == MONTH_CALENDAR_WIDGET_ID }
+        val installedProviders = remember(context) {
+            appWidgetManager.installedProviders
+                .sortedBy { it.provider.packageName.lowercase(Locale.ROOT) }
+        }
+        val providerGroups = remember(installedProviders) {
+            installedProviders.groupBy { it.provider.packageName }.toSortedMap()
+        }
+        var expandedPackages by remember {
+            mutableStateOf(setOf("builtin_dislauncher"))
+        }
+        val ownAppIcon = remember(context) {
+            runCatching {
+                context.packageManager.getApplicationIcon(context.packageName).toBitmap(96, 96)
+            }.getOrNull()
+        }
+
         AlertDialog(
             onDismissRequest = { addWidgetDialog = false },
             title = { Text("Add widget") },
@@ -482,192 +538,331 @@ internal fun WidgetPage(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    if (!hasQuickNotes) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth().clickable {
-                                val position = findWidgetPlacement(items, 2, 2)
-                                if (position != null) {
-                                    updateItems(items + WidgetPageItem(
-                                        QUICK_NOTES_WIDGET_ID, "quick_notes",
-                                        position.first, position.second, 2, 2
-                                    ))
-                                    addWidgetDialog = false
-                                } else {
-                                    Toast.makeText(context, "There is not enough free space for Quick Notes.", Toast.LENGTH_SHORT).show()
-                                }
-                            },
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(14.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text("Quick Notes", style = MaterialTheme.typography.titleSmall)
-                                    Text("Compact note input · 2 × 2", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                                Text("Add", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
-                            }
-                        }
-                    }
-                    if (!hasCalendar) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth().clickable {
-                                val position = findWidgetPlacement(items, 3, 4)
-                                if (position != null) {
-                                    updateItems(items + WidgetPageItem(
-                                        MONTH_CALENDAR_WIDGET_ID, "month_calendar",
-                                        position.first, position.second, 3, 4
-                                    ))
-                                    addWidgetDialog = false
-                                } else {
-                                    Toast.makeText(context, "There is not enough free space for Calendar.", Toast.LENGTH_SHORT).show()
-                                }
-                            },
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(14.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text("Calendar", style = MaterialTheme.typography.titleSmall)
-                                    Text("Monthly view · 3 × 4", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                                Text("Add", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
-                            }
-                        }
-                    }
-                    Text(
-                        "Installed app widgets",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    val installedProviders = remember(context) {
-                        appWidgetManager.installedProviders.sortedBy { it.provider.packageName.lowercase(Locale.ROOT) }
-                    }
-                    val providerGroups = remember(installedProviders) { installedProviders.groupBy { it.provider.packageName }.toSortedMap() }
-                    var expandedPackages by remember { mutableStateOf(emptySet<String>()) }
                     LazyColumn(
-                        modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp),
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 440.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
+                        item(key = "app_group_builtin_dislauncher") {
+                            Card(
+                                modifier = Modifier.fillMaxWidth().clickable {
+                                    expandedPackages = if ("builtin_dislauncher" in expandedPackages) {
+                                        expandedPackages - "builtin_dislauncher"
+                                    } else {
+                                        expandedPackages + "builtin_dislauncher"
+                                    }
+                                },
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                                ),
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Row(
+                                    Modifier.fillMaxWidth().padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    if (ownAppIcon != null) {
+                                        Image(
+                                            bitmap = ownAppIcon.asImageBitmap(),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(38.dp).clip(RoundedCornerShape(10.dp))
+                                        )
+                                    }
+                                    Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                                        Text(
+                                            "Dislauncher",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                        Text(
+                                            "2 built-in widgets",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Text(
+                                        if ("builtin_dislauncher" in expandedPackages) "⌃" else "⌄",
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                }
+                            }
+                        }
+
+                        if ("builtin_dislauncher" in expandedPackages) {
+                            if (items.none { it.id == QUICK_NOTES_WIDGET_ID }) {
+                                item(key = "builtin_quick_notes") {
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth().clickable {
+                                            val position = findWidgetPlacement(items, 2, 2)
+                                            if (position != null) {
+                                                updateItems(items + WidgetPageItem(
+                                                    QUICK_NOTES_WIDGET_ID,
+                                                    "quick_notes",
+                                                    position.first,
+                                                    position.second,
+                                                    2,
+                                                    2
+                                                ))
+                                                addWidgetDialog = false
+                                            } else {
+                                                Toast.makeText(
+                                                    context,
+                                                    "There is not enough free space for Quick Notes.",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        },
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceContainer
+                                        )
+                                    ) {
+                                        Column(
+                                            Modifier.fillMaxWidth().padding(14.dp),
+                                            verticalArrangement = Arrangement.spacedBy(5.dp)
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    "Quick Notes",
+                                                    modifier = Modifier.weight(1f),
+                                                    style = MaterialTheme.typography.titleSmall
+                                                )
+                                                Text(
+                                                    "2 × 2",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                            Text(
+                                                "Compact note widget",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (items.none { it.id == MONTH_CALENDAR_WIDGET_ID }) {
+                                item(key = "builtin_month_calendar") {
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth().clickable {
+                                            val position = findWidgetPlacement(items, 3, 4)
+                                            if (position != null) {
+                                                updateItems(items + WidgetPageItem(
+                                                    MONTH_CALENDAR_WIDGET_ID,
+                                                    "month_calendar",
+                                                    position.first,
+                                                    position.second,
+                                                    3,
+                                                    4
+                                                ))
+                                                addWidgetDialog = false
+                                            } else {
+                                                Toast.makeText(
+                                                    context,
+                                                    "There is not enough free space for Calendar.",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        },
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceContainer
+                                        )
+                                    ) {
+                                        Column(
+                                            Modifier.fillMaxWidth().padding(14.dp),
+                                            verticalArrangement = Arrangement.spacedBy(5.dp)
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    "Calendar",
+                                                    modifier = Modifier.weight(1f),
+                                                    style = MaterialTheme.typography.titleSmall
+                                                )
+                                                Text(
+                                                    "3 × 4",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                            Text(
+                                                "Monthly calendar widget",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         providerGroups.forEach { (packageName, providers) ->
                             item(key = "app_group_$packageName") {
                                 val appLabel = remember(packageName) {
-                                    runCatching { context.packageManager.getApplicationLabel(context.packageManager.getApplicationInfo(packageName, 0)).toString() }.getOrDefault(packageName)
+                                    runCatching {
+                                        context.packageManager.getApplicationLabel(
+                                            context.packageManager.getApplicationInfo(packageName, 0)
+                                        ).toString()
+                                    }.getOrDefault(packageName)
                                 }
                                 Card(
                                     modifier = Modifier.fillMaxWidth().clickable {
-                                        expandedPackages = if (packageName in expandedPackages) expandedPackages - packageName else expandedPackages + packageName
+                                        expandedPackages = if (packageName in expandedPackages) {
+                                            expandedPackages - packageName
+                                        } else {
+                                            expandedPackages + packageName
+                                        }
                                     },
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                                    ),
                                     shape = RoundedCornerShape(16.dp)
                                 ) {
-                                    Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Row(
+                                        Modifier.fillMaxWidth().padding(14.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
                                         val appIcon = remember(packageName) {
-                                            runCatching { context.packageManager.getApplicationIcon(packageName).toBitmap(96, 96) }.getOrNull()
+                                            runCatching {
+                                                context.packageManager.getApplicationIcon(packageName).toBitmap(96, 96)
+                                            }.getOrNull()
                                         }
-                                        if (appIcon != null) Image(bitmap = appIcon.asImageBitmap(), contentDescription = null, modifier = Modifier.size(38.dp).clip(RoundedCornerShape(10.dp)))
+                                        if (appIcon != null) {
+                                            Image(
+                                                bitmap = appIcon.asImageBitmap(),
+                                                contentDescription = null,
+                                                modifier = Modifier.size(38.dp).clip(RoundedCornerShape(10.dp))
+                                            )
+                                        }
                                         Column(Modifier.weight(1f).padding(start = 12.dp)) {
-                                            Text(appLabel, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                                            Text("${providers.size} widget${if (providers.size == 1) "" else "s"}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        }
-                                        Text(if (packageName in expandedPackages) "⌃" else "⌄", style = MaterialTheme.typography.titleMedium)
-                                    }
-                                }
-                            }
-                            if (packageName in expandedPackages) lazyItems(providers, key = { it.provider.flattenToString() }) { provider ->
-                            val preview = remember(provider) {
-                                runCatching {
-                                    (provider.loadPreviewImage(context, context.resources.displayMetrics.densityDpi)
-                                        ?: provider.loadIcon(context, context.resources.displayMetrics.densityDpi))
-                                        ?.toBitmap(width = 420, height = 260)
-                                }.getOrNull()
-                            }
-                            Card(
-                                modifier = Modifier.fillMaxWidth().clickable {
-                                    val id = appWidgetHost.allocateAppWidgetId()
-                                    pendingAppWidgetId = id
-                                    val bound = runCatching {
-                                        appWidgetManager.bindAppWidgetIdIfAllowed(id, provider.provider)
-                                    }.getOrDefault(false)
-                                    if (bound) {
-                                        val configure = provider.configure
-                                        if (configure != null) {
-                                            val intent = Intent(AppWidgetManager.ACTION_APPWIDGET_CONFIGURE)
-                                                .setComponent(configure)
-                                                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
-                                            configureWidgetLauncher.launch(intent)
-                                        } else {
-                                            addAndroidWidget(id)
-                                            pendingAppWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
-                                        }
-                                    } else {
-                                        val bindIntent = Intent(AppWidgetManager.ACTION_APPWIDGET_BIND)
-                                            .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
-                                            .putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER, provider.provider)
-                                        widgetPickerLauncher.launch(bindIntent)
-                                    }
-                                    addWidgetDialog = false
-                                },
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                                )
-                            ) {
-                                Column(
-                                    modifier = Modifier.fillMaxWidth().padding(12.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Column(modifier = Modifier.weight(1f)) {
                                             Text(
-                                                provider.loadLabel(context.packageManager).toString(),
-                                                style = MaterialTheme.typography.titleSmall
+                                                appLabel,
+                                                style = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.SemiBold
                                             )
                                             Text(
-                                                provider.provider.packageName,
+                                                "${providers.size} widget${if (providers.size == 1) "" else "s"}",
                                                 style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
                                         Text(
-                                            "${ceil(provider.minWidth / gridCellWidthDp.coerceAtLeast(1f)).toInt()} × ${ceil(provider.minHeight / gridCellHeightDp.coerceAtLeast(1f)).toInt()}",
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = MaterialTheme.colorScheme.primary
+                                            if (packageName in expandedPackages) "⌃" else "⌄",
+                                            style = MaterialTheme.typography.titleMedium
                                         )
                                     }
-                                    if (preview != null) {
-                                        Image(
-                                            bitmap = preview.asImageBitmap(),
-                                            contentDescription = "Preview of ${provider.loadLabel(context.packageManager)} widget",
-                                            modifier = Modifier.fillMaxWidth().height(116.dp),
-                                            contentScale = ContentScale.Fit
+                                }
+                            }
+
+                            if (packageName in expandedPackages) {
+                                lazyItems(providers, key = { it.provider.flattenToString() }) { provider ->
+                                    val preview = remember(provider) {
+                                        runCatching {
+                                            val drawable = provider.loadPreviewImage(
+                                                context,
+                                                context.resources.displayMetrics.densityDpi
+                                            ) ?: provider.loadIcon(
+                                                context,
+                                                context.resources.displayMetrics.densityDpi
+                                            )
+                                            if (drawable == null) {
+                                                null
+                                            } else {
+                                                val width = drawable.intrinsicWidth.coerceAtLeast(1)
+                                                val height = drawable.intrinsicHeight.coerceAtLeast(1)
+                                                val scale = minOf(1f, 640f / maxOf(width, height))
+                                                drawable.toBitmap(
+                                                    (width * scale).toInt().coerceAtLeast(1),
+                                                    (height * scale).toInt().coerceAtLeast(1)
+                                                )
+                                            }
+                                        }.getOrNull()
+                                    }
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth().clickable {
+                                            val id = appWidgetHost.allocateAppWidgetId()
+                                            pendingAppWidgetId = id
+                                            val bound = runCatching {
+                                                appWidgetManager.bindAppWidgetIdIfAllowed(id, provider.provider)
+                                            }.getOrDefault(false)
+                                            if (bound) {
+                                                val configure = provider.configure
+                                                if (configure != null) {
+                                                    val intent = Intent(AppWidgetManager.ACTION_APPWIDGET_CONFIGURE)
+                                                        .setComponent(configure)
+                                                        .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
+                                                    configureWidgetLauncher.launch(intent)
+                                                } else {
+                                                    addAndroidWidget(id)
+                                                    pendingAppWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
+                                                }
+                                            } else {
+                                                val bindIntent = Intent(AppWidgetManager.ACTION_APPWIDGET_BIND)
+                                                    .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
+                                                    .putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER, provider.provider)
+                                                widgetPickerLauncher.launch(bindIntent)
+                                            }
+                                            addWidgetDialog = false
+                                        },
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceContainer
                                         )
-                                    } else {
-                                        Surface(
-                                            modifier = Modifier.fillMaxWidth().height(76.dp),
-                                            color = MaterialTheme.colorScheme.surfaceVariant,
-                                            shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                            verticalArrangement = Arrangement.spacedBy(8.dp)
                                         ) {
-                                            Box(contentAlignment = Alignment.Center) {
-                                                Text("Widget preview unavailable", style = MaterialTheme.typography.bodySmall)
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Column(Modifier.weight(1f)) {
+                                                    Text(
+                                                        provider.loadLabel(context.packageManager).toString(),
+                                                        style = MaterialTheme.typography.titleSmall
+                                                    )
+                                                    Text(
+                                                        provider.provider.packageName,
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                }
+                                                Text(
+                                                    "${ceil(provider.minWidth / gridCellWidthDp.coerceAtLeast(1f)).toInt()} × ${ceil(provider.minHeight / gridCellHeightDp.coerceAtLeast(1f)).toInt()}",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                            if (preview != null) {
+                                                Surface(
+                                                    modifier = Modifier.fillMaxWidth().height(116.dp),
+                                                    color = MaterialTheme.colorScheme.surfaceVariant,
+                                                    shape = RoundedCornerShape(12.dp)
+                                                ) {
+                                                    Image(
+                                                        bitmap = preview.asImageBitmap(),
+                                                        contentDescription = "Preview of ${provider.loadLabel(context.packageManager)} widget",
+                                                        modifier = Modifier.fillMaxSize().padding(8.dp),
+                                                        contentScale = ContentScale.Fit
+                                                    )
+                                                }
+                                            } else {
+                                                Surface(
+                                                    modifier = Modifier.fillMaxWidth().height(76.dp),
+                                                    color = MaterialTheme.colorScheme.surfaceVariant,
+                                                    shape = RoundedCornerShape(12.dp)
+                                                ) {
+                                                    Box(contentAlignment = Alignment.Center) {
+                                                        Text(
+                                                            "Widget preview unavailable",
+                                                            style = MaterialTheme.typography.bodySmall
+                                                        )
+                                                    }
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
-                            }
                         }
-                    }
-                    if (hasQuickNotes && hasCalendar) {
-                        Text(
-                            "Both built-in widgets are already on this page.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
                 }
             },
