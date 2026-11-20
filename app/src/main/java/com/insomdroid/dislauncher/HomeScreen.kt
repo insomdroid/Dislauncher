@@ -105,7 +105,7 @@ internal fun HomeScreen(
     var now by remember { mutableStateOf(LocalTime.now()) }
     var batteryPercent by remember { mutableStateOf<Int?>(null) }
     var batteryCharging by remember { mutableStateOf(false) }
-    var networkLabel by remember { mutableStateOf(readNetworkLabel(context)) }
+    var networkLabel by remember { mutableStateOf("") }
     var weatherInfo by remember { mutableStateOf(cachedWeather) }
     var weatherStatus by remember { mutableStateOf("Tap to allow location") }
     val today = LocalDate.now()
@@ -132,11 +132,11 @@ internal fun HomeScreen(
     var renamingFavorite by remember { mutableStateOf<LauncherApp?>(null) }
     var favoriteRenameValue by remember { mutableStateOf("") }
 
-    LaunchedEffect(isActive, hostResumed, preferences.showBattery) {
+    LaunchedEffect(isActive, hostResumed, preferences.showBattery, preferences.showNetworkInfo) {
         if (!isActive || !hostResumed) return@LaunchedEffect
 
         now = LocalTime.now()
-        networkLabel = readNetworkLabel(context)
+        networkLabel = if (preferences.showNetworkInfo) readNetworkLabel(context) else ""
         if (preferences.showBattery) {
             val batteryState = readBatteryState(context)
             batteryPercent = batteryState.percent
@@ -150,7 +150,9 @@ internal fun HomeScreen(
             val delayUntilNextMinute = 60_000L - (System.currentTimeMillis() % 60_000L)
             delay(delayUntilNextMinute.coerceAtLeast(1L))
             now = LocalTime.now()
-            networkLabel = readNetworkLabel(context)
+            if (preferences.showNetworkInfo) {
+                networkLabel = readNetworkLabel(context)
+            }
             if (preferences.showBattery) {
                 val batteryState = readBatteryState(context)
                 batteryPercent = batteryState.percent
