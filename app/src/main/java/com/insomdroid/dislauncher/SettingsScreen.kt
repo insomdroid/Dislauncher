@@ -639,7 +639,7 @@ internal fun SettingsScreen(
                                 onPreferencesChange(preferences.copy(showWidgetPage = enabled))
                             }
                             Text(
-                                "The page uses a fixed five-column grid with no scrolling. Quick Notes and the monthly Calendar are added when the page is first enabled.",
+                                "The page uses a fixed five-column grid. Add Android widgets from installed apps and arrange them on the page.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -650,21 +650,9 @@ internal fun SettingsScreen(
                                 onOpenWidgetPage
                             )
                             SettingAction(
-                                "Restore Default Widgets",
-                                "Re-add Quick Notes and the monthly Calendar if either was removed.",
-                                "Restore"
-                            ) {
-                                val restored = restoreDefaultWidgetItems(context)
-                                android.widget.Toast.makeText(
-                                    context,
-                                    if (restored) "Default widgets restored." else "There is not enough free space to restore both widgets.",
-                                    android.widget.Toast.LENGTH_LONG
-                                ).show()
-                            }
-                            SettingAction(
-                                "Reset Widget Layout",
-                                "Remove external widgets and restore the original Quick Notes and Calendar layout.",
-                                "Reset"
+                                "Clear Widget Page",
+                                "Remove all widgets from the dedicated page.",
+                                "Clear"
                             ) {
                                 openDialog = "resetWidgetLayout"
                             }
@@ -911,10 +899,10 @@ internal fun SettingsScreen(
     if (openDialog == "resetWidgetLayout") {
         AlertDialog(
             onDismissRequest = { openDialog = "" },
-            title = { Text("Reset Widget Layout?") },
+            title = { Text("Clear Widget Page?") },
             text = {
                 Text(
-                    "This removes every external widget from the Widget Page and restores Quick Notes and Calendar to their default positions. Your Notes and Calendar data will not be deleted."
+                    "This removes every Android widget currently placed on the Widget Page."
                 )
             },
             dismissButton = {
@@ -926,10 +914,10 @@ internal fun SettingsScreen(
                     openDialog = ""
                     android.widget.Toast.makeText(
                         context,
-                        "Widget layout reset.",
+                        "Widget page cleared.",
                         android.widget.Toast.LENGTH_SHORT
                     ).show()
-                }) { Text("Reset") }
+                }) { Text("Clear") }
             }
         )
     } else if (openDialog == "wallpaperTarget") {
