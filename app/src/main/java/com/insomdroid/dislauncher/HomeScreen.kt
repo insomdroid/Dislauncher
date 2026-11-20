@@ -91,7 +91,8 @@ internal fun HomeScreen(
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
-    val homeVerticalGap = (configuration.screenHeightDp.dp * 0.35f).coerceIn(120.dp, 245.dp)
+
+    val currentLocale = configuration.locales[0]    val homeVerticalGap = (configuration.screenHeightDp.dp * 0.35f).coerceIn(120.dp, 245.dp)
     val lifecycleOwner = LocalLifecycleOwner.current
     val haptic = LocalHapticFeedback.current
     val currentOpenSettings by rememberUpdatedState(onOpenSettings)
@@ -113,7 +114,7 @@ internal fun HomeScreen(
         "24" -> "HH:mm"
         else -> if (systemTimeFormat) "HH:mm" else "h:mm a"
     }
-    val timeText = now.format(DateTimeFormatter.ofPattern(timePattern, Locale.getDefault()))
+    val timeText = now.format(DateTimeFormatter.ofPattern(timePattern, currentLocale))
     val dateText = formatHomeDate(today)
     val background = if (preferences.wallpaperMode == "image") androidx.compose.ui.graphics.Color.Transparent else MaterialTheme.colorScheme.background
     val primaryText = MaterialTheme.colorScheme.onBackground
@@ -262,7 +263,7 @@ internal fun HomeScreen(
                     if (preferences.showWeather) {
                         val hasLocation = hasWeatherLocationPermission(context)
                         val weatherText = weatherInfo?.let {
-                            "${it.temperature} ${it.condition.lowercase(Locale.getDefault())}"
+                            "${it.temperature} ${it.condition.lowercase(currentLocale)}"
                         } ?: weatherStatus.ifBlank {
                             if (!hasLocation) "Tap to allow location" else ""
                         }
