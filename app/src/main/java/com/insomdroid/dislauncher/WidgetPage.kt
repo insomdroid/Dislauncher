@@ -96,6 +96,7 @@ internal fun WidgetPage(
     var pageMenuExpanded by remember { mutableStateOf(false) }
     var addWidgetDialog by remember { mutableStateOf(false) }
     var selectedWidgetId by remember { mutableStateOf<String?>(null) }
+    var draggingWidgetId by remember { mutableStateOf<String?>(null) }
     var pendingAppWidgetId by remember { mutableStateOf(AppWidgetManager.INVALID_APPWIDGET_ID) }
     var gridCellWidthDp by remember { mutableStateOf(0f) }
     var gridCellHeightDp by remember { mutableStateOf(0f) }
@@ -227,24 +228,40 @@ internal fun WidgetPage(
                     }
                     .pointerInput(item.id, items, cellWidthPx, cellHeightPx) {
                         detectDragGesturesAfterLongPress(
-                            onDragStart = { dragDelta = Offset.Zero },
+                            onDragStart = {
+                                dragDelta = Offset.Zero
+                                selectedWidgetId = item.id
+                                draggingWidgetId = item.id
+                            },
                             onDragEnd = {
-                                val targetX = (item.x + dragDelta.x / cellWidthPx).roundToInt()
-                                val targetY = (item.y + dragDelta.y / cellHeightPx).roundToInt()
-                                val moved = moveWidgetItem(items, item.id, targetX, targetY)
-                                if (moved != null) {
-                                    updateItems(moved)
-                                    selectedWidgetId = item.id
-                                } else if (targetX != item.x || targetY != item.y) {
-                                    Toast.makeText(
-                                        context,
-                                        "That position is outside the available widget space.",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                if (dragDelta.y < -cellHeightPx * 0.72f) {
+                                    if (item.kind == "android_widget" && item.appWidgetId >= 0) {
+                                        appWidgetHost.deleteAppWidgetId(item.appWidgetId)
+                                    }
+                                    updateItems(items.filterNot { it.id == item.id })
+                                    selectedWidgetId = null
+                                } else {
+                                    val targetX = (item.x + dragDelta.x / cellWidthPx).roundToInt()
+                                    val targetY = (item.y + dragDelta.y / cellHeightPx).roundToInt()
+                                    val moved = moveWidgetItem(items, item.id, targetX, targetY)
+                                    if (moved != null) {
+                                        updateItems(moved)
+                                        selectedWidgetId = item.id
+                                    } else if (targetX != item.x || targetY != item.y) {
+                                        Toast.makeText(
+                                            context,
+                                            "That position is outside the available widget space.",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
                                 }
+                                draggingWidgetId = null
                                 dragDelta = Offset.Zero
                             },
-                            onDragCancel = { dragDelta = Offset.Zero },
+                            onDragCancel = {
+                                draggingWidgetId = null
+                                dragDelta = Offset.Zero
+                            },
                             onDrag = { change, amount ->
                                 change.consume()
                                 dragDelta += amount
@@ -295,6 +312,30 @@ internal fun WidgetPage(
             }
         }
 
+        if (draggingWidgetId != null) {
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 10.dp),
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.errorContainer,
+                shadowElevation = 6.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("⌫", color = MaterialTheme.colorScheme.onErrorContainer)
+                    Text(
+                        "Release here to remove widget",
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
+            }
+        }
+
         DropdownMenu(
             expanded = pageMenuExpanded,
             onDismissRequest = { pageMenuExpanded = false }
@@ -323,56 +364,96 @@ internal fun WidgetPage(
             onDismissRequest = { addWidgetDialog = false },
             title = { Text("Add widget") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        "Choose a widget to place in an available grid area.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     if (!hasQuickNotes) {
-                        TextButton(onClick = {
-                            val position = findWidgetPlacement(items, WIDGET_PAGE_COLUMNS, 2)
-                            if (position != null) {
-                                val candidate = WidgetPageItem(
-                                    QUICK_NOTES_WIDGET_ID, "quick_notes", position.first, position.second,
-                                    WIDGET_PAGE_COLUMNS, 2
-                                )
-                                updateItems(items + candidate)
-                                addWidgetDialog = false
-                            } else {
-                                Toast.makeText(context, "There is not enough free space for Quick Notes.", Toast.LENGTH_SHORT).show()
+                        Card(
+                            modifier = Modifier.fillMaxWidth().clickable {
+                                val position = findWidgetPlacement(items, 2, 2)
+                                if (position != null) {
+                                    updateItems(items + WidgetPageItem(
+                                        QUICK_NOTES_WIDGET_ID, "quick_notes",
+                                        position.first, position.second, 2, 2
+                                    ))
+                                    addWidgetDialog = false
+                                } else {
+                                    Toast.makeText(context, "There is not enough free space for Quick Notes.", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Quick Notes", style = MaterialTheme.typography.titleSmall)
+                                    Text("Compact note input · 2 × 2", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Text("Add", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                             }
-                        }) { Text("Quick Notes") }
+                        }
                     }
                     if (!hasCalendar) {
-                        TextButton(onClick = {
-                            val position = findWidgetPlacement(items, WIDGET_PAGE_COLUMNS, 5)
-                            if (position != null) {
-                                val candidate = WidgetPageItem(
-                                    MONTH_CALENDAR_WIDGET_ID, "month_calendar", position.first, position.second,
-                                    WIDGET_PAGE_COLUMNS, 5
-                                )
-                                updateItems(items + candidate)
-                                addWidgetDialog = false
-                            } else {
-                                Toast.makeText(context, "There is not enough free space for Calendar.", Toast.LENGTH_SHORT).show()
+                        Card(
+                            modifier = Modifier.fillMaxWidth().clickable {
+                                val position = findWidgetPlacement(items, 3, 4)
+                                if (position != null) {
+                                    updateItems(items + WidgetPageItem(
+                                        MONTH_CALENDAR_WIDGET_ID, "month_calendar",
+                                        position.first, position.second, 3, 4
+                                    ))
+                                    addWidgetDialog = false
+                                } else {
+                                    Toast.makeText(context, "There is not enough free space for Calendar.", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Calendar", style = MaterialTheme.typography.titleSmall)
+                                    Text("Monthly view · 3 × 4", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Text("Add", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                             }
-                        }) { Text("Calendar") }
+                        }
                     }
-                    TextButton(
-                        onClick = {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().clickable {
                             addWidgetDialog = false
                             launchAndroidWidgetPicker()
-                        }
+                        },
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
                     ) {
-                        Text("Android app widget")
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Android app widgets", style = MaterialTheme.typography.titleSmall)
+                                Text("Choose widgets installed on this device", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Text("Add", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                        }
                     }
                     if (hasQuickNotes && hasCalendar) {
                         Text(
                             "Both built-in widgets are already on this page.",
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Text(
-                        "Android app widgets will be available in the next integration stage.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
             },
             confirmButton = {
