@@ -646,6 +646,105 @@ private fun MonthCalendarWidget(
 }
 
 @Composable
+private fun AndroidWidgetCard(
+    modifier: Modifier,
+    context: Context,
+    host: android.appwidget.AppWidgetHost,
+    manager: AppWidgetManager,
+    item: WidgetPageItem,
+    cellWidthDp: Float,
+    cellHeightDp: Float,
+    selected: Boolean,
+    onResize: (Int, Int) -> Unit,
+    onRemove: () -> Unit
+) {
+    val providerInfo = remember(item.appWidgetId) {
+        runCatching { manager.getAppWidgetInfo(item.appWidgetId) }.getOrNull()
+    }
+    var actionsExpanded by remember(item.id) { mutableStateOf(false) }
+
+    Box(
+        modifier = modifier
+            .padding(4.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+    ) {
+        AndroidAppWidgetContent(
+            context = context,
+            host = host,
+            manager = manager,
+            item = item,
+            cellWidthDp = cellWidthDp,
+            cellHeightDp = cellHeightDp,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(
+                    top = if (selected) 42.dp else 4.dp,
+                    start = 4.dp,
+                    end = 4.dp,
+                    bottom = 4.dp
+                )
+        )
+
+        if (selected) {
+            Box(modifier = Modifier.align(Alignment.TopEnd)) {
+                IconButton(onClick = { actionsExpanded = true }) {
+                    Text("⋮", fontSize = 22.sp)
+                }
+                DropdownMenu(
+                    expanded = actionsExpanded,
+                    onDismissRequest = { actionsExpanded = false }
+                ) {
+                    if (providerInfo?.supportsHorizontalResize() == true) {
+                        DropdownMenuItem(
+                            text = { Text("Increase width") },
+                            onClick = {
+                                actionsExpanded = false
+                                onResize(item.width + 1, item.height)
+                            },
+                            enabled = item.width < WIDGET_PAGE_COLUMNS
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Decrease width") },
+                            onClick = {
+                                actionsExpanded = false
+                                onResize(item.width - 1, item.height)
+                            },
+                            enabled = item.width > item.minWidthCells
+                        )
+                    }
+                    if (providerInfo?.supportsVerticalResize() == true) {
+                        DropdownMenuItem(
+                            text = { Text("Increase height") },
+                            onClick = {
+                                actionsExpanded = false
+                                onResize(item.width, item.height + 1)
+                            },
+                            enabled = item.height < WIDGET_PAGE_ROWS
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Decrease height") },
+                            onClick = {
+                                actionsExpanded = false
+                                onResize(item.width, item.height - 1)
+                            },
+                            enabled = item.height > item.minHeightCells
+                        )
+                    }
+                    DropdownMenuItem(
+                        text = { Text("Remove widget") },
+                        onClick = {
+                            actionsExpanded = false
+                            onRemove()
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun WidgetCard(
     modifier: Modifier,
     content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit
