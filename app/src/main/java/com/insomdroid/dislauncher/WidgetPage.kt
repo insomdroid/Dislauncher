@@ -10,6 +10,9 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.clickable
@@ -242,6 +245,15 @@ internal fun WidgetPage(
                     .graphicsLayer {
                         translationX = dragDelta.x
                         translationY = dragDelta.y
+                    }
+                    .pointerInput(item.id) {
+                        awaitEachGesture {
+                            val down = awaitFirstDown(requireUnconsumed = false)
+                            val longPress = awaitLongPressOrCancellation(down.id)
+                            if (longPress != null) {
+                                selectedWidgetId = item.id
+                            }
+                        }
                     }
                     .pointerInput(item.id, items, cellWidthPx, cellHeightPx) {
                         detectDragGesturesAfterLongPress(
