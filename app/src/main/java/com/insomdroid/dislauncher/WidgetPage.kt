@@ -3,6 +3,7 @@ package com.insomdroid.dislauncher
 import android.Manifest
 import android.app.Activity
 import android.appwidget.AppWidgetManager
+import android.appwidget.AppWidgetProviderInfo
 import android.content.Intent
 import android.content.Context
 import android.content.pm.PackageManager
@@ -10,6 +11,10 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items as lazyItems
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
@@ -20,6 +25,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,6 +33,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -59,6 +66,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.graphics.drawable.toBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -135,15 +145,42 @@ internal fun WidgetPage(
             Toast.makeText(context, "The selected widget could not be loaded.", Toast.LENGTH_LONG).show()
             return
         }
-        val minWidthCells = ceil(providerInfo.minWidth / gridCellWidthDp).toInt().coerceAtLeast(1)
-        val minHeightCells = ceil(providerInfo.minHeight / gridCellHeightDp).toInt().coerceAtLeast(1)
+        // Prefer the provider's resize minimum when it supports resizing. The declared
+        // minWidth/minHeight describe its preferred initial size, not its smallest usable size.
+        val canResizeHorizontally =
+            providerInfo.resizeMode and AppWidgetProviderInfo.RESIZE_HORIZONTAL != 0
+        val canResizeVertically =
+            providerInfo.resizeMode and AppWidgetProviderInfo.RESIZE_VERTICAL != 0
+        val requestedMinWidth = if (canResizeHorizontally && providerInfo.minResizeWidth > 0) {
+            providerInfo.minResizeWidth
+        } else providerInfo.minWidth
+        val requestedMinHeight = if (canResizeVertically && providerInfo.minResizeHeight > 0) {
+            providerInfo.minResizeHeight
+        } else providerInfo.minHeight
+        // AppWidgetProviderInfo dimensions are physical pixels; launcher grid dimensions are dp.
+        // Convert before calculating cells, otherwise high-density devices overestimate widget size.
+        val density = context.resources.displayMetrics.density.coerceAtLeast(1f)
+        val minWidthDp = requestedMinWidth / density
+        val minHeightDp = requestedMinHeight / density
+        val preferredWidthDp = providerInfo.minWidth / density
+        val preferredHeightDp = providerInfo.minHeight / density
+        val minWidthCells = ceil(minWidthDp / gridCellWidthDp).toInt().coerceAtLeast(1)
+        val minHeightCells = ceil(minHeightDp / gridCellHeightDp).toInt().coerceAtLeast(1)
         if (minWidthCells > WIDGET_PAGE_COLUMNS || minHeightCells > WIDGET_PAGE_ROWS) {
             appWidgetHost.deleteAppWidgetId(appWidgetId)
-            Toast.makeText(context, "This widget is larger than the available page.", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                context,
+                "This widget's declared minimum size is larger than the widget page.",
+                Toast.LENGTH_LONG
+            ).show()
             return
         }
-        val width = minWidthCells
-        val height = minHeightCells
+        val preferredWidth = ceil(preferredWidthDp / gridCellWidthDp).toInt()
+            .coerceAtLeast(minWidthCells).coerceAtMost(WIDGET_PAGE_COLUMNS)
+        val preferredHeight = ceil(preferredHeightDp / gridCellHeightDp).toInt()
+            .coerceAtLeast(minHeightCells).coerceAtMost(WIDGET_PAGE_ROWS)
+        val width = preferredWidth
+        val height = preferredHeight
         val position = findWidgetPlacement(items, width, height)
         if (position == null) {
             appWidgetHost.deleteAppWidgetId(appWidgetId)
@@ -317,6 +354,8 @@ internal fun WidgetPage(
                         modifier = itemModifier,
                         isActive = isActive,
                         selected = selectedWidgetId == item.id,
+                        currentHeight = item.height,
+                        cellHeightDp = gridCellHeightDp,
                         onRemove = { updateItems(items.filterNot { it.id == item.id }) },
                         onResize = { height ->
                             resizeWidgetItem(items, item.id, height)?.let(::updateItems)
@@ -328,6 +367,8 @@ internal fun WidgetPage(
                         context = context,
                         isActive = isActive,
                         selected = selectedWidgetId == item.id,
+                        currentHeight = item.height,
+                        cellHeightDp = gridCellHeightDp,
                         onRemove = { updateItems(items.filterNot { it.id == item.id }) },
                         onResize = { height ->
                             resizeWidgetItem(items, item.id, height)?.let(::updateItems)
@@ -474,22 +515,104 @@ internal fun WidgetPage(
                             }
                         }
                     }
-                    Card(
-                        modifier = Modifier.fillMaxWidth().clickable {
-                            addWidgetDialog = false
-                            launchAndroidWidgetPicker()
-                        },
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                    Text(
+                        "Installed app widgets",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    val installedProviders = remember(context) {
+                        appWidgetManager.installedProviders
+                            .sortedWith(compareBy(
+                                { it.loadLabel(context.packageManager).toString().lowercase(Locale.ROOT) },
+                                { it.provider.packageName }
+                            ))
+                    }
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text("Android app widgets", style = MaterialTheme.typography.titleSmall)
-                                Text("Choose widgets installed on this device", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        lazyItems(installedProviders, key = { it.provider.flattenToString() }) { provider ->
+                            val preview = remember(provider) {
+                                runCatching {
+                                    (provider.loadPreviewImage(context, context.resources.displayMetrics.densityDpi)
+                                        ?: provider.loadIcon(context, context.resources.displayMetrics.densityDpi))
+                                        ?.toBitmap(width = 420, height = 260)
+                                }.getOrNull()
                             }
-                            Text("Add", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                            Card(
+                                modifier = Modifier.fillMaxWidth().clickable {
+                                    val id = appWidgetHost.allocateAppWidgetId()
+                                    pendingAppWidgetId = id
+                                    val bound = runCatching {
+                                        appWidgetManager.bindAppWidgetIdIfAllowed(id, provider.provider)
+                                    }.getOrDefault(false)
+                                    if (bound) {
+                                        val configure = provider.configure
+                                        if (configure != null) {
+                                            val intent = Intent(AppWidgetManager.ACTION_APPWIDGET_CONFIGURE)
+                                                .setComponent(configure)
+                                                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
+                                            configureWidgetLauncher.launch(intent)
+                                        } else {
+                                            addAndroidWidget(id)
+                                            pendingAppWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
+                                        }
+                                    } else {
+                                        val bindIntent = Intent(AppWidgetManager.ACTION_APPWIDGET_BIND)
+                                            .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
+                                            .putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER, provider.provider)
+                                        widgetPickerLauncher.launch(bindIntent)
+                                    }
+                                    addWidgetDialog = false
+                                },
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                provider.loadLabel(context.packageManager).toString(),
+                                                style = MaterialTheme.typography.titleSmall
+                                            )
+                                            Text(
+                                                provider.provider.packageName,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+                                        Text(
+                                            "${ceil(provider.minWidth / gridCellWidthDp.coerceAtLeast(1f)).toInt()} × ${ceil(provider.minHeight / gridCellHeightDp.coerceAtLeast(1f)).toInt()}",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                    if (preview != null) {
+                                        Image(
+                                            bitmap = preview.asImageBitmap(),
+                                            contentDescription = "Preview of ${provider.loadLabel(context.packageManager)} widget",
+                                            modifier = Modifier.fillMaxWidth().height(116.dp),
+                                            contentScale = ContentScale.Fit
+                                        )
+                                    } else {
+                                        Surface(
+                                            modifier = Modifier.fillMaxWidth().height(76.dp),
+                                            color = MaterialTheme.colorScheme.surfaceVariant,
+                                            shape = RoundedCornerShape(12.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Text("Widget preview unavailable", style = MaterialTheme.typography.bodySmall)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                     if (hasQuickNotes && hasCalendar) {
@@ -513,6 +636,8 @@ private fun QuickNotesWidget(
     modifier: Modifier,
     isActive: Boolean,
     selected: Boolean,
+    currentHeight: Int,
+    cellHeightDp: Float,
     onRemove: () -> Unit,
     onResize: (Int) -> Unit
 ) {
@@ -535,7 +660,8 @@ private fun QuickNotesWidget(
         withContext(Dispatchers.IO) { saveQuickWidgetNote(context, noteText) }
     }
 
-    WidgetCard(modifier = modifier) {
+    Box(modifier = modifier) {
+        WidgetCard(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -585,6 +711,16 @@ private fun QuickNotesWidget(
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
             shape = RoundedCornerShape(12.dp)
         )
+        }
+        if (selected) {
+            VerticalWidgetResizeHandle(
+                currentHeight = currentHeight,
+                cellHeightDp = cellHeightDp,
+                minimum = 2,
+                maximum = WIDGET_PAGE_ROWS,
+                onResize = onResize
+            )
+        }
     }
 }
 
@@ -627,6 +763,8 @@ private fun MonthCalendarWidget(
     context: Context,
     isActive: Boolean,
     selected: Boolean,
+    currentHeight: Int,
+    cellHeightDp: Float,
     onRemove: () -> Unit,
     onResize: (Int) -> Unit
 ) {
@@ -681,7 +819,8 @@ private fun MonthCalendarWidget(
     val taskDates = tasks.mapNotNull { runCatching { LocalDate.parse(it.date) }.getOrNull() }.toSet()
     val markedDates = eventDates + taskDates
 
-    WidgetCard(modifier = modifier) {
+    Box(modifier = modifier) {
+        WidgetCard(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -802,6 +941,109 @@ private fun MonthCalendarWidget(
                 Text("Allow calendar access", fontSize = 11.sp)
             }
         }
+        }
+        if (selected) {
+            VerticalWidgetResizeHandle(
+                currentHeight = currentHeight,
+                cellHeightDp = cellHeightDp,
+                minimum = 3,
+                maximum = WIDGET_PAGE_ROWS,
+                onResize = onResize
+            )
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.VerticalWidgetResizeHandle(
+    currentHeight: Int,
+    cellHeightDp: Float,
+    minimum: Int,
+    maximum: Int,
+    onResize: (Int) -> Unit
+) {
+    val density = LocalDensity.current
+    Surface(
+        modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .padding(8.dp)
+            .size(30.dp)
+            .pointerInput(currentHeight, cellHeightDp, minimum, maximum) {
+                var accumulated = 0f
+                detectDragGestures(
+                    onDragEnd = {
+                        val cellPx = with(density) { cellHeightDp.dp.toPx() }.coerceAtLeast(1f)
+                        val delta = (accumulated / cellPx).roundToInt()
+                        if (delta != 0) onResize((currentHeight + delta).coerceIn(minimum, maximum))
+                    },
+                    onDrag = { change, amount ->
+                        accumulated += amount.y
+                        change.consume()
+                    }
+                )
+            },
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        shadowElevation = 3.dp
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text("↕", color = MaterialTheme.colorScheme.onPrimaryContainer, fontSize = 18.sp)
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.WidgetResizeHandle(
+    currentWidth: Int,
+    currentHeight: Int,
+    minimumWidth: Int,
+    minimumHeight: Int,
+    maximumWidth: Int,
+    maximumHeight: Int,
+    cellWidthDp: Float,
+    cellHeightDp: Float,
+    resizeMode: Int,
+    onResize: (Int, Int) -> Unit
+) {
+    val density = LocalDensity.current
+    Surface(
+        modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .padding(8.dp)
+            .size(32.dp)
+            .pointerInput(
+                currentWidth, currentHeight, minimumWidth, minimumHeight,
+                cellWidthDp, cellHeightDp, resizeMode
+            ) {
+                var accumulated = Offset.Zero
+                detectDragGestures(
+                    onDragEnd = {
+                        val widthPx = with(density) { cellWidthDp.dp.toPx() }.coerceAtLeast(1f)
+                        val heightPx = with(density) { cellHeightDp.dp.toPx() }.coerceAtLeast(1f)
+                        val horizontal = resizeMode and AppWidgetProviderInfo.RESIZE_HORIZONTAL != 0
+                        val vertical = resizeMode and AppWidgetProviderInfo.RESIZE_VERTICAL != 0
+                        val widthDelta = if (horizontal) (accumulated.x / widthPx).roundToInt() else 0
+                        val heightDelta = if (vertical) (accumulated.y / heightPx).roundToInt() else 0
+                        if (widthDelta != 0 || heightDelta != 0) {
+                            onResize(
+                                (currentWidth + widthDelta).coerceIn(minimumWidth, maximumWidth),
+                                (currentHeight + heightDelta).coerceIn(minimumHeight, maximumHeight)
+                            )
+                        }
+                    },
+                    onDrag = { change, amount ->
+                        accumulated += amount
+                        change.consume()
+                    }
+                )
+            },
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        shadowElevation = 3.dp
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text("↘", color = MaterialTheme.colorScheme.onPrimaryContainer, fontSize = 18.sp)
+        }
     }
 }
 
@@ -846,7 +1088,19 @@ private fun AndroidWidgetCard(
                 )
         )
 
-        if (selected) {
+        if (selected && item.resizeMode != AppWidgetProviderInfo.RESIZE_NONE) {
+            WidgetResizeHandle(
+                currentWidth = item.width,
+                currentHeight = item.height,
+                minimumWidth = item.minWidthCells,
+                minimumHeight = item.minHeightCells,
+                maximumWidth = WIDGET_PAGE_COLUMNS,
+                maximumHeight = WIDGET_PAGE_ROWS,
+                cellWidthDp = cellWidthDp,
+                cellHeightDp = cellHeightDp,
+                resizeMode = item.resizeMode,
+                onResize = onResize
+            )
             Box(modifier = Modifier.align(Alignment.TopEnd)) {
                 IconButton(onClick = { actionsExpanded = true }) {
                     Text("⋮", fontSize = 22.sp)
