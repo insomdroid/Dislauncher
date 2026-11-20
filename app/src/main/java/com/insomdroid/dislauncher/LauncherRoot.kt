@@ -341,6 +341,7 @@ internal fun DislauncherRoot() {
         val packageReceiver = object : BroadcastReceiver() {
             override fun onReceive(receiverContext: Context?, intent: Intent?) {
                 val changedPackage = intent?.data?.schemeSpecificPart
+                invalidateLauncherPackageVersionCache(changedPackage)
                 invalidateAppIconCaches(changedPackage)
                 invalidateIconPackDetectionCache()
                 refreshJob?.cancel()
