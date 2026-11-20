@@ -692,7 +692,7 @@ private fun MonthCalendarWidget(
                         )
                         DropdownMenuItem(
                             text = { Text("Decrease height") },
-                            onClick = { actionsExpanded = false; onResize(4) }
+                            onClick = { actionsExpanded = false; onResize(3) }
                         )
                         DropdownMenuItem(
                             text = { Text("Remove widget") },
