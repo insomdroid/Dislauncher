@@ -10,7 +10,12 @@ internal data class WidgetPageItem(
     val x: Int,
     val y: Int,
     val width: Int,
-    val height: Int
+    val height: Int,
+    val appWidgetId: Int = -1,
+    val providerComponent: String? = null,
+    val minWidthCells: Int = 1,
+    val minHeightCells: Int = 1,
+    val resizeMode: Int = 3
 )
 
 private const val WIDGET_PAGE_STORE = "dislauncher_widget_page"
@@ -60,11 +65,17 @@ internal fun loadWidgetPageItems(context: Context): List<WidgetPageItem> {
                 x = value.optInt("x", 0),
                 y = value.optInt("y", 0),
                 width = value.optInt("width", WIDGET_PAGE_COLUMNS),
-                height = value.optInt("height", 1)
+                height = value.optInt("height", 1),
+                appWidgetId = value.optInt("appWidgetId", -1),
+                providerComponent = value.optString("providerComponent").takeIf { it.isNotBlank() && it != "null" },
+                minWidthCells = value.optInt("minWidthCells", 1).coerceIn(1, WIDGET_PAGE_COLUMNS),
+                minHeightCells = value.optInt("minHeightCells", 1).coerceIn(1, WIDGET_PAGE_ROWS),
+                resizeMode = value.optInt("resizeMode", 3)
             )
             item.takeIf {
                 it.id.isNotBlank() &&
-                    it.kind in setOf("quick_notes", "month_calendar") &&
+                    it.kind in setOf("quick_notes", "month_calendar", "android_widget") &&
+                    (it.kind != "android_widget" || it.appWidgetId >= 0) &&
                     it.width in 1..WIDGET_PAGE_COLUMNS &&
                     it.height in 1..WIDGET_PAGE_ROWS &&
                     it.x >= 0 && it.y >= 0 &&
@@ -95,6 +106,11 @@ internal fun saveWidgetPageItems(context: Context, items: List<WidgetPageItem>) 
                 .put("y", item.y)
                 .put("width", item.width)
                 .put("height", item.height)
+                .put("appWidgetId", item.appWidgetId)
+                .put("providerComponent", item.providerComponent)
+                .put("minWidthCells", item.minWidthCells)
+                .put("minHeightCells", item.minHeightCells)
+                .put("resizeMode", item.resizeMode)
         )
     }
     context.getSharedPreferences(WIDGET_PAGE_STORE, Context.MODE_PRIVATE)
@@ -179,6 +195,21 @@ internal fun findWidgetPlacement(
         }
     }
     return null
+}
+
+internal fun resizeWidgetDimensions(
+    items: List<WidgetPageItem>,
+    itemId: String,
+    newWidth: Int,
+    newHeight: Int
+): List<WidgetPageItem>? {
+    val item = items.firstOrNull { it.id == itemId } ?: return null
+    if (newWidth !in item.minWidthCells..WIDGET_PAGE_COLUMNS ||
+        newHeight !in item.minHeightCells..WIDGET_PAGE_ROWS
+    ) return null
+    val candidate = item.copy(width = newWidth, height = newHeight)
+    if (!canPlaceWidgetItem(items, candidate)) return null
+    return items.map { if (it.id == itemId) candidate else it }
 }
 
 internal fun resizeWidgetItem(
