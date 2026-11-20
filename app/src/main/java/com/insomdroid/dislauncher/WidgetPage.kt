@@ -1,6 +1,9 @@
 package com.insomdroid.dislauncher
 
 import android.Manifest
+import android.app.Activity
+import android.appwidget.AppWidgetManager
+import android.content.Intent
 import android.content.Context
 import android.content.pm.PackageManager
 import android.widget.Toast
@@ -41,6 +44,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -75,6 +79,7 @@ import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlin.math.ceil
 import kotlin.math.roundToInt
 
 private const val QUICK_NOTE_SAVE_DELAY_MS = 550L
@@ -85,13 +90,110 @@ internal fun WidgetPage(
     onOpenSettings: () -> Unit
 ) {
     val context = LocalContext.current
+    val appWidgetManager = remember(context) { AppWidgetManager.getInstance(context) }
+    val appWidgetHost = rememberDislauncherAppWidgetHost()
     var items by remember(context) { mutableStateOf(loadWidgetPageItems(context)) }
     var pageMenuExpanded by remember { mutableStateOf(false) }
     var addWidgetDialog by remember { mutableStateOf(false) }
+    var selectedWidgetId by remember { mutableStateOf<String?>(null) }
+    var pendingAppWidgetId by remember { mutableStateOf(AppWidgetManager.INVALID_APPWIDGET_ID) }
+    var gridCellWidthDp by remember { mutableStateOf(0f) }
+    var gridCellHeightDp by remember { mutableStateOf(0f) }
 
     fun updateItems(next: List<WidgetPageItem>) {
         items = next
         saveWidgetPageItems(context, next)
+    }
+
+    fun addAndroidWidget(appWidgetId: Int) {
+        val providerInfo = runCatching {
+            appWidgetManager.getAppWidgetInfo(appWidgetId)
+        }.getOrNull()
+        if (providerInfo == null || gridCellWidthDp <= 0f || gridCellHeightDp <= 0f) {
+            appWidgetHost.deleteAppWidgetId(appWidgetId)
+            Toast.makeText(context, "The selected widget could not be loaded.", Toast.LENGTH_LONG).show()
+            return
+        }
+        val minWidthCells = ceil(providerInfo.minWidth / gridCellWidthDp).toInt().coerceAtLeast(1)
+        val minHeightCells = ceil(providerInfo.minHeight / gridCellHeightDp).toInt().coerceAtLeast(1)
+        if (minWidthCells > WIDGET_PAGE_COLUMNS || minHeightCells > WIDGET_PAGE_ROWS) {
+            appWidgetHost.deleteAppWidgetId(appWidgetId)
+            Toast.makeText(context, "This widget is larger than the available page.", Toast.LENGTH_LONG).show()
+            return
+        }
+        val width = minWidthCells
+        val height = minHeightCells
+        val position = findWidgetPlacement(items, width, height)
+        if (position == null) {
+            appWidgetHost.deleteAppWidgetId(appWidgetId)
+            Toast.makeText(context, "There is not enough free space for this widget.", Toast.LENGTH_LONG).show()
+            return
+        }
+        val item = WidgetPageItem(
+            id = "android_widget_$appWidgetId",
+            kind = "android_widget",
+            x = position.first,
+            y = position.second,
+            width = width,
+            height = height,
+            appWidgetId = appWidgetId,
+            providerComponent = providerInfo.provider.flattenToString(),
+            minWidthCells = minWidthCells,
+            minHeightCells = minHeightCells,
+            resizeMode = providerInfo.resizeMode
+        )
+        updateItems(items + item)
+    }
+
+    val configureWidgetLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val id = pendingAppWidgetId
+        if (result.resultCode == Activity.RESULT_OK && id != AppWidgetManager.INVALID_APPWIDGET_ID) {
+            addAndroidWidget(id)
+        } else if (id != AppWidgetManager.INVALID_APPWIDGET_ID) {
+            appWidgetHost.deleteAppWidgetId(id)
+        }
+        pendingAppWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
+    }
+
+    val widgetPickerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val id = result.data?.getIntExtra(
+            AppWidgetManager.EXTRA_APPWIDGET_ID,
+            pendingAppWidgetId
+        ) ?: pendingAppWidgetId
+        if (result.resultCode == Activity.RESULT_OK && id != AppWidgetManager.INVALID_APPWIDGET_ID) {
+            pendingAppWidgetId = id
+            val providerInfo = runCatching { appWidgetManager.getAppWidgetInfo(id) }.getOrNull()
+            if (providerInfo?.configure != null) {
+                val configureIntent = Intent(AppWidgetManager.ACTION_APPWIDGET_CONFIGURE)
+                    .setComponent(providerInfo.configure)
+                    .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
+                configureWidgetLauncher.launch(configureIntent)
+            } else {
+                addAndroidWidget(id)
+                pendingAppWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
+            }
+        } else {
+            if (id != AppWidgetManager.INVALID_APPWIDGET_ID) appWidgetHost.deleteAppWidgetId(id)
+            pendingAppWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
+        }
+    }
+
+    fun launchAndroidWidgetPicker() {
+        val id = appWidgetHost.allocateAppWidgetId()
+        pendingAppWidgetId = id
+        val intent = Intent(AppWidgetManager.ACTION_APPWIDGET_PICK)
+            .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
+        if (intent.resolveActivity(context.packageManager) != null) {
+            widgetPickerLauncher.launch(intent)
+        } else {
+            appWidgetHost.deleteAppWidgetId(id)
+            pendingAppWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
+            Toast.makeText(context, "No Android widget picker is available on this device.", Toast.LENGTH_LONG).show()
+        }
     }
 
     BoxWithConstraints(
