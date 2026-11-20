@@ -254,6 +254,8 @@ internal fun WidgetPage(
         val cellWidthPx = with(LocalDensity.current) { cellWidth.toPx() }
         val cellHeightPx = with(LocalDensity.current) { cellHeight.toPx() }
         val removeZoneHeightPx = with(LocalDensity.current) { 76.dp.toPx() }
+        val removeZoneWidthPx = with(LocalDensity.current) { 168.dp.toPx() }
+        val removeZoneCenterPx = with(LocalDensity.current) { maxWidth.toPx() / 2f }
 
         fun liftWidget(item: WidgetPageItem, localPosition: Offset) {
             val widgetWidthPx = cellWidthPx * item.width
@@ -285,7 +287,10 @@ internal fun WidgetPage(
 
         fun finishWidgetDrag(item: WidgetPageItem) {
             val previewTopLeft = dragPreviewTopLeft(item)
-            val dropOnRemove = previewTopLeft.y <= removeZoneHeightPx
+            val dropOnRemove =
+                dragPosition.y <= removeZoneHeightPx &&
+                    dragPosition.x >= removeZoneCenterPx - removeZoneWidthPx / 2f &&
+                    dragPosition.x <= removeZoneCenterPx + removeZoneWidthPx / 2f
             if (dropOnRemove) {
                 if (item.appWidgetId >= 0) appWidgetHost.deleteAppWidgetId(item.appWidgetId)
                 updateItems(items.filterNot { it.id == item.id })
@@ -406,7 +411,10 @@ internal fun WidgetPage(
 
         val draggedItem = items.firstOrNull { it.id == draggingWidgetId }
         if (draggedItem != null) {
-            val overRemove = dragPreviewTopLeft(draggedItem).y <= removeZoneHeightPx
+            val overRemove =
+                dragPosition.y <= removeZoneHeightPx &&
+                    dragPosition.x >= removeZoneCenterPx - removeZoneWidthPx / 2f &&
+                    dragPosition.x <= removeZoneCenterPx + removeZoneWidthPx / 2f
             Surface(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
