@@ -273,6 +273,7 @@ internal fun WidgetPage(
                     "quick_notes" -> QuickNotesWidget(
                         modifier = itemModifier,
                         isActive = isActive,
+                        selected = selectedWidgetId == item.id,
                         onRemove = { updateItems(items.filterNot { it.id == item.id }) },
                         onResize = { height ->
                             resizeWidgetItem(items, item.id, height)?.let(::updateItems)
@@ -283,6 +284,7 @@ internal fun WidgetPage(
                         modifier = itemModifier,
                         context = context,
                         isActive = isActive,
+                        selected = selectedWidgetId == item.id,
                         onRemove = { updateItems(items.filterNot { it.id == item.id }) },
                         onResize = { height ->
                             resizeWidgetItem(items, item.id, height)?.let(::updateItems)
@@ -467,6 +469,7 @@ internal fun WidgetPage(
 private fun QuickNotesWidget(
     modifier: Modifier,
     isActive: Boolean,
+    selected: Boolean,
     onRemove: () -> Unit,
     onResize: (Int) -> Unit
 ) {
@@ -502,14 +505,30 @@ private fun QuickNotesWidget(
                     launchBuiltInTool(context, BuiltInTool.NOTES)
                 }
             )
-            TextButton(onClick = { onResize(3) }, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp)) {
-                Text("+")
-            }
-            TextButton(onClick = { onResize(2) }, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp)) {
-                Text("−")
-            }
-            TextButton(onClick = onRemove, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp)) {
-                Text("Remove")
+            if (selected) {
+                var actionsExpanded by remember { mutableStateOf(false) }
+                Box {
+                    IconButton(onClick = { actionsExpanded = true }) {
+                        Text("⋮", fontSize = 20.sp)
+                    }
+                    DropdownMenu(
+                        expanded = actionsExpanded,
+                        onDismissRequest = { actionsExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Increase height") },
+                            onClick = { actionsExpanded = false; onResize(3) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Decrease height") },
+                            onClick = { actionsExpanded = false; onResize(2) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Remove widget") },
+                            onClick = { actionsExpanded = false; onRemove() }
+                        )
+                    }
+                }
             }
         }
         OutlinedTextField(
@@ -564,6 +583,7 @@ private fun MonthCalendarWidget(
     modifier: Modifier,
     context: Context,
     isActive: Boolean,
+    selected: Boolean,
     onRemove: () -> Unit,
     onResize: (Int) -> Unit
 ) {
@@ -639,14 +659,30 @@ private fun MonthCalendarWidget(
             TextButton(onClick = { month = month.plusMonths(1) }, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 3.dp)) {
                 Text("›")
             }
-            TextButton(onClick = { onResize(5) }, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 3.dp)) {
-                Text("+")
-            }
-            TextButton(onClick = { onResize(4) }, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 3.dp)) {
-                Text("−")
-            }
-            TextButton(onClick = onRemove, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 3.dp)) {
-                Text("Remove")
+            if (selected) {
+                var actionsExpanded by remember { mutableStateOf(false) }
+                Box {
+                    IconButton(onClick = { actionsExpanded = true }) {
+                        Text("⋮", fontSize = 20.sp)
+                    }
+                    DropdownMenu(
+                        expanded = actionsExpanded,
+                        onDismissRequest = { actionsExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Increase height") },
+                            onClick = { actionsExpanded = false; onResize(5) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Decrease height") },
+                            onClick = { actionsExpanded = false; onResize(4) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Remove widget") },
+                            onClick = { actionsExpanded = false; onRemove() }
+                        )
+                    }
+                }
             }
         }
 
