@@ -36,22 +36,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -72,12 +67,10 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.roundToInt
@@ -530,14 +523,7 @@ internal fun WidgetPage(
         val providerGroups = remember(installedProviders) {
             installedProviders.groupBy { it.provider.packageName }.toSortedMap()
         }
-        var expandedPackages by remember {
-            mutableStateOf(setOf("builtin_dislauncher"))
-        }
-        val ownAppIcon = remember(context) {
-            runCatching {
-                context.packageManager.getApplicationIcon(context.packageName).toBitmap(96, 96)
-            }.getOrNull()
-        }
+        var expandedPackages by remember { mutableStateOf(emptySet<String>()) }
 
         AlertDialog(
             onDismissRequest = { addWidgetDialog = false },
@@ -735,47 +721,11 @@ internal fun WidgetPage(
 }
 
 @Composable
-private fun BoxScope.VerticalWidgetResizeHandle(
-    currentHeight: Int,
-    cellHeightDp: Float,
-    minimum: Int,
-    maximum: Int,
-    onResize: (Int) -> Unit
-) {
-    val density = LocalDensity.current
-    Surface(
-        modifier = Modifier
-            .align(Alignment.BottomEnd)
-            .padding(8.dp)
-            .size(30.dp)
-            .pointerInput(currentHeight, cellHeightDp, minimum, maximum) {
-                var accumulated = 0f
-                detectDragGestures(
-                    onDragEnd = {
-                        val cellPx = with(density) { cellHeightDp.dp.toPx() }.coerceAtLeast(1f)
-                        val delta = (accumulated / cellPx).roundToInt()
-                        if (delta != 0) onResize((currentHeight + delta).coerceIn(minimum, maximum))
-                    },
-                    onDrag = { change, amount ->
-                        accumulated += amount.y
-                        change.consume()
-                    }
-                )
-            },
-        shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.primaryContainer,
-        shadowElevation = 3.dp
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text("↕", color = MaterialTheme.colorScheme.onPrimaryContainer, fontSize = 18.sp)
-        }
-    }
-}
-
-@Composable
-private fun BoxScope.WidgetResizeHandle(
-    currentWidth: Int,
-    currentHeight: Int,
+private fun BoxScope.WidgetResizeHandles(
+    itemX: Int,
+    itemY: Int,
+    itemWidth: Int,
+    itemHeight: Int,
     minimumWidth: Int,
     minimumHeight: Int,
     maximumWidth: Int,
@@ -783,101 +733,99 @@ private fun BoxScope.WidgetResizeHandle(
     cellWidthDp: Float,
     cellHeightDp: Float,
     resizeMode: Int,
-    onResize: (Int, Int) -> Unit
+    onResize: (Int, Int, Int, Int) -> Unit
 ) {
     val density = LocalDensity.current
-    Surface(
-        modifier = Modifier
-            .align(Alignment.BottomEnd)
-            .padding(8.dp)
-            .size(32.dp)
-            .pointerInput(
-                currentWidth, currentHeight, minimumWidth, minimumHeight,
-                cellWidthDp, cellHeightDp, resizeMode
-            ) {
-                var accumulated = Offset.Zero
-                detectDragGestures(
-                    onDragEnd = {
-                        val widthPx = with(density) { cellWidthDp.dp.toPx() }.coerceAtLeast(1f)
-                        val heightPx = with(density) { cellHeightDp.dp.toPx() }.coerceAtLeast(1f)
-                        val horizontal = resizeMode and AppWidgetProviderInfo.RESIZE_HORIZONTAL != 0
-                        val vertical = resizeMode and AppWidgetProviderInfo.RESIZE_VERTICAL != 0
-                        val widthDelta = if (horizontal) (accumulated.x / widthPx).roundToInt() else 0
-                        val heightDelta = if (vertical) (accumulated.y / heightPx).roundToInt() else 0
-                        if (widthDelta != 0 || heightDelta != 0) {
-                            onResize(
-                                (currentWidth + widthDelta).coerceIn(minimumWidth, maximumWidth),
-                                (currentHeight + heightDelta).coerceIn(minimumHeight, maximumHeight)
-                            )
-                        }
-                    },
-                    onDrag = { change, amount ->
+    val horizontalEnabled = resizeMode and AppWidgetProviderInfo.RESIZE_HORIZONTAL != 0
+    val verticalEnabled = resizeMode and AppWidgetProviderInfo.RESIZE_VERTICAL != 0
+
+    @Composable
+    fun edgeHandle(
+        alignment: Alignment,
+        horizontalEdge: Int,
+        verticalEdge: Int
+    ) {
+        if ((horizontalEdge != 0 && !horizontalEnabled) ||
+            (verticalEdge != 0 && !verticalEnabled)
+        ) return
+
+        Box(
+            modifier = Modifier
+                .align(alignment)
+                .size(48.dp)
+                .drawBehind {
+                    drawCircle(
+                        color = MaterialTheme.colorScheme.primary,
+                        radius = 7.dp.toPx()
+                    )
+                }
+                .pointerInput(
+                    itemX,
+                    itemY,
+                    itemWidth,
+                    itemHeight,
+                    minimumWidth,
+                    minimumHeight,
+                    maximumWidth,
+                    maximumHeight,
+                    cellWidthDp,
+                    cellHeightDp,
+                    horizontalEdge,
+                    verticalEdge
+                ) {
+                    var accumulated = Offset.Zero
+                    detectDragGestures(
+                        onDragEnd = {
+                            val cellWidth = with(density) {
+                                cellWidthDp.dp.toPx()
+                            }.coerceAtLeast(1f)
+                            val cellHeight = with(density) {
+                                cellHeightDp.dp.toPx()
+                            }.coerceAtLeast(1f)
+                            val dx = if (horizontalEdge == 0) 0 else
+                                (accumulated.x / cellWidth).roundToInt()
+                            val dy = if (verticalEdge == 0) 0 else
+                                (accumulated.y / cellHeight).roundToInt()
+
+                            val newX = itemX + if (horizontalEdge < 0) dx else 0
+                            val newY = itemY + if (verticalEdge < 0) dy else 0
+                            val newWidth = (
+                                itemWidth + when (horizontalEdge) {
+                                    -1 -> -dx
+                                    1 -> dx
+                                    else -> 0
+                                }
+                            ).coerceIn(minimumWidth, maximumWidth)
+                            val newHeight = (
+                                itemHeight + when (verticalEdge) {
+                                    -1 -> -dy
+                                    1 -> dy
+                                    else -> 0
+                                }
+                            ).coerceIn(minimumHeight, maximumHeight)
+
+                            if (newX != itemX || newY != itemY ||
+                                newWidth != itemWidth || newHeight != itemHeight
+                            ) {
+                                onResize(newX, newY, newWidth, newHeight)
+                            }
+                        },
+                        onDragCancel = { accumulated = Offset.Zero }
+                    ) { change, amount ->
                         accumulated += amount
                         change.consume()
                     }
-                )
-            },
-        shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.primaryContainer,
-        shadowElevation = 3.dp
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text("↘", color = MaterialTheme.colorScheme.onPrimaryContainer, fontSize = 18.sp)
-        }
+                }
+        )
     }
-}
 
-@Composable
-private fun BoxScope.WidgetResizeHandles(
-    itemX: Int, itemY: Int, itemWidth: Int, itemHeight: Int, minimumWidth: Int, minimumHeight: Int,
-    maximumWidth: Int, maximumHeight: Int, cellWidthDp: Float, cellHeightDp: Float,
-    resizeMode: Int, onResize: (Int, Int, Int, Int) -> Unit
-) {
-    val density = LocalDensity.current
-    val hEnabled = resizeMode and AppWidgetProviderInfo.RESIZE_HORIZONTAL != 0
-    val vEnabled = resizeMode and AppWidgetProviderInfo.RESIZE_VERTICAL != 0
-    @Composable
-    fun grip(edgeX: Int, edgeY: Int, alignment: Alignment, width: androidx.compose.ui.unit.Dp, height: androidx.compose.ui.unit.Dp) {
-        if ((edgeX != 0 && !hEnabled) || (edgeY != 0 && !vEnabled)) return
-        Surface(
-            modifier = Modifier.align(alignment).size(width, height).pointerInput(
-                itemX, itemY, itemWidth, itemHeight, minimumWidth, minimumHeight, cellWidthDp, cellHeightDp, edgeX, edgeY
-            ) {
-                var delta = Offset.Zero
-                detectDragGestures(
-                    onDrag = { change, amount -> delta += amount; change.consume() },
-                    onDragEnd = {
-                        val cw = with(density) { cellWidthDp.dp.toPx() }.coerceAtLeast(1f)
-                        val ch = with(density) { cellHeightDp.dp.toPx() }.coerceAtLeast(1f)
-                        val dx = (delta.x / cw).roundToInt()
-                        val dy = (delta.y / ch).roundToInt()
-                        val nx = itemX + if (edgeX < 0) dx else 0
-                        val ny = itemY + if (edgeY < 0) dy else 0
-                        val nw = (itemWidth + if (edgeX < 0) -dx else if (edgeX > 0) dx else 0).coerceIn(minimumWidth, maximumWidth)
-                        val nh = (itemHeight + if (edgeY < 0) -dy else if (edgeY > 0) dy else 0).coerceIn(minimumHeight, maximumHeight)
-                        if (nw != itemWidth || nh != itemHeight) onResize(nx, ny, nw, nh)
-                    }
-                )
-            },
-            shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.primaryContainer, shadowElevation = 1.dp
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(when {
-                    edgeX < 0 && edgeY < 0 -> "↖"
-                    edgeX > 0 && edgeY < 0 -> "↗"
-                    edgeX < 0 && edgeY > 0 -> "↙"
-                    edgeX > 0 && edgeY > 0 -> "↘"
-                    edgeX != 0 -> "↔"
-                    else -> "↕"
-                }, color = MaterialTheme.colorScheme.onPrimaryContainer, fontSize = 13.sp)
-            }
-        }
+    if (horizontalEnabled) {
+        edgeHandle(Alignment.CenterStart, -1, 0)
+        edgeHandle(Alignment.CenterEnd, 1, 0)
     }
-    if (hEnabled) { grip(-1,0,Alignment.CenterStart,28.dp,42.dp); grip(1,0,Alignment.CenterEnd,28.dp,42.dp) }
-    if (vEnabled) { grip(0,-1,Alignment.TopCenter,42.dp,28.dp); grip(0,1,Alignment.BottomCenter,42.dp,28.dp) }
-    if (hEnabled && vEnabled) {
-        grip(-1,-1,Alignment.TopStart,28.dp,28.dp); grip(1,-1,Alignment.TopEnd,28.dp,28.dp)
-        grip(-1,1,Alignment.BottomStart,28.dp,28.dp); grip(1,1,Alignment.BottomEnd,28.dp,28.dp)
+    if (verticalEnabled) {
+        edgeHandle(Alignment.TopCenter, 0, -1)
+        edgeHandle(Alignment.BottomCenter, 0, 1)
     }
 }
 
@@ -889,10 +837,7 @@ private fun AndroidWidgetCard(
     manager: AppWidgetManager,
     item: WidgetPageItem,
     cellWidthDp: Float,
-    cellHeightDp: Float,
-    selected: Boolean,
-    onResize: (Int, Int, Int, Int) -> Unit,
-    onRemove: () -> Unit
+    cellHeightDp: Float
 ) {
     Box(
         modifier = modifier
@@ -909,24 +854,8 @@ private fun AndroidWidgetCard(
             cellHeightDp = cellHeightDp,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(
-                    top = 4.dp,
-                    start = 4.dp,
-                    end = 4.dp,
-                    bottom = 4.dp
-                )
+                .padding(4.dp)
         )
-
-        if (selected && item.resizeMode != AppWidgetProviderInfo.RESIZE_NONE) {
-            WidgetResizeHandles(
-                itemX = item.x, itemY = item.y, itemWidth = item.width, itemHeight = item.height,
-                minimumWidth = item.minWidthCells, minimumHeight = item.minHeightCells,
-                maximumWidth = WIDGET_PAGE_COLUMNS, maximumHeight = WIDGET_PAGE_ROWS,
-                cellWidthDp = cellWidthDp, cellHeightDp = cellHeightDp,
-                resizeMode = item.resizeMode, onResize = onResize
-            )
-            
-        }
     }
 }
 
