@@ -9,7 +9,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -47,7 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Offset
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -458,11 +461,12 @@ private fun MonthCalendarWidget(
                             contentAlignment = Alignment.Center
                         ) {
                             Surface(
-                                modifier = Modifier.size(25.dp),
+                                modifier = Modifier
+                                    .size(25.dp)
+                                    .clickable { launchBuiltInTool(context, BuiltInTool.CALENDAR) },
                                 shape = CircleShape,
                                 color = if (isToday) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.surface,
-                                onClick = { launchBuiltInTool(context, BuiltInTool.CALENDAR) }
+                                    else MaterialTheme.colorScheme.surface
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Text(
