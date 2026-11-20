@@ -787,7 +787,6 @@ internal fun DislauncherRoot() {
                 ) { page ->
                     if (preferences.showWidgetPage && page == 0) {
                     WidgetPage(
-                        isActive = page == pagerState.currentPage,
                         onOpenSettings = {
                             settingsOpenedFromApps = false
                             settingsOpenedFromWidget = true
