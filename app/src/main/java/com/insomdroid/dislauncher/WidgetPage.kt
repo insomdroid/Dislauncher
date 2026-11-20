@@ -200,11 +200,12 @@ internal fun WidgetPage(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (!hasQuickNotes) {
                         TextButton(onClick = {
-                            val candidate = WidgetPageItem(
-                                QUICK_NOTES_WIDGET_ID, "quick_notes", 0, 0,
-                                WIDGET_PAGE_COLUMNS, 2
-                            )
-                            if (canPlaceWidgetItem(items, candidate)) {
+                            val position = findWidgetPlacement(items, WIDGET_PAGE_COLUMNS, 2)
+                            if (position != null) {
+                                val candidate = WidgetPageItem(
+                                    QUICK_NOTES_WIDGET_ID, "quick_notes", position.first, position.second,
+                                    WIDGET_PAGE_COLUMNS, 2
+                                )
                                 updateItems(items + candidate)
                                 addWidgetDialog = false
                             } else {
@@ -214,11 +215,12 @@ internal fun WidgetPage(
                     }
                     if (!hasCalendar) {
                         TextButton(onClick = {
-                            val candidate = WidgetPageItem(
-                                MONTH_CALENDAR_WIDGET_ID, "month_calendar", 0, 0,
-                                WIDGET_PAGE_COLUMNS, 5
-                            )
-                            if (canPlaceWidgetItem(items, candidate)) {
+                            val position = findWidgetPlacement(items, WIDGET_PAGE_COLUMNS, 5)
+                            if (position != null) {
+                                val candidate = WidgetPageItem(
+                                    MONTH_CALENDAR_WIDGET_ID, "month_calendar", position.first, position.second,
+                                    WIDGET_PAGE_COLUMNS, 5
+                                )
                                 updateItems(items + candidate)
                                 addWidgetDialog = false
                             } else {
@@ -266,8 +268,8 @@ private fun QuickNotesWidget(
         }
     }
 
-    LaunchedEffect(noteText, isActive, hasLoaded) {
-        if (!isActive || !hasLoaded) return@LaunchedEffect
+    LaunchedEffect(noteText, hasLoaded) {
+        if (!hasLoaded) return@LaunchedEffect
         delay(QUICK_NOTE_SAVE_DELAY_MS)
         withContext(Dispatchers.IO) { saveQuickWidgetNote(context, noteText) }
     }
@@ -281,7 +283,9 @@ private fun QuickNotesWidget(
                 "Quick Notes",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).clickable {
+                    launchBuiltInTool(context, BuiltInTool.NOTES)
+                }
             )
             TextButton(onClick = { onResize(3) }, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp)) {
                 Text("+")
@@ -410,7 +414,9 @@ private fun MonthCalendarWidget(
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).clickable {
+                    launchBuiltInTool(context, BuiltInTool.CALENDAR)
+                }
             )
             TextButton(onClick = { month = month.minusMonths(1) }, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 3.dp)) {
                 Text("‹")
