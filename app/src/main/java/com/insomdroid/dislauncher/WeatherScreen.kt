@@ -51,7 +51,8 @@ internal fun WeatherScreen(
 ) {
     val context = LocalContext.current
 
-    val currentLocale = LocalConfiguration.current.locales[0]    val primary = MaterialTheme.colorScheme.onBackground
+    val currentLocale = LocalConfiguration.current.locales[0]
+    val primary = MaterialTheme.colorScheme.onBackground
     val secondary = MaterialTheme.colorScheme.onSurfaceVariant
     var locationGranted by remember { mutableStateOf(hasWeatherLocationPermission(context)) }
     var weather by remember {
