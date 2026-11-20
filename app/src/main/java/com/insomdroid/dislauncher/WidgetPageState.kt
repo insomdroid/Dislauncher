@@ -21,41 +21,28 @@ internal data class WidgetPageItem(
 private const val WIDGET_PAGE_STORE = "dislauncher_widget_page"
 private const val WIDGET_PAGE_LAYOUT_KEY = "layout_json"
 private const val WIDGET_PAGE_INITIALIZED_KEY = "layout_initialized"
+private const val WIDGET_PAGE_BUILTINS_CLEARED_KEY = "builtin_widgets_cleared"
 internal const val WIDGET_PAGE_COLUMNS = 5
 internal const val WIDGET_PAGE_ROWS = 7
 internal const val QUICK_NOTES_WIDGET_ID = "builtin_quick_notes"
 internal const val MONTH_CALENDAR_WIDGET_ID = "builtin_month_calendar"
 
-private fun defaultWidgetPageItems(): List<WidgetPageItem> = listOf(
-    WidgetPageItem(
-        id = QUICK_NOTES_WIDGET_ID,
-        kind = "quick_notes",
-        x = 0,
-        y = 0,
-        width = 2,
-        height = 2
-    ),
-    WidgetPageItem(
-        id = MONTH_CALENDAR_WIDGET_ID,
-        kind = "month_calendar",
-        x = 2,
-        y = 0,
-        width = 3,
-        height = 4
-    )
-)
+private fun defaultWidgetPageItems(): List<WidgetPageItem> = emptyList()
 
 internal fun loadWidgetPageItems(context: Context): List<WidgetPageItem> {
     val store = context.getSharedPreferences(WIDGET_PAGE_STORE, Context.MODE_PRIVATE)
     if (!store.getBoolean(WIDGET_PAGE_INITIALIZED_KEY, false)) {
         val defaults = defaultWidgetPageItems()
         saveWidgetPageItems(context, defaults)
-        store.edit().putBoolean(WIDGET_PAGE_INITIALIZED_KEY, true).apply()
+        store.edit()
+            .putBoolean(WIDGET_PAGE_INITIALIZED_KEY, true)
+            .putBoolean(WIDGET_PAGE_BUILTINS_CLEARED_KEY, true)
+            .apply()
         return defaults
     }
 
     val raw = store.getString(WIDGET_PAGE_LAYOUT_KEY, "[]") ?: "[]"
-    return runCatching {
+    val parsedItems = runCatching {
         val array = JSONArray(raw)
         (0 until array.length()).mapNotNull { index ->
             val value = array.optJSONObject(index) ?: return@mapNotNull null
@@ -93,6 +80,16 @@ internal fun loadWidgetPageItems(context: Context): List<WidgetPageItem> {
         }
         emptyList()
     }
+
+    if (!store.getBoolean(WIDGET_PAGE_BUILTINS_CLEARED_KEY, false)) {
+        val withoutDefaults = parsedItems.filterNot {
+            it.kind == "quick_notes" || it.kind == "month_calendar"
+        }
+        if (withoutDefaults != parsedItems) saveWidgetPageItems(context, withoutDefaults)
+        store.edit().putBoolean(WIDGET_PAGE_BUILTINS_CLEARED_KEY, true).apply()
+        return withoutDefaults
+    }
+    return parsedItems
 }
 
 internal fun restoreDefaultWidgetItems(context: Context): Boolean {
@@ -128,7 +125,7 @@ internal fun resetWidgetPageLayout(context: Context) {
     loadWidgetPageItems(context)
         .filter { it.kind == "android_widget" && it.appWidgetId >= 0 }
         .forEach { item -> runCatching { host.deleteAppWidgetId(item.appWidgetId) } }
-    saveWidgetPageItems(context, defaultWidgetPageItems())
+    saveWidgetPageItems(context, emptyList())
 }
 
 internal fun saveWidgetPageItems(context: Context, items: List<WidgetPageItem>) {
