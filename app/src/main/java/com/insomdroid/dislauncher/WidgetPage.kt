@@ -92,7 +92,24 @@ internal fun WidgetPage(
     val context = LocalContext.current
     val appWidgetManager = remember(context) { AppWidgetManager.getInstance(context) }
     val appWidgetHost = rememberDislauncherAppWidgetHost()
-    var items by remember(context) { mutableStateOf(loadWidgetPageItems(context)) }
+    var items by remember(context) {
+        val loaded = loadWidgetPageItems(context)
+        val oldQuickNotes = loaded.firstOrNull { it.id == QUICK_NOTES_WIDGET_ID }
+        val oldCalendar = loaded.firstOrNull { it.id == MONTH_CALENDAR_WIDGET_ID }
+        val isLegacyFullWidthLayout = loaded.size == 2 &&
+            oldQuickNotes?.let { it.x == 0 && it.y == 0 && it.width == WIDGET_PAGE_COLUMNS && it.height == 2 } == true &&
+            oldCalendar?.let { it.x == 0 && it.y == 2 && it.width == WIDGET_PAGE_COLUMNS && it.height == 5 } == true
+        val initialItems = if (isLegacyFullWidthLayout) {
+            loaded.map { item ->
+                when (item.id) {
+                    QUICK_NOTES_WIDGET_ID -> item.copy(x = 0, y = 0, width = 2, height = 2)
+                    MONTH_CALENDAR_WIDGET_ID -> item.copy(x = 2, y = 0, width = 3, height = 4)
+                    else -> item
+                }
+            }.also { saveWidgetPageItems(context, it) }
+        } else loaded
+        mutableStateOf(initialItems)
+    }
     var pageMenuExpanded by remember { mutableStateOf(false) }
     var addWidgetDialog by remember { mutableStateOf(false) }
     var selectedWidgetId by remember { mutableStateOf<String?>(null) }
