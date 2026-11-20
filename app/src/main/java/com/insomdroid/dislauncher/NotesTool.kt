@@ -275,8 +275,8 @@ internal fun NotesTool(
     onBackRequested: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var notes by remember(context)
-    val currentLocale = LocalConfiguration.current.locales[0] { mutableStateOf(emptyList<LocalNote>()) }
+    val currentLocale = LocalConfiguration.current.locales[0]
+    var notes by remember(context) { mutableStateOf(emptyList<LocalNote>()) }
     var notesLoaded by remember(context) { mutableStateOf(false) }
     var selectedId by remember { mutableStateOf<String?>(null) }
     var isClosingEditor by remember { mutableStateOf(false) }
