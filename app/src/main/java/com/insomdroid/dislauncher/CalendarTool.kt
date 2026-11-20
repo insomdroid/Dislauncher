@@ -181,8 +181,8 @@ internal fun CalendarTool(
     onMonthChange: (YearMonth) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var tasks by remember(context)
-    val currentLocale = LocalConfiguration.current.locales[0] { mutableStateOf(loadTasks(context)) }
+    val currentLocale = LocalConfiguration.current.locales[0]
+    var tasks by remember(context) { mutableStateOf(loadTasks(context)) }
     var calendarPermission by remember { mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED) }
     var deviceEvents by remember { mutableStateOf<List<DeviceCalendarEvent>>(emptyList()) }
     val calendarPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
