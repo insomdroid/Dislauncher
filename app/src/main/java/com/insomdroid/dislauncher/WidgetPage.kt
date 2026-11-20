@@ -57,6 +57,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.border
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
@@ -925,7 +926,8 @@ private fun AndroidWidgetCard(
     manager: AppWidgetManager,
     item: WidgetPageItem,
     cellWidthDp: Float,
-    cellHeightDp: Float
+    cellHeightDp: Float,
+    onHostViewReady: (AppWidgetHostView) -> Unit
 ) {
     Box(
         modifier = modifier
@@ -942,7 +944,8 @@ private fun AndroidWidgetCard(
             cellHeightDp = cellHeightDp,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(4.dp)
+                .padding(4.dp),
+            onHostViewReady = onHostViewReady
         )
     }
 }
