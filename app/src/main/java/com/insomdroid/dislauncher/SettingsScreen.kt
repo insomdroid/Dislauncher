@@ -256,7 +256,7 @@ internal fun SettingsScreen(
                     Triple(SettingsCategory.HOME, R.drawable.ic_symbol_home, "Home screen") to
                         "Home information, indicators and formats",
                     Triple(SettingsCategory.WIDGETS, R.drawable.ic_symbol_apps, "Widgets") to
-                        "A dedicated page for built-in and Android widgets",
+                        "A dedicated page for Android widgets from installed apps",
                     Triple(SettingsCategory.APPS, R.drawable.ic_symbol_apps, "Apps") to
                         "Folders, app visibility and app drawer",
                     Triple(SettingsCategory.GESTURES, R.drawable.ic_symbol_gesture, "Gestures") to
