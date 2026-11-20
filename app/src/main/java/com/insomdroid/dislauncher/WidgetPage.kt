@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -946,7 +947,7 @@ private fun MonthCalendarWidget(
 }
 
 @Composable
-private fun VerticalWidgetResizeHandle(
+private fun BoxScope.VerticalWidgetResizeHandle(
     currentHeight: Int,
     cellHeightDp: Float,
     minimum: Int,
@@ -984,7 +985,7 @@ private fun VerticalWidgetResizeHandle(
 }
 
 @Composable
-private fun WidgetResizeHandle(
+private fun BoxScope.WidgetResizeHandle(
     currentWidth: Int,
     currentHeight: Int,
     minimumWidth: Int,
@@ -1079,7 +1080,7 @@ private fun AndroidWidgetCard(
                 )
         )
 
-        if (selected) {
+        if (selected && item.resizeMode != AppWidgetProviderInfo.RESIZE_NONE) {
             WidgetResizeHandle(
                 currentWidth = item.width,
                 currentHeight = item.height,
