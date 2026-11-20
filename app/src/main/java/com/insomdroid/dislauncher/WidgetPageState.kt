@@ -95,6 +95,42 @@ internal fun loadWidgetPageItems(context: Context): List<WidgetPageItem> {
     }
 }
 
+internal fun restoreDefaultWidgetItems(context: Context): Boolean {
+    val current = loadWidgetPageItems(context).toMutableList()
+    if (current.none { it.id == QUICK_NOTES_WIDGET_ID }) {
+        val position = findWidgetPlacement(current, WIDGET_PAGE_COLUMNS, 2) ?: return false
+        current += WidgetPageItem(
+            id = QUICK_NOTES_WIDGET_ID,
+            kind = "quick_notes",
+            x = position.first,
+            y = position.second,
+            width = WIDGET_PAGE_COLUMNS,
+            height = 2
+        )
+    }
+    if (current.none { it.id == MONTH_CALENDAR_WIDGET_ID }) {
+        val position = findWidgetPlacement(current, WIDGET_PAGE_COLUMNS, 5) ?: return false
+        current += WidgetPageItem(
+            id = MONTH_CALENDAR_WIDGET_ID,
+            kind = "month_calendar",
+            x = position.first,
+            y = position.second,
+            width = WIDGET_PAGE_COLUMNS,
+            height = 5
+        )
+    }
+    saveWidgetPageItems(context, current)
+    return true
+}
+
+internal fun resetWidgetPageLayout(context: Context) {
+    val host = android.appwidget.AppWidgetHost(context, DISLAUNCHER_APP_WIDGET_HOST_ID)
+    loadWidgetPageItems(context)
+        .filter { it.kind == "android_widget" && it.appWidgetId >= 0 }
+        .forEach { item -> runCatching { host.deleteAppWidgetId(item.appWidgetId) } }
+    saveWidgetPageItems(context, defaultWidgetPageItems())
+}
+
 internal fun saveWidgetPageItems(context: Context, items: List<WidgetPageItem>) {
     val array = JSONArray()
     items.forEach { item ->
