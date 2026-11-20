@@ -67,7 +67,7 @@ internal fun HomeHeader(
     val clockModifier = Modifier.clip(RoundedCornerShape(5.dp)).clickable(onClick = onOpenClock)
     val dateModifier = Modifier.clip(RoundedCornerShape(5.dp)).clickable(onClick = onOpenCalendar)
 
-    val locale = LocalConfiguration.current.locales[0]    val locale = LocalConfiguration.current.locales[0]
+    val locale = LocalConfiguration.current.locales[0]
     val day = today.format(DateTimeFormatter.ofPattern("EEEE", locale))
     val shortDate = today.format(DateTimeFormatter.ofPattern("EEEE, d MMM", locale))
     val month = today.format(DateTimeFormatter.ofPattern("MMMM", locale))
