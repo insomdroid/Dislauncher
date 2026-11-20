@@ -109,6 +109,35 @@ internal fun readAppNameOverrides(prefs: android.content.SharedPreferences): Map
     }.getOrDefault(emptyMap())
 }
 
+private val launcherPackageVersionLock = Any()
+private val launcherPackageVersions = HashMap<String, Long>()
+
+// Package broadcasts identify the one package whose version metadata may have changed.
+// Reuse all other version codes during a full launcher-app list refresh.
+internal fun invalidateLauncherPackageVersionCache(packageName: String?) {
+    synchronized(launcherPackageVersionLock) {
+        if (packageName.isNullOrBlank()) {
+            launcherPackageVersions.clear()
+        } else {
+            launcherPackageVersions.remove(packageName)
+        }
+    }
+}
+
+private fun cachedPackageVersionCode(
+    packageManager: android.content.pm.PackageManager,
+    packageName: String
+): Long = synchronized(launcherPackageVersionLock) {
+    launcherPackageVersions[packageName]?.let { return@synchronized it }
+
+    val versionCode = runCatching {
+        PackageInfoCompat.getLongVersionCode(packageManager.getPackageInfo(packageName, 0))
+    }.getOrNull() ?: return@synchronized 0L
+
+    launcherPackageVersions[packageName] = versionCode
+    versionCode
+}
+
 internal fun loadLauncherApps(context: Context): List<LauncherApp> {
     val pm = context.packageManager
     val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
@@ -126,9 +155,7 @@ internal fun loadLauncherApps(context: Context): List<LauncherApp> {
             val pkg = activity.packageName
             if (pkg == context.packageName) return@mapNotNull null
             val info = activity.applicationInfo ?: return@mapNotNull null
-            val versionCode = runCatching {
-                PackageInfoCompat.getLongVersionCode(pm.getPackageInfo(pkg, 0))
-            }.getOrDefault(0L)
+            val versionCode = cachedPackageVersionCode(pm, pkg)
             LauncherApp(
                 packageName = pkg,
                 activityName = activity.name,
