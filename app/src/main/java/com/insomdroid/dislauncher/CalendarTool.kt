@@ -51,6 +51,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -180,7 +181,8 @@ internal fun CalendarTool(
     onMonthChange: (YearMonth) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var tasks by remember(context) { mutableStateOf(loadTasks(context)) }
+    var tasks by remember(context)
+    val currentLocale = LocalConfiguration.current.locales[0] { mutableStateOf(loadTasks(context)) }
     var calendarPermission by remember { mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED) }
     var deviceEvents by remember { mutableStateOf<List<DeviceCalendarEvent>>(emptyList()) }
     val calendarPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -249,8 +251,8 @@ internal fun CalendarTool(
         } else emptyList()
     }
 
-    val dateFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", Locale.getDefault())
-    val firstDayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
+    val dateFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", currentLocale)
+    val firstDayOfWeek = WeekFields.of(currentLocale).firstDayOfWeek
     val taskDate = selectedDate.toString()
     val selectedDayStart = selectedDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
     val selectedDayEnd = selectedDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
@@ -294,7 +296,7 @@ internal fun CalendarTool(
         }
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    month.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())),
+                    month.format(DateTimeFormatter.ofPattern("MMMM yyyy", currentLocale)),
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
@@ -308,7 +310,7 @@ internal fun CalendarTool(
                     Text("Today")
                 }
             }
-        val calendarFirstDay = remember { WeekFields.of(Locale.getDefault()).firstDayOfWeek }
+        val calendarFirstDay = remember { WeekFields.of(currentLocale).firstDayOfWeek }
         val calendarInitialMonth = remember { month }
         val calendarStartMonth = remember { calendarInitialMonth.minusMonths(120) }
         val calendarEndMonth = remember { calendarInitialMonth.plusMonths(120) }
@@ -349,7 +351,7 @@ internal fun CalendarTool(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space5)
                         ) {
-                            Text(dayDate.dayOfWeek.getDisplayName(java.time.format.TextStyle.NARROW, Locale.getDefault()),
+                            Text(dayDate.dayOfWeek.getDisplayName(java.time.format.TextStyle.NARROW, currentLocale),
                                 color = when {
                                     selected -> MaterialTheme.colorScheme.onPrimary
                                     today -> MaterialTheme.colorScheme.onSecondaryContainer
@@ -375,7 +377,7 @@ internal fun CalendarTool(
             Column(Modifier.padding(BuiltInToolSpacing.gridInset)) {
                 Row(Modifier.fillMaxWidth()) {
                     (0..6).map { calendarFirstDay.plus(it.toLong()) }.forEach { weekDay ->
-                        Text(weekDay.getDisplayName(java.time.format.TextStyle.NARROW, Locale.getDefault()),
+                        Text(weekDay.getDisplayName(java.time.format.TextStyle.NARROW, currentLocale),
                             Modifier.weight(1f).padding(vertical = BuiltInToolSpacing.space4), textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
                     }
@@ -445,7 +447,7 @@ internal fun CalendarTool(
                             .padding(horizontal = BuiltInToolSpacing.agendaRowHorizontal, vertical = BuiltInToolSpacing.agendaRowVertical), verticalAlignment = Alignment.CenterVertically) {
                             Text(if (event.allDay) "All day" else SimpleDateFormat(
                                 if (android.text.format.DateFormat.is24HourFormat(context)) "HH:mm" else "h:mm a",
-                                Locale.getDefault()).format(Date(event.begin)),
+                                currentLocale).format(Date(event.begin)),
                                 modifier = Modifier.width(72.dp), style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary)
                             Box(Modifier.width(BuiltInToolSpacing.space3).height(34.dp).clip(RoundedCornerShape(LauncherShapeTokens.extraSmall))
@@ -550,7 +552,7 @@ internal fun CalendarTool(
                     TextButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
                         Icon(painterResource(R.drawable.ic_symbol_event), contentDescription = null, modifier = Modifier.size(LauncherIconTokens.compact))
                         Spacer(Modifier.size(BuiltInToolSpacing.space8))
-                        Text(date.format(DateTimeFormatter.ofPattern("d MMM yyyy", Locale.getDefault())))
+                        Text(date.format(DateTimeFormatter.ofPattern("d MMM yyyy", currentLocale)))
                     }
                     if (type == "reminder") {
                         TextButton(onClick = { showTimePicker = true }, modifier = Modifier.fillMaxWidth()) {
