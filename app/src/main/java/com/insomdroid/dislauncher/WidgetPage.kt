@@ -10,6 +10,10 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items as lazyItems
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
@@ -27,6 +31,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -59,6 +64,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.graphics.drawable.toBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -135,15 +143,35 @@ internal fun WidgetPage(
             Toast.makeText(context, "The selected widget could not be loaded.", Toast.LENGTH_LONG).show()
             return
         }
-        val minWidthCells = ceil(providerInfo.minWidth / gridCellWidthDp).toInt().coerceAtLeast(1)
-        val minHeightCells = ceil(providerInfo.minHeight / gridCellHeightDp).toInt().coerceAtLeast(1)
+        // Prefer the provider's resize minimum when it supports resizing. The declared
+        // minWidth/minHeight describe its preferred initial size, not its smallest usable size.
+        val canResizeHorizontally =
+            providerInfo.resizeMode and AppWidgetProviderInfo.RESIZE_HORIZONTAL != 0
+        val canResizeVertically =
+            providerInfo.resizeMode and AppWidgetProviderInfo.RESIZE_VERTICAL != 0
+        val requestedMinWidth = if (canResizeHorizontally && providerInfo.minResizeWidth > 0) {
+            providerInfo.minResizeWidth
+        } else providerInfo.minWidth
+        val requestedMinHeight = if (canResizeVertically && providerInfo.minResizeHeight > 0) {
+            providerInfo.minResizeHeight
+        } else providerInfo.minHeight
+        val minWidthCells = ceil(requestedMinWidth / gridCellWidthDp).toInt().coerceAtLeast(1)
+        val minHeightCells = ceil(requestedMinHeight / gridCellHeightDp).toInt().coerceAtLeast(1)
         if (minWidthCells > WIDGET_PAGE_COLUMNS || minHeightCells > WIDGET_PAGE_ROWS) {
             appWidgetHost.deleteAppWidgetId(appWidgetId)
-            Toast.makeText(context, "This widget is larger than the available page.", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                context,
+                "This widget's declared minimum size is larger than the widget page.",
+                Toast.LENGTH_LONG
+            ).show()
             return
         }
-        val width = minWidthCells
-        val height = minHeightCells
+        val preferredWidth = ceil(providerInfo.minWidth / gridCellWidthDp).toInt()
+            .coerceAtLeast(minWidthCells).coerceAtMost(WIDGET_PAGE_COLUMNS)
+        val preferredHeight = ceil(providerInfo.minHeight / gridCellHeightDp).toInt()
+            .coerceAtLeast(minHeightCells).coerceAtMost(WIDGET_PAGE_ROWS)
+        val width = preferredWidth
+        val height = preferredHeight
         val position = findWidgetPlacement(items, width, height)
         if (position == null) {
             appWidgetHost.deleteAppWidgetId(appWidgetId)
@@ -474,22 +502,104 @@ internal fun WidgetPage(
                             }
                         }
                     }
-                    Card(
-                        modifier = Modifier.fillMaxWidth().clickable {
-                            addWidgetDialog = false
-                            launchAndroidWidgetPicker()
-                        },
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                    Text(
+                        "Installed app widgets",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    val installedProviders = remember(context) {
+                        appWidgetManager.installedProviders
+                            .sortedWith(compareBy(
+                                { it.loadLabel(context.packageManager).toString().lowercase(Locale.ROOT) },
+                                { it.provider.packageName }
+                            ))
+                    }
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text("Android app widgets", style = MaterialTheme.typography.titleSmall)
-                                Text("Choose widgets installed on this device", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        lazyItems(installedProviders, key = { it.provider.flattenToString() }) { provider ->
+                            val preview = remember(provider) {
+                                runCatching {
+                                    (provider.loadPreviewImage(context, context.resources.displayMetrics.densityDpi)
+                                        ?: provider.loadIcon(context, context.resources.displayMetrics.densityDpi))
+                                        ?.toBitmap(width = 420, height = 260)
+                                }.getOrNull()
                             }
-                            Text("Add", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                            Card(
+                                modifier = Modifier.fillMaxWidth().clickable {
+                                    val id = appWidgetHost.allocateAppWidgetId()
+                                    pendingAppWidgetId = id
+                                    val bound = runCatching {
+                                        appWidgetManager.bindAppWidgetIdIfAllowed(id, provider.provider)
+                                    }.getOrDefault(false)
+                                    if (bound) {
+                                        val configure = provider.configure
+                                        if (configure != null) {
+                                            val intent = Intent(AppWidgetManager.ACTION_APPWIDGET_CONFIGURE)
+                                                .setComponent(configure)
+                                                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
+                                            configureWidgetLauncher.launch(intent)
+                                        } else {
+                                            addAndroidWidget(id)
+                                            pendingAppWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
+                                        }
+                                    } else {
+                                        val bindIntent = Intent(AppWidgetManager.ACTION_APPWIDGET_BIND)
+                                            .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
+                                            .putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER, provider.provider)
+                                        widgetPickerLauncher.launch(bindIntent)
+                                    }
+                                    addWidgetDialog = false
+                                },
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                provider.loadLabel(context.packageManager).toString(),
+                                                style = MaterialTheme.typography.titleSmall
+                                            )
+                                            Text(
+                                                provider.provider.packageName,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+                                        Text(
+                                            "${ceil(provider.minWidth / gridCellWidthDp.coerceAtLeast(1f)).toInt()} × ${ceil(provider.minHeight / gridCellHeightDp.coerceAtLeast(1f)).toInt()}",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                    if (preview != null) {
+                                        Image(
+                                            bitmap = preview.asImageBitmap(),
+                                            contentDescription = "Preview of ${provider.loadLabel(context.packageManager)} widget",
+                                            modifier = Modifier.fillMaxWidth().height(116.dp),
+                                            contentScale = ContentScale.Fit
+                                        )
+                                    } else {
+                                        Surface(
+                                            modifier = Modifier.fillMaxWidth().height(76.dp),
+                                            color = MaterialTheme.colorScheme.surfaceVariant,
+                                            shape = RoundedCornerShape(12.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Text("Widget preview unavailable", style = MaterialTheme.typography.bodySmall)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                     if (hasQuickNotes && hasCalendar) {
