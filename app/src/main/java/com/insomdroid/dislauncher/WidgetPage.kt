@@ -738,6 +738,7 @@ private fun BoxScope.WidgetResizeHandles(
     val density = LocalDensity.current
     val horizontalEnabled = resizeMode and AppWidgetProviderInfo.RESIZE_HORIZONTAL != 0
     val verticalEnabled = resizeMode and AppWidgetProviderInfo.RESIZE_VERTICAL != 0
+    val primary = MaterialTheme.colorScheme.primary
 
     @Composable
     fun edgeHandle(
@@ -755,7 +756,7 @@ private fun BoxScope.WidgetResizeHandles(
                 .size(48.dp)
                 .drawBehind {
                     drawCircle(
-                        color = MaterialTheme.colorScheme.primary,
+                        color = primary,
                         radius = 7.dp.toPx()
                     )
                 }
@@ -859,23 +860,3 @@ private fun AndroidWidgetCard(
     }
 }
 
-@Composable
-private fun WidgetCard(
-    modifier: Modifier,
-    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit
-) {
-    Card(
-        modifier = modifier.padding(4.dp),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(10.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            content = content
-        )
-    }
-}
