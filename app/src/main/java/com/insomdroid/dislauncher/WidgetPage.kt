@@ -156,8 +156,15 @@ internal fun WidgetPage(
         val requestedMinHeight = if (canResizeVertically && providerInfo.minResizeHeight > 0) {
             providerInfo.minResizeHeight
         } else providerInfo.minHeight
-        val minWidthCells = ceil(requestedMinWidth / gridCellWidthDp).toInt().coerceAtLeast(1)
-        val minHeightCells = ceil(requestedMinHeight / gridCellHeightDp).toInt().coerceAtLeast(1)
+        // AppWidgetProviderInfo dimensions are physical pixels; launcher grid dimensions are dp.
+        // Convert before calculating cells, otherwise high-density devices overestimate widget size.
+        val density = context.resources.displayMetrics.density.coerceAtLeast(1f)
+        val minWidthDp = requestedMinWidth / density
+        val minHeightDp = requestedMinHeight / density
+        val preferredWidthDp = providerInfo.minWidth / density
+        val preferredHeightDp = providerInfo.minHeight / density
+        val minWidthCells = ceil(minWidthDp / gridCellWidthDp).toInt().coerceAtLeast(1)
+        val minHeightCells = ceil(minHeightDp / gridCellHeightDp).toInt().coerceAtLeast(1)
         if (minWidthCells > WIDGET_PAGE_COLUMNS || minHeightCells > WIDGET_PAGE_ROWS) {
             appWidgetHost.deleteAppWidgetId(appWidgetId)
             Toast.makeText(
@@ -167,9 +174,9 @@ internal fun WidgetPage(
             ).show()
             return
         }
-        val preferredWidth = ceil(providerInfo.minWidth / gridCellWidthDp).toInt()
+        val preferredWidth = ceil(preferredWidthDp / gridCellWidthDp).toInt()
             .coerceAtLeast(minWidthCells).coerceAtMost(WIDGET_PAGE_COLUMNS)
-        val preferredHeight = ceil(providerInfo.minHeight / gridCellHeightDp).toInt()
+        val preferredHeight = ceil(preferredHeightDp / gridCellHeightDp).toInt()
             .coerceAtLeast(minHeightCells).coerceAtMost(WIDGET_PAGE_ROWS)
         val width = preferredWidth
         val height = preferredHeight
