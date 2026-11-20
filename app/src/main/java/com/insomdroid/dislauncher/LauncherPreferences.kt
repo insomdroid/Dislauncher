@@ -42,6 +42,7 @@ internal data class LauncherPreferences(
     val longPressHomeOpensSettings: Boolean = true,
     val swipeDownNotifications: Boolean = true,
     val showCalendarShortcut: Boolean = true,
+    val showWidgetPage: Boolean = false,
     val notificationDotsEnabled: Boolean = false,
     val notificationDotColor: String = "default",
     val notificationDotPackages: Set<String> = emptySet(),
@@ -88,6 +89,7 @@ internal data class LauncherPreferences(
             .putBoolean("long_press_home_opens_settings", longPressHomeOpensSettings)
             .putBoolean("swipe_down_notifications", swipeDownNotifications)
             .putBoolean("show_calendar_shortcut", showCalendarShortcut)
+            .putBoolean("show_widget_page", showWidgetPage)
             .putBoolean("notification_dots_enabled", notificationDotsEnabled)
             .putString("notification_dot_color", notificationDotColor)
             .putStringSet("notification_dot_packages", notificationDotPackages.toMutableSet())
@@ -187,6 +189,7 @@ internal data class LauncherPreferences(
                 longPressHomeOpensSettings = p.getBoolean("long_press_home_opens_settings", true),
                 swipeDownNotifications = p.getBoolean("swipe_down_notifications", true),
                 showCalendarShortcut = p.getBoolean("show_calendar_shortcut", true),
+                showWidgetPage = p.getBoolean("show_widget_page", false),
                 notificationDotsEnabled = p.getBoolean("notification_dots_enabled", false),
                 notificationDotColor = normalizeNotificationDotColor(
                     p.getString("notification_dot_color", "default") ?: "default"
