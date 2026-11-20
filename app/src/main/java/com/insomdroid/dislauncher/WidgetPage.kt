@@ -553,10 +553,10 @@ internal fun WidgetPage(
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         providerGroups.forEach { (packageName, providers) ->
-                            val appLabel = remember(packageName) {
-                                runCatching { context.packageManager.getApplicationLabel(context.packageManager.getApplicationInfo(packageName, 0)).toString() }.getOrDefault(packageName)
-                            }
                             item(key = "app_group_$packageName") {
+                                val appLabel = remember(packageName) {
+                                    runCatching { context.packageManager.getApplicationLabel(context.packageManager.getApplicationInfo(packageName, 0)).toString() }.getOrDefault(packageName)
+                                }
                                 Card(
                                     modifier = Modifier.fillMaxWidth().clickable {
                                         expandedPackages = if (packageName in expandedPackages) expandedPackages - packageName else expandedPackages + packageName
