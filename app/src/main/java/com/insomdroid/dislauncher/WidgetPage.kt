@@ -251,7 +251,11 @@ internal fun WidgetPage(
                                 draggingWidgetId = item.id
                             },
                             onDragEnd = {
-                                if (dragDelta.y < -cellHeightPx * 0.72f) {
+                                val draggedTopPx = item.y * cellHeightPx + dragDelta.y
+                                val droppedInDeleteTarget =
+                                    dragDelta.y < -cellHeightPx * 0.45f &&
+                                        draggedTopPx < cellHeightPx * 0.75f
+                                if (droppedInDeleteTarget) {
                                     if (item.kind == "android_widget" && item.appWidgetId >= 0) {
                                         appWidgetHost.deleteAppWidgetId(item.appWidgetId)
                                     }
