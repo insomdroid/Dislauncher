@@ -53,6 +53,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.semantics.Role
@@ -91,7 +92,8 @@ internal fun SettingsScreen(
     onRestartLauncher: () -> Unit
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
+
+    val currentLocale = LocalConfiguration.current.locales[0]    val lifecycleOwner = LocalLifecycleOwner.current
 
     var selectedCategory by remember { mutableStateOf<SettingsCategory?>(null) }
     var openDialog by remember { mutableStateOf("") }
@@ -501,7 +503,7 @@ internal fun SettingsScreen(
                                     ),
                                     timeText = "09:41",
                                     dateText = LocalDate.now().format(
-                                        java.time.format.DateTimeFormatter.ofPattern("EEEE, d MMMM", java.util.Locale.getDefault())
+                                        java.time.format.DateTimeFormatter.ofPattern("EEEE, d MMMM", java.util.currentLocale)
                                     ),
                                     today = LocalDate.now(),
                                     now = LocalTime.of(9, 41),
