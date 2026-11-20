@@ -848,6 +848,7 @@ internal fun DislauncherRoot() {
                 }
                 if (
                     (screen == LauncherScreen.HOME || screen == LauncherScreen.WIDGET) &&
+                    preferences.showWidgetPage &&
                     pagerState.targetPage != appsPageIndex
                 ) {
                     val indicatorPages = if (preferences.showWidgetPage) {
