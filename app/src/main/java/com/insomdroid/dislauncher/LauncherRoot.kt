@@ -110,7 +110,11 @@ internal fun DislauncherRoot() {
         )
     }
     var settingsOpenedFromApps by remember { mutableStateOf(false) }
-    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 2 })
+    var settingsOpenedFromWidget by remember { mutableStateOf(false) }
+    val pagerState = rememberPagerState(
+        initialPage = 0,
+        pageCount = { if (preferences.showWidgetPage) 3 else 2 }
+    )
     val scope = rememberCoroutineScope()
     val homeBackBounce = remember { Animatable(0f) }
     var iconPacks by remember { mutableStateOf<List<IconPackInfo>>(emptyList()) }
@@ -373,32 +377,49 @@ internal fun DislauncherRoot() {
         }
     }
 
-    LaunchedEffect(pagerState.settledPage) {
-        if (screen == LauncherScreen.HOME || screen == LauncherScreen.APPS) {
-            screen = if (pagerState.settledPage == 0) LauncherScreen.HOME else LauncherScreen.APPS
+    val homePageIndex = if (preferences.showWidgetPage) 1 else 0
+    val appsPageIndex = if (preferences.showWidgetPage) 2 else 1
+
+    LaunchedEffect(pagerState.settledPage, preferences.showWidgetPage) {
+        when {
+            preferences.showWidgetPage && pagerState.settledPage == 0 ->
+                screen = LauncherScreen.WIDGET
+            pagerState.settledPage == homePageIndex ->
+                screen = LauncherScreen.HOME
+            pagerState.settledPage == appsPageIndex ->
+                screen = LauncherScreen.APPS
         }
     }
-    LaunchedEffect(screen) {
-        if (screen == LauncherScreen.HOME || screen == LauncherScreen.APPS) {
-            val wantedPage = if (screen == LauncherScreen.HOME) 0 else 1
-            if (pagerState.currentPage != wantedPage) pagerState.animateScrollToPage(wantedPage)
+    LaunchedEffect(screen, preferences.showWidgetPage) {
+        val wantedPage = when (screen) {
+            LauncherScreen.WIDGET -> if (preferences.showWidgetPage) 0 else homePageIndex
+            LauncherScreen.HOME -> homePageIndex
+            LauncherScreen.APPS -> appsPageIndex
+            else -> null
+        }
+        if (wantedPage != null && pagerState.currentPage != wantedPage) {
+            pagerState.animateScrollToPage(wantedPage)
         }
     }
 
     BackHandler(
         enabled = screen == LauncherScreen.SETTINGS || screen == LauncherScreen.WEATHER ||
-            pagerState.settledPage == 1
+            screen == LauncherScreen.APPS || screen == LauncherScreen.WIDGET
     ) {
         when (screen) {
-            LauncherScreen.SETTINGS ->
-                screen = if (settingsOpenedFromApps) LauncherScreen.APPS else LauncherScreen.HOME
+            LauncherScreen.SETTINGS -> screen = when {
+                settingsOpenedFromApps -> LauncherScreen.APPS
+                settingsOpenedFromWidget && preferences.showWidgetPage -> LauncherScreen.WIDGET
+                else -> LauncherScreen.HOME
+            }
             LauncherScreen.WEATHER -> screen = LauncherScreen.HOME
-            LauncherScreen.APPS -> scope.launch { pagerState.animateScrollToPage(0) }
+            LauncherScreen.APPS -> scope.launch { pagerState.animateScrollToPage(homePageIndex) }
+            LauncherScreen.WIDGET -> screen = LauncherScreen.HOME
             else -> Unit
         }
     }
     BackHandler(enabled = screen == LauncherScreen.ONBOARDING) { }
-    BackHandler(enabled = screen == LauncherScreen.HOME && pagerState.settledPage == 0) {
+    BackHandler(enabled = screen == LauncherScreen.HOME && pagerState.settledPage == homePageIndex) {
         scope.launch {
             homeBackBounce.snapTo(0f)
             homeBackBounce.animateTo(6f, animationSpec = tween(durationMillis = 70))
@@ -633,7 +654,11 @@ internal fun DislauncherRoot() {
                 onDoubleTapLockChange = ::changeDoubleTapLock,
                 onToggleFavorite = ::toggleFavorite,
                 onToggleHidden = ::toggleHidden,
-                onBack = { screen = if (settingsOpenedFromApps) LauncherScreen.APPS else LauncherScreen.HOME },
+                onBack = { screen = when {
+                    settingsOpenedFromApps -> LauncherScreen.APPS
+                    settingsOpenedFromWidget && preferences.showWidgetPage -> LauncherScreen.WIDGET
+                    else -> LauncherScreen.HOME
+                } },
                 onRestartLauncher = { (context as? Activity)?.recreate() }
             )
         } else if (screen == LauncherScreen.WEATHER) {
@@ -652,7 +677,7 @@ internal fun DislauncherRoot() {
             )
         } else {
             val notificationsGestureEnabled =
-                screen == LauncherScreen.HOME && pagerState.currentPage == 0 && preferences.swipeDownNotifications
+                screen == LauncherScreen.HOME && pagerState.currentPage == homePageIndex && preferences.swipeDownNotifications
             Box(
                 modifier = Modifier.fillMaxSize()
                     .background(
@@ -741,7 +766,15 @@ internal fun DislauncherRoot() {
                     beyondViewportPageCount = 1,
                     pageSpacing = 0.dp
                 ) { page ->
-                    if (page == 0) {
+                    if (preferences.showWidgetPage && page == 0) {
+                    WidgetPagePlaceholder(
+                        onOpenSettings = {
+                            settingsOpenedFromApps = false
+                            settingsOpenedFromWidget = true
+                            screen = LauncherScreen.SETTINGS
+                        }
+                    )
+                } else if (page == homePageIndex) {
                         HomeScreen(
                             apps = visibleApps,
                             favorites = favorites,
@@ -752,7 +785,7 @@ internal fun DislauncherRoot() {
                             fontFamily = fontFamily,
                             onLaunch = { launchApp(context, it) },
                             onOpenWeather = { cached -> weatherForScreen = cached ?: solarWeather; screen = LauncherScreen.WEATHER },
-                            onOpenSettings = { settingsOpenedFromApps = false; screen = LauncherScreen.SETTINGS },
+                            onOpenSettings = { settingsOpenedFromApps = false; settingsOpenedFromWidget = false; screen = LauncherScreen.SETTINGS },
                             onDoubleTapToLock = { lockDevice(context, adminComponent, devicePolicyManager) },
                             homeItemOrder = homeItemOrder,
                             onMoveHomeItem = ::moveHomeItem,
@@ -790,7 +823,7 @@ internal fun DislauncherRoot() {
                             onToggleHidden = ::toggleHidden,
                             onRenameApp = ::renameApp,
                             onPreferencesChange = ::updatePreferences,
-                            onOpenSettings = { settingsOpenedFromApps = true; screen = LauncherScreen.SETTINGS }
+                            onOpenSettings = { settingsOpenedFromApps = true; settingsOpenedFromWidget = false; screen = LauncherScreen.SETTINGS }
                         )
                     }
                 }
