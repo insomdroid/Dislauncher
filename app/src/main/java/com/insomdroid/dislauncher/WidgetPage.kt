@@ -232,9 +232,28 @@ internal fun WidgetPage(
             .padding(WindowInsets.safeDrawing.asPaddingValues())
             .clip(RoundedCornerShape(0.dp))
             .pointerInput(items) {
-                detectTapGestures(onLongPress = { position ->
+                awaitEachGesture {
+                    val down = awaitFirstDown(
+                        requireUnconsumed = false,
+                        pass = PointerEventPass.Initial
+                    )
+                    val releasedOrMoved = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            val change = event.changes.firstOrNull { it.id == down.id }
+                                ?: return@withTimeoutOrNull true
+                            if (!change.pressed || change.isConsumed ||
+                                (change.position - down.position).getDistance() > viewConfiguration.touchSlop
+                            ) {
+                                return@withTimeoutOrNull true
+                            }
+                        }
+                    }
+                    if (releasedOrMoved != null) return@awaitEachGesture
+
                     val cellWidthPx = size.width.toFloat() / WIDGET_PAGE_COLUMNS
                     val cellHeightPx = size.height.toFloat() / WIDGET_PAGE_ROWS
+                    val position = down.position
                     val pressedWidget = items.any { item ->
                         position.x >= item.x * cellWidthPx &&
                             position.x < (item.x + item.width) * cellWidthPx &&
@@ -246,7 +265,7 @@ internal fun WidgetPage(
                         pageMenuOffset = DpOffset((position.x / density).dp, (position.y / density).dp)
                         pageMenuExpanded = true
                     }
-                })
+                }
             }
     ) {
         val cellWidth = maxWidth / WIDGET_PAGE_COLUMNS
