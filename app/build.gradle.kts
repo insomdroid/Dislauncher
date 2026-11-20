@@ -2,7 +2,6 @@ import java.util.Base64
 
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.github.jk1.dependency-license-report") version "3.1.5"
 }
@@ -81,7 +80,7 @@ val prepareChangelogAsset by tasks.registering(Copy::class) {
 
 android {
     namespace = "com.insomdroid.dislauncher"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.insomdroid.dislauncher"
@@ -143,7 +142,7 @@ tasks.named("preBuild").configure {
 }
 
 dependencies {
-    val composeBom = platform("androidx.compose:compose-bom:2025.10.00")
+    val composeBom = platform("androidx.compose:compose-bom:2026.09.00")
     implementation(composeBom)
 
     testImplementation("junit:junit:4.13.2")

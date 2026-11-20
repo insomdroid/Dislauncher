@@ -34,6 +34,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -97,7 +99,8 @@ internal fun CalculatorTool(
     scientificMode: Boolean,
     onScientificModeChange: (Boolean) -> Unit
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
+    val currentLocale = LocalConfiguration.current.locales[0]
     var expression by remember { mutableStateOf("") }
     var result by remember { mutableStateOf("") }
     var showClearHistoryDialog by remember { mutableStateOf(false) }
@@ -149,7 +152,7 @@ internal fun CalculatorTool(
                                         color = MaterialTheme.colorScheme.onSurface)
                                     Text(
                                         java.time.Instant.ofEpochMilli(entry.createdAt).atZone(ZoneId.systemDefault())
-                                            .format(DateTimeFormatter.ofPattern("d MMM, HH:mm", Locale.getDefault())),
+                                            .format(DateTimeFormatter.ofPattern("d MMM, HH:mm", currentLocale)),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )

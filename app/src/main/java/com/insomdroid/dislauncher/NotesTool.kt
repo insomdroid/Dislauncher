@@ -53,6 +53,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -274,6 +275,7 @@ internal fun NotesTool(
     onBackRequested: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val currentLocale = LocalConfiguration.current.locales[0]
     var notes by remember(context) { mutableStateOf(emptyList<LocalNote>()) }
     var notesLoaded by remember(context) { mutableStateOf(false) }
     var selectedId by remember { mutableStateOf<String?>(null) }
@@ -813,7 +815,7 @@ internal fun NotesTool(
                                     }
                                     Spacer(Modifier.weight(1f))
                                     Text(Instant.ofEpochMilli(note.updatedAt).atZone(ZoneId.systemDefault())
-                                        .format(DateTimeFormatter.ofPattern("d MMM, HH:mm", Locale.getDefault())),
+                                        .format(DateTimeFormatter.ofPattern("d MMM, HH:mm", currentLocale)),
                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
@@ -840,7 +842,7 @@ internal fun NotesTool(
                                         Text(note.labels.joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     }
                                     Text(Instant.ofEpochMilli(note.updatedAt).atZone(ZoneId.systemDefault())
-                                        .format(DateTimeFormatter.ofPattern("d MMM, HH:mm", Locale.getDefault())),
+                                        .format(DateTimeFormatter.ofPattern("d MMM, HH:mm", currentLocale)),
                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Box {

@@ -24,6 +24,7 @@ import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontFamily
@@ -65,7 +66,8 @@ internal fun HomeHeader(
     }
     val clockModifier = Modifier.clip(RoundedCornerShape(5.dp)).clickable(onClick = onOpenClock)
     val dateModifier = Modifier.clip(RoundedCornerShape(5.dp)).clickable(onClick = onOpenCalendar)
-    val locale = Locale.getDefault()
+
+    val locale = LocalConfiguration.current.locales[0]
     val day = today.format(DateTimeFormatter.ofPattern("EEEE", locale))
     val shortDate = today.format(DateTimeFormatter.ofPattern("EEEE, d MMM", locale))
     val month = today.format(DateTimeFormatter.ofPattern("MMMM", locale))

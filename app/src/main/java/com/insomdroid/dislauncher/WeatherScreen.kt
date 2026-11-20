@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,6 +50,8 @@ internal fun WeatherScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
+
+    val currentLocale = LocalConfiguration.current.locales[0]
     val primary = MaterialTheme.colorScheme.onBackground
     val secondary = MaterialTheme.colorScheme.onSurfaceVariant
     var locationGranted by remember { mutableStateOf(hasWeatherLocationPermission(context)) }
@@ -152,7 +155,7 @@ internal fun WeatherScreen(
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    currentWeather.condition.lowercase(Locale.getDefault()).replaceFirstChar { it.uppercase() },
+                    currentWeather.condition.lowercase(currentLocale).replaceFirstChar { it.uppercase() },
                     color = secondary,
                     fontSize = 18.sp,
                     lineHeight = 24.sp,
