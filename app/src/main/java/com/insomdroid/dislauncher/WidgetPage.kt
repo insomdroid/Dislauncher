@@ -466,17 +466,15 @@ internal fun WidgetPage(
                 bitmap = floatingBitmap.asImageBitmap(),
                 contentDescription = null,
                 modifier = Modifier
-                    .offset {
-                        androidx.compose.ui.unit.IntOffset(
-                            topLeft.x.roundToInt(),
-                            topLeft.y.roundToInt()
-                        )
-                    }
                     .size(
                         width = cellWidth * floatingItem.width,
                         height = cellHeight * floatingItem.height
                     )
                     .graphicsLayer {
+                        translationX = dragPosition.x -
+                            floatingItem.width * cellWidthPx * grabFraction.x
+                        translationY = dragPosition.y -
+                            floatingItem.height * cellHeightPx * grabFraction.y
                         alpha = 0.90f
                         scaleX = 1.02f
                         scaleY = 1.02f
@@ -626,6 +624,15 @@ internal fun WidgetPage(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    TextButton(
+                        onClick = {
+                            addWidgetDialog = false
+                            launchAndroidWidgetPicker()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Open Android widget picker")
+                    }
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth().heightIn(max = 440.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -933,7 +940,6 @@ private fun AndroidWidgetCard(
         modifier = modifier
             .padding(4.dp)
             .clip(RoundedCornerShape(18.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainer)
     ) {
         AndroidAppWidgetContent(
             context = context,
