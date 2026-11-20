@@ -273,3 +273,21 @@ internal fun resizeWidgetItem(
     }
     return adjusted.takeIf { allInsideGrid && !hasOverlap }
 }
+
+
+internal fun resizeWidgetBounds(
+    items: List<WidgetPageItem>,
+    itemId: String,
+    newX: Int,
+    newY: Int,
+    newWidth: Int,
+    newHeight: Int
+): List<WidgetPageItem>? {
+    val item = items.firstOrNull { it.id == itemId } ?: return null
+    val minWidth = when (item.kind) { "quick_notes" -> 2; "month_calendar" -> 3; else -> item.minWidthCells.coerceAtLeast(1) }
+    val minHeight = when (item.kind) { "quick_notes" -> 2; "month_calendar" -> 3; else -> item.minHeightCells.coerceAtLeast(1) }
+    if (newWidth !in minWidth..WIDGET_PAGE_COLUMNS || newHeight !in minHeight..WIDGET_PAGE_ROWS) return null
+    val candidate = item.copy(x = newX, y = newY, width = newWidth, height = newHeight)
+    if (!canPlaceWidgetItem(items, candidate)) return null
+    return items.map { if (it.id == itemId) candidate else it }
+}
