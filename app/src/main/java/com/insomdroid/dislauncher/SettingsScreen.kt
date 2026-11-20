@@ -93,7 +93,8 @@ internal fun SettingsScreen(
 ) {
     val context = LocalContext.current
 
-    val currentLocale = LocalConfiguration.current.locales[0]    val lifecycleOwner = LocalLifecycleOwner.current
+    val currentLocale = LocalConfiguration.current.locales[0]
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     var selectedCategory by remember { mutableStateOf<SettingsCategory?>(null) }
     var openDialog by remember { mutableStateOf("") }
@@ -503,7 +504,7 @@ internal fun SettingsScreen(
                                     ),
                                     timeText = "09:41",
                                     dateText = LocalDate.now().format(
-                                        java.time.format.DateTimeFormatter.ofPattern("EEEE, d MMMM", java.util.currentLocale)
+                                        java.time.format.DateTimeFormatter.ofPattern("EEEE, d MMMM", currentLocale)
                                     ),
                                     today = LocalDate.now(),
                                     now = LocalTime.of(9, 41),
