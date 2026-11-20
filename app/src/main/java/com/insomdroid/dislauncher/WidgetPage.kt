@@ -209,6 +209,10 @@ internal fun WidgetPage(
         val cellHeight = maxHeight / WIDGET_PAGE_ROWS
         val cellWidthPx = with(LocalDensity.current) { cellWidth.toPx() }
         val cellHeightPx = with(LocalDensity.current) { cellHeight.toPx() }
+        SideEffect {
+            gridCellWidthDp = cellWidth.value
+            gridCellHeightDp = cellHeight.value
+        }
 
         items.forEach { item ->
             key(item.id) {
@@ -230,6 +234,7 @@ internal fun WidgetPage(
                                 val moved = moveWidgetItem(items, item.id, targetX, targetY)
                                 if (moved != null) {
                                     updateItems(moved)
+                                    selectedWidgetId = item.id
                                 } else if (targetX != item.x || targetY != item.y) {
                                     Toast.makeText(
                                         context,
@@ -265,6 +270,25 @@ internal fun WidgetPage(
                         onResize = { height ->
                             resizeWidgetItem(items, item.id, height)?.let(::updateItems)
                                 ?: Toast.makeText(context, "Not enough space to resize this widget.", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                    "android_widget" -> AndroidWidgetCard(
+                        modifier = itemModifier,
+                        context = context,
+                        host = appWidgetHost,
+                        manager = appWidgetManager,
+                        item = item,
+                        cellWidthDp = gridCellWidthDp,
+                        cellHeightDp = gridCellHeightDp,
+                        selected = selectedWidgetId == item.id,
+                        onResize = { width, height ->
+                            resizeWidgetDimensions(items, item.id, width, height)?.let(::updateItems)
+                                ?: Toast.makeText(context, "The widget cannot fit at that size.", Toast.LENGTH_SHORT).show()
+                        },
+                        onRemove = {
+                            appWidgetHost.deleteAppWidgetId(item.appWidgetId)
+                            updateItems(items.filterNot { it.id == item.id })
+                            selectedWidgetId = null
                         }
                     )
                 }
@@ -329,6 +353,14 @@ internal fun WidgetPage(
                                 Toast.makeText(context, "There is not enough free space for Calendar.", Toast.LENGTH_SHORT).show()
                             }
                         }) { Text("Calendar") }
+                    }
+                    TextButton(
+                        onClick = {
+                            addWidgetDialog = false
+                            launchAndroidWidgetPicker()
+                        }
+                    ) {
+                        Text("Android app widget")
                     }
                     if (hasQuickNotes && hasCalendar) {
                         Text(
