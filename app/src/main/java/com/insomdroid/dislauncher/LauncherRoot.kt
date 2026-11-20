@@ -380,14 +380,18 @@ internal fun DislauncherRoot() {
     val homePageIndex = if (preferences.showWidgetPage) 1 else 0
     val appsPageIndex = if (preferences.showWidgetPage) 2 else 1
 
-    LaunchedEffect(pagerState.settledPage, preferences.showWidgetPage) {
-        when {
-            preferences.showWidgetPage && pagerState.settledPage == 0 ->
-                screen = LauncherScreen.WIDGET
-            pagerState.settledPage == homePageIndex ->
-                screen = LauncherScreen.HOME
-            pagerState.settledPage == appsPageIndex ->
-                screen = LauncherScreen.APPS
+    LaunchedEffect(pagerState.settledPage, preferences.showWidgetPage, screen) {
+        if (screen == LauncherScreen.HOME || screen == LauncherScreen.APPS ||
+            screen == LauncherScreen.WIDGET
+        ) {
+            when {
+                preferences.showWidgetPage && pagerState.settledPage == 0 ->
+                    screen = LauncherScreen.WIDGET
+                pagerState.settledPage == homePageIndex ->
+                    screen = LauncherScreen.HOME
+                pagerState.settledPage == appsPageIndex ->
+                    screen = LauncherScreen.APPS
+            }
         }
     }
     LaunchedEffect(screen, preferences.showWidgetPage) {
