@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.graphics.Typeface
 import android.net.Uri
+import android.os.Build
 import android.provider.OpenableColumns
 import android.provider.Settings
 import androidx.core.content.pm.PackageInfoCompat
@@ -126,9 +127,15 @@ internal fun loadLauncherApps(context: Context): List<LauncherApp> {
             val pkg = activity.packageName
             if (pkg == context.packageName) return@mapNotNull null
             val info = activity.applicationInfo ?: return@mapNotNull null
-            val versionCode = runCatching {
-                PackageInfoCompat.getLongVersionCode(pm.getPackageInfo(pkg, 0))
-            }.getOrDefault(0L)
+            // ApplicationInfo already carries the package version on Android 9+.
+            // Avoid one PackageManager package lookup for every installed app.
+            val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                info.longVersionCode
+            } else {
+                runCatching {
+                    PackageInfoCompat.getLongVersionCode(pm.getPackageInfo(pkg, 0))
+                }.getOrDefault(0L)
+            }
             LauncherApp(
                 packageName = pkg,
                 activityName = activity.name,
