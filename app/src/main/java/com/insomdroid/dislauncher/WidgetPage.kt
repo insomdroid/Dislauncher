@@ -93,6 +93,7 @@ internal fun WidgetPage(
     var pageMenuOffset by remember { mutableStateOf(DpOffset.Zero) }
     var addWidgetDialog by remember { mutableStateOf(false) }
     var editingWidgetId by remember { mutableStateOf<String?>(null) }
+    var liftedWidgetId by remember { mutableStateOf<String?>(null) }
     var draggingWidgetId by remember { mutableStateOf<String?>(null) }
     var dragPreview by remember { mutableStateOf<Bitmap?>(null) }
     var dragPosition by remember { mutableStateOf(Offset.Zero) }
@@ -275,6 +276,7 @@ internal fun WidgetPage(
         )
 
         fun clearWidgetDrag() {
+            liftedWidgetId = null
             draggingWidgetId = null
             dragPreview = null
             dragPosition = Offset.Zero
@@ -344,42 +346,45 @@ internal fun WidgetPage(
                             }
                             if (releasedOrMoved != null) return@awaitEachGesture
 
+                            if (liftedWidgetId != null) return@awaitEachGesture
+                            liftedWidgetId = item.id
                             liftWidget(item, down.position)
                             var moving = false
                             var lastPosition = down.position
-                            while (true) {
-                                val event = awaitPointerEvent(PointerEventPass.Initial)
-                                val change = event.changes.firstOrNull { it.id == down.id }
-                                    ?: break
-                                if (!change.pressed && change.isConsumed) {
-                                    clearWidgetDrag()
-                                    break
-                                }
+                            try {
+                                while (true) {
+                                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                                    val change = event.changes.firstOrNull { it.id == down.id }
+                                        ?: break
+                                    if (!change.pressed && change.isConsumed) break
 
-                                val delta = change.position - lastPosition
-                                lastPosition = change.position
-                                if (!moving &&
-                                    (change.position - down.position).getDistance() > viewConfiguration.touchSlop
-                                ) {
-                                    moving = true
-                                    editingWidgetId = null
-                                    draggingWidgetId = item.id
-                                }
-
-                                if (moving) {
-                                    dragPosition += delta
-                                    event.changes.forEach { it.consume() }
-                                }
-
-                                if (!change.pressed) {
-                                    if (moving) {
-                                        finishWidgetDrag(item)
-                                    } else {
-                                        editingWidgetId = item.id
-                                        clearWidgetDrag()
+                                    val delta = change.position - lastPosition
+                                    lastPosition = change.position
+                                    if (!moving &&
+                                        (change.position - down.position).getDistance() > viewConfiguration.touchSlop
+                                    ) {
+                                        moving = true
+                                        editingWidgetId = null
+                                        draggingWidgetId = item.id
                                     }
-                                    break
+
+                                    if (moving) {
+                                        dragPosition += delta
+                                        event.changes.forEach { it.consume() }
+                                    }
+
+                                    if (!change.pressed) {
+                                        if (moving) {
+                                            finishWidgetDrag(item)
+                                        } else {
+                                            editingWidgetId = item.id
+                                            clearWidgetDrag()
+                                        }
+                                        break
+                                    }
                                 }
+                            } finally {
+                                if (liftedWidgetId == item.id) clearWidgetDrag()
                             }
                         }
                     }
@@ -482,6 +487,7 @@ internal fun WidgetPage(
                         detectDragGestures(
                             onDragStart = {
                                 editingWidgetId = null
+                                liftedWidgetId = editingItem.id
                                 liftWidget(editingItem, it)
                                 draggingWidgetId = editingItem.id
                             },
