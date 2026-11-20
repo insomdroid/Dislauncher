@@ -658,6 +658,14 @@ internal fun DislauncherRoot() {
                 onDoubleTapLockChange = ::changeDoubleTapLock,
                 onToggleFavorite = ::toggleFavorite,
                 onToggleHidden = ::toggleHidden,
+                onOpenWidgetPage = {
+                    if (!preferences.showWidgetPage) {
+                        updatePreferences(preferences.copy(showWidgetPage = true))
+                    }
+                    settingsOpenedFromApps = false
+                    settingsOpenedFromWidget = false
+                    screen = LauncherScreen.WIDGET
+                },
                 onBack = { screen = when {
                     settingsOpenedFromApps -> LauncherScreen.APPS
                     settingsOpenedFromWidget && preferences.showWidgetPage -> LauncherScreen.WIDGET
