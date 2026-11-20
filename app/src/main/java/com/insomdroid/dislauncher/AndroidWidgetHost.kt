@@ -113,9 +113,13 @@ internal fun AndroidAppWidgetContent(
     AndroidView(
         modifier = modifier.fillMaxSize(),
         factory = {
-            host.createView(context, item.appWidgetId, providerInfo).also(onHostViewReady)
+            host.createView(context, item.appWidgetId, providerInfo).also { view ->
+                view.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                onHostViewReady(view)
+            }
         },
         update = { view: AppWidgetHostView ->
+            view.setBackgroundColor(android.graphics.Color.TRANSPARENT)
             onHostViewReady(view)
             // The host owns the view lifecycle; the system delivers subsequent widget updates.
             if (view.appWidgetId != item.appWidgetId) {
