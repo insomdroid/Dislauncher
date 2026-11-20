@@ -24,6 +24,13 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.positionChangeIgnoreConsumed
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -838,6 +845,31 @@ internal fun DislauncherRoot() {
                             onPreferencesChange = ::updatePreferences,
                             onOpenSettings = { settingsOpenedFromApps = true; settingsOpenedFromWidget = false; screen = LauncherScreen.SETTINGS }
                         )
+                    }
+                }
+                if (screen == LauncherScreen.HOME || screen == LauncherScreen.APPS ||
+                    screen == LauncherScreen.WIDGET
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 22.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        repeat(pagerState.pageCount) { index ->
+                            val selected = pagerState.currentPage == index
+                            Box(
+                                modifier = Modifier
+                                    .padding(horizontal = 4.dp)
+                                    .size(width = if (selected) 18.dp else 6.dp, height = 6.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (selected) MaterialTheme.colorScheme.onBackground
+                                        else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.35f)
+                                    )
+                            )
+                        }
                     }
                 }
                 }
