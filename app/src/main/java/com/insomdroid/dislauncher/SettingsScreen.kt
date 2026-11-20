@@ -70,7 +70,7 @@ import java.time.LocalTime
 import kotlin.math.roundToInt
 
 private enum class SettingsCategory {
-    APPEARANCE, HOME, APPS, GESTURES, ACCESS, ABOUT
+    APPEARANCE, HOME, WIDGETS, APPS, GESTURES, ACCESS, ABOUT
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -191,6 +191,7 @@ internal fun SettingsScreen(
     } else when (selectedCategory) {
         SettingsCategory.APPEARANCE -> "Appearance"
         SettingsCategory.HOME -> "Home screen"
+        SettingsCategory.WIDGETS -> "Widgets"
         SettingsCategory.APPS -> "Apps"
         SettingsCategory.GESTURES -> "Gestures"
         SettingsCategory.ACCESS -> "Permissions and access"
@@ -253,6 +254,8 @@ internal fun SettingsScreen(
                         "Theme, wallpaper, fonts and app icons",
                     Triple(SettingsCategory.HOME, R.drawable.ic_symbol_home, "Home screen") to
                         "Home information, indicators and formats",
+                    Triple(SettingsCategory.WIDGETS, R.drawable.ic_symbol_apps, "Widgets") to
+                        "A dedicated page for built-in and Android widgets",
                     Triple(SettingsCategory.APPS, R.drawable.ic_symbol_apps, "Apps") to
                         "Folders, app visibility and app drawer",
                     Triple(SettingsCategory.GESTURES, R.drawable.ic_symbol_gesture, "Gestures") to
@@ -625,6 +628,22 @@ internal fun SettingsScreen(
                         }
                     }
 
+                    SettingsCategory.WIDGETS -> {
+                        SettingsGroup("Widget page") {
+                            SettingToggle(
+                                "Enable Widget Page",
+                                "Add a dedicated page to the left of Home. Swipe right from Home to open it.",
+                                preferences.showWidgetPage
+                            ) { enabled ->
+                                onPreferencesChange(preferences.copy(showWidgetPage = enabled))
+                            }
+                            Text(
+                                "The page uses a fixed five-column grid with no scrolling. Quick Notes and the monthly Calendar will be added when the page is first enabled.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                     SettingsCategory.APPS -> {
                         SettingsGroup("Manage apps") {
                             SettingAction(
