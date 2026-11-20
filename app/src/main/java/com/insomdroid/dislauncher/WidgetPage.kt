@@ -223,7 +223,17 @@ internal fun WidgetPage(
             .padding(WindowInsets.safeDrawing.asPaddingValues())
             .clip(RoundedCornerShape(0.dp))
             .pointerInput(items) {
-                detectTapGestures(onLongPress = { pageMenuExpanded = true })
+                detectTapGestures(onLongPress = { position ->
+                    val cellWidthPx = size.width.toFloat() / WIDGET_PAGE_COLUMNS
+                    val cellHeightPx = size.height.toFloat() / WIDGET_PAGE_ROWS
+                    val pressedWidget = items.any { item ->
+                        position.x >= item.x * cellWidthPx &&
+                            position.x < (item.x + item.width) * cellWidthPx &&
+                            position.y >= item.y * cellHeightPx &&
+                            position.y < (item.y + item.height) * cellHeightPx
+                    }
+                    if (!pressedWidget) pageMenuExpanded = true
+                })
             }
     ) {
         val cellWidth = maxWidth / WIDGET_PAGE_COLUMNS
