@@ -76,6 +76,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
@@ -124,6 +125,7 @@ internal fun WidgetPage(
         mutableStateOf(initialItems)
     }
     var pageMenuExpanded by remember { mutableStateOf(false) }
+    var pageMenuOffset by remember { mutableStateOf(DpOffset.Zero) }
     var addWidgetDialog by remember { mutableStateOf(false) }
     var selectedWidgetId by remember { mutableStateOf<String?>(null) }
     var draggingWidgetId by remember { mutableStateOf<String?>(null) }
@@ -269,7 +271,11 @@ internal fun WidgetPage(
                             position.y >= item.y * cellHeightPx &&
                             position.y < (item.y + item.height) * cellHeightPx
                     }
-                    if (!pressedWidget) pageMenuExpanded = true
+                    if (!pressedWidget) {
+                        val density = context.resources.displayMetrics.density.coerceAtLeast(1f)
+                        pageMenuOffset = DpOffset((position.x / density).dp, (position.y / density).dp)
+                        pageMenuExpanded = true
+                    }
                 })
             }
     ) {
@@ -354,11 +360,15 @@ internal fun WidgetPage(
                         modifier = itemModifier,
                         isActive = isActive,
                         selected = selectedWidgetId == item.id,
+                        itemX = item.x,
+                        itemY = item.y,
+                        currentWidth = item.width,
                         currentHeight = item.height,
+                        cellWidthDp = gridCellWidthDp,
                         cellHeightDp = gridCellHeightDp,
                         onRemove = { updateItems(items.filterNot { it.id == item.id }) },
-                        onResize = { height ->
-                            resizeWidgetItem(items, item.id, height)?.let(::updateItems)
+                        onResize = { x, y, width, height ->
+                            resizeWidgetBounds(items, item.id, x, y, width, height)?.let(::updateItems)
                                 ?: Toast.makeText(context, "Not enough space to resize this widget.", Toast.LENGTH_SHORT).show()
                         }
                     )
@@ -367,11 +377,15 @@ internal fun WidgetPage(
                         context = context,
                         isActive = isActive,
                         selected = selectedWidgetId == item.id,
+                        itemX = item.x,
+                        itemY = item.y,
+                        currentWidth = item.width,
                         currentHeight = item.height,
+                        cellWidthDp = gridCellWidthDp,
                         cellHeightDp = gridCellHeightDp,
                         onRemove = { updateItems(items.filterNot { it.id == item.id }) },
-                        onResize = { height ->
-                            resizeWidgetItem(items, item.id, height)?.let(::updateItems)
+                        onResize = { x, y, width, height ->
+                            resizeWidgetBounds(items, item.id, x, y, width, height)?.let(::updateItems)
                                 ?: Toast.makeText(context, "Not enough space to resize this widget.", Toast.LENGTH_SHORT).show()
                         }
                     )
@@ -384,8 +398,8 @@ internal fun WidgetPage(
                         cellWidthDp = gridCellWidthDp,
                         cellHeightDp = gridCellHeightDp,
                         selected = selectedWidgetId == item.id,
-                        onResize = { width, height ->
-                            resizeWidgetDimensions(items, item.id, width, height)?.let(::updateItems)
+                        onResize = { x, y, width, height ->
+                            resizeWidgetBounds(items, item.id, x, y, width, height)?.let(::updateItems)
                                 ?: Toast.makeText(context, "The widget cannot fit at that size.", Toast.LENGTH_SHORT).show()
                         },
                         onRemove = {
@@ -400,31 +414,40 @@ internal fun WidgetPage(
 
         if (draggingWidgetId != null) {
             Surface(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 10.dp),
-                shape = RoundedCornerShape(24.dp),
-                color = MaterialTheme.colorScheme.errorContainer,
-                shadowElevation = 6.dp
+                modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().height(58.dp),
+                shape = RoundedCornerShape(bottomStart = 18.dp, bottomEnd = 18.dp),
+                color = MaterialTheme.colorScheme.errorContainer
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                    Text("⌫", color = MaterialTheme.colorScheme.onErrorContainer, fontSize = 20.sp)
+                    Text("Drop here to remove", modifier = Modifier.padding(start = 10.dp), color = MaterialTheme.colorScheme.onErrorContainer, style = MaterialTheme.typography.titleSmall)
+                }
+            }
+        } else if (selectedWidgetId != null) {
+            val selectedItem = items.firstOrNull { it.id == selectedWidgetId }
+            if (selectedItem != null) {
+                Surface(
+                    modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().height(54.dp),
+                    shape = RoundedCornerShape(bottomStart = 18.dp, bottomEnd = 18.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh
                 ) {
-                    Text("⌫", color = MaterialTheme.colorScheme.onErrorContainer)
-                    Text(
-                        "Release here to remove widget",
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        style = MaterialTheme.typography.labelLarge
-                    )
+                    Row(Modifier.fillMaxSize().padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("Widget selected", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
+                        TextButton(onClick = {
+                            if (selectedItem.kind == "android_widget" && selectedItem.appWidgetId >= 0) appWidgetHost.deleteAppWidgetId(selectedItem.appWidgetId)
+                            updateItems(items.filterNot { it.id == selectedItem.id })
+                            selectedWidgetId = null
+                        }) { Text("Remove", color = MaterialTheme.colorScheme.error) }
+                        TextButton(onClick = { selectedWidgetId = null }) { Text("Done") }
+                    }
                 }
             }
         }
 
         DropdownMenu(
             expanded = pageMenuExpanded,
-            onDismissRequest = { pageMenuExpanded = false }
+            onDismissRequest = { pageMenuExpanded = false },
+            offset = pageMenuOffset
         ) {
             DropdownMenuItem(
                 text = { Text("Add widget") },
@@ -521,17 +544,40 @@ internal fun WidgetPage(
                         fontWeight = FontWeight.SemiBold
                     )
                     val installedProviders = remember(context) {
-                        appWidgetManager.installedProviders
-                            .sortedWith(compareBy(
-                                { it.loadLabel(context.packageManager).toString().lowercase(Locale.ROOT) },
-                                { it.provider.packageName }
-                            ))
+                        appWidgetManager.installedProviders.sortedBy { it.provider.packageName.lowercase(Locale.ROOT) }
                     }
+                    val providerGroups = remember(installedProviders) { installedProviders.groupBy { it.provider.packageName }.toSortedMap() }
+                    var expandedPackages by remember { mutableStateOf(emptySet<String>()) }
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        lazyItems(installedProviders, key = { it.provider.flattenToString() }) { provider ->
+                        providerGroups.forEach { (packageName, providers) ->
+                            item(key = "app_group_$packageName") {
+                                val appLabel = remember(packageName) {
+                                    runCatching { context.packageManager.getApplicationLabel(context.packageManager.getApplicationInfo(packageName, 0)).toString() }.getOrDefault(packageName)
+                                }
+                                Card(
+                                    modifier = Modifier.fillMaxWidth().clickable {
+                                        expandedPackages = if (packageName in expandedPackages) expandedPackages - packageName else expandedPackages + packageName
+                                    },
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        val appIcon = remember(packageName) {
+                                            runCatching { context.packageManager.getApplicationIcon(packageName).toBitmap(96, 96) }.getOrNull()
+                                        }
+                                        if (appIcon != null) Image(bitmap = appIcon.asImageBitmap(), contentDescription = null, modifier = Modifier.size(38.dp).clip(RoundedCornerShape(10.dp)))
+                                        Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                                            Text(appLabel, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                                            Text("${providers.size} widget${if (providers.size == 1) "" else "s"}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                        Text(if (packageName in expandedPackages) "⌃" else "⌄", style = MaterialTheme.typography.titleMedium)
+                                    }
+                                }
+                            }
+                            if (packageName in expandedPackages) lazyItems(providers, key = { it.provider.flattenToString() }) { provider ->
                             val preview = remember(provider) {
                                 runCatching {
                                     (provider.loadPreviewImage(context, context.resources.displayMetrics.densityDpi)
@@ -613,6 +659,7 @@ internal fun WidgetPage(
                                     }
                                 }
                             }
+                            }
                         }
                     }
                     if (hasQuickNotes && hasCalendar) {
@@ -636,10 +683,14 @@ private fun QuickNotesWidget(
     modifier: Modifier,
     isActive: Boolean,
     selected: Boolean,
+    itemX: Int,
+    itemY: Int,
+    currentWidth: Int,
     currentHeight: Int,
+    cellWidthDp: Float,
     cellHeightDp: Float,
     onRemove: () -> Unit,
-    onResize: (Int) -> Unit
+    onResize: (Int, Int, Int, Int) -> Unit
 ) {
     val context = LocalContext.current
     var noteText by remember(context) { mutableStateOf("") }
@@ -674,31 +725,7 @@ private fun QuickNotesWidget(
                     launchBuiltInTool(context, BuiltInTool.NOTES)
                 }
             )
-            if (selected) {
-                var actionsExpanded by remember { mutableStateOf(false) }
-                Box {
-                    IconButton(onClick = { actionsExpanded = true }) {
-                        Text("⋮", fontSize = 20.sp)
-                    }
-                    DropdownMenu(
-                        expanded = actionsExpanded,
-                        onDismissRequest = { actionsExpanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Increase height") },
-                            onClick = { actionsExpanded = false; onResize(3) }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Decrease height") },
-                            onClick = { actionsExpanded = false; onResize(2) }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Remove widget") },
-                            onClick = { actionsExpanded = false; onRemove() }
-                        )
-                    }
-                }
-            }
+            
         }
         OutlinedTextField(
             value = noteText,
@@ -713,11 +740,12 @@ private fun QuickNotesWidget(
         )
         }
         if (selected) {
-            VerticalWidgetResizeHandle(
-                currentHeight = currentHeight,
-                cellHeightDp = cellHeightDp,
-                minimum = 2,
-                maximum = WIDGET_PAGE_ROWS,
+            WidgetResizeHandles(
+                itemX = itemX, itemY = itemY, itemWidth = currentWidth, itemHeight = currentHeight,
+                minimumWidth = 2, minimumHeight = 2,
+                maximumWidth = WIDGET_PAGE_COLUMNS, maximumHeight = WIDGET_PAGE_ROWS,
+                cellWidthDp = cellWidthDp, cellHeightDp = cellHeightDp,
+                resizeMode = AppWidgetProviderInfo.RESIZE_HORIZONTAL or AppWidgetProviderInfo.RESIZE_VERTICAL,
                 onResize = onResize
             )
         }
@@ -763,10 +791,14 @@ private fun MonthCalendarWidget(
     context: Context,
     isActive: Boolean,
     selected: Boolean,
+    itemX: Int,
+    itemY: Int,
+    currentWidth: Int,
     currentHeight: Int,
+    cellWidthDp: Float,
     cellHeightDp: Float,
     onRemove: () -> Unit,
-    onResize: (Int) -> Unit
+    onResize: (Int, Int, Int, Int) -> Unit
 ) {
     val locale = remember { Locale.getDefault() }
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
@@ -841,31 +873,7 @@ private fun MonthCalendarWidget(
             TextButton(onClick = { month = month.plusMonths(1) }, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 3.dp)) {
                 Text("›")
             }
-            if (selected) {
-                var actionsExpanded by remember { mutableStateOf(false) }
-                Box {
-                    IconButton(onClick = { actionsExpanded = true }) {
-                        Text("⋮", fontSize = 20.sp)
-                    }
-                    DropdownMenu(
-                        expanded = actionsExpanded,
-                        onDismissRequest = { actionsExpanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Increase height") },
-                            onClick = { actionsExpanded = false; onResize(5) }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Decrease height") },
-                            onClick = { actionsExpanded = false; onResize(3) }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Remove widget") },
-                            onClick = { actionsExpanded = false; onRemove() }
-                        )
-                    }
-                }
-            }
+            
         }
 
         Row(modifier = Modifier.fillMaxWidth()) {
@@ -943,11 +951,12 @@ private fun MonthCalendarWidget(
         }
         }
         if (selected) {
-            VerticalWidgetResizeHandle(
-                currentHeight = currentHeight,
-                cellHeightDp = cellHeightDp,
-                minimum = 3,
-                maximum = WIDGET_PAGE_ROWS,
+            WidgetResizeHandles(
+                itemX = itemX, itemY = itemY, itemWidth = currentWidth, itemHeight = currentHeight,
+                minimumWidth = 3, minimumHeight = 3,
+                maximumWidth = WIDGET_PAGE_COLUMNS, maximumHeight = WIDGET_PAGE_ROWS,
+                cellWidthDp = cellWidthDp, cellHeightDp = cellHeightDp,
+                resizeMode = AppWidgetProviderInfo.RESIZE_HORIZONTAL or AppWidgetProviderInfo.RESIZE_VERTICAL,
                 onResize = onResize
             )
         }
@@ -1048,6 +1057,60 @@ private fun BoxScope.WidgetResizeHandle(
 }
 
 @Composable
+private fun BoxScope.WidgetResizeHandles(
+    itemX: Int, itemY: Int, itemWidth: Int, itemHeight: Int, minimumWidth: Int, minimumHeight: Int,
+    maximumWidth: Int, maximumHeight: Int, cellWidthDp: Float, cellHeightDp: Float,
+    resizeMode: Int, onResize: (Int, Int, Int, Int) -> Unit
+) {
+    val density = LocalDensity.current
+    val hEnabled = resizeMode and AppWidgetProviderInfo.RESIZE_HORIZONTAL != 0
+    val vEnabled = resizeMode and AppWidgetProviderInfo.RESIZE_VERTICAL != 0
+    @Composable
+    fun grip(edgeX: Int, edgeY: Int, alignment: Alignment, width: androidx.compose.ui.unit.Dp, height: androidx.compose.ui.unit.Dp) {
+        if ((edgeX != 0 && !hEnabled) || (edgeY != 0 && !vEnabled)) return
+        Surface(
+            modifier = Modifier.align(alignment).size(width, height).pointerInput(
+                itemX, itemY, itemWidth, itemHeight, minimumWidth, minimumHeight, cellWidthDp, cellHeightDp, edgeX, edgeY
+            ) {
+                var delta = Offset.Zero
+                detectDragGestures(
+                    onDrag = { change, amount -> delta += amount; change.consume() },
+                    onDragEnd = {
+                        val cw = with(density) { cellWidthDp.dp.toPx() }.coerceAtLeast(1f)
+                        val ch = with(density) { cellHeightDp.dp.toPx() }.coerceAtLeast(1f)
+                        val dx = (delta.x / cw).roundToInt()
+                        val dy = (delta.y / ch).roundToInt()
+                        val nx = itemX + if (edgeX < 0) dx else 0
+                        val ny = itemY + if (edgeY < 0) dy else 0
+                        val nw = (itemWidth + if (edgeX < 0) -dx else if (edgeX > 0) dx else 0).coerceIn(minimumWidth, maximumWidth)
+                        val nh = (itemHeight + if (edgeY < 0) -dy else if (edgeY > 0) dy else 0).coerceIn(minimumHeight, maximumHeight)
+                        if (nw != itemWidth || nh != itemHeight) onResize(nx, ny, nw, nh)
+                    }
+                )
+            },
+            shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.primaryContainer, shadowElevation = 1.dp
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(when {
+                    edgeX < 0 && edgeY < 0 -> "↖"
+                    edgeX > 0 && edgeY < 0 -> "↗"
+                    edgeX < 0 && edgeY > 0 -> "↙"
+                    edgeX > 0 && edgeY > 0 -> "↘"
+                    edgeX != 0 -> "↔"
+                    else -> "↕"
+                }, color = MaterialTheme.colorScheme.onPrimaryContainer, fontSize = 13.sp)
+            }
+        }
+    }
+    if (hEnabled) { grip(-1,0,Alignment.CenterStart,28.dp,42.dp); grip(1,0,Alignment.CenterEnd,28.dp,42.dp) }
+    if (vEnabled) { grip(0,-1,Alignment.TopCenter,42.dp,28.dp); grip(0,1,Alignment.BottomCenter,42.dp,28.dp) }
+    if (hEnabled && vEnabled) {
+        grip(-1,-1,Alignment.TopStart,28.dp,28.dp); grip(1,-1,Alignment.TopEnd,28.dp,28.dp)
+        grip(-1,1,Alignment.BottomStart,28.dp,28.dp); grip(1,1,Alignment.BottomEnd,28.dp,28.dp)
+    }
+}
+
+@Composable
 private fun AndroidWidgetCard(
     modifier: Modifier,
     context: Context,
@@ -1057,14 +1120,9 @@ private fun AndroidWidgetCard(
     cellWidthDp: Float,
     cellHeightDp: Float,
     selected: Boolean,
-    onResize: (Int, Int) -> Unit,
+    onResize: (Int, Int, Int, Int) -> Unit,
     onRemove: () -> Unit
 ) {
-    val providerInfo = remember(item.appWidgetId) {
-        runCatching { manager.getAppWidgetInfo(item.appWidgetId) }.getOrNull()
-    }
-    var actionsExpanded by remember(item.id) { mutableStateOf(false) }
-
     Box(
         modifier = modifier
             .padding(4.dp)
@@ -1081,7 +1139,7 @@ private fun AndroidWidgetCard(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(
-                    top = if (selected) 42.dp else 4.dp,
+                    top = 4.dp,
                     start = 4.dp,
                     end = 4.dp,
                     bottom = 4.dp
@@ -1089,71 +1147,14 @@ private fun AndroidWidgetCard(
         )
 
         if (selected && item.resizeMode != AppWidgetProviderInfo.RESIZE_NONE) {
-            WidgetResizeHandle(
-                currentWidth = item.width,
-                currentHeight = item.height,
-                minimumWidth = item.minWidthCells,
-                minimumHeight = item.minHeightCells,
-                maximumWidth = WIDGET_PAGE_COLUMNS,
-                maximumHeight = WIDGET_PAGE_ROWS,
-                cellWidthDp = cellWidthDp,
-                cellHeightDp = cellHeightDp,
-                resizeMode = item.resizeMode,
-                onResize = onResize
+            WidgetResizeHandles(
+                itemX = item.x, itemY = item.y, itemWidth = item.width, itemHeight = item.height,
+                minimumWidth = item.minWidthCells, minimumHeight = item.minHeightCells,
+                maximumWidth = WIDGET_PAGE_COLUMNS, maximumHeight = WIDGET_PAGE_ROWS,
+                cellWidthDp = cellWidthDp, cellHeightDp = cellHeightDp,
+                resizeMode = item.resizeMode, onResize = onResize
             )
-            Box(modifier = Modifier.align(Alignment.TopEnd)) {
-                IconButton(onClick = { actionsExpanded = true }) {
-                    Text("⋮", fontSize = 22.sp)
-                }
-                DropdownMenu(
-                    expanded = actionsExpanded,
-                    onDismissRequest = { actionsExpanded = false }
-                ) {
-                    if (providerInfo?.supportsHorizontalResize() == true) {
-                        DropdownMenuItem(
-                            text = { Text("Increase width") },
-                            onClick = {
-                                actionsExpanded = false
-                                onResize(item.width + 1, item.height)
-                            },
-                            enabled = item.width < WIDGET_PAGE_COLUMNS
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Decrease width") },
-                            onClick = {
-                                actionsExpanded = false
-                                onResize(item.width - 1, item.height)
-                            },
-                            enabled = item.width > item.minWidthCells
-                        )
-                    }
-                    if (providerInfo?.supportsVerticalResize() == true) {
-                        DropdownMenuItem(
-                            text = { Text("Increase height") },
-                            onClick = {
-                                actionsExpanded = false
-                                onResize(item.width, item.height + 1)
-                            },
-                            enabled = item.height < WIDGET_PAGE_ROWS
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Decrease height") },
-                            onClick = {
-                                actionsExpanded = false
-                                onResize(item.width, item.height - 1)
-                            },
-                            enabled = item.height > item.minHeightCells
-                        )
-                    }
-                    DropdownMenuItem(
-                        text = { Text("Remove widget") },
-                        onClick = {
-                            actionsExpanded = false
-                            onRemove()
-                        }
-                    )
-                }
-            }
+            
         }
     }
 }
