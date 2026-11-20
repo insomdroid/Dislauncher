@@ -847,9 +847,7 @@ internal fun DislauncherRoot() {
                         )
                     }
                 }
-                if (screen == LauncherScreen.HOME || screen == LauncherScreen.APPS ||
-                    screen == LauncherScreen.WIDGET
-                ) {
+                if (screen == LauncherScreen.HOME || screen == LauncherScreen.WIDGET) {
                     Row(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
