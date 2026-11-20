@@ -3,6 +3,7 @@ package com.insomdroid.dislauncher
 import android.Manifest
 import android.app.Activity
 import android.appwidget.AppWidgetManager
+import android.appwidget.AppWidgetProviderInfo
 import android.content.Intent
 import android.content.Context
 import android.content.pm.PackageManager
