@@ -1,12 +1,10 @@
 package com.insomdroid.dislauncher
 
-import android.Manifest
 import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProviderInfo
 import android.content.Intent
 import android.content.Context
-import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -17,7 +15,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items as lazyItems
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -65,10 +62,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -78,56 +78,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import java.time.DayOfWeek
-import java.time.LocalDate
-import java.time.YearMonth
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
 import java.util.Locale
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 import kotlin.math.ceil
 import kotlin.math.roundToInt
-
-private const val QUICK_NOTE_SAVE_DELAY_MS = 550L
+import kotlinx.coroutines.withTimeoutOrNull
 
 @Composable
 internal fun WidgetPage(
-    isActive: Boolean,
     onOpenSettings: () -> Unit
 ) {
     val context = LocalContext.current
     val appWidgetManager = remember(context) { AppWidgetManager.getInstance(context) }
     val appWidgetHost = rememberDislauncherAppWidgetHost()
     var items by remember(context) {
-        val loaded = loadWidgetPageItems(context)
-        val oldQuickNotes = loaded.firstOrNull { it.id == QUICK_NOTES_WIDGET_ID }
-        val oldCalendar = loaded.firstOrNull { it.id == MONTH_CALENDAR_WIDGET_ID }
-        val isLegacyFullWidthLayout = loaded.size == 2 &&
-            oldQuickNotes?.let { it.x == 0 && it.y == 0 && it.width == WIDGET_PAGE_COLUMNS && it.height == 2 } == true &&
-            oldCalendar?.let { it.x == 0 && it.y == 2 && it.width == WIDGET_PAGE_COLUMNS && it.height == 5 } == true
-        val initialItems = if (isLegacyFullWidthLayout) {
-            loaded.map { item ->
-                when (item.id) {
-                    QUICK_NOTES_WIDGET_ID -> item.copy(x = 0, y = 0, width = 2, height = 2)
-                    MONTH_CALENDAR_WIDGET_ID -> item.copy(x = 2, y = 0, width = 3, height = 4)
-                    else -> item
-                }
-            }.also { saveWidgetPageItems(context, it) }
-        } else loaded
-        mutableStateOf(initialItems)
+        mutableStateOf(loadWidgetPageItems(context))
     }
     var pageMenuExpanded by remember { mutableStateOf(false) }
     var pageMenuOffset by remember { mutableStateOf(DpOffset.Zero) }
     var addWidgetDialog by remember { mutableStateOf(false) }
-    var selectedWidgetId by remember { mutableStateOf<String?>(null) }
+    var editingWidgetId by remember { mutableStateOf<String?>(null) }
     var draggingWidgetId by remember { mutableStateOf<String?>(null) }
+    var dragOffset by remember { mutableStateOf(Offset.Zero) }
     var pendingAppWidgetId by remember { mutableStateOf(AppWidgetManager.INVALID_APPWIDGET_ID) }
     var gridCellWidthDp by remember { mutableStateOf(0f) }
     var gridCellHeightDp by remember { mutableStateOf(0f) }
@@ -282,6 +253,35 @@ internal fun WidgetPage(
         val cellHeight = maxHeight / WIDGET_PAGE_ROWS
         val cellWidthPx = with(LocalDensity.current) { cellWidth.toPx() }
         val cellHeightPx = with(LocalDensity.current) { cellHeight.toPx() }
+        val removeZoneHeightPx = with(LocalDensity.current) { 76.dp.toPx() }
+
+        fun finishWidgetDrag(item: WidgetPageItem) {
+            val finalOffset = dragOffset
+            val draggedTopPx = item.y * cellHeightPx + finalOffset.y
+            val dropOnRemove = draggedTopPx <= removeZoneHeightPx
+            if (dropOnRemove) {
+                if (item.appWidgetId >= 0) appWidgetHost.deleteAppWidgetId(item.appWidgetId)
+                updateItems(items.filterNot { it.id == item.id })
+                editingWidgetId = null
+            } else {
+                val targetX = (item.x + finalOffset.x / cellWidthPx).roundToInt()
+                val targetY = (item.y + finalOffset.y / cellHeightPx).roundToInt()
+                val moved = moveWidgetItem(items, item.id, targetX, targetY)
+                if (moved != null) {
+                    updateItems(moved)
+                    editingWidgetId = item.id
+                } else if (targetX != item.x || targetY != item.y) {
+                    Toast.makeText(
+                        context,
+                        "That position is outside the available widget space.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    editingWidgetId = item.id
+                }
+            }
+            draggingWidgetId = null
+            dragOffset = Offset.Zero
+        }
         SideEffect {
             gridCellWidthDp = cellWidth.value
             gridCellHeightDp = cellHeight.value
@@ -289,76 +289,74 @@ internal fun WidgetPage(
 
         items.forEach { item ->
             key(item.id) {
-                var dragDelta by remember(item.id) { mutableStateOf(Offset.Zero) }
                 val itemModifier = Modifier
                     .offset(x = cellWidth * item.x, y = cellHeight * item.y)
                     .width(cellWidth * item.width)
                     .height(cellHeight * item.height)
                     .graphicsLayer {
-                        translationX = dragDelta.x
-                        translationY = dragDelta.y
+                        if (draggingWidgetId == item.id) {
+                            translationX = dragOffset.x
+                            translationY = dragOffset.y
+                            alpha = 0.90f
+                            scaleX = 1.02f
+                            scaleY = 1.02f
+                        } else {
+                            translationX = 0f
+                            translationY = 0f
+                            alpha = 1f
+                            scaleX = 1f
+                            scaleY = 1f
+                        }
                     }
                     .pointerInput(item.id, items, cellWidthPx, cellHeightPx) {
                         awaitEachGesture {
-                            val down = awaitFirstDown(requireUnconsumed = false)
-                            val longPress = awaitLongPressOrCancellation(down.id)
-                                ?: return@awaitEachGesture
+                            val down = awaitFirstDown(
+                                requireUnconsumed = false,
+                                pass = PointerEventPass.Initial
+                            )
+                            val releasedOrMoved = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                                while (true) {
+                                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                                    val change = event.changes.firstOrNull { it.id == down.id }
+                                        ?: return@withTimeoutOrNull true
+                                    if (!change.pressed || change.isConsumed ||
+                                        (change.position - down.position).getDistance() > viewConfiguration.touchSlop
+                                    ) {
+                                        return@withTimeoutOrNull true
+                                    }
+                                }
+                            }
+                            if (releasedOrMoved != null) return@awaitEachGesture
 
-                            // A stationary long press opens the edit controls. Moving only starts
-                            // relocation after touch slop, matching the pickup/release flow in Nomina.
-                            selectedWidgetId = item.id
-                            dragDelta = Offset.Zero
-                            var dragging = false
-                            var lastPosition = longPress.position
-
+                            var moving = false
+                            var lastPosition = down.position
                             while (true) {
-                                val event = awaitPointerEvent()
+                                val event = awaitPointerEvent(PointerEventPass.Initial)
                                 val change = event.changes.firstOrNull { it.id == down.id }
                                     ?: break
+                                if (!change.pressed && change.isConsumed) break
+
                                 val delta = change.position - lastPosition
                                 lastPosition = change.position
-
-                                if (!dragging &&
-                                    (change.position - longPress.position).getDistance() > viewConfiguration.touchSlop
+                                if (!moving &&
+                                    (change.position - down.position).getDistance() > viewConfiguration.touchSlop
                                 ) {
-                                    dragging = true
+                                    moving = true
+                                    editingWidgetId = null
                                     draggingWidgetId = item.id
+                                    dragOffset = Offset.Zero
                                 }
 
-                                if (dragging) {
-                                    dragDelta += delta
-                                    change.consume()
+                                if (moving) {
+                                    dragOffset += delta
+                                    event.changes.forEach { it.consume() }
                                 }
 
                                 if (!change.pressed) {
-                                    if (dragging) {
-                                        val draggedTopPx = item.y * cellHeightPx + dragDelta.y
-                                        val droppedInDeleteTarget =
-                                            dragDelta.y < -cellHeightPx * 0.45f &&
-                                                draggedTopPx < cellHeightPx * 0.75f
-                                        if (droppedInDeleteTarget) {
-                                            if (item.kind == "android_widget" && item.appWidgetId >= 0) {
-                                                appWidgetHost.deleteAppWidgetId(item.appWidgetId)
-                                            }
-                                            updateItems(items.filterNot { it.id == item.id })
-                                            selectedWidgetId = null
-                                        } else {
-                                            val targetX = (item.x + dragDelta.x / cellWidthPx).roundToInt()
-                                            val targetY = (item.y + dragDelta.y / cellHeightPx).roundToInt()
-                                            val moved = moveWidgetItem(items, item.id, targetX, targetY)
-                                            if (moved != null) {
-                                                updateItems(moved)
-                                                selectedWidgetId = item.id
-                                            } else if (targetX != item.x || targetY != item.y) {
-                                                Toast.makeText(
-                                                    context,
-                                                    "That position is outside the available widget space.",
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
-                                            }
-                                        }
-                                        draggingWidgetId = null
-                                        dragDelta = Offset.Zero
+                                    if (moving) {
+                                        finishWidgetDrag(item)
+                                    } else {
+                                        editingWidgetId = item.id
                                     }
                                     break
                                 }
@@ -366,122 +364,138 @@ internal fun WidgetPage(
                         }
                     }
 
-                when (item.kind) {
-                    "quick_notes" -> QuickNotesWidget(
-                        modifier = itemModifier,
-                        isActive = isActive,
-                        selected = selectedWidgetId == item.id,
-                        itemX = item.x,
-                        itemY = item.y,
-                        currentWidth = item.width,
-                        currentHeight = item.height,
-                        cellWidthDp = gridCellWidthDp,
-                        cellHeightDp = gridCellHeightDp,
-                        onRemove = { updateItems(items.filterNot { it.id == item.id }) },
-                        onResize = { x, y, width, height ->
-                            resizeWidgetBounds(items, item.id, x, y, width, height)?.let(::updateItems)
-                                ?: Toast.makeText(context, "Not enough space to resize this widget.", Toast.LENGTH_SHORT).show()
-                        }
-                    )
-                    "month_calendar" -> MonthCalendarWidget(
-                        modifier = itemModifier,
-                        context = context,
-                        isActive = isActive,
-                        selected = selectedWidgetId == item.id,
-                        itemX = item.x,
-                        itemY = item.y,
-                        currentWidth = item.width,
-                        currentHeight = item.height,
-                        cellWidthDp = gridCellWidthDp,
-                        cellHeightDp = gridCellHeightDp,
-                        onRemove = { updateItems(items.filterNot { it.id == item.id }) },
-                        onResize = { x, y, width, height ->
-                            resizeWidgetBounds(items, item.id, x, y, width, height)?.let(::updateItems)
-                                ?: Toast.makeText(context, "Not enough space to resize this widget.", Toast.LENGTH_SHORT).show()
-                        }
-                    )
-                    "android_widget" -> AndroidWidgetCard(
+                if (item.kind == "android_widget") {
+                    AndroidWidgetCard(
                         modifier = itemModifier,
                         context = context,
                         host = appWidgetHost,
                         manager = appWidgetManager,
                         item = item,
                         cellWidthDp = gridCellWidthDp,
-                        cellHeightDp = gridCellHeightDp,
-                        selected = selectedWidgetId == item.id,
-                        onResize = { x, y, width, height ->
-                            resizeWidgetBounds(items, item.id, x, y, width, height)?.let(::updateItems)
-                                ?: Toast.makeText(context, "The widget cannot fit at that size.", Toast.LENGTH_SHORT).show()
-                        },
-                        onRemove = {
-                            appWidgetHost.deleteAppWidgetId(item.appWidgetId)
-                            updateItems(items.filterNot { it.id == item.id })
-                            selectedWidgetId = null
-                        }
+                        cellHeightDp = gridCellHeightDp
                     )
                 }
             }
         }
 
-        if (draggingWidgetId != null) {
+        val draggedItem = items.firstOrNull { it.id == draggingWidgetId }
+        if (draggedItem != null) {
+            val overRemove = draggedItem.y * cellHeightPx + dragOffset.y <= removeZoneHeightPx
             Surface(
-                modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().height(58.dp),
-                shape = RoundedCornerShape(bottomStart = 18.dp, bottomEnd = 18.dp),
-                color = MaterialTheme.colorScheme.errorContainer
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 16.dp),
+                shape = CircleShape,
+                color = if (overRemove) MaterialTheme.colorScheme.error else Color.Black.copy(alpha = 0.58f),
+                shadowElevation = 6.dp
             ) {
-                Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                    Text("⌫", color = MaterialTheme.colorScheme.onErrorContainer, fontSize = 20.sp)
-                    Text("Drop here to remove", modifier = Modifier.padding(start = 10.dp), color = MaterialTheme.colorScheme.onErrorContainer, style = MaterialTheme.typography.titleSmall)
+                Row(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("×", color = Color.White, fontSize = 20.sp)
+                    Text(
+                        "Remove",
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleMedium
+                    )
                 }
             }
-        } else if (selectedWidgetId != null) {
-            val selectedItem = items.firstOrNull { it.id == selectedWidgetId }
-            if (selectedItem != null) {
-                val toolbarWidth = minOf(236.dp, (maxWidth - 16.dp).coerceAtLeast(0.dp))
-                val toolbarHeight = 56.dp
-                val rawX = cellWidth * selectedItem.x
-                val toolbarX = rawX.coerceIn(
-                    8.dp,
-                    (maxWidth - toolbarWidth - 8.dp).coerceAtLeast(8.dp)
-                )
-                val aboveY = cellHeight * selectedItem.y - toolbarHeight - 8.dp
-                val belowY = cellHeight * (selectedItem.y + selectedItem.height) + 8.dp
-                val rawY = if (aboveY >= 8.dp) aboveY else belowY
-                val toolbarY = rawY.coerceIn(
-                    8.dp,
-                    (maxHeight - toolbarHeight - 8.dp).coerceAtLeast(8.dp)
-                )
-                Surface(
-                    modifier = Modifier.offset(x = toolbarX, y = toolbarY)
-                        .width(toolbarWidth)
-                        .height(toolbarHeight),
-                    shape = RoundedCornerShape(18.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    shadowElevation = 8.dp
-                ) {
-                    Row(
-                        Modifier.fillMaxSize().padding(horizontal = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            Text("Edit widget", style = MaterialTheme.typography.labelLarge)
-                            Text(
-                                "Drag to move · handles to resize",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1
-                            )
-                        }
-                        TextButton(onClick = {
-                            if (selectedItem.kind == "android_widget" && selectedItem.appWidgetId >= 0) {
-                                appWidgetHost.deleteAppWidgetId(selectedItem.appWidgetId)
-                            }
-                            updateItems(items.filterNot { it.id == selectedItem.id })
-                            selectedWidgetId = null
-                        }) { Text("Remove", color = MaterialTheme.colorScheme.error) }
-                        TextButton(onClick = { selectedWidgetId = null }) { Text("Done") }
+        }
+
+        val editingItem = items.firstOrNull { it.id == editingWidgetId }
+        if (editingItem != null && draggingWidgetId == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.24f))
+                    .pointerInput(editingItem.id) {
+                        detectTapGestures { editingWidgetId = null }
                     }
+            )
+
+            Box(
+                modifier = Modifier
+                    .offset(
+                        x = cellWidth * editingItem.x,
+                        y = cellHeight * editingItem.y
+                    )
+                    .size(
+                        width = cellWidth * editingItem.width,
+                        height = cellHeight * editingItem.height
+                    )
+                    .border(
+                        width = 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = RoundedCornerShape(24.dp)
+                    )
+                    .pointerInput(editingItem.id, items, cellWidthPx, cellHeightPx) {
+                        detectDragGestures(
+                            onDragStart = {
+                                editingWidgetId = null
+                                draggingWidgetId = editingItem.id
+                                dragOffset = Offset.Zero
+                            },
+                            onDragEnd = { finishWidgetDrag(editingItem) },
+                            onDragCancel = {
+                                draggingWidgetId = null
+                                dragOffset = Offset.Zero
+                                editingWidgetId = editingItem.id
+                            }
+                        ) { change, amount ->
+                            change.consume()
+                            dragOffset += amount
+                        }
+                    }
+            ) {
+                WidgetResizeHandles(
+                    itemX = editingItem.x,
+                    itemY = editingItem.y,
+                    itemWidth = editingItem.width,
+                    itemHeight = editingItem.height,
+                    minimumWidth = editingItem.minWidthCells,
+                    minimumHeight = editingItem.minHeightCells,
+                    maximumWidth = WIDGET_PAGE_COLUMNS,
+                    maximumHeight = WIDGET_PAGE_ROWS,
+                    cellWidthDp = gridCellWidthDp,
+                    cellHeightDp = gridCellHeightDp,
+                    resizeMode = editingItem.resizeMode,
+                    onResize = { x, y, width, height ->
+                        resizeWidgetBounds(items, editingItem.id, x, y, width, height)?.let(::updateItems)
+                            ?: Toast.makeText(
+                                context,
+                                "The widget cannot fit at that size.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                    }
+                )
+            }
+
+            val configureComponent = remember(editingItem.appWidgetId) {
+                runCatching {
+                    appWidgetManager.getAppWidgetInfo(editingItem.appWidgetId)?.configure
+                }.getOrNull()
+            }
+            if (configureComponent != null) {
+                Box(
+                    modifier = Modifier
+                        .offset(
+                            x = cellWidth * (editingItem.x + editingItem.width) - 48.dp,
+                            y = cellHeight * editingItem.y + 8.dp
+                        )
+                        .size(40.dp)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        .clickable {
+                            val intent = Intent(AppWidgetManager.ACTION_APPWIDGET_CONFIGURE)
+                                .setComponent(configureComponent)
+                                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, editingItem.appWidgetId)
+                            editingWidgetId = null
+                            configureWidgetLauncher.launch(intent)
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("⚙", color = MaterialTheme.colorScheme.onPrimary, fontSize = 19.sp)
                 }
             }
         }
@@ -542,159 +556,6 @@ internal fun WidgetPage(
                         modifier = Modifier.fillMaxWidth().heightIn(max = 440.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        item(key = "app_group_builtin_dislauncher") {
-                            Card(
-                                modifier = Modifier.fillMaxWidth().clickable {
-                                    expandedPackages = if ("builtin_dislauncher" in expandedPackages) {
-                                        expandedPackages - "builtin_dislauncher"
-                                    } else {
-                                        expandedPackages + "builtin_dislauncher"
-                                    }
-                                },
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                                ),
-                                shape = RoundedCornerShape(16.dp)
-                            ) {
-                                Row(
-                                    Modifier.fillMaxWidth().padding(14.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    if (ownAppIcon != null) {
-                                        Image(
-                                            bitmap = ownAppIcon.asImageBitmap(),
-                                            contentDescription = null,
-                                            modifier = Modifier.size(38.dp).clip(RoundedCornerShape(10.dp))
-                                        )
-                                    }
-                                    Column(Modifier.weight(1f).padding(start = 12.dp)) {
-                                        Text(
-                                            "Dislauncher",
-                                            style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                        Text(
-                                            "2 built-in widgets",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                    Text(
-                                        if ("builtin_dislauncher" in expandedPackages) "⌃" else "⌄",
-                                        style = MaterialTheme.typography.titleMedium
-                                    )
-                                }
-                            }
-                        }
-
-                        if ("builtin_dislauncher" in expandedPackages) {
-                            if (items.none { it.id == QUICK_NOTES_WIDGET_ID }) {
-                                item(key = "builtin_quick_notes") {
-                                    Card(
-                                        modifier = Modifier.fillMaxWidth().clickable {
-                                            val position = findWidgetPlacement(items, 2, 2)
-                                            if (position != null) {
-                                                updateItems(items + WidgetPageItem(
-                                                    QUICK_NOTES_WIDGET_ID,
-                                                    "quick_notes",
-                                                    position.first,
-                                                    position.second,
-                                                    2,
-                                                    2
-                                                ))
-                                                addWidgetDialog = false
-                                            } else {
-                                                Toast.makeText(
-                                                    context,
-                                                    "There is not enough free space for Quick Notes.",
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
-                                            }
-                                        },
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.surfaceContainer
-                                        )
-                                    ) {
-                                        Column(
-                                            Modifier.fillMaxWidth().padding(14.dp),
-                                            verticalArrangement = Arrangement.spacedBy(5.dp)
-                                        ) {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Text(
-                                                    "Quick Notes",
-                                                    modifier = Modifier.weight(1f),
-                                                    style = MaterialTheme.typography.titleSmall
-                                                )
-                                                Text(
-                                                    "2 × 2",
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    color = MaterialTheme.colorScheme.primary
-                                                )
-                                            }
-                                            Text(
-                                                "Compact note widget",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (items.none { it.id == MONTH_CALENDAR_WIDGET_ID }) {
-                                item(key = "builtin_month_calendar") {
-                                    Card(
-                                        modifier = Modifier.fillMaxWidth().clickable {
-                                            val position = findWidgetPlacement(items, 3, 4)
-                                            if (position != null) {
-                                                updateItems(items + WidgetPageItem(
-                                                    MONTH_CALENDAR_WIDGET_ID,
-                                                    "month_calendar",
-                                                    position.first,
-                                                    position.second,
-                                                    3,
-                                                    4
-                                                ))
-                                                addWidgetDialog = false
-                                            } else {
-                                                Toast.makeText(
-                                                    context,
-                                                    "There is not enough free space for Calendar.",
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
-                                            }
-                                        },
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.surfaceContainer
-                                        )
-                                    ) {
-                                        Column(
-                                            Modifier.fillMaxWidth().padding(14.dp),
-                                            verticalArrangement = Arrangement.spacedBy(5.dp)
-                                        ) {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Text(
-                                                    "Calendar",
-                                                    modifier = Modifier.weight(1f),
-                                                    style = MaterialTheme.typography.titleSmall
-                                                )
-                                                Text(
-                                                    "3 × 4",
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    color = MaterialTheme.colorScheme.primary
-                                                )
-                                            }
-                                            Text(
-                                                "Monthly calendar widget",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
                         providerGroups.forEach { (packageName, providers) ->
                             item(key = "app_group_$packageName") {
                                 val appLabel = remember(packageName) {
@@ -870,291 +731,6 @@ internal fun WidgetPage(
                 TextButton(onClick = { addWidgetDialog = false }) { Text("Close") }
             }
         )
-    }
-}
-
-@Composable
-private fun QuickNotesWidget(
-    modifier: Modifier,
-    isActive: Boolean,
-    selected: Boolean,
-    itemX: Int,
-    itemY: Int,
-    currentWidth: Int,
-    currentHeight: Int,
-    cellWidthDp: Float,
-    cellHeightDp: Float,
-    onRemove: () -> Unit,
-    onResize: (Int, Int, Int, Int) -> Unit
-) {
-    val context = LocalContext.current
-    var noteText by remember(context) { mutableStateOf("") }
-    var hasLoaded by remember(context) { mutableStateOf(false) }
-
-    LaunchedEffect(isActive) {
-        if (isActive && !hasLoaded) {
-            noteText = withContext(Dispatchers.IO) { loadQuickWidgetNote(context) }
-            hasLoaded = true
-        } else if (isActive && hasLoaded) {
-            noteText = withContext(Dispatchers.IO) { loadQuickWidgetNote(context) }
-        }
-    }
-
-    LaunchedEffect(noteText, hasLoaded) {
-        if (!hasLoaded) return@LaunchedEffect
-        delay(QUICK_NOTE_SAVE_DELAY_MS)
-        withContext(Dispatchers.IO) { saveQuickWidgetNote(context, noteText) }
-    }
-
-    Box(modifier = modifier) {
-        WidgetCard(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                "Quick Notes",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f).clickable {
-                    launchBuiltInTool(context, BuiltInTool.NOTES)
-                }
-            )
-            
-        }
-        OutlinedTextField(
-            value = noteText,
-            onValueChange = { noteText = it },
-            modifier = Modifier.fillMaxSize(),
-            placeholder = { Text("Write something…", fontSize = 13.sp) },
-            textStyle = MaterialTheme.typography.bodyMedium,
-            minLines = 2,
-            maxLines = 4,
-            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-            shape = RoundedCornerShape(12.dp)
-        )
-        }
-        if (selected) {
-            WidgetResizeHandles(
-                itemX = itemX, itemY = itemY, itemWidth = currentWidth, itemHeight = currentHeight,
-                minimumWidth = 2, minimumHeight = 2,
-                maximumWidth = WIDGET_PAGE_COLUMNS, maximumHeight = WIDGET_PAGE_ROWS,
-                cellWidthDp = cellWidthDp, cellHeightDp = cellHeightDp,
-                resizeMode = AppWidgetProviderInfo.RESIZE_HORIZONTAL or AppWidgetProviderInfo.RESIZE_VERTICAL,
-                onResize = onResize
-            )
-        }
-    }
-}
-
-private fun loadQuickWidgetNote(context: Context): String =
-    loadNotes(context).firstOrNull { it.id == QUICK_NOTES_WIDGET_ID }
-        ?.let { it.markdown.ifBlank { it.content } }
-        .orEmpty()
-
-private val quickWidgetNoteLock = Any()
-
-private fun saveQuickWidgetNote(context: Context, text: String) {
-    synchronized(quickWidgetNoteLock) {
-        val notes = loadNotes(context)
-        val existing = notes.firstOrNull { it.id == QUICK_NOTES_WIDGET_ID }
-        if (text.isBlank()) {
-            if (existing != null) {
-                saveNotes(context, notes.filterNot { it.id == QUICK_NOTES_WIDGET_ID })
-            }
-            return
-        }
-        if (existing?.markdown == text) return
-        val updated = buildLocalNoteSnapshot(
-            id = QUICK_NOTES_WIDGET_ID,
-            title = "Quick Note",
-            markdown = text,
-            existing = existing,
-            labels = existing?.labels.orEmpty(),
-            color = existing?.color ?: "default",
-            updatedAt = System.currentTimeMillis()
-        )
-        val next = (notes.filterNot { it.id == QUICK_NOTES_WIDGET_ID } + updated)
-            .sortedWith(compareByDescending<LocalNote> { it.pinned }.thenByDescending { it.updatedAt })
-        saveNotes(context, next)
-    }
-}
-
-@Composable
-private fun MonthCalendarWidget(
-    modifier: Modifier,
-    context: Context,
-    isActive: Boolean,
-    selected: Boolean,
-    itemX: Int,
-    itemY: Int,
-    currentWidth: Int,
-    currentHeight: Int,
-    cellWidthDp: Float,
-    cellHeightDp: Float,
-    onRemove: () -> Unit,
-    onResize: (Int, Int, Int, Int) -> Unit
-) {
-    val locale = remember { Locale.getDefault() }
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-    var month by remember { mutableStateOf(YearMonth.now()) }
-    var events by remember { mutableStateOf<List<DeviceCalendarEvent>>(emptyList()) }
-    var tasks by remember { mutableStateOf(loadTasks(context)) }
-    var refreshKey by remember { mutableStateOf(0) }
-    var hasCalendarPermission by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) ==
-                PackageManager.PERMISSION_GRANTED
-        )
-    }
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        hasCalendarPermission = granted
-        refreshKey++
-    }
-
-    androidx.compose.runtime.DisposableEffect(lifecycleOwner, isActive) {
-        if (!isActive) return@DisposableEffect onDispose { }
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) refreshKey++
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-
-    LaunchedEffect(month, hasCalendarPermission, refreshKey, isActive) {
-        if (!isActive) return@LaunchedEffect
-        events = if (hasCalendarPermission) {
-            withContext(Dispatchers.IO) {
-                readDeviceCalendarEvents(context, month.atDay(1), month.plusMonths(1).atDay(1))
-            }
-        } else emptyList()
-        tasks = withContext(Dispatchers.IO) { loadTasks(context) }
-    }
-
-    val startOffset = (month.atDay(1).dayOfWeek.value - DayOfWeek.MONDAY.value + 7) % 7
-    val firstVisibleDate = month.atDay(1).minusDays(startOffset.toLong())
-    val dates = (0 until 42).map { firstVisibleDate.plusDays(it.toLong()) }
-    val eventDates = events.flatMap { event ->
-        val start = java.time.Instant.ofEpochMilli(event.begin).atZone(ZoneId.systemDefault()).toLocalDate()
-        val end = java.time.Instant.ofEpochMilli((event.end - 1).coerceAtLeast(event.begin))
-            .atZone(ZoneId.systemDefault()).toLocalDate()
-        generateSequence(start) { previous -> if (previous.isBefore(end)) previous.plusDays(1) else null }
-            .toList()
-    }.toSet()
-    val taskDates = tasks.mapNotNull { runCatching { LocalDate.parse(it.date) }.getOrNull() }.toSet()
-    val markedDates = eventDates + taskDates
-
-    Box(modifier = modifier) {
-        WidgetCard(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f).clickable {
-                    launchBuiltInTool(context, BuiltInTool.CALENDAR)
-                }
-            )
-            TextButton(onClick = { month = month.minusMonths(1) }, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 3.dp)) {
-                Text("‹")
-            }
-            TextButton(onClick = { month = month.plusMonths(1) }, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 3.dp)) {
-                Text("›")
-            }
-            
-        }
-
-        Row(modifier = Modifier.fillMaxWidth()) {
-            (0..6).forEach { index ->
-                val day = DayOfWeek.of(index + 1)
-                Box(
-                    modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        day.getDisplayName(TextStyle.SHORT, locale).take(2),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 10.sp
-                    )
-                }
-            }
-        }
-
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceEvenly
-        ) {
-            dates.chunked(7).forEach { week ->
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    week.forEach { date ->
-                        val isCurrentMonth = YearMonth.from(date) == month
-                        val isToday = date == LocalDate.now()
-                        val hasMarker = date in markedDates
-                        Box(
-                            modifier = Modifier.weight(1f).height(26.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Surface(
-                                modifier = Modifier
-                                    .size(25.dp)
-                                    .clickable { launchBuiltInTool(context, BuiltInTool.CALENDAR) },
-                                shape = CircleShape,
-                                color = if (isToday) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.surface
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        date.dayOfMonth.toString(),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = when {
-                                            isToday -> MaterialTheme.colorScheme.onPrimary
-                                            isCurrentMonth -> MaterialTheme.colorScheme.onSurface
-                                            else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.42f)
-                                        }
-                                    )
-                                }
-                            }
-                            if (hasMarker && !isToday) {
-                                Box(
-                                    modifier = Modifier
-                                        .align(Alignment.BottomCenter)
-                                        .padding(bottom = 0.dp)
-                                        .size(3.dp)
-                                        .background(MaterialTheme.colorScheme.primary, CircleShape)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        if (!hasCalendarPermission) {
-            TextButton(
-                onClick = { permissionLauncher.launch(Manifest.permission.READ_CALENDAR) },
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
-            ) {
-                Text("Allow calendar access", fontSize = 11.sp)
-            }
-        }
-        }
-        if (selected) {
-            WidgetResizeHandles(
-                itemX = itemX, itemY = itemY, itemWidth = currentWidth, itemHeight = currentHeight,
-                minimumWidth = 3, minimumHeight = 3,
-                maximumWidth = WIDGET_PAGE_COLUMNS, maximumHeight = WIDGET_PAGE_ROWS,
-                cellWidthDp = cellWidthDp, cellHeightDp = cellHeightDp,
-                resizeMode = AppWidgetProviderInfo.RESIZE_HORIZONTAL or AppWidgetProviderInfo.RESIZE_VERTICAL,
-                onResize = onResize
-            )
-        }
     }
 }
 
