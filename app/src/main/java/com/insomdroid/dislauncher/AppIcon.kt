@@ -384,11 +384,35 @@ internal fun invalidateAppIconCaches(packageName: String?) {
     synchronized(iconPackMappings) { iconPackMappings.remove(packageName) }
 }
 
+private const val MAX_APP_ICON_BITMAP_EDGE = 128
+
 private fun drawableToBitmap(drawable: Drawable?): Bitmap? {
     drawable ?: return null
-    if (drawable is android.graphics.drawable.BitmapDrawable && drawable.bitmap != null) return drawable.bitmap
-    val width = drawable.intrinsicWidth.coerceIn(1, 128)
-    val height = drawable.intrinsicHeight.coerceIn(1, 128)
+
+    if (drawable is android.graphics.drawable.BitmapDrawable) {
+        val source = drawable.bitmap ?: return null
+        val longestEdge = maxOf(source.width, source.height)
+        if (longestEdge <= MAX_APP_ICON_BITMAP_EDGE) return source
+
+        // Do not retain oversized package/icon-pack bitmaps in the drawer cache.
+        // Create a smaller copy; never mutate or recycle the drawable's source bitmap.
+        val scale = MAX_APP_ICON_BITMAP_EDGE.toFloat() / longestEdge
+        val targetWidth = (source.width * scale).toInt().coerceAtLeast(1)
+        val targetHeight = (source.height * scale).toInt().coerceAtLeast(1)
+        return runCatching {
+            Bitmap.createScaledBitmap(source, targetWidth, targetHeight, true)
+        }.getOrNull()
+    }
+
+    val intrinsicWidth = drawable.intrinsicWidth.coerceAtLeast(1)
+    val intrinsicHeight = drawable.intrinsicHeight.coerceAtLeast(1)
+    val scale = minOf(
+        1f,
+        MAX_APP_ICON_BITMAP_EDGE.toFloat() / intrinsicWidth,
+        MAX_APP_ICON_BITMAP_EDGE.toFloat() / intrinsicHeight
+    )
+    val width = (intrinsicWidth * scale).toInt().coerceAtLeast(1)
+    val height = (intrinsicHeight * scale).toInt().coerceAtLeast(1)
     return runCatching {
         Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { bitmap ->
             drawable.setBounds(0, 0, width, height)
