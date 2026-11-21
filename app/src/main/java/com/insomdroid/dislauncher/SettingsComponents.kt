@@ -106,7 +106,7 @@ internal fun ChoiceRow(
     onSelected: (String) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Normal)
         if (description.isNotBlank()) {
             Text(
                 description,
@@ -143,8 +143,8 @@ internal fun SettingsGroup(
     ) {
         Text(
             title,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Light,
             color = MaterialTheme.colorScheme.onSurface
         )
         if (subtitle.isNotBlank()) {

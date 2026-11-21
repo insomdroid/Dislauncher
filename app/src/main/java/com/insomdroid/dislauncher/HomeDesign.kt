@@ -15,18 +15,18 @@ internal object HomeDesign {
     val progressLabelGap = 5.dp
     val progressTrackWidth = 0.40f
     val progressTrackHeight = 4.dp
-    val favoriteVerticalPadding = 8.dp
+    val favoriteVerticalPadding = 7.dp
     val appIconSize = 19.dp
     val appIconLabelGap = 9.dp
     val notificationBadgeHeight = 18.dp
     val notificationDotSize = 6.dp
 
-    val clockSize = 34.sp
-    val clockLineHeight = 36.sp
-    val dateSize = 13.sp
+    val clockSize = 40.sp
+    val clockLineHeight = 42.sp
+    val dateSize = 14.sp
     val dateLineHeight = 17.sp
-    val progressLabelSize = 12.sp
+    val progressLabelSize = 11.sp
     val progressLabelLineHeight = 16.sp
-    val favoriteSize = 25.sp
-    val favoriteLineHeight = 32.sp
+    val favoriteSize = 26.sp
+    val favoriteLineHeight = 34.sp
 }
