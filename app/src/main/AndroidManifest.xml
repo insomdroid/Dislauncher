@@ -74,6 +74,17 @@
         </activity>
 
         <activity
+            android:name=".PinWidgetRequestActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.dislauncher">
+            <intent-filter>
+                <action android:name="android.content.pm.action.CONFIRM_PIN_APPWIDGET" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <activity
             android:name=".BuiltInToolActivity"
             android:exported="false"
             android:theme="@style/Theme.dislauncher"
