@@ -1299,28 +1299,24 @@ private fun SettingsCategoryRow(
     onClick: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)
-            .clip(RoundedCornerShape(LauncherShapeTokens.large))
+        modifier = Modifier.fillMaxWidth().heightIn(min = 76.dp)
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 8.dp),
+            .padding(horizontal = 4.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(LauncherShapeTokens.large))
-                .padding(horizontal = 13.dp, vertical = 10.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                painter = painterResource(icon),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(LauncherIconTokens.standard)
+        Icon(
+            painter = painterResource(icon),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(LauncherIconTokens.standard)
+        )
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Light
             )
-        }
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
             Text(
                 description,
                 style = MaterialTheme.typography.bodySmall,
@@ -1329,7 +1325,12 @@ private fun SettingsCategoryRow(
                 overflow = TextOverflow.Ellipsis
             )
         }
-        Icon(painterResource(R.drawable.ic_symbol_chevron_right), contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(LauncherIconTokens.compact))
+        Icon(
+            painterResource(R.drawable.ic_symbol_chevron_right),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(LauncherIconTokens.compact)
+        )
     }
 }
 
