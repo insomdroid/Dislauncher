@@ -8,6 +8,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.SharedPreferences
 import android.net.Uri
 import android.graphics.Bitmap
 import java.io.ByteArrayInputStream
@@ -82,6 +83,18 @@ internal fun DislauncherRoot() {
         context.getSharedPreferences(DISLAUNCHER_PREFERENCES_NAME, Context.MODE_PRIVATE)
     }
     var preferences by remember { mutableStateOf(LauncherPreferences.load(prefsStore)) }
+
+    DisposableEffect(prefsStore) {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "show_widget_page") {
+                preferences = LauncherPreferences.load(prefsStore)
+            }
+        }
+        prefsStore.registerOnSharedPreferenceChangeListener(listener)
+        onDispose {
+            prefsStore.unregisterOnSharedPreferenceChangeListener(listener)
+        }
+    }
     var favorites by remember {
         mutableStateOf(
             prefsStore.getStringSet("favorite_packages", emptySet())
