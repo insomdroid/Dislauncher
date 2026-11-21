@@ -1,0 +1,6 @@
+Dislauncher 1.3.6:
+- Expanded Markdown preview in Notes with task lists, strikethrough, HTML content, and images.
+- Simplified first-run onboarding with clearer progress and optional permissions.
+- Improved Books, Notes, Calculator, Calendar, and Unit Converter layouts, empty states, and shared headers.
+- Improved Books reading performance and PDF cover handling.
+- Fixed Markdown edge cases, Books page indexes, and PDF error messages.

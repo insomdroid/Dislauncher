@@ -1,0 +1,68 @@
+package com.insomdroid.dislauncher
+
+import android.content.res.Configuration
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.os.Build
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
+
+internal class BuiltInToolActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
+
+        val tool = intent.getStringExtra(EXTRA_BUILT_IN_TOOL)
+            ?.let { name -> runCatching { BuiltInTool.valueOf(name) }.getOrNull() }
+        if (tool == null) {
+            finish()
+            return
+        }
+
+        val preferences = LauncherPreferences.load(
+            getSharedPreferences(DISLAUNCHER_PREFERENCES_NAME, MODE_PRIVATE)
+        )
+        val systemNight = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
+            Configuration.UI_MODE_NIGHT_YES
+        val darkLaunchBackground = when (preferences.themeMode) {
+            "light" -> false
+            "dark", "black" -> true
+            else -> systemNight
+        }
+        window.setBackgroundDrawable(
+            ColorDrawable(if (darkLaunchBackground) Color.rgb(17, 17, 17) else Color.rgb(242, 242, 242))
+        )
+
+        setContent {
+            val systemDark = isSystemInDarkTheme()
+            val isDark = when (preferences.themeMode) {
+                "light" -> false
+                "dark", "black" -> true
+                else -> systemDark
+            }
+            val view = LocalView.current
+            SideEffect {
+                val controller = WindowCompat.getInsetsController(window, view)
+                controller.isAppearanceLightStatusBars = !isDark
+                controller.isAppearanceLightNavigationBars = !isDark
+            }
+            DislauncherTheme(
+                preferences = preferences,
+                isDark = isDark,
+                baseDensity = LocalDensity.current
+            ) {
+                BuiltInToolScreen(tool = tool, onBack = { finish() })
+            }
+        }
+    }
+}

@@ -1,0 +1,11 @@
+package com.insomdroid.dislauncher
+
+internal enum class LauncherScreen { ONBOARDING, WIDGET, HOME, APPS, SETTINGS, WEATHER }
+
+internal data class LauncherApp(
+    val packageName: String,
+    val activityName: String,
+    val label: String,
+    val isSystem: Boolean,
+    val versionCode: Long = 0L
+)
