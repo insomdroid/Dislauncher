@@ -1,6 +1,8 @@
 package com.insomdroid.dislauncher
 
 import android.content.Context
+import android.appwidget.AppWidgetProviderInfo
+import kotlin.math.ceil
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -195,4 +197,87 @@ internal fun resizeWidgetBounds(
     val candidate = item.copy(x = newX, y = newY, width = newWidth, height = newHeight)
     if (!canPlaceWidgetItem(items, candidate)) return null
     return items.map { if (it.id == itemId) candidate else it }
+}
+
+
+internal fun createPinnedWidgetPageItem(
+    context: Context,
+    appWidgetId: Int,
+    providerInfo: AppWidgetProviderInfo
+): WidgetPageItem? {
+    val metrics = context.resources.displayMetrics
+    val density = metrics.density.coerceAtLeast(1f)
+    val screenWidthDp = metrics.widthPixels / density
+    val screenHeightDp = metrics.heightPixels / density
+
+    fun systemDimensionDp(name: String, fallbackDp: Float): Float {
+        val resourceId = context.resources.getIdentifier(name, "dimen", "android")
+        return if (resourceId != 0) {
+            context.resources.getDimension(resourceId) / density
+        } else {
+            fallbackDp
+        }
+    }
+
+    val statusBarDp = systemDimensionDp("status_bar_height", 24f)
+    val navigationBarDp = systemDimensionDp("navigation_bar_height", 24f)
+    val cellWidthDp = (screenWidthDp / WIDGET_PAGE_COLUMNS).coerceAtLeast(1f)
+    val cellHeightDp = (
+        (screenHeightDp - statusBarDp - navigationBarDp) / WIDGET_PAGE_ROWS
+    ).coerceAtLeast(1f)
+
+    val canResizeHorizontally =
+        providerInfo.resizeMode and AppWidgetProviderInfo.RESIZE_HORIZONTAL != 0
+    val canResizeVertically =
+        providerInfo.resizeMode and AppWidgetProviderInfo.RESIZE_VERTICAL != 0
+    val requestedMinWidth = if (canResizeHorizontally && providerInfo.minResizeWidth > 0) {
+        providerInfo.minResizeWidth
+    } else {
+        providerInfo.minWidth
+    }
+    val requestedMinHeight = if (canResizeVertically && providerInfo.minResizeHeight > 0) {
+        providerInfo.minResizeHeight
+    } else {
+        providerInfo.minHeight
+    }
+
+    // Match WidgetPage's provider-pixel to dp conversion and its preferred initial span.
+    val minWidthCells = ceil((requestedMinWidth / density) / cellWidthDp)
+        .toInt().coerceAtLeast(1)
+    val minHeightCells = ceil((requestedMinHeight / density) / cellHeightDp)
+        .toInt().coerceAtLeast(1)
+    if (minWidthCells > WIDGET_PAGE_COLUMNS || minHeightCells > WIDGET_PAGE_ROWS) {
+        return null
+    }
+
+    val width = ceil((providerInfo.minWidth / density) / cellWidthDp)
+        .toInt().coerceAtLeast(minWidthCells).coerceAtMost(WIDGET_PAGE_COLUMNS)
+    val height = ceil((providerInfo.minHeight / density) / cellHeightDp)
+        .toInt().coerceAtLeast(minHeightCells).coerceAtMost(WIDGET_PAGE_ROWS)
+    val existingItems = loadWidgetPageItems(context)
+    val position = findWidgetPlacement(existingItems, width, height) ?: return null
+
+    return WidgetPageItem(
+        id = "android_widget_$appWidgetId",
+        kind = "android_widget",
+        x = position.first,
+        y = position.second,
+        width = width,
+        height = height,
+        appWidgetId = appWidgetId,
+        providerComponent = providerInfo.provider.flattenToString(),
+        minWidthCells = minWidthCells,
+        minHeightCells = minHeightCells,
+        resizeMode = providerInfo.resizeMode
+    )
+}
+
+internal fun savePinnedWidgetPageItem(
+    context: Context,
+    item: WidgetPageItem
+): Boolean {
+    val existingItems = loadWidgetPageItems(context)
+    if (!canPlaceWidgetItem(existingItems, item)) return false
+    saveWidgetPageItems(context, existingItems + item)
+    return true
 }
