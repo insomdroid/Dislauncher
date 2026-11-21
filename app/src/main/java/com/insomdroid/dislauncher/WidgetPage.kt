@@ -213,20 +213,6 @@ internal fun WidgetPage(
         }
     }
 
-    fun launchAndroidWidgetPicker() {
-        val id = appWidgetHost.allocateAppWidgetId()
-        pendingAppWidgetId = id
-        val intent = Intent(AppWidgetManager.ACTION_APPWIDGET_PICK)
-            .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
-        if (intent.resolveActivity(context.packageManager) != null) {
-            widgetPickerLauncher.launch(intent)
-        } else {
-            appWidgetHost.deleteAppWidgetId(id)
-            pendingAppWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
-            Toast.makeText(context, "No Android widget picker is available on this device.", Toast.LENGTH_LONG).show()
-        }
-    }
-
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
