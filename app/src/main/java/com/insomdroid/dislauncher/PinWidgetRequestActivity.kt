@@ -6,7 +6,6 @@ import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.content.pm.LauncherApps
 import android.os.Bundle
-import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
