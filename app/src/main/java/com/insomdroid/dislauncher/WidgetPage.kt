@@ -624,15 +624,6 @@ internal fun WidgetPage(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    TextButton(
-                        onClick = {
-                            addWidgetDialog = false
-                            launchAndroidWidgetPicker()
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Open Android widget picker")
-                    }
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth().heightIn(max = 440.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
