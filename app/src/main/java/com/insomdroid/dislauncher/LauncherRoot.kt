@@ -72,6 +72,20 @@ import org.json.JSONObject
 
 private const val MAX_PINNED_APPS = 6
 
+private suspend fun loadSortedLauncherApps(
+    context: Context,
+    appNameOverrides: Map<String, String>
+): List<LauncherApp> {
+    val discoveredApps = withContext(Dispatchers.IO) {
+        loadLauncherApps(context)
+    }
+    return withContext(Dispatchers.Default) {
+        discoveredApps.map { app ->
+            appNameOverrides[app.packageName]?.let { app.copy(label = it) } ?: app
+        }.sortedBy { it.label.lowercase() }
+    }
+}
+
 
 @Composable
 internal fun DislauncherRoot() {
@@ -264,9 +278,7 @@ internal fun DislauncherRoot() {
             val allApps = if (apps.isNotEmpty()) {
                 apps
             } else {
-                withContext(Dispatchers.IO) { loadLauncherApps(context) }.map { app ->
-                    appNameOverrides[app.packageName]?.let { app.copy(label = it) } ?: app
-                }.also { apps = it }
+                loadSortedLauncherApps(context, appNameOverrides).also { apps = it }
             }
             val orderedAvailable = prioritizeNonSystemApps(allApps).distinctBy { it.packageName }
             val selected = orderedAvailable.filter { it.packageName in selectedPackages }
@@ -344,9 +356,7 @@ internal fun DislauncherRoot() {
     }
 
     LaunchedEffect(Unit) {
-        val loadedApps = withContext(Dispatchers.IO) { loadLauncherApps(context) }.map { app ->
-            appNameOverrides[app.packageName]?.let { app.copy(label = it) } ?: app
-        }
+        val loadedApps = loadSortedLauncherApps(context, appNameOverrides)
         apps = loadedApps
         syncAvailableFavorites(loadedApps)
     }
@@ -365,23 +375,41 @@ internal fun DislauncherRoot() {
         val packageReceiver = object : BroadcastReceiver() {
             override fun onReceive(receiverContext: Context?, intent: Intent?) {
                 val changedPackage = intent?.data?.schemeSpecificPart
+                val action = intent?.action
+                val isKnownIconPack = changedPackage != null &&
+                    iconPacks.any { it.packageName == changedPackage }
+                val shouldRefreshIconPacks =
+                    action == Intent.ACTION_PACKAGE_ADDED ||
+                        (
+                            isKnownIconPack &&
+                                (action == Intent.ACTION_PACKAGE_CHANGED ||
+                                    action == Intent.ACTION_PACKAGE_REPLACED)
+                            )
+
                 invalidateLauncherPackageVersionCache(changedPackage)
                 invalidateAppIconCaches(changedPackage)
-                invalidateIconPackDetectionCache()
+
+                // Removing an icon pack only requires dropping that entry. A regular
+                // app uninstall must not trigger a full icon-pack discovery scan.
+                if (action == Intent.ACTION_PACKAGE_REMOVED && isKnownIconPack) {
+                    iconPacks = iconPacks.filterNot { it.packageName == changedPackage }
+                    invalidateIconPackDetectionCache()
+                } else if (shouldRefreshIconPacks) {
+                    invalidateIconPackDetectionCache()
+                }
+
                 refreshJob?.cancel()
                 refreshJob = scope.launch {
                     // Package installs can emit multiple related broadcasts in quick succession.
                     delay(150L)
-                    val refreshed = withContext(Dispatchers.IO) {
-                        loadLauncherApps(context)
-                    }.map { app ->
-                        appNameOverrides[app.packageName]?.let { app.copy(label = it) } ?: app
-                    }
+                    val refreshed = loadSortedLauncherApps(context, appNameOverrides)
                     // Remove stale favourites for apps that are no longer launchable.
                     latestSyncAvailableFavorites.value(refreshed)
                     // Read the current list, not the list captured when the receiver was registered.
                     if (latestApps.value != refreshed) apps = refreshed
-                    iconPacks = withContext(Dispatchers.IO) { findIconPacks(context) }
+                    if (shouldRefreshIconPacks) {
+                        iconPacks = withContext(Dispatchers.IO) { findIconPacks(context) }
+                    }
                 }
             }
         }

@@ -129,11 +129,10 @@ internal fun AppsScreen(
             )
             .toList()
     }
+    // LauncherRoot supplies this list already sorted off the UI thread.
+    // Only separate built-in entries here; do not sort the installed apps again.
     val sortedInstalledApps = remember(apps) {
-        apps.asSequence()
-            .filterNot { it.packageName.startsWith("internal:") }
-            .sortedBy { it.label.lowercase(Locale.getDefault()) }
-            .toList()
+        apps.filterNot { it.packageName.startsWith("internal:") }
     }
     val filteredBuiltIns = remember(sortedBuiltIns, normalizedQuery, preferences.showBuiltInApps) {
         if (!preferences.showBuiltInApps) emptyList() else sortedBuiltIns.filter {
