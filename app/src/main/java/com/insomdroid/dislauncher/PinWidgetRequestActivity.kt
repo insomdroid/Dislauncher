@@ -6,6 +6,7 @@ import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.content.pm.LauncherApps
 import android.os.Bundle
+import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -187,23 +188,27 @@ class PinWidgetRequestActivity : ComponentActivity() {
             return
         }
 
-        val options = Bundle().apply {
-            putInt(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
-        }
-        val accepted = runCatching { request.accept(options) }.getOrDefault(false)
-        if (!accepted) {
-            deletePendingWidget()
-            finish()
-            return
-        }
-
         if (!savePinnedWidgetPageItem(this, item)) {
-            appWidgetHost.deleteAppWidgetId(widgetId)
+            deletePendingWidget()
             Toast.makeText(
                 this,
                 "The widget could not be placed because the widget page changed.",
                 Toast.LENGTH_LONG
             ).show()
+            finish()
+            return
+        }
+
+        val options = Bundle().apply {
+            putInt(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
+        }
+        val accepted = runCatching { request.accept(options) }.getOrDefault(false)
+        if (!accepted) {
+            saveWidgetPageItems(
+                this,
+                loadWidgetPageItems(this).filterNot { it.id == item.id }
+            )
+            deletePendingWidget()
             finish()
             return
         }
