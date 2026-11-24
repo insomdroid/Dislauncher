@@ -142,7 +142,7 @@ tasks.named("preBuild").configure {
 }
 
 dependencies {
-    val composeBom = platform("androidx.compose:compose-bom:2026.09.00")
+    val composeBom = platform("androidx.compose:compose-bom:2026.11.01")
     implementation(composeBom)
 
     testImplementation("junit:junit:4.13.2")
