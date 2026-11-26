@@ -48,6 +48,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,6 +82,8 @@ import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -128,7 +131,7 @@ internal fun loadTasks(context: Context): List<LocalTask> = runCatching {
 }.getOrDefault(emptyList())
 
 
-internal fun saveTasks(context: Context, tasks: List<LocalTask>) {
+internal fun saveTasks(context: Context, tasks: List<LocalTask>): Boolean {
     val store = tasksStore(context)
     val existingRaw = store.getString("tasks_json", "[]") ?: "[]"
     val existingStoreIsSafe = runCatching {
@@ -139,12 +142,7 @@ internal fun saveTasks(context: Context, tasks: List<LocalTask>) {
         }
     }.getOrDefault(false)
     if (!existingStoreIsSafe) {
-        Toast.makeText(
-            context,
-            "Calendar data could not be saved because existing data is invalid. Original data was preserved.",
-            Toast.LENGTH_LONG
-        ).show()
-        return
+        return false
     }
 
     val array = JSONArray()
@@ -155,7 +153,15 @@ internal fun saveTasks(context: Context, tasks: List<LocalTask>) {
             .put("completed", task.completed))
     }
     store.edit().putString("tasks_json", array.toString()).apply()
+    return true
 }
+
+private val localTasksSaveMutex = Mutex()
+
+private suspend fun persistLocalTasks(context: Context, tasks: List<LocalTask>): Boolean =
+    localTasksSaveMutex.withLock {
+        withContext(Dispatchers.IO) { saveTasks(context, tasks) }
+    }
 
 
 internal fun priorityLabel(priority: Int): String = when (priority) {
@@ -182,7 +188,25 @@ internal fun CalendarTool(
     modifier: Modifier = Modifier
 ) {
     val currentLocale = LocalConfiguration.current.locales[0]
-    var tasks by remember(context) { mutableStateOf(loadTasks(context)) }
+    val coroutineScope = rememberCoroutineScope()
+    var tasks by remember(context) { mutableStateOf(emptyList<LocalTask>()) }
+    var tasksLoaded by remember(context) { mutableStateOf(false) }
+    LaunchedEffect(context) {
+        tasks = withContext(Dispatchers.IO) { loadTasks(context) }
+        tasksLoaded = true
+    }
+    fun persistTasksInBackground(snapshot: List<LocalTask>) {
+        coroutineScope.launch {
+            val saved = persistLocalTasks(context, snapshot)
+            if (!saved) {
+                Toast.makeText(
+                    context,
+                    "Calendar data could not be saved because existing data is invalid. Original data was preserved.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    }
     var calendarPermission by remember { mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED) }
     var deviceEvents by remember { mutableStateOf<List<DeviceCalendarEvent>>(emptyList()) }
     val calendarPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -203,8 +227,10 @@ internal fun CalendarTool(
     var deleteTarget by remember { mutableStateOf<LocalTask?>(null) }
 
     fun addTask(task: LocalTask, schedule: Boolean) {
-        tasks = (tasks.filterNot { it.id == task.id } + task)
-        saveTasks(context, tasks)
+        if (!tasksLoaded) return
+        val updatedTasks = tasks.filterNot { it.id == task.id } + task
+        tasks = updatedTasks
+        persistTasksInBackground(updatedTasks)
         // Replacing a reminder must also replace its previously scheduled alarm.
         cancelLocalReminder(context, task.id)
         if (schedule && task.type == "reminder" && task.reminderAt > System.currentTimeMillis()) {
@@ -226,6 +252,7 @@ internal fun CalendarTool(
     }
 
     fun beginNewTask() {
+        if (!tasksLoaded) return
         editingTaskId = null
         title = ""
         type = "todo"
@@ -463,8 +490,9 @@ internal fun CalendarTool(
                     ) {
                         if (task.type == "todo") {
                             Checkbox(checked = task.completed, onCheckedChange = { checked ->
-                                tasks = tasks.map { if (it.id == task.id) it.copy(completed = checked) else it }
-                                saveTasks(context, tasks)
+                                val updatedTasks = tasks.map { if (it.id == task.id) it.copy(completed = checked) else it }
+                                tasks = updatedTasks
+                                persistTasksInBackground(updatedTasks)
                             })
                         } else {
                             Icon(painterResource(R.drawable.ic_symbol_notifications), contentDescription = "Reminder",
@@ -713,8 +741,9 @@ internal fun CalendarTool(
                     val task = deleteTarget
                     if (task != null) {
                         cancelLocalReminder(context, task.id)
-                        tasks = tasks.filterNot { it.id == task.id }
-                        saveTasks(context, tasks)
+                        val updatedTasks = tasks.filterNot { it.id == task.id }
+                        tasks = updatedTasks
+                        persistTasksInBackground(updatedTasks)
                     }
                     deleteTarget = null
                 }) { Text("Delete") }
