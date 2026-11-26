@@ -972,8 +972,6 @@ private fun AndroidWidgetCard(
 ) {
     Box(
         modifier = modifier
-            .padding(4.dp)
-            .clip(RoundedCornerShape(18.dp))
     ) {
         AndroidAppWidgetContent(
             context = context,
@@ -982,9 +980,7 @@ private fun AndroidWidgetCard(
             item = item,
             cellWidthDp = cellWidthDp,
             cellHeightDp = cellHeightDp,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(4.dp),
+            modifier = Modifier.fillMaxSize(),
             onHostViewReady = onHostViewReady
         )
     }
