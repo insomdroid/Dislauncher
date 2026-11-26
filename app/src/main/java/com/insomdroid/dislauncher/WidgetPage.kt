@@ -54,6 +54,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -82,7 +83,19 @@ import androidx.compose.ui.unit.sp
 import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+
+private data class WidgetPickerAppInfo(
+    val label: String,
+    val icon: Bitmap?
+)
+
+private data class WidgetPickerProviderPreview(
+    val label: String,
+    val bitmap: Bitmap?
+)
 
 @Composable
 internal fun WidgetPage(
@@ -636,12 +649,22 @@ internal fun WidgetPage(
                     ) {
                         providerGroups.forEach { (packageName, providers) ->
                             item(key = "app_group_$packageName") {
-                                val appLabel = remember(packageName) {
-                                    runCatching {
-                                        context.packageManager.getApplicationLabel(
-                                            context.packageManager.getApplicationInfo(packageName, 0)
-                                        ).toString()
-                                    }.getOrDefault(packageName)
+                                val appInfo by produceState(
+                                    initialValue = WidgetPickerAppInfo(packageName, null),
+                                    packageName
+                                ) {
+                                    value = withContext(Dispatchers.IO) {
+                                        val packageManager = context.packageManager
+                                        val label = runCatching {
+                                            packageManager.getApplicationLabel(
+                                                packageManager.getApplicationInfo(packageName, 0)
+                                            ).toString()
+                                        }.getOrDefault(packageName)
+                                        val icon = runCatching {
+                                            packageManager.getApplicationIcon(packageName).toBitmap(96, 96)
+                                        }.getOrNull()
+                                        WidgetPickerAppInfo(label, icon)
+                                    }
                                 }
                                 Card(
                                     modifier = Modifier.fillMaxWidth().clickable {
@@ -660,21 +683,16 @@ internal fun WidgetPage(
                                         Modifier.fillMaxWidth().padding(14.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        val appIcon = remember(packageName) {
-                                            runCatching {
-                                                context.packageManager.getApplicationIcon(packageName).toBitmap(96, 96)
-                                            }.getOrNull()
-                                        }
-                                        if (appIcon != null) {
+                                        if (appInfo.icon != null) {
                                             Image(
-                                                bitmap = appIcon.asImageBitmap(),
+                                                bitmap = appInfo.icon.asImageBitmap(),
                                                 contentDescription = null,
                                                 modifier = Modifier.size(38.dp).clip(RoundedCornerShape(10.dp))
                                             )
                                         }
                                         Column(Modifier.weight(1f).padding(start = 12.dp)) {
                                             Text(
-                                                appLabel,
+                                                appInfo.label,
                                                 style = MaterialTheme.typography.titleSmall,
                                                 fontWeight = FontWeight.SemiBold
                                             )
@@ -694,27 +712,39 @@ internal fun WidgetPage(
 
                             if (packageName in expandedPackages) {
                                 lazyItems(providers, key = { it.provider.flattenToString() }) { provider ->
-                                    val preview = remember(provider) {
-                                        runCatching {
-                                            val drawable = provider.loadPreviewImage(
-                                                context,
-                                                context.resources.displayMetrics.densityDpi
-                                            ) ?: provider.loadIcon(
-                                                context,
-                                                context.resources.displayMetrics.densityDpi
-                                            )
-                                            if (drawable == null) {
-                                                null
-                                            } else {
-                                                val width = drawable.intrinsicWidth.coerceAtLeast(1)
-                                                val height = drawable.intrinsicHeight.coerceAtLeast(1)
-                                                val scale = minOf(1f, 640f / maxOf(width, height))
-                                                drawable.toBitmap(
-                                                    (width * scale).toInt().coerceAtLeast(1),
-                                                    (height * scale).toInt().coerceAtLeast(1)
+                                    val previewData by produceState(
+                                        initialValue = WidgetPickerProviderPreview(
+                                            provider.provider.className,
+                                            null
+                                        ),
+                                        provider
+                                    ) {
+                                        value = withContext(Dispatchers.IO) {
+                                            val label = runCatching {
+                                                provider.loadLabel(context.packageManager).toString()
+                                            }.getOrDefault(provider.provider.className)
+                                            val bitmap = runCatching {
+                                                val drawable = provider.loadPreviewImage(
+                                                    context,
+                                                    context.resources.displayMetrics.densityDpi
+                                                ) ?: provider.loadIcon(
+                                                    context,
+                                                    context.resources.displayMetrics.densityDpi
                                                 )
-                                            }
-                                        }.getOrNull()
+                                                if (drawable == null) {
+                                                    null
+                                                } else {
+                                                    val width = drawable.intrinsicWidth.coerceAtLeast(1)
+                                                    val height = drawable.intrinsicHeight.coerceAtLeast(1)
+                                                    val scale = minOf(1f, 640f / maxOf(width, height))
+                                                    drawable.toBitmap(
+                                                        (width * scale).toInt().coerceAtLeast(1),
+                                                        (height * scale).toInt().coerceAtLeast(1)
+                                                    )
+                                                }
+                                            }.getOrNull()
+                                            WidgetPickerProviderPreview(label, bitmap)
+                                        }
                                     }
                                     Card(
                                         modifier = Modifier.fillMaxWidth().clickable {
@@ -753,7 +783,7 @@ internal fun WidgetPage(
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 Column(Modifier.weight(1f)) {
                                                     Text(
-                                                        provider.loadLabel(context.packageManager).toString(),
+                                                        previewData.label,
                                                         style = MaterialTheme.typography.titleSmall
                                                     )
                                                     Text(
@@ -770,15 +800,15 @@ internal fun WidgetPage(
                                                     color = MaterialTheme.colorScheme.primary
                                                 )
                                             }
-                                            if (preview != null) {
+                                            if (previewData.bitmap != null) {
                                                 Surface(
                                                     modifier = Modifier.fillMaxWidth().height(116.dp),
                                                     color = MaterialTheme.colorScheme.surfaceVariant,
                                                     shape = RoundedCornerShape(12.dp)
                                                 ) {
                                                     Image(
-                                                        bitmap = preview.asImageBitmap(),
-                                                        contentDescription = "Preview of ${provider.loadLabel(context.packageManager)} widget",
+                                                        bitmap = previewData.bitmap.asImageBitmap(),
+                                                        contentDescription = "Preview of ${previewData.label} widget",
                                                         modifier = Modifier.fillMaxSize().padding(8.dp),
                                                         contentScale = ContentScale.Fit
                                                     )
