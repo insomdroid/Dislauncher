@@ -48,7 +48,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -79,7 +78,9 @@ import java.time.temporal.WeekFields
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
@@ -157,11 +158,22 @@ internal fun saveTasks(context: Context, tasks: List<LocalTask>): Boolean {
 }
 
 private val localTasksSaveMutex = Mutex()
+private val localTasksPersistenceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-private suspend fun persistLocalTasks(context: Context, tasks: List<LocalTask>): Boolean =
-    localTasksSaveMutex.withLock {
-        withContext(Dispatchers.IO) { saveTasks(context, tasks) }
+private fun persistLocalTasks(context: Context, tasks: List<LocalTask>) {
+    localTasksPersistenceScope.launch {
+        val saved = localTasksSaveMutex.withLock { saveTasks(context, tasks) }
+        if (!saved) {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(
+                    context,
+                    "Calendar data could not be saved because existing data is invalid. Original data was preserved.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
     }
+}
 
 
 internal fun priorityLabel(priority: Int): String = when (priority) {
@@ -188,24 +200,11 @@ internal fun CalendarTool(
     modifier: Modifier = Modifier
 ) {
     val currentLocale = LocalConfiguration.current.locales[0]
-    val coroutineScope = rememberCoroutineScope()
     var tasks by remember(context) { mutableStateOf(emptyList<LocalTask>()) }
     var tasksLoaded by remember(context) { mutableStateOf(false) }
     LaunchedEffect(context) {
         tasks = withContext(Dispatchers.IO) { loadTasks(context) }
         tasksLoaded = true
-    }
-    fun persistTasksInBackground(snapshot: List<LocalTask>) {
-        coroutineScope.launch {
-            val saved = persistLocalTasks(context, snapshot)
-            if (!saved) {
-                Toast.makeText(
-                    context,
-                    "Calendar data could not be saved because existing data is invalid. Original data was preserved.",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-        }
     }
     var calendarPermission by remember { mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED) }
     var deviceEvents by remember { mutableStateOf<List<DeviceCalendarEvent>>(emptyList()) }
@@ -230,7 +229,7 @@ internal fun CalendarTool(
         if (!tasksLoaded) return
         val updatedTasks = tasks.filterNot { it.id == task.id } + task
         tasks = updatedTasks
-        persistTasksInBackground(updatedTasks)
+        persistLocalTasks(context, updatedTasks)
         // Replacing a reminder must also replace its previously scheduled alarm.
         cancelLocalReminder(context, task.id)
         if (schedule && task.type == "reminder" && task.reminderAt > System.currentTimeMillis()) {
@@ -492,7 +491,7 @@ internal fun CalendarTool(
                             Checkbox(checked = task.completed, onCheckedChange = { checked ->
                                 val updatedTasks = tasks.map { if (it.id == task.id) it.copy(completed = checked) else it }
                                 tasks = updatedTasks
-                                persistTasksInBackground(updatedTasks)
+                                persistLocalTasks(context, updatedTasks)
                             })
                         } else {
                             Icon(painterResource(R.drawable.ic_symbol_notifications), contentDescription = "Reminder",
@@ -743,7 +742,7 @@ internal fun CalendarTool(
                         cancelLocalReminder(context, task.id)
                         val updatedTasks = tasks.filterNot { it.id == task.id }
                         tasks = updatedTasks
-                        persistTasksInBackground(updatedTasks)
+                        persistLocalTasks(context, updatedTasks)
                     }
                     deleteTarget = null
                 }) { Text("Delete") }
