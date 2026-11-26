@@ -10,6 +10,10 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import org.json.JSONArray
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 private const val REMINDER_CHANNEL_ID = "dislauncher_local_reminders"
 private const val EXTRA_REMINDER_ID = "reminder_id"
@@ -79,25 +83,39 @@ class ReminderBootReceiver : AndroidBroadcastReceiver() {
                 Intent.ACTION_TIMEZONE_CHANGED
             )
         ) return
-        val prefs = context.getSharedPreferences("dislauncher_local_tasks", Context.MODE_PRIVATE)
-        runCatching {
-            val array = JSONArray(prefs.getString("tasks_json", "[]") ?: "[]")
-            for (i in 0 until array.length()) {
-                val task = array.optJSONObject(i) ?: continue
-                if (task.optString("type") != "reminder" || task.optBoolean("completed")) continue
-                val id = task.optString("id")
-                val title = task.optString("title")
-                val storedTime = task.optLong("reminderAt")
-                val atMillis = localTaskDateTimeToEpochMillis(
-                    task.optString("date"),
-                    task.optString("time")
-                ) ?: storedTime
-                if (id.isNotBlank()) {
-                    cancelLocalReminder(context, id)
+
+        val pendingResult = goAsync()
+        val appContext = context.applicationContext
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            try {
+                val prefs = appContext.getSharedPreferences(
+                    "dislauncher_local_tasks",
+                    Context.MODE_PRIVATE
+                )
+                val array = JSONArray(prefs.getString("tasks_json", "[]") ?: "[]")
+                for (i in 0 until array.length()) {
+                    val task = array.optJSONObject(i) ?: continue
+                    if (task.optString("type") != "reminder" || task.optBoolean("completed")) continue
+                    val id = task.optString("id")
+                    if (id.isBlank()) continue
+
+                    val title = task.optString("title")
+                    val storedTime = task.optLong("reminderAt")
+                    val atMillis = localTaskDateTimeToEpochMillis(
+                        task.optString("date"),
+                        task.optString("time")
+                    ) ?: storedTime
+
+                    cancelLocalReminder(appContext, id)
                     if (atMillis > System.currentTimeMillis()) {
-                        scheduleLocalReminder(context, id, title, atMillis)
+                        scheduleLocalReminder(appContext, id, title, atMillis)
                     }
                 }
+            } catch (_: Exception) {
+                // Keep the broadcast from crashing the process; the next boot/time change
+                // can retry restoring any reminders that could not be scheduled.
+            } finally {
+                pendingResult.finish()
             }
         }
     }
