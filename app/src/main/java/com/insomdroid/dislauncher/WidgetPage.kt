@@ -621,9 +621,14 @@ internal fun WidgetPage(
     }
 
     if (addWidgetDialog) {
-        val installedProviders = remember(context) {
-            appWidgetManager.installedProviders
-                .sortedBy { it.provider.packageName.lowercase(Locale.ROOT) }
+        val installedProviders by produceState(
+            initialValue = emptyList<AppWidgetProviderInfo>(),
+            appWidgetManager
+        ) {
+            value = withContext(Dispatchers.IO) {
+                appWidgetManager.installedProviders
+                    .sortedBy { it.provider.packageName.lowercase(Locale.ROOT) }
+            }
         }
         val providerGroups = remember(installedProviders) {
             installedProviders.groupBy { it.provider.packageName }.toSortedMap()
@@ -683,9 +688,10 @@ internal fun WidgetPage(
                                         Modifier.fillMaxWidth().padding(14.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        if (appInfo.icon != null) {
+                                        val appIcon = appInfo.icon
+                                        if (appIcon != null) {
                                             Image(
-                                                bitmap = appInfo.icon.asImageBitmap(),
+                                                bitmap = appIcon.asImageBitmap(),
                                                 contentDescription = null,
                                                 modifier = Modifier.size(38.dp).clip(RoundedCornerShape(10.dp))
                                             )
@@ -746,6 +752,7 @@ internal fun WidgetPage(
                                             WidgetPickerProviderPreview(label, bitmap)
                                         }
                                     }
+                                    val previewBitmap = previewData.bitmap
                                     Card(
                                         modifier = Modifier.fillMaxWidth().clickable {
                                             val id = appWidgetHost.allocateAppWidgetId()
@@ -800,14 +807,14 @@ internal fun WidgetPage(
                                                     color = MaterialTheme.colorScheme.primary
                                                 )
                                             }
-                                            if (previewData.bitmap != null) {
+                                            if (previewBitmap != null) {
                                                 Surface(
                                                     modifier = Modifier.fillMaxWidth().height(116.dp),
                                                     color = MaterialTheme.colorScheme.surfaceVariant,
                                                     shape = RoundedCornerShape(12.dp)
                                                 ) {
                                                     Image(
-                                                        bitmap = previewData.bitmap.asImageBitmap(),
+                                                        bitmap = previewBitmap.asImageBitmap(),
                                                         contentDescription = "Preview of ${previewData.label} widget",
                                                         modifier = Modifier.fillMaxSize().padding(8.dp),
                                                         contentScale = ContentScale.Fit
