@@ -181,7 +181,9 @@ internal fun CalendarTool(
     onMonthChange: (YearMonth) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val currentLocale = LocalConfiguration.current.locales[0]
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
+    val currentLocale = configuration.locales[0]
     var tasks by remember(context) { mutableStateOf(loadTasks(context)) }
     var calendarPermission by remember { mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED) }
     var deviceEvents by remember { mutableStateOf<List<DeviceCalendarEvent>>(emptyList()) }
@@ -189,7 +191,7 @@ internal fun CalendarTool(
         calendarPermission = granted || ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED
     }
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
-    var showWeekView by remember { mutableStateOf(false) }
+    var showWeekView by remember(isLandscape) { mutableStateOf(isLandscape) }
     var showEditor by remember { mutableStateOf(false) }
     var editingTaskId by remember { mutableStateOf<String?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
