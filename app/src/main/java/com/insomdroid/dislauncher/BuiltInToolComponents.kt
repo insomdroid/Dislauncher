@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -206,7 +207,7 @@ internal fun BuiltInToolScaffold(
         topBar = header,
         bottomBar = bottomBar
     ) { padding ->
-        BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
+        BoxWithConstraints(Modifier.fillMaxSize().padding(padding).imePadding()) {
             val landscape = maxWidth > maxHeight
             Box(
                 (if (fullWidth) Modifier.fillMaxSize() else Modifier.widthIn(max = if (landscape) 1200.dp else BuiltInToolDesign.contentMaxWidth).fillMaxSize())
