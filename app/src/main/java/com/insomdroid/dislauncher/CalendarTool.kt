@@ -302,6 +302,15 @@ internal fun CalendarTool(
             }
         }
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                if (isLandscape || showWeekView) {
+                    TextButton(
+                        onClick = {
+                            selectedDate = selectedDate.minusWeeks(1)
+                            onMonthChange(YearMonth.from(selectedDate))
+                        },
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                    ) { Text("‹", style = MaterialTheme.typography.titleLarge) }
+                }
                 Text(
                     month.format(DateTimeFormatter.ofPattern("MMMM yyyy", currentLocale)),
                     modifier = Modifier.weight(1f),
@@ -316,6 +325,15 @@ internal fun CalendarTool(
                     }
                 } else {
                     Text("Week", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
+                }
+                if (isLandscape || showWeekView) {
+                    TextButton(
+                        onClick = {
+                            selectedDate = selectedDate.plusWeeks(1)
+                            onMonthChange(YearMonth.from(selectedDate))
+                        },
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                    ) { Text("›", style = MaterialTheme.typography.titleLarge) }
                 }
                 TextButton(onClick = { onMonthChange(YearMonth.now()); selectedDate = LocalDate.now() }) {
                     Text("Today")

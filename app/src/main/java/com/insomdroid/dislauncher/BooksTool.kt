@@ -51,6 +51,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -760,6 +761,9 @@ internal fun BooksTool(onBack: () -> Unit) {
     }
     val maxPdfZoom = (maxOf(readerConfiguration.screenWidthDp, readerConfiguration.screenHeightDp) / 320f)
         .coerceIn(2f, 5f)
+    val latestPdfScale by rememberUpdatedState(pdfScale)
+    val latestPdfOffsetX by rememberUpdatedState(pdfOffsetX)
+    val latestPdfOffsetY by rememberUpdatedState(pdfOffsetY)
     var pendingDelete by remember { mutableStateOf<BookEntry?>(null) }
     var gridView by remember {
         mutableStateOf(
@@ -1177,16 +1181,17 @@ internal fun BooksTool(onBack: () -> Unit) {
                             contentScale = ContentScale.Fit,
                             modifier = Modifier.fillMaxSize()
                                 .clipToBounds()
-                                .pointerInput(selectedBook?.id, currentPage, pdfScale, maxPdfZoom) {
-                                    var currentOffsetX = pdfOffsetX
-                                    var currentOffsetY = pdfOffsetY
+                                .pointerInput(selectedBook?.id, currentPage, maxPdfZoom) {
+                                    var currentOffsetX = latestPdfOffsetX
+                                    var currentOffsetY = latestPdfOffsetY
                                     var horizontalSwipe = 0f
                                     var verticalSwipe = 0f
                                     var pageChanged = false
                                     detectTransformGestures { _, pan, zoom, _ ->
-                                        val nextScale = (pdfScale * zoom).coerceIn(1f, maxPdfZoom)
-                                        val isSingleFingerPageSwipe = pdfScale <= 1.01f &&
-                                            nextScale <= 1.01f && kotlin.math.abs(zoom - 1f) < 0.01f
+                                        val gestureScale = latestPdfScale
+                                        val nextScale = (gestureScale * zoom).coerceIn(1f, maxPdfZoom)
+                                        val isSingleFingerPageSwipe = gestureScale <= 1.01f &&
+                                            nextScale <= 1.01f && kotlin.math.abs(zoom - 1f) < 0.0001f
                                         if (isSingleFingerPageSwipe) {
                                             if (kotlin.math.abs(pan.x) >= kotlin.math.abs(pan.y)) {
                                                 horizontalSwipe += pan.x
@@ -1218,8 +1223,8 @@ internal fun BooksTool(onBack: () -> Unit) {
                                         } else {
                                             horizontalSwipe = 0f
                                             verticalSwipe = 0f
-                                            currentOffsetX += pan.x
-                                            currentOffsetY += pan.y
+                                            currentOffsetX = latestPdfOffsetX + pan.x
+                                            currentOffsetY = latestPdfOffsetY + pan.y
                                             val nextOffsetX = if (nextScale <= 1f) 0f else currentOffsetX
                                             val nextOffsetY = if (nextScale <= 1f) 0f else currentOffsetY
                                             pdfScale = nextScale

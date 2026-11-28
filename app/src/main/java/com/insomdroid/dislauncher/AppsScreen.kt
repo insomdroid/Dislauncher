@@ -237,7 +237,7 @@ internal fun AppsScreen(
                 modifier = Modifier.fillMaxSize().padding(
                     end = if (preferences.showAlphabetIndex && !searching) 15.dp else 0.dp
                 ),
-                contentPadding = PaddingValues(bottom = if (scrubberLandscape && !searching) 64.dp else 16.dp, top = 2.dp),
+                contentPadding = PaddingValues(bottom = 16.dp, top = 2.dp),
                 verticalArrangement = if (searching) Arrangement.Bottom else Arrangement.Top
             ) {
                 if (
@@ -450,106 +450,7 @@ internal fun AppsScreen(
                 preferences.showAlphabetIndex && !searching &&
                 (filtered.isNotEmpty() || filteredBuiltIns.isNotEmpty() || filteredFolders.isNotEmpty())
             ) {
-                if (scrubberLandscape) {
-                    BoxWithConstraints(
-                        modifier = Modifier.align(Alignment.BottomCenter)
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                            .fillMaxWidth(0.94f)
-                            .height(48.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxSize(),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            alphabetLetters.forEach { letter ->
-                                Box(
-                                    modifier = Modifier.weight(1f).fillMaxHeight()
-                                        .clickable(enabled = letter in firstIndexByLetter) {
-                                            scrollToLetter(letter, true)
-                                        },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        letter,
-                                        color = if (scrubberProgress?.let {
-                                            alphabetLetters[((it * alphabetLetters.lastIndex).toInt())
-                                                .coerceIn(0, alphabetLetters.lastIndex)] == letter
-                                        } == true) MaterialTheme.colorScheme.primary
-                                        else secondary.copy(alpha = 0.78f),
-                                        fontSize = 10.sp,
-                                        lineHeight = 12.sp,
-                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
-                                    )
-                                }
-                            }
-                        }
-                        Box(
-                            modifier = Modifier.fillMaxSize().pointerInput(alphabetLetters, firstIndexByLetter) {
-                                fun letterAt(x: Float): String {
-                                    val index = ((x / size.width.coerceAtLeast(1)) * alphabetLetters.size)
-                                        .toInt().coerceIn(0, alphabetLetters.lastIndex)
-                                    return alphabetLetters[index]
-                                }
-                                awaitEachGesture {
-                                    val down = awaitFirstDown(pass = PointerEventPass.Initial, requireUnconsumed = false)
-                                    var lastLetter = letterAt(down.position.x)
-                                    scrubberProgress = (down.position.x / size.width.coerceAtLeast(1)).coerceIn(0f, 1f)
-                                    scrollToLetter(lastLetter, false)
-                                    var pointerDown = true
-                                    while (pointerDown) {
-                                        val event = awaitPointerEvent(PointerEventPass.Initial)
-                                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                                        if (!change.pressed) {
-                                            pointerDown = false
-                                        } else {
-                                            val progress = (change.position.x / size.width.coerceAtLeast(1)).coerceIn(0f, 1f)
-                                            scrubberProgress = progress
-                                            val nextLetter = letterAt(change.position.x)
-                                            if (nextLetter != lastLetter) {
-                                                lastLetter = nextLetter
-                                                scrollToLetter(nextLetter, false)
-                                            }
-                                            change.consume()
-                                        }
-                                    }
-                                    scrubberProgress = null
-                                }
-                            }
-                        )
-                        androidx.compose.animation.AnimatedVisibility(
-                            visible = scrubberProgress != null,
-                            modifier = Modifier.align(Alignment.TopStart).offset(
-                                x = (maxWidth * (scrubberProgress ?: 0f) - 25.dp)
-                                    .coerceIn(0.dp, (maxWidth - 50.dp).coerceAtLeast(0.dp)),
-                                y = (-54).dp
-                            ),
-                            enter = androidx.compose.animation.fadeIn() +
-                                androidx.compose.animation.scaleIn(initialScale = 0.68f),
-                            exit = androidx.compose.animation.fadeOut() +
-                                androidx.compose.animation.scaleOut(targetScale = 0.68f)
-                        ) {
-                            Box(
-                                modifier = Modifier.size(46.dp)
-                                    .shadow(7.dp, CircleShape)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary, CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    scrubberProgress?.let {
-                                        alphabetLetters[((it * alphabetLetters.lastIndex).toInt())
-                                            .coerceIn(0, alphabetLetters.lastIndex)]
-                                    } ?: "",
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    fontSize = 20.sp,
-                                    lineHeight = 22.sp,
-                                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
-                                )
-                            }
-                        }
-                    }
-                } else {
+                {
                 BoxWithConstraints(
                     modifier = Modifier.align(Alignment.BottomEnd)
                         .padding(bottom = 48.dp)
@@ -569,7 +470,7 @@ internal fun AppsScreen(
                     // Bell-curve wave: the selected letter travels furthest to the left,
                     // while neighbouring letters fan out by a Gaussian falloff.
                     Column(
-                        modifier = Modifier.fillMaxSize().padding(bottom = 24.dp),
+                        modifier = Modifier.fillMaxSize().padding(bottom = if (scrubberLandscape) 8.dp else 24.dp),
                         verticalArrangement = Arrangement.SpaceEvenly,
                         horizontalAlignment = Alignment.End
                     ) {
