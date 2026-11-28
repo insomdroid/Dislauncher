@@ -305,8 +305,12 @@ internal fun CalendarTool(
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
-                TextButton(onClick = { showWeekView = !showWeekView }) {
-                    Text(if (showWeekView) "Month" else "Week")
+                if (!isLandscape) {
+                    TextButton(onClick = { showWeekView = !showWeekView }) {
+                        Text(if (showWeekView) "Month" else "Week")
+                    }
+                } else {
+                    Text("Week", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
                 }
                 TextButton(onClick = { onMonthChange(YearMonth.now()); selectedDate = LocalDate.now() }) {
                     Text("Today")
@@ -329,7 +333,7 @@ internal fun CalendarTool(
             val visibleMonth = calendarState.firstVisibleMonth.yearMonth
             if (visibleMonth != month) onMonthChange(visibleMonth)
         }
-        if (showWeekView) {
+        if (isLandscape || showWeekView) {
             Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(BuiltInToolDesign.cardCornerRadius),
                 color = MaterialTheme.colorScheme.surfaceContainerLow) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = BuiltInToolSpacing.space8, vertical = if (isLandscape) 4.dp else BuiltInToolSpacing.space10),
