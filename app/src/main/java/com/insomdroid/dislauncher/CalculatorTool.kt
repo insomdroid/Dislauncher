@@ -100,7 +100,9 @@ internal fun CalculatorTool(
     onScientificModeChange: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
-    val currentLocale = LocalConfiguration.current.locales[0]
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
+    val currentLocale = configuration.locales[0]
     var expression by remember { mutableStateOf("") }
     var result by remember { mutableStateOf("") }
     var showClearHistoryDialog by remember { mutableStateOf(false) }
@@ -121,8 +123,16 @@ internal fun CalculatorTool(
     )
 
     BoxWithConstraints(modifier = modifier) {
-        val keySize = minOf(72.dp, (maxWidth - BuiltInToolSpacing.space24) / 4, (maxHeight - if (scientificMode) 240.dp else 170.dp) / 5)
-            .coerceAtLeast(36.dp)
+        val reservedDisplayHeight = if (isLandscape) {
+            if (scientificMode) 132.dp else 92.dp
+        } else {
+            if (scientificMode) 240.dp else 170.dp
+        }
+        val keySize = minOf(
+            if (isLandscape) 54.dp else 72.dp,
+            (maxWidth - BuiltInToolSpacing.space24) / 4,
+            (maxHeight - reservedDisplayHeight) / 5
+        ).coerceAtLeast(if (isLandscape) 28.dp else 36.dp)
 
         if (showHistory) {
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
