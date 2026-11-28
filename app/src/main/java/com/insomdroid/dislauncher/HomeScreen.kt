@@ -93,7 +93,8 @@ internal fun HomeScreen(
     val configuration = LocalConfiguration.current
 
     val currentLocale = configuration.locales[0]
-    val homeVerticalGap = (configuration.screenHeightDp.dp * 0.35f).coerceIn(120.dp, 245.dp)
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
+    val homeVerticalGap = if (isLandscape) 18.dp else (configuration.screenHeightDp.dp * 0.35f).coerceIn(120.dp, 245.dp)
     val lifecycleOwner = LocalLifecycleOwner.current
     val haptic = LocalHapticFeedback.current
     val currentOpenSettings by rememberUpdatedState(onOpenSettings)
