@@ -197,6 +197,7 @@ internal fun BuiltInToolScaffold(
     modifier: Modifier = Modifier,
     containerColor: Color = MaterialTheme.colorScheme.background,
     bottomBar: @Composable () -> Unit = {},
+    fullWidth: Boolean = false,
     content: @Composable BoxScope.() -> Unit
 ) {
     Scaffold(
@@ -206,14 +207,13 @@ internal fun BuiltInToolScaffold(
         bottomBar = bottomBar
     ) { padding ->
         BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
+            val landscape = maxWidth > maxHeight
             Box(
-                Modifier
-                    .widthIn(max = BuiltInToolDesign.contentMaxWidth)
-                    .fillMaxSize()
+                (if (fullWidth) Modifier.fillMaxSize() else Modifier.widthIn(max = if (landscape) 1200.dp else BuiltInToolDesign.contentMaxWidth).fillMaxSize())
                     .align(Alignment.TopCenter)
                     .padding(
-                        horizontal = builtInToolContentMargin(maxWidth),
-                        vertical = BuiltInToolDesign.contentVerticalInset
+                        horizontal = if (fullWidth) 0.dp else builtInToolContentMargin(maxWidth),
+                        vertical = if (fullWidth) 0.dp else BuiltInToolDesign.contentVerticalInset
                     ),
                 content = content
             )
