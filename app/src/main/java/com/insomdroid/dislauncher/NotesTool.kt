@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -646,7 +647,7 @@ internal fun NotesTool(
         },
         bottomBar = {
             if (notesLoaded && selectedId != null && !isKeyboardVisible) {
-                BottomAppBar(actions = {
+                BottomAppBar(modifier = if (isLandscape) Modifier.height(56.dp) else Modifier, actions = {
                     IconButton(
                         onClick = {
                             editHistory.undo(markdownText, markdownCursor)?.let { transition ->
