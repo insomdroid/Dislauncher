@@ -1161,7 +1161,7 @@ internal fun BooksTool(onBack: () -> Unit) {
                         book.type == "pdf" && displayedPdfBitmap != null -> Image(
                             bitmap = displayedPdfBitmap.asImageBitmap(),
                             contentDescription = "PDF page ${currentPage + 1}",
-                            contentScale = if (readerLandscape) ContentScale.FillWidth else ContentScale.Fit,
+                            contentScale = ContentScale.Fit,
                             modifier = Modifier.fillMaxSize()
                                  .clipToBounds()
                                 .graphicsLayer {
