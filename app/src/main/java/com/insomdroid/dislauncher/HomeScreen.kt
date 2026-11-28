@@ -94,7 +94,8 @@ internal fun HomeScreen(
     val configuration = LocalConfiguration.current
 
     val currentLocale = configuration.locales[0]
-    val isLandscape = configuration.screenWidthDp >= 600 && configuration.screenHeightDp < 480
+    val isLandscape = configuration.screenHeightDp < 480
+    val useLandscapeColumns = configuration.screenWidthDp >= 600 && isLandscape
     val homeVerticalGap = if (isLandscape) 10.dp else (configuration.screenHeightDp.dp * 0.35f).coerceIn(120.dp, 245.dp)
     val favoriteSize = if (isLandscape) 21.sp else HomeDesign.favoriteSize
     val favoriteLineHeight = if (isLandscape) 27.sp else HomeDesign.favoriteLineHeight
@@ -305,7 +306,7 @@ internal fun HomeScreen(
         if (preferences.showMusic) {
             if (showStatusWidgets) Spacer(Modifier.height(HomeDesign.statusToMusic))
             MusicPlayerWidget(
-                modifier = Modifier.fillMaxWidth(if (isLandscape) 0.62f else 1f),
+                modifier = Modifier.fillMaxWidth(if (useLandscapeColumns) 0.62f else 1f),
                 onOpenMusicApp = { openMusicPlayer(context, apps) }
             )
         }
@@ -320,7 +321,7 @@ internal fun HomeScreen(
         Spacer(Modifier.height(homeVerticalGap))
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(if (isLandscape) 18.dp else 0.dp),
+            horizontalArrangement = Arrangement.spacedBy(if (useLandscapeColumns) 18.dp else 0.dp),
             verticalArrangement = Arrangement.spacedBy(if (isLandscape) 2.dp else 0.dp)
         ) {
         orderedMainItemIds.forEach { itemId ->
@@ -328,7 +329,7 @@ internal fun HomeScreen(
             val label = app?.label.orEmpty()
             key(itemId) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(if (isLandscape) 0.48f else 1f)
+                    modifier = Modifier.fillMaxWidth(if (useLandscapeColumns) 0.48f else 1f)
                         .alpha(if (draggingMainItem == itemId) 0.62f else 1f)
                         .combinedClickable(
                             onClick = { app?.let(onLaunch) },

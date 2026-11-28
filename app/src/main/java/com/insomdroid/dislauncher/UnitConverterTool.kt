@@ -145,7 +145,7 @@ internal fun UnitConverterTool(
     var fromIndex by remember { mutableStateOf(0) }
     var toIndex by remember { mutableStateOf(1) }
     val configuration = LocalConfiguration.current
-    val isLandscape = configuration.screenWidthDp >= 600 && configuration.screenHeightDp < 480
+    val isLandscape = configuration.screenHeightDp < 480
     val sectionSpacing = if (isLandscape) 8.dp else BuiltInToolSpacing.section
     val matchingCategoryIndices = converterCategories.indices.filter { index ->
         val item = converterCategories[index]

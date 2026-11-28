@@ -183,7 +183,7 @@ internal fun CalendarTool(
     modifier: Modifier = Modifier
 ) {
     val configuration = LocalConfiguration.current
-    val isLandscape = configuration.screenWidthDp >= 600 && configuration.screenHeightDp < 480
+    val isLandscape = configuration.screenHeightDp < 480
     val currentLocale = configuration.locales[0]
     var tasks by remember(context) { mutableStateOf(loadTasks(context)) }
     var calendarPermission by remember { mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED) }
