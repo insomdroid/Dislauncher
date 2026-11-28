@@ -51,7 +51,9 @@ internal fun WeatherScreen(
 ) {
     val context = LocalContext.current
 
-    val currentLocale = LocalConfiguration.current.locales[0]
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
+    val currentLocale = configuration.locales[0]
     val primary = MaterialTheme.colorScheme.onBackground
     val secondary = MaterialTheme.colorScheme.onSurfaceVariant
     var locationGranted by remember { mutableStateOf(hasWeatherLocationPermission(context)) }
@@ -123,29 +125,29 @@ internal fun WeatherScreen(
 
         if (currentWeather != null) {
             Column(
-                modifier = Modifier.fillMaxWidth().weight(1f).offset(y = (-72).dp),
+                modifier = Modifier.fillMaxWidth().weight(1f).offset(y = if (isLandscape) 0.dp else (-72).dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
                     currentWeather.locationName ?: "Weather",
                     color = secondary,
-                    fontSize = 22.sp,
-                    lineHeight = 28.sp,
+                    fontSize = if (isLandscape) 16.sp else 22.sp,
+                    lineHeight = if (isLandscape) 20.sp else 28.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)
                 )
-                Spacer(Modifier.height(14.dp))
-                WeatherIcon(currentWeather.condition, primary, Modifier.size(164.dp))
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(if (isLandscape) 4.dp else 14.dp))
+                WeatherIcon(currentWeather.condition, primary, Modifier.size(if (isLandscape) 88.dp else 164.dp))
+                Spacer(Modifier.height(if (isLandscape) 4.dp else 10.dp))
                 Text(
                     currentWeather.temperature,
                     color = primary,
-                    fontSize = 52.sp,
-                    lineHeight = 60.sp,
+                    fontSize = if (isLandscape) 38.sp else 52.sp,
+                    lineHeight = if (isLandscape) 42.sp else 60.sp,
                     letterSpacing = (-1.2).sp,
                     fontWeight = FontWeight.Normal,
                     maxLines = 1,
@@ -157,15 +159,15 @@ internal fun WeatherScreen(
                 Text(
                     currentWeather.condition.lowercase(currentLocale).replaceFirstChar { it.uppercase() },
                     color = secondary,
-                    fontSize = 18.sp,
-                    lineHeight = 24.sp,
+                    fontSize = if (isLandscape) 14.sp else 18.sp,
+                    lineHeight = if (isLandscape) 18.sp else 24.sp,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
 
                 if (currentWeather.feelsLike != null || currentWeather.high != null || currentWeather.low != null) {
-                    Spacer(Modifier.height(26.dp))
+                    Spacer(Modifier.height(if (isLandscape) 8.dp else 26.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly,
@@ -183,7 +185,7 @@ internal fun WeatherScreen(
             }
         } else {
             Column(
-                modifier = Modifier.fillMaxWidth().weight(1f).offset(y = (-72).dp),
+                modifier = Modifier.fillMaxWidth().weight(1f).offset(y = if (isLandscape) 0.dp else (-72).dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
