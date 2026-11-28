@@ -66,6 +66,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -732,8 +733,11 @@ internal fun BooksTool(onBack: () -> Unit) {
     var pdfScale by remember { mutableStateOf(1f) }
     var pdfOffsetX by remember { mutableStateOf(0f) }
     var pdfOffsetY by remember { mutableStateOf(0f) }
+    val screenConfiguration = LocalConfiguration.current
+    val maxPdfZoom = (maxOf(screenConfiguration.screenWidthDp, screenConfiguration.screenHeightDp) / 320f)
+        .coerceIn(2f, 5f)
     val pdfTransformState = rememberTransformableState { zoomChange, panChange, _ ->
-        val nextScale = (pdfScale * zoomChange).coerceIn(1f, 5f)
+        val nextScale = (pdfScale * zoomChange).coerceIn(1f, maxPdfZoom)
         pdfScale = nextScale
         if (nextScale <= 1f) {
             pdfOffsetX = 0f
@@ -857,12 +861,15 @@ internal fun BooksTool(onBack: () -> Unit) {
         }
     }
 
-    LaunchedEffect(selectedBook?.id, currentPage, bookContent?.pdfFile, bookContent?.pdfUri) {
-        val content = bookContent ?: return@LaunchedEffect
-        if (content.pdfFile == null && content.pdfUri == null) return@LaunchedEffect
+    LaunchedEffect(selectedBook?.id) {
         pdfScale = 1f
         pdfOffsetX = 0f
         pdfOffsetY = 0f
+    }
+
+    LaunchedEffect(selectedBook?.id, currentPage, bookContent?.pdfFile, bookContent?.pdfUri) {
+        val content = bookContent ?: return@LaunchedEffect
+        if (content.pdfFile == null && content.pdfUri == null) return@LaunchedEffect
         pdfBitmap = withContext(Dispatchers.IO) {
             runCatching {
                 content.pdfUri?.let { renderPdfPage(context, Uri.parse(it), currentPage) }
