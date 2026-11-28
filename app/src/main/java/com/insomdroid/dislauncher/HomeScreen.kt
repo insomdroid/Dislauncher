@@ -94,6 +94,7 @@ internal fun HomeScreen(
 
     val currentLocale = configuration.locales[0]
     val homeVerticalGap = (configuration.screenHeightDp.dp * 0.35f).coerceIn(120.dp, 245.dp)
+    val homeHorizontalInset = if (configuration.screenWidthDp >= WIDE_SCREEN_MIN_WIDTH_DP) 48.dp else HomeDesign.horizontalInset
     val lifecycleOwner = LocalLifecycleOwner.current
     val haptic = LocalHapticFeedback.current
     val currentOpenSettings by rememberUpdatedState(onOpenSettings)
@@ -233,7 +234,7 @@ internal fun HomeScreen(
                     if (preferences.doubleTapToLock) currentLockScreen()
                 }
             )
-            .padding(start = HomeDesign.horizontalInset, top = HomeDesign.topInset, end = HomeDesign.horizontalInset, bottom = HomeDesign.bottomInset),
+            .padding(start = homeHorizontalInset, top = HomeDesign.topInset, end = homeHorizontalInset, bottom = HomeDesign.bottomInset),
         verticalArrangement = Arrangement.Top
     ) {
         HomeHeader(
@@ -313,6 +314,14 @@ internal fun HomeScreen(
         }
         val latestOrderedMainItemIds = rememberUpdatedState(orderedMainItemIds)
         val latestMoveHomeItem = rememberUpdatedState(onMoveHomeItem)
+        // Optional size, weight and colour for favourite names; 0 keeps the original sizes.
+        val favoriteIconSize = if (preferences.homeIconSize > 0) preferences.homeIconSize.dp else HomeDesign.appIconSize
+        val favoriteLabelSize = if (preferences.homeLabelSize > 0) preferences.homeLabelSize.sp else HomeDesign.favoriteSize
+        val favoriteLineHeight = if (preferences.homeLabelSize > 0) {
+            (preferences.homeLabelSize * 34f / 26f).sp
+        } else HomeDesign.favoriteLineHeight
+        val favoriteTextColor = labelTextColor(preferences.labelColor, primaryText)
+        val favoriteTextWeight = labelFontWeight(preferences.labelWeight)
         Spacer(Modifier.height(homeVerticalGap))
         orderedMainItemIds.forEach { itemId ->
             val app = favoriteAppsByPackage[itemId]
@@ -335,13 +344,14 @@ internal fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (app != null && preferences.showAppIcons) {
-                        AppIcon(app, preferences.iconPack, size = HomeDesign.appIconSize, iconShape = preferences.iconShape)
+                        AppIcon(app, preferences.iconPack, size = favoriteIconSize, iconShape = preferences.iconShape)
                     }
                     Text(
                         text = label,
-                        color = primaryText,
-                        fontSize = HomeDesign.favoriteSize,
-                        lineHeight = HomeDesign.favoriteLineHeight,
+                        color = favoriteTextColor,
+                        fontSize = favoriteLabelSize,
+                        lineHeight = favoriteLineHeight,
+                        fontWeight = favoriteTextWeight,
                         fontFamily = fontFamily,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,

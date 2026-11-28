@@ -338,7 +338,7 @@ private fun appKey(app: LauncherApp): String = app.packageName + "/" + app.activ
 
 // Keep resolved icon bitmaps in a small memory cache so returning to the drawer
 // does not repeatedly resolve drawables and convert them to bitmaps.
-private const val APP_ICON_CACHE_BYTES = 4 * 1024 * 1024
+private const val APP_ICON_CACHE_BYTES = 8 * 1024 * 1024
 
 private val appIconBitmapCache = object : LruCache<String, Bitmap>(APP_ICON_CACHE_BYTES) {
     override fun sizeOf(key: String, bitmap: Bitmap): Int = bitmap.byteCount
@@ -384,7 +384,7 @@ internal fun invalidateAppIconCaches(packageName: String?) {
     synchronized(iconPackMappings) { iconPackMappings.remove(packageName) }
 }
 
-private const val MAX_APP_ICON_BITMAP_EDGE = 128
+private const val MAX_APP_ICON_BITMAP_EDGE = 192
 
 private fun drawableToBitmap(drawable: Drawable?): Bitmap? {
     drawable ?: return null

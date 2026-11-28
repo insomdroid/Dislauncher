@@ -47,7 +47,16 @@ internal data class LauncherPreferences(
     val notificationDotColor: String = "default",
     val notificationDotPackages: Set<String> = emptySet(),
     val appFolders: Set<String> = emptySet(),
-    val folderAssignments: Set<String> = emptySet()
+    val folderAssignments: Set<String> = emptySet(),
+    // App drawer layout and app-name styling. Size values of 0 mean "layout default".
+    val drawerLayout: String = "list",
+    val drawerColumns: Int = 0,
+    val drawerIconSize: Int = 0,
+    val drawerLabelSize: Int = 0,
+    val labelWeight: String = "normal",
+    val labelColor: String = "default",
+    val homeIconSize: Int = 0,
+    val homeLabelSize: Int = 0
 ) {
     fun save(p: SharedPreferences) {
         if (this == load(p)) return
@@ -95,6 +104,14 @@ internal data class LauncherPreferences(
             .putStringSet("notification_dot_packages", notificationDotPackages.toMutableSet())
             .putStringSet("app_folders", appFolders.toMutableSet())
             .putStringSet("folder_assignments", folderAssignments.toMutableSet())
+            .putString("drawer_layout", normalizeDrawerLayout(drawerLayout))
+            .putInt("drawer_columns", normalizeDrawerColumns(drawerColumns))
+            .putInt("drawer_icon_size", normalizeDrawerIconSize(drawerIconSize))
+            .putInt("drawer_label_size", normalizeDrawerLabelSize(drawerLabelSize))
+            .putString("label_weight", normalizeLabelWeight(labelWeight))
+            .putString("label_color", normalizeLabelColor(labelColor))
+            .putInt("home_icon_size", normalizeHomeIconSize(homeIconSize))
+            .putInt("home_label_size", normalizeHomeLabelSize(homeLabelSize))
             .apply()
     }
 
@@ -196,7 +213,15 @@ internal data class LauncherPreferences(
                 ),
                 notificationDotPackages = p.getStringSet("notification_dot_packages", emptySet()).orEmpty().toSet(),
                 appFolders = p.getStringSet("app_folders", emptySet()).orEmpty().toSet(),
-                folderAssignments = p.getStringSet("folder_assignments", emptySet()).orEmpty().toSet()
+                folderAssignments = p.getStringSet("folder_assignments", emptySet()).orEmpty().toSet(),
+                drawerLayout = normalizeDrawerLayout(p.getString("drawer_layout", "list") ?: "list"),
+                drawerColumns = normalizeDrawerColumns(p.getInt("drawer_columns", 0)),
+                drawerIconSize = normalizeDrawerIconSize(p.getInt("drawer_icon_size", 0)),
+                drawerLabelSize = normalizeDrawerLabelSize(p.getInt("drawer_label_size", 0)),
+                labelWeight = normalizeLabelWeight(p.getString("label_weight", "normal") ?: "normal"),
+                labelColor = normalizeLabelColor(p.getString("label_color", "default") ?: "default"),
+                homeIconSize = normalizeHomeIconSize(p.getInt("home_icon_size", 0)),
+                homeLabelSize = normalizeHomeLabelSize(p.getInt("home_label_size", 0))
             )
         }
     }

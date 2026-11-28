@@ -36,6 +36,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -68,6 +69,12 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
@@ -106,6 +113,21 @@ internal fun AppsScreen(
     val mainText = MaterialTheme.colorScheme.onBackground
     val secondary = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.62f)
     val searching = query.isNotBlank()
+    // Drawer layout and app-name style. Size preferences of 0 use the layout's default,
+    // so the original text list looks exactly as before until the user changes something.
+    val layout = preferences.drawerLayout
+    val gridLayout = drawerIsGrid(layout)
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp
+    val wideScreen = screenWidthDp >= WIDE_SCREEN_MIN_WIDTH_DP
+    val iconSizeDp = drawerIconSizeDp(layout, preferences.drawerIconSize)
+    val labelSizeSp = drawerLabelSizeSp(layout, preferences.drawerLabelSize)
+    // Folder and settings rows stay list-style even in grid layouts, so keep them readable.
+    val rowLabelSizeSp = if (gridLayout) 18 else labelSizeSp
+    val nameColor = labelTextColor(preferences.labelColor, mainText)
+    val nameWeight = labelFontWeight(preferences.labelWeight)
+    val columns = drawerColumnCount(
+        layout, preferences.drawerColumns, iconSizeDp, drawerAvailableWidthDp(screenWidthDp)
+    )
     // Keep Dislauncher's own tools in a dedicated section so they cannot get lost
     // among installed apps or be affected by the system-app visibility preference.
     val builtInOrder = remember {
@@ -163,7 +185,7 @@ internal fun AppsScreen(
     val allAlphabetLetters = remember { listOf("#") + ('A'..'Z').map(Char::toString) }
     var scrubberProgress by remember { mutableStateOf<Float?>(null) }
     var scrubberScrollJob by remember { mutableStateOf<Job?>(null) }
-    val firstIndexByLetter = remember(filtered, filteredBuiltIns, filteredFolders, preferences.showBuiltInApps, searching) {
+    val firstIndexByLetter = remember(filtered, filteredBuiltIns, filteredFolders, preferences.showBuiltInApps, searching, columns) {
         val result = linkedMapOf<String, Int>()
         // A dedicated top marker returns to the start of the list, including
         // Built-in Tools and folders before the installed apps.
@@ -174,7 +196,8 @@ internal fun AppsScreen(
         filtered.forEachIndexed { index, app ->
             val letter = app.label.firstOrNull()?.uppercaseChar()?.toString()
                 ?.takeIf { it in allAlphabetLetters } ?: "#"
-            if (letter !in result) result[letter] = installedAppsOffset + index
+            // With several columns, several apps share one LazyColumn row.
+            if (letter !in result) result[letter] = installedAppsOffset + index / columns
         }
         result
     }
@@ -215,6 +238,58 @@ internal fun AppsScreen(
     var selectedFolder by remember { mutableStateOf<String?>(null) }
     var selectedFolderApp by remember { mutableStateOf<LauncherApp?>(null) }
     val context = androidx.compose.ui.platform.LocalContext.current
+    val installedRows = remember(filtered, columns) {
+        if (columns > 1) filtered.chunked(columns) else emptyList()
+    }
+    val appMenu: @Composable (LauncherApp) -> Unit = { app ->
+        DropdownMenu(
+            expanded = selectedApp?.packageName == app.packageName,
+            onDismissRequest = { selectedApp = null }
+        ) {
+            DropdownMenuItem(
+                text = { Text("Open") },
+                onClick = { selectedApp = null; onLaunch(app) }
+            )
+            DropdownMenuItem(
+                text = { Text("Rename") },
+                onClick = {
+                    renameValue = app.label
+                    renamingApp = app
+                    selectedApp = null
+                }
+            )
+            DropdownMenuItem(
+                text = {
+                    Text(if (app.packageName in favorites) "Remove from favourites" else "Add to favourites")
+                },
+                onClick = { selectedApp = null; onToggleFavorite(app.packageName) }
+            )
+            DropdownMenuItem(
+                text = { Text("Add to Folders") },
+                onClick = { selectedFolderApp = app; selectedApp = null }
+            )
+            DropdownMenuItem(
+                text = { Text("Hide from launcher") },
+                onClick = { selectedApp = null; onToggleHidden(app.packageName) }
+            )
+            DropdownMenuItem(
+                text = { Text("App info") },
+                onClick = {
+                    selectedApp = null
+                    openApplicationInfo(context, app)
+                }
+            )
+            if (!app.isSystem) {
+                DropdownMenuItem(
+                    text = { Text("Uninstall") },
+                    onClick = {
+                        selectedApp = null
+                        requestUninstall(context, app)
+                    }
+                )
+            }
+        }
+    }
     LaunchedEffect(isActive, preferences.autoLaunchKeyboard, preferences.showSearchBar) {
         if (isActive && preferences.autoLaunchKeyboard && preferences.showSearchBar) {
             delay(180L)
@@ -226,7 +301,12 @@ internal fun AppsScreen(
     Column(
         modifier = Modifier.fillMaxSize().background(background)
             .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(start = 16.dp, end = 14.dp, top = 4.dp, bottom = 8.dp)
+            .padding(
+                start = if (wideScreen) 32.dp else 16.dp,
+                end = if (wideScreen) 28.dp else 14.dp,
+                top = 4.dp,
+                bottom = 8.dp
+            )
     ) {
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             LazyColumn(
@@ -253,7 +333,7 @@ internal fun AppsScreen(
                 if (filteredBuiltIns.isNotEmpty() || (preferences.showBuiltInApps && !searching)) {
                     item(key = "built-in-apps-row") {
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 12.dp),
+                            modifier = Modifier.widthIn(max = 520.dp).fillMaxWidth().padding(top = 4.dp, bottom = 12.dp),
                             horizontalArrangement = Arrangement.spacedBy(18.dp),
                             // Align each item's fixed 36.dp icon area to the same top edge.
                             // Keep built-in icons aligned to the same top edge.
@@ -323,9 +403,10 @@ internal fun AppsScreen(
                             Spacer(Modifier.width(9.dp))
                             Text(
                                 folder,
-                                color = mainText,
-                                fontSize = 25.sp,
-                                lineHeight = 32.sp,
+                                color = nameColor,
+                                fontSize = rowLabelSizeSp.sp,
+                                lineHeight = (rowLabelSizeSp * 1.28f).sp,
+                                fontWeight = nameWeight,
                                 fontFamily = fontFamily,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -334,78 +415,52 @@ internal fun AppsScreen(
                         }
                     }
                 }
-                items(filtered, key = { it.packageName }) { app ->
-                    Box(modifier = Modifier.fillMaxWidth()) {
+                if (columns <= 1) {
+                    items(filtered, key = { it.packageName }) { app ->
+                        DrawerAppItem(
+                            app = app,
+                            layout = layout,
+                            showListIcon = preferences.showAppIcons,
+                            iconPack = preferences.iconPack,
+                            iconShape = preferences.iconShape,
+                            iconSize = iconSizeDp.dp,
+                            labelSizeSp = labelSizeSp,
+                            labelWeight = nameWeight,
+                            labelColor = nameColor,
+                            fontFamily = fontFamily,
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = { onLaunch(app) },
+                            onLongClick = { if (!app.packageName.startsWith("internal:")) selectedApp = app },
+                            menu = { appMenu(app) }
+                        )
+                    }
+                } else {
+                    items(installedRows, key = { rowApps -> rowApps.first().packageName }) { rowApps ->
                         Row(
-                            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
-                                .clip(RoundedCornerShape(LauncherShapeTokens.medium)).combinedClickable(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            rowApps.forEach { app ->
+                                DrawerAppItem(
+                                    app = app,
+                                    layout = layout,
+                                    showListIcon = preferences.showAppIcons,
+                                    iconPack = preferences.iconPack,
+                                    iconShape = preferences.iconShape,
+                                    iconSize = iconSizeDp.dp,
+                                    labelSizeSp = labelSizeSp,
+                                    labelWeight = nameWeight,
+                                    labelColor = nameColor,
+                                    fontFamily = fontFamily,
+                                    modifier = Modifier.weight(1f),
                                     onClick = { onLaunch(app) },
-                                    onLongClick = { if (!app.packageName.startsWith("internal:")) selectedApp = app }
-                                ).padding(horizontal = 8.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            if (preferences.showAppIcons) {
-                                AppIcon(app, preferences.iconPack, size = 18.dp, iconShape = preferences.iconShape)
-                                Spacer(Modifier.width(9.dp))
-                            }
-                            Text(
-                                app.label,
-                                color = mainText,
-                                fontSize = 25.sp,
-                                lineHeight = 32.sp,
-                                fontFamily = fontFamily,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f)
-                                    .padding(start = if (preferences.showAppIcons) 0.dp else 20.dp)
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = selectedApp?.packageName == app.packageName,
-                            onDismissRequest = { selectedApp = null }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Open") },
-                                onClick = { selectedApp = null; onLaunch(app) }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Rename") },
-                                onClick = {
-                                    renameValue = app.label
-                                    renamingApp = app
-                                    selectedApp = null
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = {
-                                    Text(if (app.packageName in favorites) "Remove from favourites" else "Add to favourites")
-                                },
-                                onClick = { selectedApp = null; onToggleFavorite(app.packageName) }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Add to Folders") },
-                                onClick = { selectedFolderApp = app; selectedApp = null }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Hide from launcher") },
-                                onClick = { selectedApp = null; onToggleHidden(app.packageName) }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("App info") },
-                                onClick = {
-                                    selectedApp = null
-                                    openApplicationInfo(context, app)
-                                }
-                            )
-                            if (!app.isSystem) {
-                                DropdownMenuItem(
-                                    text = { Text("Uninstall") },
-                                    onClick = {
-                                        selectedApp = null
-                                        requestUninstall(context, app)
-                                    }
+                                    onLongClick = { if (!app.packageName.startsWith("internal:")) selectedApp = app },
+                                    menu = { appMenu(app) }
                                 )
                             }
+                            // Keep the last row's cells the same width as the rows above it.
+                            repeat(columns - rowApps.size) { Spacer(Modifier.weight(1f)) }
                         }
                     }
                 }
@@ -429,9 +484,10 @@ internal fun AppsScreen(
                             }
                             Text(
                                 "Dislauncher Settings",
-                                color = mainText,
-                                fontSize = 25.sp,
-                                lineHeight = 32.sp,
+                                color = nameColor,
+                                fontSize = rowLabelSizeSp.sp,
+                                lineHeight = (rowLabelSizeSp * 1.28f).sp,
+                                fontWeight = nameWeight,
                                 fontFamily = fontFamily,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -604,7 +660,8 @@ internal fun AppsScreen(
             BuiltInToolSearchField(
                 value = query,
                 onValueChange = onQueryChange,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                modifier = Modifier.align(Alignment.CenterHorizontally).widthIn(max = 560.dp)
+                    .fillMaxWidth().padding(horizontal = 24.dp),
                 pill = true,
                 placeholder = "Search apps",
                 leadingIcon = {
@@ -776,6 +833,94 @@ internal fun AppsScreen(
                 TextButton(onClick = { selectedFolderApp = null }) { Text("Cancel") }
             }
         )
+    }
+}
+
+/**
+ * One installed app in the drawer. "list" and "multi_list" put the name beside the icon;
+ * "grid" puts it under the icon; "icons_only" shows just the icon.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun DrawerAppItem(
+    app: LauncherApp,
+    layout: String,
+    showListIcon: Boolean,
+    iconPack: String,
+    iconShape: String,
+    iconSize: Dp,
+    labelSizeSp: Int,
+    labelWeight: FontWeight,
+    labelColor: Color,
+    fontFamily: FontFamily,
+    modifier: Modifier,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    menu: @Composable () -> Unit
+) {
+    Box(modifier = modifier) {
+        if (drawerIsGrid(layout)) {
+            Column(
+                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+                    .clip(RoundedCornerShape(LauncherShapeTokens.medium))
+                    .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+                    .then(
+                        if (layout == "icons_only") {
+                            Modifier.semantics(mergeDescendants = true) { contentDescription = app.label }
+                        } else Modifier
+                    )
+                    .padding(horizontal = 4.dp, vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // Grid layouts always show icons; the "Show app icons" setting only affects list layouts.
+                AppIcon(app, iconPack, size = iconSize, iconShape = iconShape)
+                if (layout == "grid") {
+                    Text(
+                        app.label,
+                        color = labelColor,
+                        fontSize = labelSizeSp.sp,
+                        lineHeight = (labelSizeSp * 1.2f).sp,
+                        fontWeight = labelWeight,
+                        fontFamily = fontFamily,
+                        textAlign = TextAlign.Center,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+                    .clip(RoundedCornerShape(LauncherShapeTokens.medium))
+                    .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (showListIcon) {
+                    AppIcon(app, iconPack, size = iconSize, iconShape = iconShape)
+                    Spacer(Modifier.width(9.dp))
+                }
+                Text(
+                    app.label,
+                    color = labelColor,
+                    fontSize = labelSizeSp.sp,
+                    lineHeight = (labelSizeSp * 1.28f).sp,
+                    fontWeight = labelWeight,
+                    fontFamily = fontFamily,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f).padding(
+                        start = when {
+                            showListIcon -> 0.dp
+                            layout == "multi_list" -> 4.dp
+                            else -> 20.dp
+                        }
+                    )
+                )
+            }
+        }
+        menu()
     }
 }
 

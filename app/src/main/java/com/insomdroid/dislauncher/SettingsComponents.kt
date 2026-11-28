@@ -18,10 +18,15 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,6 +34,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 
 @Composable
 internal fun AppSelectionDialog(
@@ -223,5 +229,38 @@ internal fun SettingAction(
             }
         }
         TextButton(onClick = onClick) { Text(actionLabel) }
+    }
+}
+
+/**
+ * Whole-number slider. Dragging only updates a local draft; the value is saved once,
+ * when the finger lifts, so preferences are not rewritten on every drag step.
+ */
+@Composable
+internal fun SettingSlider(
+    title: String,
+    value: Int,
+    valueRange: IntRange,
+    unit: String,
+    onValueChangeFinished: (Int) -> Unit
+) {
+    var draft by remember(value) { mutableFloatStateOf(value.toFloat()) }
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+            Text(
+                "${draft.roundToInt()} $unit",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Slider(
+            value = draft,
+            onValueChange = { draft = it },
+            onValueChangeFinished = { onValueChangeFinished(draft.roundToInt()) },
+            valueRange = valueRange.first.toFloat()..valueRange.last.toFloat()
+        )
     }
 }

@@ -469,6 +469,120 @@ internal fun SettingsScreen(
                                 )
                             }
                         }
+                        val drawerLayoutValue = preferences.drawerLayout
+                        val drawerShowsIcons = drawerIsGrid(drawerLayoutValue) || preferences.showAppIcons
+                        SettingsGroup(
+                            "App drawer layout",
+                            "How installed apps are arranged in the app drawer. Adapts to your screen width."
+                        ) {
+                            ChoiceRow(
+                                "Layout",
+                                drawerLayoutValue,
+                                listOf(
+                                    "list" to "List",
+                                    "multi_list" to "Multi-column list",
+                                    "grid" to "Grid",
+                                    "icons_only" to "Icons only"
+                                ),
+                                description = "Grid and icons-only always show icons. Changing layout resets sizes."
+                            ) {
+                                onPreferencesChange(
+                                    preferences.copy(
+                                        drawerLayout = it,
+                                        drawerColumns = 0,
+                                        drawerIconSize = 0,
+                                        drawerLabelSize = 0
+                                    )
+                                )
+                            }
+                            if (drawerLayoutValue != "list") {
+                                val maxColumns = if (drawerLayoutValue == "multi_list") 4 else 6
+                                ChoiceRow(
+                                    "Columns",
+                                    preferences.drawerColumns.toString(),
+                                    listOf("0" to "Auto") + (DRAWER_COLUMNS_MIN..maxColumns).map { it.toString() to it.toString() },
+                                    description = "Auto fits as many columns as the screen width allows."
+                                ) { onPreferencesChange(preferences.copy(drawerColumns = it.toIntOrNull() ?: 0)) }
+                            }
+                            if (drawerShowsIcons) {
+                                SettingSlider(
+                                    "Icon size",
+                                    drawerIconSizeDp(drawerLayoutValue, preferences.drawerIconSize),
+                                    DRAWER_ICON_SIZE_MIN..DRAWER_ICON_SIZE_MAX,
+                                    "dp"
+                                ) { onPreferencesChange(preferences.copy(drawerIconSize = it)) }
+                            }
+                            if (drawerLayoutValue != "icons_only") {
+                                SettingSlider(
+                                    "App name size",
+                                    drawerLabelSizeSp(drawerLayoutValue, preferences.drawerLabelSize),
+                                    DRAWER_LABEL_SIZE_MIN..DRAWER_LABEL_SIZE_MAX,
+                                    "sp"
+                                ) { onPreferencesChange(preferences.copy(drawerLabelSize = it)) }
+                            }
+                            SettingAction(
+                                "Reset sizes",
+                                "Use the default icon and name sizes for this layout.",
+                                "Reset"
+                            ) {
+                                onPreferencesChange(preferences.copy(drawerIconSize = 0, drawerLabelSize = 0))
+                            }
+                        }
+                        SettingsGroup(
+                            "App name style",
+                            "Applies to app names in the app drawer and to favourites on Home."
+                        ) {
+                            ChoiceRow(
+                                "Weight",
+                                preferences.labelWeight,
+                                listOf(
+                                    "light" to "Light",
+                                    "normal" to "Regular",
+                                    "medium" to "Medium",
+                                    "bold" to "Bold"
+                                )
+                            ) { onPreferencesChange(preferences.copy(labelWeight = it)) }
+                            ChoiceRow(
+                                "Colour",
+                                preferences.labelColor,
+                                listOf(
+                                    "default" to "Default",
+                                    "accent" to "Accent",
+                                    "muted" to "Muted"
+                                )
+                            ) { onPreferencesChange(preferences.copy(labelColor = it)) }
+                            Text(
+                                "The font itself is set under Font and text size above.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        SettingsGroup(
+                            "Home favourites",
+                            "Icon and name size for the apps listed on the Home screen."
+                        ) {
+                            if (preferences.showAppIcons) {
+                                SettingSlider(
+                                    "Icon size",
+                                    if (preferences.homeIconSize > 0) preferences.homeIconSize else 19,
+                                    HOME_ICON_SIZE_MIN..HOME_ICON_SIZE_MAX,
+                                    "dp"
+                                ) { onPreferencesChange(preferences.copy(homeIconSize = it)) }
+                            }
+                            SettingSlider(
+                                "App name size",
+                                if (preferences.homeLabelSize > 0) preferences.homeLabelSize else 26,
+                                HOME_LABEL_SIZE_MIN..HOME_LABEL_SIZE_MAX,
+                                "sp"
+                            ) { onPreferencesChange(preferences.copy(homeLabelSize = it)) }
+                            SettingAction(
+                                "Reset sizes",
+                                "Use the default Home favourite sizes.",
+                                "Reset"
+                            ) {
+                                onPreferencesChange(preferences.copy(homeIconSize = 0, homeLabelSize = 0))
+                            }
+                        }
                     }
 
                     SettingsCategory.HOME -> {

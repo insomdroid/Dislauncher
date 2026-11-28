@@ -39,3 +39,36 @@ internal fun normalizeIconShape(value: String): String =
 internal fun normalizeNotificationDotColor(value: String): String =
     (if (value == "white") "default" else value)
         .takeIf { it in supportedAccentPresets } ?: "default"
+
+private val supportedDrawerLayouts = setOf("list", "multi_list", "grid", "icons_only")
+private val supportedLabelWeights = setOf("light", "normal", "medium", "bold")
+private val supportedLabelColors = setOf("default", "accent", "muted")
+
+internal fun normalizeDrawerLayout(value: String): String =
+    value.takeIf { it in supportedDrawerLayouts } ?: "list"
+
+/** 0 = Auto. */
+internal fun normalizeDrawerColumns(value: Int): Int =
+    if (value <= 0) 0 else value.coerceIn(DRAWER_COLUMNS_MIN, DRAWER_COLUMNS_MAX)
+
+/** 0 = layout default. */
+internal fun normalizeDrawerIconSize(value: Int): Int =
+    if (value <= 0) 0 else value.coerceIn(DRAWER_ICON_SIZE_MIN, DRAWER_ICON_SIZE_MAX)
+
+/** 0 = layout default. */
+internal fun normalizeDrawerLabelSize(value: Int): Int =
+    if (value <= 0) 0 else value.coerceIn(DRAWER_LABEL_SIZE_MIN, DRAWER_LABEL_SIZE_MAX)
+
+internal fun normalizeLabelWeight(value: String): String =
+    value.takeIf { it in supportedLabelWeights } ?: "normal"
+
+internal fun normalizeLabelColor(value: String): String =
+    value.takeIf { it in supportedLabelColors } ?: "default"
+
+/** 0 = default Home favourite icon size. */
+internal fun normalizeHomeIconSize(value: Int): Int =
+    if (value <= 0) 0 else value.coerceIn(HOME_ICON_SIZE_MIN, HOME_ICON_SIZE_MAX)
+
+/** 0 = default Home favourite name size. */
+internal fun normalizeHomeLabelSize(value: Int): Int =
+    if (value <= 0) 0 else value.coerceIn(HOME_LABEL_SIZE_MIN, HOME_LABEL_SIZE_MAX)
