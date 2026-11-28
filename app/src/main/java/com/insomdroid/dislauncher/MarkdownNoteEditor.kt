@@ -37,6 +37,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontFamily
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -74,6 +75,8 @@ internal fun MarkdownNoteEditor(
     enabled: Boolean = true
 ) {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
     val colors = MaterialTheme.colorScheme
     val currentOnValueChange by rememberUpdatedState(onValueChange)
     val currentOnSelectionChange by rememberUpdatedState(onSelectionChange)
@@ -202,7 +205,7 @@ internal fun MarkdownNoteEditor(
 
     Column(modifier = modifier.fillMaxSize()) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = if (isLandscape) 0.dp else 4.dp),
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -211,7 +214,7 @@ internal fun MarkdownNoteEditor(
         }
         if (!preview) {
             Row(
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp, vertical = 4.dp),
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp, vertical = if (isLandscape) 1.dp else 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 MarkdownToolButton("B", enabled = enabled) { replaceSelection("**", "**") }
@@ -237,7 +240,7 @@ internal fun MarkdownNoteEditor(
                 state = field,
                 enabled = enabled,
                 inputTransformation = markdownInputTransformation,
-                modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)
+                modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp, vertical = if (isLandscape) 2.dp else 10.dp)
                     .onPreviewKeyEvent { event ->
                         if (!enabled) return@onPreviewKeyEvent false
                         if (event.type != KeyEventType.KeyDown || event.key != Key.Enter || !field.selection.collapsed) {
@@ -338,6 +341,6 @@ private fun MarkdownToolButton(label: String, enabled: Boolean = true, onClick: 
         contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         enabled = enabled
     ) {
-        Text(label, Modifier.padding(horizontal = 10.dp, vertical = 8.dp), style = MaterialTheme.typography.labelLarge)
+        Text(label, Modifier.padding(horizontal = 10.dp, vertical = if (isLandscape) 5.dp else 8.dp), style = MaterialTheme.typography.labelLarge)
     }
 }
