@@ -94,7 +94,9 @@ internal fun HomeScreen(
 
     val currentLocale = configuration.locales[0]
     val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
-    val homeVerticalGap = if (isLandscape) 18.dp else (configuration.screenHeightDp.dp * 0.35f).coerceIn(120.dp, 245.dp)
+    val homeVerticalGap = if (isLandscape) 10.dp else (configuration.screenHeightDp.dp * 0.35f).coerceIn(120.dp, 245.dp)
+    val favoriteSize = if (isLandscape) 21.sp else HomeDesign.favoriteSize
+    val favoriteLineHeight = if (isLandscape) 27.sp else HomeDesign.favoriteLineHeight
     val lifecycleOwner = LocalLifecycleOwner.current
     val haptic = LocalHapticFeedback.current
     val currentOpenSettings by rememberUpdatedState(onOpenSettings)
@@ -341,8 +343,8 @@ internal fun HomeScreen(
                     Text(
                         text = label,
                         color = primaryText,
-                        fontSize = HomeDesign.favoriteSize,
-                        lineHeight = HomeDesign.favoriteLineHeight,
+                        fontSize = favoriteSize,
+                        lineHeight = favoriteLineHeight,
                         fontFamily = fontFamily,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
