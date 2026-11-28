@@ -354,7 +354,7 @@ internal fun HomeScreen(
                         fontFamily = fontFamily,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false)
+                        modifier = Modifier.weight(1f, fill = true)
                             .padding(start = if (app != null && preferences.showAppIcons) HomeDesign.appIconLabelGap else 0.dp)
                     )
                     if (app != null && preferences.notificationDotsEnabled &&
