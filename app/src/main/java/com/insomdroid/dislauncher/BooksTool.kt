@@ -736,20 +736,46 @@ internal fun BooksTool(onBack: () -> Unit) {
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var pdfBitmap by remember { mutableStateOf<Bitmap?>(null) }
-    var pdfScale by remember { mutableStateOf(1f) }
-    var pdfOffsetX by remember { mutableStateOf(0f) }
-    var pdfOffsetY by remember { mutableStateOf(0f) }
+    val pdfZoomPreferences = remember(context) {
+        context.getSharedPreferences("dislauncher_reader_zoom", Context.MODE_PRIVATE)
+    }
+    var pdfScale by remember(selectedBook?.id) {
+        mutableStateOf(
+            selectedBook?.id?.let { bookId ->
+                pdfZoomPreferences.getFloat("scale_$bookId", 1f)
+            } ?: 1f
+        )
+    }
+    var pdfOffsetX by remember(selectedBook?.id) {
+        mutableStateOf(
+            selectedBook?.id?.let { bookId ->
+                pdfZoomPreferences.getFloat("offset_x_$bookId", 0f)
+            } ?: 0f
+        )
+    }
+    var pdfOffsetY by remember(selectedBook?.id) {
+        mutableStateOf(
+            selectedBook?.id?.let { bookId ->
+                pdfZoomPreferences.getFloat("offset_y_$bookId", 0f)
+            } ?: 0f
+        )
+    }
     val maxPdfZoom = (maxOf(readerConfiguration.screenWidthDp, readerConfiguration.screenHeightDp) / 320f)
         .coerceIn(2f, 5f)
     val pdfTransformState = rememberTransformableState { zoomChange, panChange, _ ->
         val nextScale = (pdfScale * zoomChange).coerceIn(1f, maxPdfZoom)
+        val nextOffsetX = if (nextScale <= 1f) 0f else pdfOffsetX + panChange.x
+        val nextOffsetY = if (nextScale <= 1f) 0f else pdfOffsetY + panChange.y
         pdfScale = nextScale
-        if (nextScale <= 1f) {
-            pdfOffsetX = 0f
-            pdfOffsetY = 0f
-        } else {
-            pdfOffsetX += panChange.x
-            pdfOffsetY += panChange.y
+        pdfOffsetX = nextOffsetX
+        pdfOffsetY = nextOffsetY
+
+        selectedBook?.id?.let { bookId ->
+            pdfZoomPreferences.edit()
+                .putFloat("scale_$bookId", nextScale)
+                .putFloat("offset_x_$bookId", nextOffsetX)
+                .putFloat("offset_y_$bookId", nextOffsetY)
+                .apply()
         }
     }
     var pendingDelete by remember { mutableStateOf<BookEntry?>(null) }
@@ -864,12 +890,6 @@ internal fun BooksTool(onBack: () -> Unit) {
                 pageScrollState.scrollTo(pageScrollState.maxValue)
             }
         }
-    }
-
-    LaunchedEffect(selectedBook?.id) {
-        pdfScale = 1f
-        pdfOffsetX = 0f
-        pdfOffsetY = 0f
     }
 
     LaunchedEffect(selectedBook?.id, currentPage, bookContent?.pdfFile, bookContent?.pdfUri) {
