@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.Instant
@@ -201,7 +202,7 @@ internal fun CalculatorTool(
                 ) {
                     if (expression.isNotBlank()) {
                         Text(expression, Modifier.fillMaxWidth(), style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.End, maxLines = 2)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.End, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
                         Spacer(Modifier.height(BuiltInToolSpacing.space8))
                     }
                     Text(
@@ -210,13 +211,15 @@ internal fun CalculatorTool(
                         style = if (isLandscape) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.displayMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.End,
-                        maxLines = 2
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
                 keyRows.forEach { rowKeys ->
                     Row(
                         Modifier.fillMaxWidth().height(keySize),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        horizontalArrangement = if (isLandscape) Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally) else Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         rowKeys.forEach { key ->
