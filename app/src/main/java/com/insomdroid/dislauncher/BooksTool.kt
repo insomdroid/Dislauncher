@@ -13,6 +13,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
@@ -1171,7 +1172,35 @@ internal fun BooksTool(onBack: () -> Unit) {
                             contentDescription = "PDF page ${currentPage + 1}",
                             contentScale = ContentScale.Fit,
                             modifier = Modifier.fillMaxSize()
-                                 .clipToBounds()
+                                .clipToBounds()
+                                .pointerInput(selectedBook?.id, currentPage, pdfScale) {
+                                    if (pdfScale <= 1f) {
+                                        var verticalDistance = 0f
+                                        detectVerticalDragGestures(
+                                            onVerticalDrag = { change, dragAmount ->
+                                                change.consume()
+                                                verticalDistance += dragAmount
+                                            },
+                                            onDragEnd = {
+                                                val lastPage = bookContent?.pages?.lastIndex ?: -1
+                                                when {
+                                                    verticalDistance <= -72.dp.toPx() && currentPage < lastPage -> {
+                                                        pageDirection = 1
+                                                        currentPage++
+                                                        saveProgress(currentPage)
+                                                    }
+                                                    verticalDistance >= 72.dp.toPx() && currentPage > 0 -> {
+                                                        pageDirection = -1
+                                                        currentPage--
+                                                        saveProgress(currentPage)
+                                                    }
+                                                }
+                                                verticalDistance = 0f
+                                            },
+                                            onDragCancel = { verticalDistance = 0f }
+                                        )
+                                    }
+                                }
                                 .graphicsLayer {
                                     scaleX = pdfScale
                                     scaleY = pdfScale
