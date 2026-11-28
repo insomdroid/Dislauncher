@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -143,6 +144,9 @@ internal fun UnitConverterTool(
     var input by remember { mutableStateOf("1") }
     var fromIndex by remember { mutableStateOf(0) }
     var toIndex by remember { mutableStateOf(1) }
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
+    val sectionSpacing = if (isLandscape) 8.dp else BuiltInToolSpacing.section
     val matchingCategoryIndices = converterCategories.indices.filter { index ->
         val item = converterCategories[index]
         categoryQuery.isBlank() || item.name.contains(categoryQuery, ignoreCase = true) ||
@@ -162,7 +166,7 @@ internal fun UnitConverterTool(
 
     Column(
         modifier = modifier.verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)
+        verticalArrangement = Arrangement.spacedBy(sectionSpacing)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = BuiltInToolDesign.filterHorizontalInset),
@@ -191,7 +195,7 @@ internal fun UnitConverterTool(
             ) {
                 BuiltInEmptyState(title = "No matching categories or units.")
             }
-        } else Column(verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
+        } else Column(verticalArrangement = Arrangement.spacedBy(sectionSpacing)) {
         Column(verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.compact)) {
             Text(
                 "From",
@@ -259,10 +263,10 @@ internal fun UnitConverterTool(
                 shape = RoundedCornerShape(BuiltInToolDesign.cardCornerRadius),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh
             ) {
-                Column(modifier = Modifier.padding(horizontal = BuiltInToolSpacing.space16, vertical = 18.dp)) {
+                Column(modifier = Modifier.padding(horizontal = BuiltInToolSpacing.space16, vertical = if (isLandscape) 10.dp else 18.dp)) {
                     Text(
                         result.ifBlank { "—" },
-                        style = MaterialTheme.typography.headlineLarge,
+                        style = if (isLandscape) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Medium
                     )
                     Text(
