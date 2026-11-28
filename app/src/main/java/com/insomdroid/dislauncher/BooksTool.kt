@@ -1223,8 +1223,8 @@ internal fun BooksTool(onBack: () -> Unit) {
                                         } else {
                                             horizontalSwipe = 0f
                                             verticalSwipe = 0f
-                                            currentOffsetX = latestPdfOffsetX + pan.x
-                                            currentOffsetY = latestPdfOffsetY + pan.y
+                                            currentOffsetX += pan.x
+                                            currentOffsetY += pan.y
                                             val nextOffsetX = if (nextScale <= 1f) 0f else currentOffsetX
                                             val nextOffsetY = if (nextScale <= 1f) 0f else currentOffsetY
                                             pdfScale = nextScale
