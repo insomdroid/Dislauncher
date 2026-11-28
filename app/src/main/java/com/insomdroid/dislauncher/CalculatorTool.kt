@@ -124,15 +124,15 @@ internal fun CalculatorTool(
 
     BoxWithConstraints(modifier = modifier) {
         val reservedDisplayHeight = if (isLandscape) {
-            if (scientificMode) 132.dp else 92.dp
+            if (scientificMode) 112.dp else 72.dp
         } else {
             if (scientificMode) 240.dp else 170.dp
         }
         val keySize = minOf(
-            if (isLandscape) 54.dp else 72.dp,
+            if (isLandscape) 44.dp else 72.dp,
             (maxWidth - BuiltInToolSpacing.space24) / 4,
             (maxHeight - reservedDisplayHeight) / 5
-        ).coerceAtLeast(if (isLandscape) 28.dp else 36.dp)
+        ).coerceAtLeast(if (isLandscape) 30.dp else 36.dp)
 
         if (showHistory) {
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
@@ -173,7 +173,10 @@ internal fun CalculatorTool(
                 }
             }
         } else {
-            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space4)) {
+            Column(
+                Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(if (isLandscape) 2.dp else BuiltInToolSpacing.space4)
+            ) {
                 if (scientificMode) {
                     Row(
                         Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
@@ -204,7 +207,7 @@ internal fun CalculatorTool(
                     Text(
                         result.ifBlank { expression.ifBlank { "0" } },
                         Modifier.fillMaxWidth(),
-                        style = MaterialTheme.typography.displayMedium,
+                        style = if (isLandscape) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.displayMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.End,
                         maxLines = 2
