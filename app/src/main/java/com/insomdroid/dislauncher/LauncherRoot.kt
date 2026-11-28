@@ -753,6 +753,9 @@ internal fun DislauncherRoot() {
                                 pass = PointerEventPass.Initial,
                                 requireUnconsumed = false
                             )
+                            // Only start the launcher notification gesture from the top edge.
+                            // Workspace swipes remain available to their own controls.
+                            if (down.position.y > 48.dp.toPx()) return@awaitEachGesture
                             var totalX = 0f
                             var totalY = 0f
                             var horizontalGesture = false
