@@ -724,7 +724,9 @@ internal fun BooksTool(onBack: () -> Unit) {
     var currentPage by remember { mutableStateOf(0) }
     var pageDirection by remember { mutableStateOf(1) }
     val pageScrollState = rememberScrollState()
-    var fontSize by remember { mutableStateOf(20f) }
+    val readerConfiguration = LocalConfiguration.current
+    val readerLandscape = readerConfiguration.screenWidthDp > readerConfiguration.screenHeightDp
+    var fontSize by remember(readerLandscape) { mutableStateOf(if (readerLandscape) 24f else 20f) }
     var showMenu by remember { mutableStateOf(false) }
     var menuSection by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }
@@ -733,8 +735,7 @@ internal fun BooksTool(onBack: () -> Unit) {
     var pdfScale by remember { mutableStateOf(1f) }
     var pdfOffsetX by remember { mutableStateOf(0f) }
     var pdfOffsetY by remember { mutableStateOf(0f) }
-    val screenConfiguration = LocalConfiguration.current
-    val maxPdfZoom = (maxOf(screenConfiguration.screenWidthDp, screenConfiguration.screenHeightDp) / 320f)
+    val maxPdfZoom = (maxOf(readerConfiguration.screenWidthDp, readerConfiguration.screenHeightDp) / 320f)
         .coerceIn(2f, 5f)
     val pdfTransformState = rememberTransformableState { zoomChange, panChange, _ ->
         val nextScale = (pdfScale * zoomChange).coerceIn(1f, maxPdfZoom)
