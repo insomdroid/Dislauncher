@@ -169,7 +169,7 @@ internal fun AppsScreen(
         val result = linkedMapOf<String, Int>()
         // A dedicated top marker returns to the start of the list, including
         // Built-in Tools and folders before the installed apps.
-        result["↓"] = 0
+        result["↑"] = 0
         // Built-in tools occupy one horizontal row in the first list item.
         val installedAppsOffset = (if (filteredBuiltIns.isNotEmpty() || (preferences.showBuiltInApps && !searching)) 1 else 0) +
             filteredFolders.size
@@ -181,7 +181,7 @@ internal fun AppsScreen(
         result
     }
     val alphabetLetters = remember(firstIndexByLetter) {
-        listOf("↓") + allAlphabetLetters.filter { it in firstIndexByLetter }
+        allAlphabetLetters.filter { it in firstIndexByLetter }
     }
     val scrollToLetter: (String, Boolean) -> Unit = { letter, animated ->
         firstIndexByLetter[letter]?.let { index ->
@@ -468,7 +468,7 @@ internal fun AppsScreen(
                     // Bell-curve wave: the selected letter travels furthest to the left,
                     // while neighbouring letters fan out by a Gaussian falloff.
                     Column(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize().padding(bottom = 24.dp),
                         verticalArrangement = Arrangement.SpaceEvenly,
                         horizontalAlignment = Alignment.End
                     ) {
@@ -526,6 +526,7 @@ internal fun AppsScreen(
                         modifier = Modifier.align(Alignment.CenterEnd)
                             .width(24.dp)
                             .fillMaxHeight()
+                            .padding(bottom = 24.dp)
                             .pointerInput(alphabetLetters, firstIndexByLetter) {
                                 fun letterAt(y: Float): String {
                                     val height = size.height.coerceAtLeast(1)
@@ -565,6 +566,21 @@ internal fun AppsScreen(
                                 }
                             }
                     )
+
+                    Box(
+                        modifier = Modifier.align(Alignment.BottomEnd)
+                            .width(24.dp)
+                            .height(24.dp)
+                            .clickable { scrollToLetter("↑", true) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "↑",
+                            color = secondary.copy(alpha = 0.85f),
+                            fontSize = 13.sp,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                        )
+                    }
 
                     val popupHorizontalOffset = if (scrubberProgress != null) maxBellOffset else 0.dp
                     androidx.compose.animation.AnimatedVisibility(
