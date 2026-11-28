@@ -332,7 +332,7 @@ internal fun CalendarTool(
         if (showWeekView) {
             Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(BuiltInToolDesign.cardCornerRadius),
                 color = MaterialTheme.colorScheme.surfaceContainerLow) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = BuiltInToolSpacing.space8, vertical = BuiltInToolSpacing.space10),
+                Row(Modifier.fillMaxWidth().padding(horizontal = BuiltInToolSpacing.space8, vertical = if (isLandscape) 4.dp else BuiltInToolSpacing.space10),
                     horizontalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space4)) {
                     val weekStart = selectedDate.minusDays((0..6).first { calendarFirstDay.plus(it.toLong()) == selectedDate.dayOfWeek }.toLong())
                     (0..6).forEach { offset ->
@@ -418,7 +418,7 @@ internal fun CalendarTool(
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space3)) {
                 Text(if (selectedDate == LocalDate.now()) "Today" else selectedDate.format(dateFormatter),
-                    style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
+                    style = if (isLandscape) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
                 Text(buildString {
                     if (dayEvents.isNotEmpty()) append(dayEvents.size).append(if (dayEvents.size == 1) " event" else " events")
                     if (dayEvents.isNotEmpty() && dayTasks.isNotEmpty()) append(" · ")
@@ -438,15 +438,15 @@ internal fun CalendarTool(
         } else {
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(bottom = 72.dp),
-                verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space4)
+                contentPadding = PaddingValues(bottom = if (isLandscape) 16.dp else 72.dp),
+                verticalArrangement = Arrangement.spacedBy(if (isLandscape) BuiltInToolSpacing.space2 else BuiltInToolSpacing.space4)
             ) {
                 items(agendaItems, key = { it.key }) { item ->
                     val event = item.event
                     val task = item.task
                     if (event != null) {
                         Row(Modifier.fillMaxWidth().clickable { openDeviceCalendarEvent(context, event) }
-                            .padding(horizontal = BuiltInToolSpacing.agendaRowHorizontal, vertical = BuiltInToolSpacing.agendaRowVertical), verticalAlignment = Alignment.CenterVertically) {
+                            .padding(horizontal = BuiltInToolSpacing.agendaRowHorizontal, vertical = if (isLandscape) 3.dp else BuiltInToolSpacing.agendaRowVertical), verticalAlignment = Alignment.CenterVertically) {
                             Text(if (event.allDay) "All day" else SimpleDateFormat(
                                 if (android.text.format.DateFormat.is24HourFormat(context)) "HH:mm" else "h:mm a",
                                 currentLocale).format(Date(event.begin)),
@@ -460,7 +460,7 @@ internal fun CalendarTool(
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
                     } else if (task != null) {
                     Row(
-                        Modifier.fillMaxWidth().padding(horizontal = BuiltInToolSpacing.agendaRowHorizontal, vertical = BuiltInToolSpacing.agendaRowVertical),
+                        Modifier.fillMaxWidth().padding(horizontal = BuiltInToolSpacing.agendaRowHorizontal, vertical = if (isLandscape) 3.dp else BuiltInToolSpacing.agendaRowVertical),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (task.type == "todo") {
