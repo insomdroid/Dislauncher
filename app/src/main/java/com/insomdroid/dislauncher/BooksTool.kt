@@ -57,6 +57,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontFamily
@@ -731,6 +733,8 @@ internal fun BooksTool(onBack: () -> Unit) {
     var menuSection by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    val readerConfiguration = LocalConfiguration.current
+    val readerLandscape = readerConfiguration.screenWidthDp > readerConfiguration.screenHeightDp
     var pdfBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var pdfScale by remember { mutableStateOf(1f) }
     var pdfOffsetX by remember { mutableStateOf(0f) }
@@ -1156,8 +1160,11 @@ internal fun BooksTool(onBack: () -> Unit) {
                             textAlign = TextAlign.Center
                         )
                         book.type == "pdf" && displayedPdfBitmap != null -> Image(
-                            bitmap = displayedPdfBitmap.asImageBitmap(), contentDescription = "PDF page ${currentPage + 1}",
+                            bitmap = displayedPdfBitmap.asImageBitmap(),
+                            contentDescription = "PDF page ${currentPage + 1}",
+                            contentScale = if (readerLandscape) ContentScale.FillWidth else ContentScale.Fit,
                             modifier = Modifier.fillMaxSize()
+                                 .clipToBounds()
                                 .graphicsLayer {
                                     scaleX = pdfScale
                                     scaleY = pdfScale
