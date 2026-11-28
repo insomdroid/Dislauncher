@@ -12,6 +12,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -304,7 +305,7 @@ internal fun HomeScreen(
         if (preferences.showMusic) {
             if (showStatusWidgets) Spacer(Modifier.height(HomeDesign.statusToMusic))
             MusicPlayerWidget(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(if (isLandscape) 0.62f else 1f),
                 onOpenMusicApp = { openMusicPlayer(context, apps) }
             )
         }
@@ -317,12 +318,17 @@ internal fun HomeScreen(
         val latestOrderedMainItemIds = rememberUpdatedState(orderedMainItemIds)
         val latestMoveHomeItem = rememberUpdatedState(onMoveHomeItem)
         Spacer(Modifier.height(homeVerticalGap))
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(if (isLandscape) 18.dp else 0.dp),
+            verticalArrangement = Arrangement.spacedBy(if (isLandscape) 2.dp else 0.dp)
+        ) {
         orderedMainItemIds.forEach { itemId ->
             val app = favoriteAppsByPackage[itemId]
             val label = app?.label.orEmpty()
             key(itemId) {
                 Row(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(if (isLandscape) 0.48f else 1f)
                         .alpha(if (draggingMainItem == itemId) 0.62f else 1f)
                         .combinedClickable(
                             onClick = { app?.let(onLaunch) },
@@ -483,6 +489,7 @@ internal fun HomeScreen(
                     }
                 }
             }
+        }
         }
 
         renamingFavorite?.let { appToRename ->
