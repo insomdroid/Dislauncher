@@ -640,7 +640,7 @@ internal fun NotesTool(
         },
         bottomBar = {
             if (notesLoaded && selectedId != null) {
-                BottomAppBar(modifier = Modifier.imePadding(), actions = {
+                BottomAppBar(actions = {
                     IconButton(
                         onClick = {
                             editHistory.undo(markdownText, markdownCursor)?.let { transition ->
