@@ -319,12 +319,8 @@ internal fun CalendarTool(
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
-                if (!isLandscape) {
-                    TextButton(onClick = { showWeekView = !showWeekView }) {
-                        Text(if (showWeekView) "Month" else "Week")
-                    }
-                } else {
-                    Text("Week", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
+                TextButton(onClick = { showWeekView = !showWeekView }) {
+                    Text(if (showWeekView) "Month" else "Week")
                 }
                 if (isLandscape || showWeekView) {
                     TextButton(
