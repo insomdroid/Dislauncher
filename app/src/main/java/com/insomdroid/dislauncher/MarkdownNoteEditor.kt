@@ -240,8 +240,6 @@ internal fun MarkdownNoteEditor(
                 state = field,
                 enabled = enabled,
                 inputTransformation = markdownInputTransformation,
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurface),
-                cursorBrush = SolidColor(colors.primary),
                 modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp, vertical = if (isLandscape) 2.dp else 10.dp)
                     .onPreviewKeyEvent { event ->
                         if (!enabled) return@onPreviewKeyEvent false
