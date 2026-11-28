@@ -69,6 +69,7 @@ import com.kizitonwose.calendar.core.DayPosition
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.LocalDate
+import java.time.DayOfWeek
 import java.time.LocalTime
 import java.time.YearMonth
 import java.time.ZoneId
@@ -254,7 +255,7 @@ internal fun CalendarTool(
     }
 
     val dateFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", currentLocale)
-    val firstDayOfWeek = WeekFields.of(currentLocale).firstDayOfWeek
+    val firstDayOfWeek = DayOfWeek.MONDAY
     val taskDate = selectedDate.toString()
     val selectedDayStart = selectedDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
     val selectedDayEnd = selectedDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
@@ -316,7 +317,7 @@ internal fun CalendarTool(
                     Text("Today")
                 }
             }
-        val calendarFirstDay = remember { WeekFields.of(currentLocale).firstDayOfWeek }
+        val calendarFirstDay = DayOfWeek.MONDAY
         val calendarInitialMonth = remember { month }
         val calendarStartMonth = remember { calendarInitialMonth.minusMonths(120) }
         val calendarEndMonth = remember { calendarInitialMonth.plusMonths(120) }
