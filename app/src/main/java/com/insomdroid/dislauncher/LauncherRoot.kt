@@ -53,6 +53,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
@@ -736,8 +737,11 @@ internal fun DislauncherRoot() {
                 onBack = { screen = LauncherScreen.HOME }
             )
         } else {
+            val rootConfiguration = LocalConfiguration.current
+            val isLandscape = rootConfiguration.screenWidthDp > rootConfiguration.screenHeightDp
             val notificationsGestureEnabled =
-                screen == LauncherScreen.HOME && pagerState.currentPage == homePageIndex && preferences.swipeDownNotifications
+                screen == LauncherScreen.HOME && pagerState.currentPage == homePageIndex &&
+                    preferences.swipeDownNotifications && !isLandscape
             Box(
                 modifier = Modifier.fillMaxSize()
                     .background(
