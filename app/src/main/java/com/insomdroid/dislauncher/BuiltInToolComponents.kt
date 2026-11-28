@@ -214,7 +214,7 @@ internal fun BuiltInToolScaffold(
                     .align(Alignment.TopCenter)
                     .padding(
                         horizontal = if (fullWidth) 0.dp else builtInToolContentMargin(maxWidth),
-                        vertical = if (fullWidth) 0.dp else BuiltInToolDesign.contentVerticalInset
+                        vertical = if (fullWidth || landscape) 0.dp else BuiltInToolDesign.contentVerticalInset
                     ),
                 content = content
             )
