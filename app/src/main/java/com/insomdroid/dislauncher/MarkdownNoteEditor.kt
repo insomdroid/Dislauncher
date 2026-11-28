@@ -334,6 +334,8 @@ internal fun MarkdownNoteEditor(
 
 @Composable
 private fun MarkdownToolButton(label: String, enabled: Boolean = true, onClick: () -> Unit) {
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(LauncherShapeTokens.medium),
