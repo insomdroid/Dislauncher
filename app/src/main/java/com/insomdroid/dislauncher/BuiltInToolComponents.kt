@@ -202,12 +202,12 @@ internal fun BuiltInToolScaffold(
     content: @Composable BoxScope.() -> Unit
 ) {
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.imePadding(),
         containerColor = containerColor,
         topBar = header,
         bottomBar = bottomBar
     ) { padding ->
-        BoxWithConstraints(Modifier.fillMaxSize().padding(padding).imePadding()) {
+        BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
             val landscape = maxWidth > maxHeight
             Box(
                 (if (fullWidth) Modifier.fillMaxSize() else Modifier.widthIn(max = if (landscape) 1200.dp else BuiltInToolDesign.contentMaxWidth).fillMaxSize())
