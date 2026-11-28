@@ -1,4 +1,16 @@
-# Dislauncher Changelog
+# SamiUI Changelog
+
+## 1.3.8 | 28 November 2026
+#### What's New
+- **SamiUI:** Dislauncher is now SamiUI, with a new "S" launcher icon and updated About page.
+- **Organised Settings:** Appearance is split into Theme & wallpaper, Fonts & text and App icons, with App drawer and Apps & folders as their own pages. Categories are grouped under Personalise, Layout and System, and every setting group is now a labelled card.
+- **Performance page:** New Low-end device mode and a one-tap lightweight preset.
+
+#### Improvements
+- App icons no longer sit on a dark box, so they look right on any wallpaper.
+- Circle and Square icon shapes now fill the whole shape with the app's own icon instead of a thin coloured shape.
+- Smaller icon and wallpaper memory use and no bouncy alphabet-index animation in Low-end device mode.
+- About now links to the SamiUI GitHub page, issues and releases. Website, Reddit and Ko-fi links were removed.
 
 ## 1.3.7 | 2 November 2026
 #### What's New

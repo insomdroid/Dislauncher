@@ -99,14 +99,14 @@ internal fun WelcomeOnboardingScreen(
             ) {
                 Image(
                     painter = painterResource(R.drawable.ic_launcher_monochrome),
-                    contentDescription = "Dislauncher logo",
+                    contentDescription = "SamiUI logo",
                     modifier = Modifier.size(32.dp)
                 )
             }
             Spacer(Modifier.width(10.dp))
             Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
                 Text(
-                    "DISLAUNCHER",
+                    "SAMIUI",
                     color = MaterialTheme.colorScheme.onBackground,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
@@ -244,7 +244,7 @@ internal fun WelcomeOnboardingScreen(
                                 if (currentPage == 0) {
                                     Image(
                                         painter = painterResource(R.drawable.ic_launcher_monochrome),
-                                        contentDescription = "Dislauncher app icon",
+                                        contentDescription = "SamiUI app icon",
                                         modifier = Modifier.size(96.dp)
                                     )
                                 } else {

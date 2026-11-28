@@ -529,12 +529,12 @@ internal fun HomeScreen(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_symbol_settings),
-                    contentDescription = "Dislauncher Settings",
+                    contentDescription = "SamiUI Settings",
                     tint = secondaryText,
                     modifier = Modifier.size(LauncherIconTokens.standard)
                 )
                 Text(
-                    text = "Dislauncher Settings",
+                    text = "SamiUI Settings",
                     color = secondaryText,
                     fontSize = 14.sp,
                     fontFamily = fontFamily,

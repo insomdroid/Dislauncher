@@ -53,7 +53,7 @@ internal fun writeStructuredNoteArchive(
                     val allowedRoot = File(context.filesDir, "notes-import").canonicalFile
                     val candidate = File(sourceUri.path.orEmpty()).canonicalFile
                     require(candidate.path.startsWith(allowedRoot.path + File.separator)) {
-                        "An image reference points outside Dislauncher storage"
+                        "An image reference points outside SamiUI storage"
                     }
                 }
                 val entry = sourceEntries[source] ?: run {

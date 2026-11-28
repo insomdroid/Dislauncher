@@ -86,9 +86,9 @@ internal sealed interface UpdateCheckResult {
 
 internal object ReleaseUpdateChecker {
     private const val RELEASE_API_URL =
-        "https://api.github.com/repos/insomdroid/Dislauncher/releases/latest"
+        "https://api.github.com/repos/samiiino/Dislauncher/releases/latest"
     private const val RELEASE_PAGE_PREFIX =
-        "https://github.com/insomdroid/Dislauncher/releases/tag/"
+        "https://github.com/samiiino/Dislauncher/releases/tag/"
 
     suspend fun check(installedVersion: String): UpdateCheckResult = withContext(Dispatchers.IO) {
         try {

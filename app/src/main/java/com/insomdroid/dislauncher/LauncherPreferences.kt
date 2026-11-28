@@ -56,7 +56,9 @@ internal data class LauncherPreferences(
     val labelWeight: String = "normal",
     val labelColor: String = "default",
     val homeIconSize: Int = 0,
-    val homeLabelSize: Int = 0
+    val homeLabelSize: Int = 0,
+    // Cheaper rendering for low-end phones: fewer animations, smaller caches.
+    val lowEndMode: Boolean = true
 ) {
     fun save(p: SharedPreferences) {
         if (this == load(p)) return
@@ -112,6 +114,7 @@ internal data class LauncherPreferences(
             .putString("label_color", normalizeLabelColor(labelColor))
             .putInt("home_icon_size", normalizeHomeIconSize(homeIconSize))
             .putInt("home_label_size", normalizeHomeLabelSize(homeLabelSize))
+            .putBoolean("low_end_mode", lowEndMode)
             .apply()
     }
 
@@ -221,7 +224,8 @@ internal data class LauncherPreferences(
                 labelWeight = normalizeLabelWeight(p.getString("label_weight", "normal") ?: "normal"),
                 labelColor = normalizeLabelColor(p.getString("label_color", "default") ?: "default"),
                 homeIconSize = normalizeHomeIconSize(p.getInt("home_icon_size", 0)),
-                homeLabelSize = normalizeHomeLabelSize(p.getInt("home_label_size", 0))
+                homeLabelSize = normalizeHomeLabelSize(p.getInt("home_label_size", 0)),
+                lowEndMode = p.getBoolean("low_end_mode", true)
             )
         }
     }

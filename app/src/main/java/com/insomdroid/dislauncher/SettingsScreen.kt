@@ -70,7 +70,7 @@ import java.time.LocalTime
 import kotlin.math.roundToInt
 
 private enum class SettingsCategory {
-    APPEARANCE, HOME, WIDGETS, APPS, GESTURES, ACCESS, ABOUT
+    THEME, TEXT, ICONS, HOME, DRAWER, APPS, WIDGETS, GESTURES, PERFORMANCE, ACCESS, ABOUT
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -190,11 +190,15 @@ internal fun SettingsScreen(
     val categoryTitle = if (showChangelog) {
         "What's New"
     } else when (selectedCategory) {
-        SettingsCategory.APPEARANCE -> "Appearance"
+        SettingsCategory.THEME -> "Theme & wallpaper"
+        SettingsCategory.TEXT -> "Fonts & text"
+        SettingsCategory.ICONS -> "App icons"
         SettingsCategory.HOME -> "Home screen"
+        SettingsCategory.DRAWER -> "App drawer"
+        SettingsCategory.APPS -> "Apps & folders"
         SettingsCategory.WIDGETS -> "Widgets"
-        SettingsCategory.APPS -> "Apps"
         SettingsCategory.GESTURES -> "Gestures"
+        SettingsCategory.PERFORMANCE -> "Performance"
         SettingsCategory.ACCESS -> "Permissions and access"
         SettingsCategory.ABOUT -> "About"
         null -> "Settings"
@@ -244,40 +248,57 @@ internal fun SettingsScreen(
             if (showChangelog) {
                 ChangelogScreen()
             } else if (selectedCategory == null) {
-                Text(
-                    "Choose a category",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
-                )
-                val categories = listOf(
-                    Triple(SettingsCategory.APPEARANCE, R.drawable.ic_symbol_palette, "Appearance") to
-                        "Theme, wallpaper, fonts and app icons",
-                    Triple(SettingsCategory.HOME, R.drawable.ic_symbol_home, "Home screen") to
-                        "Home information, indicators and formats",
-                    Triple(SettingsCategory.WIDGETS, R.drawable.ic_symbol_view_module, "Widgets") to
-                        "A dedicated page for Android widgets from installed apps",
-                    Triple(SettingsCategory.APPS, R.drawable.ic_symbol_apps, "Apps") to
-                        "Folders, app visibility and app drawer",
-                    Triple(SettingsCategory.GESTURES, R.drawable.ic_symbol_gesture, "Gestures") to
-                        "Quick actions for the Home screen",
-                    Triple(SettingsCategory.ACCESS, R.drawable.ic_symbol_security, "Permissions and access") to
-                        "Check access required by features",
-                    Triple(SettingsCategory.ABOUT, R.drawable.ic_symbol_info, "About") to
-                        "Version and project information"
-                )
-                categories.forEach { entry ->
-                    val (category, icon, title) = entry.first
-                    SettingsCategoryRow(
-                        icon = icon,
-                        title = title,
-                        description = entry.second,
-                        onClick = { selectedCategory = category }
+                val sections = listOf(
+                    "Personalise" to listOf(
+                        Triple(SettingsCategory.THEME, R.drawable.ic_symbol_palette, "Theme & wallpaper") to
+                            "Light or dark, accent colour and wallpaper",
+                        Triple(SettingsCategory.TEXT, R.drawable.ic_symbol_description, "Fonts & text") to
+                            "Font, text size and app name style",
+                        Triple(SettingsCategory.ICONS, R.drawable.ic_symbol_image, "App icons") to
+                            "Show icons, icon shape and icon pack"
+                    ),
+                    "Layout" to listOf(
+                        Triple(SettingsCategory.HOME, R.drawable.ic_symbol_home, "Home screen") to
+                            "Clock, information, favourites and formats",
+                        Triple(SettingsCategory.DRAWER, R.drawable.ic_symbol_view_list, "App drawer") to
+                            "Layout, sizes, search and alphabet index",
+                        Triple(SettingsCategory.APPS, R.drawable.ic_symbol_apps, "Apps & folders") to
+                            "Folders, favourites, hidden and system apps",
+                        Triple(SettingsCategory.WIDGETS, R.drawable.ic_symbol_view_module, "Widgets") to
+                            "A dedicated page for Android widgets",
+                        Triple(SettingsCategory.GESTURES, R.drawable.ic_symbol_gesture, "Gestures") to
+                            "Quick actions for the Home screen"
+                    ),
+                    "System" to listOf(
+                        Triple(SettingsCategory.PERFORMANCE, R.drawable.ic_symbol_settings, "Performance") to
+                            "Low-end device mode and lightweight preset",
+                        Triple(SettingsCategory.ACCESS, R.drawable.ic_symbol_security, "Permissions and access") to
+                            "Check access required by features",
+                        Triple(SettingsCategory.ABOUT, R.drawable.ic_symbol_info, "About") to
+                            "Version, updates and project links"
                     )
+                )
+                sections.forEach { (header, entries) ->
+                    Text(
+                        header.uppercase(),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 4.dp, top = 8.dp)
+                    )
+                    entries.forEach { entry ->
+                        val (category, icon, title) = entry.first
+                        SettingsCategoryRow(
+                            icon = icon,
+                            title = title,
+                            description = entry.second,
+                            onClick = { selectedCategory = category }
+                        )
+                    }
                 }
             } else {
                 when (selectedCategory) {
-                    SettingsCategory.APPEARANCE -> {
+                    SettingsCategory.THEME -> {
                         SettingsGroup("Theme and color") {
                             ChoiceRow(
                                 "Theme mode",
@@ -389,7 +410,7 @@ internal fun SettingsScreen(
                             } else {
                                 SettingAction(
                                     "Default wallpaper color",
-                                    "Use the current Light, Dark, System, or AMOLED background color for the selected device screen(s). Dislauncher’s internal background stays separate.",
+                                    "Use the current Light, Dark, System, or AMOLED background color for the selected device screen(s). SamiUI’s internal background stays separate.",
                                     "Apply to screen…",
                                     {
                                         wallpaperTarget = preferences.wallpaperTarget
@@ -398,6 +419,52 @@ internal fun SettingsScreen(
                                 )
                             }
                         }
+                        SettingsGroup(
+                            "Wallpaper in app drawer",
+                            "How much of your wallpaper shows through the app drawer."
+                        ) {
+                            if (preferences.wallpaperMode == "image") {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        "App drawer wallpaper transparency",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Text(
+                                        "${preferences.appDrawerWallpaperTransparency}%",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                                Slider(
+                                    value = preferences.appDrawerWallpaperTransparency.toFloat(),
+                                    onValueChange = {
+                                        onPreferencesChange(
+                                            preferences.copy(appDrawerWallpaperTransparency = it.roundToInt())
+                                        )
+                                    },
+                                    valueRange = 0f..100f,
+                                    steps = 19
+                                )
+                                Text(
+                                    "0% shows the wallpaper fully; 100% covers it with the app drawer background.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            if (preferences.wallpaperMode != "image") {
+                                Text(
+                                    "Choose a custom image wallpaper above to adjust this.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+
+                    SettingsCategory.TEXT -> {
                         SettingsGroup("Font and text size") {
                             ChoiceRow(
                                 "Built-in font",
@@ -435,6 +502,38 @@ internal fun SettingsScreen(
                                 )
                             ) { onPreferencesChange(preferences.copy(fontSize = it)) }
                         }
+                        SettingsGroup(
+                            "App name style",
+                            "Applies to app names in the app drawer and to favourites on Home."
+                        ) {
+                            ChoiceRow(
+                                "Weight",
+                                preferences.labelWeight,
+                                listOf(
+                                    "light" to "Light",
+                                    "normal" to "Regular",
+                                    "medium" to "Medium",
+                                    "bold" to "Bold"
+                                )
+                            ) { onPreferencesChange(preferences.copy(labelWeight = it)) }
+                            ChoiceRow(
+                                "Colour",
+                                preferences.labelColor,
+                                listOf(
+                                    "default" to "Default",
+                                    "accent" to "Accent",
+                                    "muted" to "Muted"
+                                )
+                            ) { onPreferencesChange(preferences.copy(labelColor = it)) }
+                            Text(
+                                "The font itself is set under Font and text size above.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    SettingsCategory.ICONS -> {
                         SettingsGroup("App icons") {
                             SettingToggle(
                                 "Show app icons",
@@ -443,13 +542,14 @@ internal fun SettingsScreen(
                             ) { onPreferencesChange(preferences.copy(showAppIcons = it)) }
                             if (preferences.showAppIcons) {
                                 ChoiceRow(
-                                    "Built-in icon shape",
+                                    "Icon shape",
                                     preferences.iconShape,
                                     listOf(
                                         "original" to "Original",
                                         "circle" to "Circle",
                                         "filled_square" to "Square"
-                                    )
+                                    ),
+                                    description = "Circle and Square fill the whole shape with the app's icon. Icon packs keep their own style."
                                 ) { onPreferencesChange(preferences.copy(iconShape = it)) }
                                 SettingAction(
                                     "Icon pack",
@@ -469,6 +569,9 @@ internal fun SettingsScreen(
                                 )
                             }
                         }
+                    }
+
+                    SettingsCategory.DRAWER -> {
                         val drawerLayoutValue = preferences.drawerLayout
                         val drawerShowsIcons = drawerIsGrid(drawerLayoutValue) || preferences.showAppIcons
                         SettingsGroup(
@@ -528,60 +631,22 @@ internal fun SettingsScreen(
                                 onPreferencesChange(preferences.copy(drawerIconSize = 0, drawerLabelSize = 0))
                             }
                         }
-                        SettingsGroup(
-                            "App name style",
-                            "Applies to app names in the app drawer and to favourites on Home."
-                        ) {
-                            ChoiceRow(
-                                "Weight",
-                                preferences.labelWeight,
-                                listOf(
-                                    "light" to "Light",
-                                    "normal" to "Regular",
-                                    "medium" to "Medium",
-                                    "bold" to "Bold"
-                                )
-                            ) { onPreferencesChange(preferences.copy(labelWeight = it)) }
-                            ChoiceRow(
-                                "Colour",
-                                preferences.labelColor,
-                                listOf(
-                                    "default" to "Default",
-                                    "accent" to "Accent",
-                                    "muted" to "Muted"
-                                )
-                            ) { onPreferencesChange(preferences.copy(labelColor = it)) }
-                            Text(
-                                "The font itself is set under Font and text size above.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        SettingsGroup(
-                            "Home favourites",
-                            "Icon and name size for the apps listed on the Home screen."
-                        ) {
-                            if (preferences.showAppIcons) {
-                                SettingSlider(
-                                    "Icon size",
-                                    if (preferences.homeIconSize > 0) preferences.homeIconSize else 19,
-                                    HOME_ICON_SIZE_MIN..HOME_ICON_SIZE_MAX,
-                                    "dp"
-                                ) { onPreferencesChange(preferences.copy(homeIconSize = it)) }
-                            }
-                            SettingSlider(
-                                "App name size",
-                                if (preferences.homeLabelSize > 0) preferences.homeLabelSize else 26,
-                                HOME_LABEL_SIZE_MIN..HOME_LABEL_SIZE_MAX,
-                                "sp"
-                            ) { onPreferencesChange(preferences.copy(homeLabelSize = it)) }
-                            SettingAction(
-                                "Reset sizes",
-                                "Use the default Home favourite sizes.",
-                                "Reset"
-                            ) {
-                                onPreferencesChange(preferences.copy(homeIconSize = 0, homeLabelSize = 0))
-                            }
+                        SettingsGroup("Search and navigation") {
+                            SettingToggle(
+                                "Show search bar",
+                                "Display the search field at the bottom of the app drawer.",
+                                preferences.showSearchBar
+                            ) { onPreferencesChange(preferences.copy(showSearchBar = it)) }
+                            SettingToggle(
+                                "Alphabet index",
+                                "Jump to apps by letter on the right edge. # groups names starting with numbers or symbols.",
+                                preferences.showAlphabetIndex
+                            ) { onPreferencesChange(preferences.copy(showAlphabetIndex = it)) }
+                            SettingToggle(
+                                "Auto-launch keyboard",
+                                "Focus search when the app drawer opens.",
+                                preferences.autoLaunchKeyboard
+                            ) { onPreferencesChange(preferences.copy(autoLaunchKeyboard = it)) }
                         }
                     }
 
@@ -741,37 +806,34 @@ internal fun SettingsScreen(
                                 description = "Choose Celsius or Fahrenheit for weather."
                             ) { onPreferencesChange(preferences.copy(weatherUnit = it)) }
                         }
-                    }
-
-                    SettingsCategory.WIDGETS -> {
-                        SettingsGroup("Widget page") {
-                            SettingToggle(
-                                "Enable Widget Page",
-                                "Add a dedicated page to the left of Home. Swipe right from Home to open it.",
-                                preferences.showWidgetPage
-                            ) { enabled ->
-                                onPreferencesChange(preferences.copy(showWidgetPage = enabled))
+                        SettingsGroup(
+                            "Home favourites",
+                            "Icon and name size for the apps listed on the Home screen."
+                        ) {
+                            if (preferences.showAppIcons) {
+                                SettingSlider(
+                                    "Icon size",
+                                    if (preferences.homeIconSize > 0) preferences.homeIconSize else 19,
+                                    HOME_ICON_SIZE_MIN..HOME_ICON_SIZE_MAX,
+                                    "dp"
+                                ) { onPreferencesChange(preferences.copy(homeIconSize = it)) }
                             }
-                            Text(
-                                "The page uses a fixed five-column grid. Add Android widgets from installed apps and arrange them on the page.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            SettingSlider(
+                                "App name size",
+                                if (preferences.homeLabelSize > 0) preferences.homeLabelSize else 26,
+                                HOME_LABEL_SIZE_MIN..HOME_LABEL_SIZE_MAX,
+                                "sp"
+                            ) { onPreferencesChange(preferences.copy(homeLabelSize = it)) }
                             SettingAction(
-                                "Manage Widgets",
-                                "Open the dedicated page to arrange, resize, add, or remove widgets.",
-                                "Open",
-                                onOpenWidgetPage
-                            )
-                            SettingAction(
-                                "Clear Widget Page",
-                                "Remove all widgets from the dedicated page.",
-                                "Clear"
+                                "Reset sizes",
+                                "Use the default Home favourite sizes.",
+                                "Reset"
                             ) {
-                                openDialog = "resetWidgetLayout"
+                                onPreferencesChange(preferences.copy(homeIconSize = 0, homeLabelSize = 0))
                             }
                         }
                     }
+
                     SettingsCategory.APPS -> {
                         SettingsGroup("Manage apps") {
                             SettingAction(
@@ -806,52 +868,34 @@ internal fun SettingsScreen(
                                 !preferences.hideSystemApps
                             ) { onPreferencesChange(preferences.copy(hideSystemApps = !it)) }
                         }
-                        SettingsGroup("App drawer") {
+                    }
+
+                    SettingsCategory.WIDGETS -> {
+                        SettingsGroup("Widget page") {
                             SettingToggle(
-                                "Show search bar",
-                                "Display the search field at the bottom of the app drawer.",
-                                preferences.showSearchBar
-                            ) { onPreferencesChange(preferences.copy(showSearchBar = it)) }
-                            SettingToggle(
-                                "Alphabet index",
-                                "Jump to apps by letter on the right edge. # groups names starting with numbers or symbols.",
-                                preferences.showAlphabetIndex
-                            ) { onPreferencesChange(preferences.copy(showAlphabetIndex = it)) }
-                            SettingToggle(
-                                "Auto-launch keyboard",
-                                "Focus search when the app drawer opens.",
-                                preferences.autoLaunchKeyboard
-                            ) { onPreferencesChange(preferences.copy(autoLaunchKeyboard = it)) }
-                            if (preferences.wallpaperMode == "image") {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        "App drawer wallpaper transparency",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    Text(
-                                        "${preferences.appDrawerWallpaperTransparency}%",
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
-                                Slider(
-                                    value = preferences.appDrawerWallpaperTransparency.toFloat(),
-                                    onValueChange = {
-                                        onPreferencesChange(
-                                            preferences.copy(appDrawerWallpaperTransparency = it.roundToInt())
-                                        )
-                                    },
-                                    valueRange = 0f..100f,
-                                    steps = 19
-                                )
-                                Text(
-                                    "0% shows the wallpaper fully; 100% covers it with the app drawer background.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                "Enable Widget Page",
+                                "Add a dedicated page to the left of Home. Swipe right from Home to open it.",
+                                preferences.showWidgetPage
+                            ) { enabled ->
+                                onPreferencesChange(preferences.copy(showWidgetPage = enabled))
+                            }
+                            Text(
+                                "The page uses a fixed five-column grid. Add Android widgets from installed apps and arrange them on the page.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            SettingAction(
+                                "Manage Widgets",
+                                "Open the dedicated page to arrange, resize, add, or remove widgets.",
+                                "Open",
+                                onOpenWidgetPage
+                            )
+                            SettingAction(
+                                "Clear Widget Page",
+                                "Remove all widgets from the dedicated page.",
+                                "Clear"
+                            ) {
+                                openDialog = "resetWidgetLayout"
                             }
                         }
                     }
@@ -865,7 +909,7 @@ internal fun SettingsScreen(
                             ) { onDoubleTapLockChange(it) }
                             SettingToggle(
                                 "Long press Home to open settings",
-                                "Open Dislauncher Settings when you press and hold an empty area of Home.",
+                                "Open SamiUI Settings when you press and hold an empty area of Home.",
                                 preferences.longPressHomeOpensSettings
                             ) { enabled ->
                                 onPreferencesChange(preferences.copy(longPressHomeOpensSettings = enabled))
@@ -877,6 +921,61 @@ internal fun SettingsScreen(
                             ) { enabled ->
                                 onPreferencesChange(preferences.copy(swipeDownNotifications = enabled))
                             }
+                        }
+                    }
+
+                    SettingsCategory.PERFORMANCE -> {
+                        SettingsGroup(
+                            "Low-end devices",
+                            "Keeps SamiUI smooth on phones with little memory or a slow processor."
+                        ) {
+                            SettingToggle(
+                                "Low-end device mode",
+                                "Turns off the bouncy alphabet-index animation, uses smaller icon and wallpaper caches, and decodes wallpapers at screen size.",
+                                preferences.lowEndMode
+                            ) { onPreferencesChange(preferences.copy(lowEndMode = it)) }
+                        }
+                        SettingsGroup(
+                            "Lightweight preset",
+                            "One tap to turn off the features that use the most battery and memory."
+                        ) {
+                            SettingAction(
+                                "Apply lightweight preset",
+                                "Turns off weather, music, network info, progress bars and app icons, and uses the plain list drawer. You can turn each one back on later.",
+                                "Apply"
+                            ) {
+                                onPreferencesChange(
+                                    preferences.copy(
+                                        lowEndMode = true,
+                                        showAppIcons = false,
+                                        showWeather = false,
+                                        showMusic = false,
+                                        showNetworkInfo = false,
+                                        showDayProgress = false,
+                                        showYearProgress = false,
+                                        showCalendarShortcut = false,
+                                        drawerLayout = "list",
+                                        drawerColumns = 0,
+                                        drawerIconSize = 0,
+                                        drawerLabelSize = 0
+                                    )
+                                )
+                                android.widget.Toast.makeText(
+                                    context,
+                                    "Lightweight preset applied.",
+                                    android.widget.Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                        SettingsGroup("Tips") {
+                            Text(
+                                "• A plain-colour wallpaper is lighter than a custom image.\n" +
+                                    "• Text-only lists scroll more smoothly than icon grids.\n" +
+                                    "• Hide apps and system apps you never open.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
                         }
                     }
 
@@ -922,7 +1021,7 @@ internal fun SettingsScreen(
                         SettingsGroup("System and launcher") {
                             SettingAction(
                                 "Default launcher",
-                                if (defaultLauncher) "Dislauncher is the default Home app"
+                                if (defaultLauncher) "SamiUI is the default Home app"
                                 else "Another Home app is selected",
                                 "Open settings"
                             ) {
@@ -939,7 +1038,7 @@ internal fun SettingsScreen(
                     }
 
                     SettingsCategory.ABOUT -> {
-                        SettingsGroup("Dislauncher") {
+                        SettingsGroup("SamiUI") {
                             Text(
                                 "A minimalist, text-first Android launcher.",
                                 style = MaterialTheme.typography.bodyMedium,
@@ -971,37 +1070,38 @@ internal fun SettingsScreen(
                                 updateCheckRequested = true
                             }
                         }
-                        SettingsGroup("Community & Support") {
+                        SettingsGroup("Project") {
                             SettingAction(
                                 "GitHub",
-                                "Source code and project issues.",
+                                "Source code for SamiUI.",
                                 "Open"
                             ) {
-                                openSystemPage(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/insomdroid/Dislauncher")))
+                                openSystemPage(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/samiiino/Dislauncher")))
                             }
                             SettingAction(
-                                "Website",
-                                "Project information and documentation.",
+                                "Report an issue",
+                                "Found a bug or have an idea? Open an issue on GitHub.",
                                 "Open"
                             ) {
-                                openSystemPage(Intent(Intent.ACTION_VIEW, Uri.parse("https://insomdroid.github.io/Dislauncher/")))
+                                openSystemPage(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/samiiino/Dislauncher/issues")))
                             }
                             SettingAction(
-                                "Reddit",
-                                "Join the Dislauncher community.",
+                                "Releases",
+                                "Download the latest SamiUI builds.",
                                 "Open"
                             ) {
-                                openSystemPage(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.reddit.com/r/Dislauncher/")))
+                                openSystemPage(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/samiiino/Dislauncher/releases")))
                             }
                             SettingAction(
-                                "Ko-fi",
-                                "Support the development of Dislauncher.",
+                                "Developer",
+                                "samiiino on GitHub.",
                                 "Open"
                             ) {
-                                openSystemPage(Intent(Intent.ACTION_VIEW, Uri.parse("https://ko-fi.com/insomdroid")))
+                                openSystemPage(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/samiiino")))
                             }
                         }
                     }
+
 
                     null -> Unit
                 }
@@ -1317,7 +1417,7 @@ internal fun SettingsScreen(
             }
             val message = when {
                 result.updateAvailable -> buildString {
-                    append("Dislauncher ")
+                    append("SamiUI ")
                     append(result.release.version)
                     append(" is available.")
                     if (result.release.publishedAt.isNotBlank()) {
@@ -1383,7 +1483,7 @@ internal fun SettingsScreen(
             title = { Text("Restart Launcher?") },
             text = {
                 Text(
-                    "Dislauncher will reload its interface. Your settings and favourites will be kept."
+                    "SamiUI will reload its interface. Your settings and favourites will be kept."
                 )
             },
             confirmButton = {

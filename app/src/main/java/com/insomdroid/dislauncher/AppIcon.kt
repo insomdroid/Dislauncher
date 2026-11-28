@@ -9,20 +9,19 @@ import android.graphics.Canvas
 import android.graphics.drawable.Drawable
 import android.util.LruCache
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.Dp
@@ -123,128 +122,47 @@ internal fun AppIcon(
     iconShape: String = "original"
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    if (iconShape == "original") {
-        val image by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
-            initialValue = null, context, app.packageName, app.activityName, app.versionCode, iconPack
-        ) {
-            value = withContext(Dispatchers.IO) {
-                loadCachedAppIconBitmap(context, app, iconPack)?.asImageBitmap()
+    // Icon packs bring their own artwork, so the built-in shapes only apply to system icons.
+    val shape = if (iconPack == "system") iconShape else "original"
+    val loadKey = "${app.packageName}/${app.activityName}@${app.versionCode}|$shape|$iconPack"
+    // A cache hit is shown on the very first frame, which avoids flicker while scrolling.
+    var image by remember(loadKey) {
+        mutableStateOf(peekCachedAppIconBitmap(app, iconPack, shape)?.asImageBitmap())
+    }
+    var failed by remember(loadKey) { mutableStateOf(false) }
+    LaunchedEffect(loadKey) {
+        if (image == null) {
+            val bitmap = withContext(Dispatchers.IO) {
+                loadCachedAppIconBitmap(context, app, iconPack, shape)
             }
+            if (bitmap != null) image = bitmap.asImageBitmap() else failed = true
         }
-        Box(
-            modifier = Modifier.size(size).clip(RoundedCornerShape(size * 0.30f))
-                .background(MaterialTheme.colorScheme.surfaceVariant).padding(size * 0.10f),
-            contentAlignment = Alignment.Center
-        ) {
-            val loadedImage = image
-            if (loadedImage != null) {
-                Image(bitmap = loadedImage, contentDescription = app.label, modifier = Modifier.fillMaxSize())
-            } else {
-                Text(
-                    app.label.firstOrNull()?.uppercaseChar()?.toString() ?: "•",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-    } else {
-        val iconColor by produceState(
-            initialValue = androidx.compose.ui.graphics.Color(0xFF6488B8), context, app.packageName, app.versionCode
-        ) {
-            value = withContext(Dispatchers.IO) { dominantAppIconColor(context, app) }
-        }
-        Box(modifier = Modifier.size(size), contentAlignment = Alignment.Center) {
-            androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
-                val side = this.size.minDimension
-                val iconSize = side * 0.44f
-                val rectWidth = side * 0.56f
-                val rectHeight = side * 0.31f
-                when (iconShape) {
-                    "circle" -> drawCircle(color = iconColor, radius = iconSize / 2f)
-                    "filled_square" -> drawRect(
-                        color = iconColor,
-                        topLeft = androidx.compose.ui.geometry.Offset(
-                            (this.size.width - iconSize) / 2f, (this.size.height - iconSize) / 2f
-                        ),
-                        size = androidx.compose.ui.geometry.Size(iconSize, iconSize)
-                    )
-
-                }
-            }
+    }
+    // No background box: icons sit directly on the wallpaper, so nothing dark shows behind them.
+    Box(modifier = Modifier.size(size), contentAlignment = Alignment.Center) {
+        val loadedImage = image
+        if (loadedImage != null) {
+            Image(
+                bitmap = loadedImage,
+                contentDescription = app.label,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else if (failed) {
+            Text(
+                app.label.firstOrNull()?.uppercaseChar()?.toString() ?: "•",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
-
-
-private val fallbackIconColor = androidx.compose.ui.graphics.Color(0xFF6488B8)
 
 // Shared bounded LRU map for caches with different data and capacity.
 private class BoundedLruCache<K, V>(private val maxSize: Int) :
     LinkedHashMap<K, V>(maxSize, 0.75f, true) {
     override fun removeEldestEntry(eldest: MutableMap.MutableEntry<K, V>?): Boolean =
         size > maxSize
-}
-
-// Bound the cache so installed apps or icon packs changing over time cannot grow it indefinitely.
-private val dominantColorCache =
-    BoundedLruCache<String, androidx.compose.ui.graphics.Color>(256)
-
-private fun dominantAppIconColor(context: Context, app: LauncherApp): androidx.compose.ui.graphics.Color {
-    val cacheKey = "${app.packageName}@${app.versionCode}"
-    synchronized(dominantColorCache) {
-        dominantColorCache[cacheKey]?.let { return it }
-    }
-
-    val bitmap = runCatching {
-        drawableToBitmap(context.packageManager.getApplicationIcon(app.packageName))
-    }.getOrNull() ?: return fallbackIconColor
-
-    val buckets = HashMap<Int, Int>()
-    val hsv = FloatArray(3)
-    var sampled = 0
-    var saturationTotal = 0f
-    val stepX = (bitmap.width / 32).coerceAtLeast(1)
-    val stepY = (bitmap.height / 32).coerceAtLeast(1)
-    for (y in 0 until bitmap.height step stepY) {
-        for (x in 0 until bitmap.width step stepX) {
-            val pixel = bitmap.getPixel(x, y)
-            if (android.graphics.Color.alpha(pixel) < 160) continue
-            val red = android.graphics.Color.red(pixel)
-            val green = android.graphics.Color.green(pixel)
-            val blue = android.graphics.Color.blue(pixel)
-            android.graphics.Color.RGBToHSV(red, green, blue, hsv)
-            if (hsv[2] < 0.16f) continue
-            saturationTotal += hsv[1]
-            sampled++
-            val key = ((red shr 4) shl 8) or ((green shr 4) shl 4) or (blue shr 4)
-            buckets[key] = (buckets[key] ?: 0) + 1
-        }
-    }
-    val result = if (sampled == 0 || saturationTotal / sampled < 0.12f) {
-        fallbackIconColor
-    } else {
-        val dominant = buckets.maxByOrNull { it.value }?.key
-        if (dominant == null) {
-            fallbackIconColor
-        } else {
-            var red = (((dominant shr 8) and 0xF) * 16 + 8).coerceIn(0, 255)
-            var green = (((dominant shr 4) and 0xF) * 16 + 8).coerceIn(0, 255)
-            var blue = ((dominant and 0xF) * 16 + 8).coerceIn(0, 255)
-            val brightness = (0.2126f * red + 0.7152f * green + 0.0722f * blue) / 255f
-            if (brightness > 0.70f) {
-                val darkening = 0.70f / brightness
-                red = (red * darkening).toInt()
-                green = (green * darkening).toInt()
-                blue = (blue * darkening).toInt()
-            }
-            androidx.compose.ui.graphics.Color(android.graphics.Color.rgb(red, green, blue))
-        }
-    }
-    synchronized(dominantColorCache) {
-        dominantColorCache[cacheKey] = result
-    }
-    return result
 }
 
 // appfilter.xml can contain thousands of entries. Keep only a small LRU of parsed packs.
@@ -338,22 +256,31 @@ private fun appKey(app: LauncherApp): String = app.packageName + "/" + app.activ
 
 // Keep resolved icon bitmaps in a small memory cache so returning to the drawer
 // does not repeatedly resolve drawables and convert them to bitmaps.
-private const val APP_ICON_CACHE_BYTES = 8 * 1024 * 1024
-
-private val appIconBitmapCache = object : LruCache<String, Bitmap>(APP_ICON_CACHE_BYTES) {
+private val appIconBitmapCache = object : LruCache<String, Bitmap>(8 * 1024 * 1024) {
     override fun sizeOf(key: String, bitmap: Bitmap): Int = bitmap.byteCount
 }
+
+private fun iconCacheKey(app: LauncherApp, iconPack: String, shape: String): String =
+    "${app.packageName}/${app.activityName}@${app.versionCode}|$shape|$iconPack"
+
+internal fun peekCachedAppIconBitmap(app: LauncherApp, iconPack: String, shape: String): Bitmap? =
+    appIconBitmapCache.get(iconCacheKey(app, iconPack, shape))
 
 private fun loadCachedAppIconBitmap(
     context: Context,
     app: LauncherApp,
-    iconPack: String
+    iconPack: String,
+    shape: String
 ): Bitmap? {
-    val cacheKey = "${app.packageName}/${app.activityName}@${app.versionCode}|$iconPack"
+    val cacheKey = iconCacheKey(app, iconPack, shape)
     appIconBitmapCache.get(cacheKey)?.let { return it }
 
-    val bitmap = drawableToBitmap(resolveAppDrawable(context, app, iconPack)) ?: return null
+    val drawable = resolveAppDrawable(context, app, iconPack)
+    val bitmap = (if (shape == "original") drawableToBitmap(drawable) else renderShapedIcon(drawable, shape))
+        ?: return null
     synchronized(appIconBitmapCache) {
+        val budget = PerformanceMode.iconCacheBytes
+        if (appIconBitmapCache.maxSize() != budget) appIconBitmapCache.resize(budget)
         if (appIconBitmapCache.get(cacheKey) == null) {
             appIconBitmapCache.put(cacheKey, bitmap)
         }
@@ -364,7 +291,6 @@ private fun loadCachedAppIconBitmap(
 internal fun invalidateAppIconCaches(packageName: String?) {
     if (packageName.isNullOrBlank()) {
         appIconBitmapCache.evictAll()
-        synchronized(dominantColorCache) { dominantColorCache.clear() }
         synchronized(iconPackMappings) { iconPackMappings.clear() }
         return
     }
@@ -375,16 +301,75 @@ internal fun invalidateAppIconCaches(packageName: String?) {
         }
         keys.forEach { appIconBitmapCache.remove(it) }
     }
-    synchronized(dominantColorCache) {
-        dominantColorCache.remove(packageName)
-        val versionedKeys = dominantColorCache.keys
-            .filter { key -> key.startsWith("$packageName@") }
-        versionedKeys.forEach { key -> dominantColorCache.remove(key) }
-    }
     synchronized(iconPackMappings) { iconPackMappings.remove(packageName) }
 }
 
-private const val MAX_APP_ICON_BITMAP_EDGE = 192
+/**
+ * Draws an app icon so it completely fills a circle or rounded square.
+ *
+ * Adaptive icons are drawn from their own background and foreground layers (not the system
+ * mask), so the artwork fills the whole shape instead of shrinking into it. Older, non-adaptive
+ * icons are placed on a neutral backdrop that contrasts with them.
+ */
+private fun renderShapedIcon(drawable: Drawable?, shape: String): Bitmap? {
+    drawable ?: return null
+    val edge = PerformanceMode.iconEdge
+    return runCatching {
+        val content = Bitmap.createBitmap(edge, edge, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(content)
+        if (drawable is android.graphics.drawable.AdaptiveIconDrawable) {
+            // Layers are 108dp, of which the central 72dp is the visible area: extend by 25% per side.
+            val inset = (edge * 0.25f).toInt()
+            listOf(drawable.background, drawable.foreground).forEach { layer ->
+                layer?.setBounds(-inset, -inset, edge + inset, edge + inset)
+                layer?.draw(canvas)
+            }
+        } else {
+            val glyph = drawableToBitmap(drawable) ?: return null
+            canvas.drawColor(backdropColorFor(glyph))
+            val pad = edge * 0.14f
+            canvas.drawBitmap(
+                glyph, null,
+                android.graphics.RectF(pad, pad, edge - pad, edge - pad),
+                android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG)
+            )
+        }
+
+        // Mask with an anti-aliased path; a plain clipPath would leave jagged edges.
+        val rect = android.graphics.RectF(0f, 0f, edge.toFloat(), edge.toFloat())
+        val path = android.graphics.Path().apply {
+            if (shape == "circle") addOval(rect, android.graphics.Path.Direction.CW)
+            else addRoundRect(rect, edge * 0.22f, edge * 0.22f, android.graphics.Path.Direction.CW)
+        }
+        val result = Bitmap.createBitmap(edge, edge, Bitmap.Config.ARGB_8888)
+        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            shader = android.graphics.BitmapShader(
+                content, android.graphics.Shader.TileMode.CLAMP, android.graphics.Shader.TileMode.CLAMP
+            )
+        }
+        Canvas(result).drawPath(path, paint)
+        content.recycle()
+        result
+    }.getOrNull()
+}
+
+/** Light backdrop for dark icons and dark backdrop for light icons, from a coarse luminance sample. */
+private fun backdropColorFor(glyph: Bitmap): Int {
+    var total = 0.0
+    var samples = 0
+    val stepX = (glyph.width / 16).coerceAtLeast(1)
+    val stepY = (glyph.height / 16).coerceAtLeast(1)
+    for (y in 0 until glyph.height step stepY) {
+        for (x in 0 until glyph.width step stepX) {
+            val pixel = glyph.getPixel(x, y)
+            if (android.graphics.Color.alpha(pixel) < 160) continue
+            total += android.graphics.Color.luminance(pixel)
+            samples++
+        }
+    }
+    val average = if (samples == 0) 0.5 else total / samples
+    return if (average > 0.55) 0xFF2B2D31.toInt() else 0xFFF1F2F4.toInt()
+}
 
 private fun drawableToBitmap(drawable: Drawable?): Bitmap? {
     drawable ?: return null
@@ -392,11 +377,11 @@ private fun drawableToBitmap(drawable: Drawable?): Bitmap? {
     if (drawable is android.graphics.drawable.BitmapDrawable) {
         val source = drawable.bitmap ?: return null
         val longestEdge = maxOf(source.width, source.height)
-        if (longestEdge <= MAX_APP_ICON_BITMAP_EDGE) return source
+        if (longestEdge <= PerformanceMode.iconEdge) return source
 
         // Do not retain oversized package/icon-pack bitmaps in the drawer cache.
         // Create a smaller copy; never mutate or recycle the drawable's source bitmap.
-        val scale = MAX_APP_ICON_BITMAP_EDGE.toFloat() / longestEdge
+        val scale = PerformanceMode.iconEdge.toFloat() / longestEdge
         val targetWidth = (source.width * scale).toInt().coerceAtLeast(1)
         val targetHeight = (source.height * scale).toInt().coerceAtLeast(1)
         return runCatching {
@@ -408,8 +393,8 @@ private fun drawableToBitmap(drawable: Drawable?): Bitmap? {
     val intrinsicHeight = drawable.intrinsicHeight.coerceAtLeast(1)
     val scale = minOf(
         1f,
-        MAX_APP_ICON_BITMAP_EDGE.toFloat() / intrinsicWidth,
-        MAX_APP_ICON_BITMAP_EDGE.toFloat() / intrinsicHeight
+        PerformanceMode.iconEdge.toFloat() / intrinsicWidth,
+        PerformanceMode.iconEdge.toFloat() / intrinsicHeight
     )
     val width = (intrinsicWidth * scale).toInt().coerceAtLeast(1)
     val height = (intrinsicHeight * scale).toInt().coerceAtLeast(1)

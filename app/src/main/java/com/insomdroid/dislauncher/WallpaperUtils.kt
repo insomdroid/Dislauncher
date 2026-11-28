@@ -11,7 +11,6 @@ import java.io.IOException
 
 private const val MAX_CUSTOM_WALLPAPER_BYTES = 10L * 1024L * 1024L
 private const val MAX_CUSTOM_WALLPAPER_SOURCE_PIXELS = 250_000_000L
-private const val MAX_CUSTOM_WALLPAPER_DECODED_PIXELS = 3_000_000L
 
 /**
  * Estimate the brightness at the edge covered by a transparent system bar.
@@ -128,9 +127,9 @@ internal fun decodeWallpaperForScreen(
     var sampleSize = 1
     while (
         (width.toLong() / sampleSize) * (height.toLong() / sampleSize) >
-            MAX_CUSTOM_WALLPAPER_DECODED_PIXELS ||
-        width / sampleSize > targetWidth * 2 ||
-        height / sampleSize > targetHeight * 2
+            PerformanceMode.wallpaperMaxPixels ||
+        width / sampleSize > targetWidth * PerformanceMode.wallpaperScreenFactor ||
+        height / sampleSize > targetHeight * PerformanceMode.wallpaperScreenFactor
     ) {
         sampleSize *= 2
     }

@@ -97,6 +97,7 @@ internal fun DislauncherRoot() {
         context.getSharedPreferences(DISLAUNCHER_PREFERENCES_NAME, Context.MODE_PRIVATE)
     }
     var preferences by remember { mutableStateOf(LauncherPreferences.load(prefsStore)) }
+    PerformanceMode.lowEnd = preferences.lowEndMode
 
     DisposableEffect(prefsStore) {
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->

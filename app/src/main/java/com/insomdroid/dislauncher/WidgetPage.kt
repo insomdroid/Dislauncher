@@ -598,7 +598,7 @@ internal fun WidgetPage(
                 }
             )
             DropdownMenuItem(
-                text = { Text("Dislauncher Settings") },
+                text = { Text("SamiUI Settings") },
                 onClick = {
                     pageMenuExpanded = false
                     onOpenSettings()

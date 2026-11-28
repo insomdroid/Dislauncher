@@ -93,7 +93,7 @@ class PinWidgetRequestActivity : ComponentActivity() {
                         Column {
                             Text(providerLabel)
                             Text(
-                                "Add this widget to the Dislauncher widget page?",
+                                "Add this widget to the SamiUI widget page?",
                                 modifier = Modifier.padding(top = 8.dp)
                             )
                             errorMessage?.let { message ->
@@ -217,7 +217,7 @@ class PinWidgetRequestActivity : ComponentActivity() {
             .putBoolean("show_widget_page", true)
             .apply()
 
-        Toast.makeText(this, "Widget added to Dislauncher.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Widget added to SamiUI.", Toast.LENGTH_SHORT).show()
         finish()
     }
 

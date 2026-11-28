@@ -1,40 +1,38 @@
-<!-- Dislauncher README -->
+<!-- SamiUI README -->
 
 <div align="center">
-  <img src="Screenshot/Minimalist Dislauncher Logo on Black.png" alt="Dislauncher logo" width="128" />
+  <img src="Screenshot/Minimalist Dislauncher Logo on Black.png" alt="SamiUI logo" width="128" />
 
-  <h1>Dislauncher</h1>
+  <h1>SamiUI</h1>
 
   **Minimal. Functional. Personal.**
 
   A text-first Android launcher that keeps your favourite apps close, everyday tools within reach, and your Home screen personal.
 
   <p>
-    <a href="https://github.com/insomdroid/Dislauncher/releases/latest">
-      <img src="https://img.shields.io/github/v/release/insomdroid/Dislauncher?display_name=tag&style=for-the-badge&color=7F7C83" alt="Latest release" />
+    <a href="https://github.com/samiiino/Dislauncher/releases/latest">
+      <img src="https://img.shields.io/github/v/release/samiiino/Dislauncher?display_name=tag&style=for-the-badge&color=7F7C83" alt="Latest release" />
     </a>
     <img src="https://img.shields.io/badge/Android-8.0%2B-7F7C83?style=for-the-badge&logo=android&logoColor=white" alt="Android 8.0 and newer" />
     <a href="LICENSE">
-      <img src="https://img.shields.io/github/license/insomdroid/Dislauncher?style=for-the-badge&color=7F7C83" alt="MIT License" />
+      <img src="https://img.shields.io/github/license/samiiino/Dislauncher?style=for-the-badge&color=7F7C83" alt="MIT License" />
     </a>
   </p>
 
   <p>
-    <a href="https://github.com/insomdroid/Dislauncher/releases/latest"><strong>Download</strong></a>
+    <a href="https://github.com/samiiino/Dislauncher/releases/latest"><strong>Download</strong></a>
     &nbsp;·&nbsp;
-    <a href="https://insomdroid.github.io/Dislauncher/">Website</a>
-    &nbsp;·&nbsp;
-    <a href="https://github.com/insomdroid/Dislauncher/issues">Feedback</a>
+    <a href="https://github.com/samiiino/Dislauncher/issues">Feedback</a>
   </p>
 </div>
 
 ---
 
-## The idea behind Dislauncher
+## The idea behind SamiUI
 
-Three principles shape the Dislauncher experience: a focused Home screen, useful tools built in, and room to make the launcher your own.
+Three principles shape the SamiUI experience: a focused Home screen, useful tools built in, and room to make the launcher your own.
 
-| Principle | What it means in Dislauncher |
+| Principle | What it means in SamiUI |
 | --- | --- |
 | **Minimal** | A text-first Home screen, a straightforward app drawer, and optional information that stays out of the way. |
 | **Functional** | Everyday tools for reading, writing, planning, calculating, and converting are built in and easy to reach. |
@@ -50,7 +48,7 @@ The aim is simple: keep useful features close without making the Home screen fee
 
 ## Functional — useful tools, built in
 
-Dislauncher includes a focused set of everyday tools:
+SamiUI includes a focused set of everyday tools:
 
 | Tool | What you can do |
 | --- | --- |
@@ -76,47 +74,47 @@ Choose the appearance and controls that suit your device and preferences:
 ## Screenshots
 
 <div align="center">
-  <img src="Screenshot/InstaMocks_20261031_140537032.png" alt="Dislauncher Home screen with clock, useful information and favourite apps" width="18%" />
-  <img src="Screenshot/InstaMocks_20261031_140536503.png" alt="Dislauncher app drawer with installed apps and built-in shortcuts" width="18%" />
-  <img src="Screenshot/InstaMocks_20261031_140533140.png" alt="Dislauncher Unit Converter with measurement categories, input and result" width="18%" />
-  <img src="Screenshot/InstaMocks_20261031_140533775.png" alt="Reading an ebook in Dislauncher Books" width="18%" />
-  <img src="Screenshot/InstaMocks_20261031_140534343.png" alt="Dislauncher Books library with saved books" width="18%" />
+  <img src="Screenshot/InstaMocks_20261031_140537032.png" alt="SamiUI Home screen with clock, useful information and favourite apps" width="18%" />
+  <img src="Screenshot/InstaMocks_20261031_140536503.png" alt="SamiUI app drawer with installed apps and built-in shortcuts" width="18%" />
+  <img src="Screenshot/InstaMocks_20261031_140533140.png" alt="SamiUI Unit Converter with measurement categories, input and result" width="18%" />
+  <img src="Screenshot/InstaMocks_20261031_140533775.png" alt="Reading an ebook in SamiUI Books" width="18%" />
+  <img src="Screenshot/InstaMocks_20261031_140534343.png" alt="SamiUI Books library with saved books" width="18%" />
 </div>
 <div align="center">
-  <img src="Screenshot/InstaMocks_20261031_140534900.png" alt="Dislauncher Calendar month view and agenda" width="18%" />
-  <img src="Screenshot/InstaMocks_20261031_140535468.png" alt="Dislauncher Notes list" width="18%" />
-  <img src="Screenshot/InstaMocks_20261031_140535957.png" alt="Editing a Markdown note in Dislauncher Notes" width="18%" />
-  <img src="Screenshot/InstaMocks_20261031_140532025.png" alt="Dislauncher appearance and personalisation settings" width="18%" />
-  <img src="Screenshot/InstaMocks_20261031_140532601.png" alt="Dislauncher typography and icon appearance settings" width="18%" />
+  <img src="Screenshot/InstaMocks_20261031_140534900.png" alt="SamiUI Calendar month view and agenda" width="18%" />
+  <img src="Screenshot/InstaMocks_20261031_140535468.png" alt="SamiUI Notes list" width="18%" />
+  <img src="Screenshot/InstaMocks_20261031_140535957.png" alt="Editing a Markdown note in SamiUI Notes" width="18%" />
+  <img src="Screenshot/InstaMocks_20261031_140532025.png" alt="SamiUI appearance and personalisation settings" width="18%" />
+  <img src="Screenshot/InstaMocks_20261031_140532601.png" alt="SamiUI typography and icon appearance settings" width="18%" />
 </div>
 
 ## Requirements
 
 - Android 8.0 (Oreo) or newer.
-- Set Dislauncher as your device's default Home app to use it as your launcher.
+- Set SamiUI as your device's default Home app to use it as your launcher.
 
 Some optional features request Android permissions when you choose to use them. See [Privacy and permissions](PRIVACY.md) for details.
 
 ## Installation
 
-1. Open the [latest GitHub Release](https://github.com/insomdroid/Dislauncher/releases/latest).
+1. Open the [latest GitHub Release](https://github.com/samiiino/Dislauncher/releases/latest).
 2. Download the APK from the release's **Assets** section.
 3. Open the downloaded APK and follow Android's installation prompts.
-4. When prompted, choose Dislauncher as your default Home app.
+4. When prompted, choose SamiUI as your default Home app.
 
-Browse [all releases](https://github.com/insomdroid/Dislauncher/releases).
+Browse [all releases](https://github.com/samiiino/Dislauncher/releases).
 
 ### Nightly builds
 
 Nightly builds let you try recent development changes before the next stable release.
 
-[Browse Nightly builds in GitHub Actions](https://github.com/insomdroid/Dislauncher/actions/workflows/build-apk.yml)
+[Browse Nightly builds in GitHub Actions](https://github.com/samiiino/Dislauncher/actions/workflows/build-apk.yml)
 
 These builds are previews and may contain unfinished changes. They are not stable releases; use the latest GitHub Release for everyday use.
 
 ## Privacy
 
-Dislauncher does not require an account. Optional features may request permissions when you enable or use them.
+SamiUI does not require an account. Optional features may request permissions when you enable or use them.
 
 - No ads or analytics.
 - [Privacy and permissions](PRIVACY.md)
@@ -124,12 +122,10 @@ Dislauncher does not require an account. Optional features may request permissio
 
 ## Project
 
-- [Website](https://insomdroid.github.io/Dislauncher/)
-- [Source code](https://github.com/insomdroid/Dislauncher)
+- [Source code](https://github.com/samiiino/Dislauncher)
 - [Changelog](CHANGELOG.md)
-- [Report a bug or request a feature](https://github.com/insomdroid/Dislauncher/issues)
-- [Support the project](https://ko-fi.com/insomdroid)
+- [Report a bug or request a feature](https://github.com/samiiino/Dislauncher/issues)
 
 ## License
 
-Dislauncher is open source under the [MIT License](LICENSE).
+SamiUI is open source under the [MIT License](LICENSE).

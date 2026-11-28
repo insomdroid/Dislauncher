@@ -48,9 +48,9 @@ class LocalReminderReceiver : AndroidBroadcastReceiver() {
             manager.createNotificationChannel(
                 NotificationChannel(
                     REMINDER_CHANNEL_ID,
-                    "Dislauncher reminders",
+                    "SamiUI reminders",
                     NotificationManager.IMPORTANCE_DEFAULT
-                ).apply { description = "Local reminders created in Dislauncher Calendar" }
+                ).apply { description = "Local reminders created in SamiUI Calendar" }
             )
         }
         val openApp = PendingIntent.getActivity(

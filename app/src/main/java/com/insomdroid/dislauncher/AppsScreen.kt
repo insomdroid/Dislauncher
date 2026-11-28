@@ -12,6 +12,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
@@ -128,7 +129,7 @@ internal fun AppsScreen(
     val columns = drawerColumnCount(
         layout, preferences.drawerColumns, iconSizeDp, drawerAvailableWidthDp(screenWidthDp)
     )
-    // Keep Dislauncher's own tools in a dedicated section so they cannot get lost
+    // Keep SamiUI's own tools in a dedicated section so they cannot get lost
     // among installed apps or be affected by the system-app visibility preference.
     val builtInOrder = remember {
         mapOf(
@@ -161,7 +162,7 @@ internal fun AppsScreen(
             it.label.contains(normalizedQuery, ignoreCase = true)
         }
     }
-    val showSettingsEntry = "Dislauncher Settings".contains(normalizedQuery, ignoreCase = true)
+    val showSettingsEntry = "SamiUI Settings".contains(normalizedQuery, ignoreCase = true)
     val filtered = remember(sortedInstalledApps, normalizedQuery) {
         sortedInstalledApps.filter {
             it.label.contains(normalizedQuery, ignoreCase = true)
@@ -483,7 +484,7 @@ internal fun AppsScreen(
                                 Spacer(Modifier.width(9.dp))
                             }
                             Text(
-                                "Dislauncher Settings",
+                                "SamiUI Settings",
                                 color = nameColor,
                                 fontSize = rowLabelSizeSp.sp,
                                 lineHeight = (rowLabelSizeSp * 1.28f).sp,
@@ -511,7 +512,7 @@ internal fun AppsScreen(
                 ) {
                     val animatedProgress by animateFloatAsState(
                         targetValue = scrubberProgress ?: 0f,
-                        animationSpec = spring(dampingRatio = 0.72f, stiffness = 520f),
+                        animationSpec = if (preferences.lowEndMode) snap() else spring(dampingRatio = 0.72f, stiffness = 520f),
                         label = "alphabet-scrubber-progress"
                     )
                     val maxBellOffset = 78.dp
@@ -538,7 +539,7 @@ internal fun AppsScreen(
                             }
                             val animatedOffset by animateDpAsState(
                                 targetValue = targetOffset,
-                                animationSpec = spring(dampingRatio = 0.68f, stiffness = 560f),
+                                animationSpec = if (preferences.lowEndMode) snap() else spring(dampingRatio = 0.68f, stiffness = 560f),
                                 label = "alphabet-bell-curve-offset"
                             )
                             val isActiveLetter = activeIndex == index
