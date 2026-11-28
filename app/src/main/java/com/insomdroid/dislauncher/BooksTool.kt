@@ -13,6 +13,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -55,6 +57,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -726,6 +729,20 @@ internal fun BooksTool(onBack: () -> Unit) {
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var pdfBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var pdfScale by remember { mutableStateOf(1f) }
+    var pdfOffsetX by remember { mutableStateOf(0f) }
+    var pdfOffsetY by remember { mutableStateOf(0f) }
+    val pdfTransformState = rememberTransformableState { zoomChange, panChange, _ ->
+        val nextScale = (pdfScale * zoomChange).coerceIn(1f, 5f)
+        pdfScale = nextScale
+        if (nextScale <= 1f) {
+            pdfOffsetX = 0f
+            pdfOffsetY = 0f
+        } else {
+            pdfOffsetX += panChange.x
+            pdfOffsetY += panChange.y
+        }
+    }
     var pendingDelete by remember { mutableStateOf<BookEntry?>(null) }
     var gridView by remember {
         mutableStateOf(
@@ -843,6 +860,9 @@ internal fun BooksTool(onBack: () -> Unit) {
     LaunchedEffect(selectedBook?.id, currentPage, bookContent?.pdfFile, bookContent?.pdfUri) {
         val content = bookContent ?: return@LaunchedEffect
         if (content.pdfFile == null && content.pdfUri == null) return@LaunchedEffect
+        pdfScale = 1f
+        pdfOffsetX = 0f
+        pdfOffsetY = 0f
         pdfBitmap = withContext(Dispatchers.IO) {
             runCatching {
                 content.pdfUri?.let { renderPdfPage(context, Uri.parse(it), currentPage) }
@@ -1058,6 +1078,7 @@ internal fun BooksTool(onBack: () -> Unit) {
     } else {
         val book = readerBook
         BuiltInToolScaffold(
+            fullWidth = true,
             header = {
                     BuiltInToolHeader(
                         title = {
@@ -1128,7 +1149,14 @@ internal fun BooksTool(onBack: () -> Unit) {
                         )
                         book.type == "pdf" && displayedPdfBitmap != null -> Image(
                             bitmap = displayedPdfBitmap.asImageBitmap(), contentDescription = "PDF page ${currentPage + 1}",
-                            modifier = Modifier.fillMaxSize().padding(horizontal = BuiltInToolSpacing.space8, vertical = BuiltInToolSpacing.space12)
+                            modifier = Modifier.fillMaxSize()
+                                .graphicsLayer {
+                                    scaleX = pdfScale
+                                    scaleY = pdfScale
+                                    translationX = pdfOffsetX
+                                    translationY = pdfOffsetY
+                                }
+                                .transformable(pdfTransformState)
                         )
                         else -> Box(Modifier.fillMaxSize()) {
                             Text(
@@ -1164,8 +1192,11 @@ internal fun BooksTool(onBack: () -> Unit) {
                             TextButton(onClick = { menuSection = "bookmarks"; showMenu = false }, modifier = Modifier.fillMaxWidth()) {
                                 Text("Bookmarks", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
                             }
-                            Text("Text size", style = MaterialTheme.typography.labelLarge)
-                            Slider(value = fontSize, onValueChange = { fontSize = it }, valueRange = 15f..30f)
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Text("Text size", style = MaterialTheme.typography.labelLarge)
+                                Text("${fontSize.toInt()} sp", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                            }
+                            Slider(value = fontSize, onValueChange = { fontSize = it }, valueRange = 15f..30f, steps = 14)
                         }
                     },
                     confirmButton = { TextButton(onClick = { showMenu = false }) { Text("Done") } }
