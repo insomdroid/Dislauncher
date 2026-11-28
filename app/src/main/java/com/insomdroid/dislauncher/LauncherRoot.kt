@@ -741,7 +741,7 @@ internal fun DislauncherRoot() {
             val isLandscape = rootConfiguration.screenWidthDp > rootConfiguration.screenHeightDp
             val notificationsGestureEnabled =
                 screen == LauncherScreen.HOME && pagerState.currentPage == homePageIndex &&
-                    preferences.swipeDownNotifications && !isLandscape
+                    preferences.swipeDownNotifications
             Box(
                 modifier = Modifier.fillMaxSize()
                     .background(
