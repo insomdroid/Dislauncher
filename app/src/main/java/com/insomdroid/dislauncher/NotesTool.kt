@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -54,6 +56,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -543,6 +546,9 @@ internal fun NotesTool(
     }
     BackHandler(enabled = selectedId != null) { closeEditor() }
 
+    val isLandscape = LocalConfiguration.current.screenWidthDp > LocalConfiguration.current.screenHeightDp
+    val isKeyboardVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+
     val visibleNotes = remember(notes, pinnedOnly, activeLabel, searchQuery, sortByTitle) {
         notes.filter { note ->
             (!pinnedOnly || note.pinned) &&
@@ -639,7 +645,7 @@ internal fun NotesTool(
             }
         },
         bottomBar = {
-            if (notesLoaded && selectedId != null) {
+            if (notesLoaded && selectedId != null && !isKeyboardVisible) {
                 BottomAppBar(actions = {
                     IconButton(
                         onClick = {
@@ -884,7 +890,7 @@ internal fun NotesTool(
                     border = BorderStroke(BuiltInToolSpacing.space1, MaterialTheme.colorScheme.outlineVariant)
                 ) {
                     Column(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = BuiltInToolSpacing.space10),
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = if (isLandscape) 6.dp else BuiltInToolSpacing.space10),
                         verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space4)
                     ) {
                         Text(
