@@ -237,7 +237,7 @@ internal fun AppsScreen(
                 modifier = Modifier.fillMaxSize().padding(
                     end = if (preferences.showAlphabetIndex && !searching) 15.dp else 0.dp
                 ),
-                contentPadding = PaddingValues(bottom = 16.dp, top = 2.dp),
+                contentPadding = PaddingValues(bottom = if (scrubberLandscape && !searching) 64.dp else 16.dp, top = 2.dp),
                 verticalArrangement = if (searching) Arrangement.Bottom else Arrangement.Top
             ) {
                 if (

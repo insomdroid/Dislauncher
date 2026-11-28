@@ -13,9 +13,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
-import androidx.compose.foundation.gestures.rememberTransformableState
-import androidx.compose.foundation.gestures.transformable
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -762,22 +760,6 @@ internal fun BooksTool(onBack: () -> Unit) {
     }
     val maxPdfZoom = (maxOf(readerConfiguration.screenWidthDp, readerConfiguration.screenHeightDp) / 320f)
         .coerceIn(2f, 5f)
-    val pdfTransformState = rememberTransformableState { zoomChange, panChange, _ ->
-        val nextScale = (pdfScale * zoomChange).coerceIn(1f, maxPdfZoom)
-        val nextOffsetX = if (nextScale <= 1f) 0f else pdfOffsetX + panChange.x
-        val nextOffsetY = if (nextScale <= 1f) 0f else pdfOffsetY + panChange.y
-        pdfScale = nextScale
-        pdfOffsetX = nextOffsetX
-        pdfOffsetY = nextOffsetY
-
-        selectedBook?.id?.let { bookId ->
-            pdfZoomPreferences.edit()
-                .putFloat("scale_$bookId", nextScale)
-                .putFloat("offset_x_$bookId", nextOffsetX)
-                .putFloat("offset_y_$bookId", nextOffsetY)
-                .apply()
-        }
-    }
     var pendingDelete by remember { mutableStateOf<BookEntry?>(null) }
     var gridView by remember {
         mutableStateOf(
@@ -1149,32 +1131,34 @@ internal fun BooksTool(onBack: () -> Unit) {
         ) {
             Column(Modifier.fillMaxSize()) {
                 Box(
-                    Modifier.weight(1f).fillMaxWidth().pointerInput(selectedBook?.id, currentPage) {
-                        var horizontalDistance = 0f
-                        detectHorizontalDragGestures(
-                            onHorizontalDrag = { change, dragAmount ->
-                                change.consume()
-                                horizontalDistance += dragAmount
-                            },
-                            onDragEnd = {
-                                val lastPage = bookContent?.pages?.lastIndex ?: -1
-                                when {
-                                    horizontalDistance <= -72.dp.toPx() && currentPage < lastPage -> {
-                                        pageDirection = 1
-                                        currentPage++
-                                        saveProgress(currentPage)
+                    Modifier.weight(1f).fillMaxWidth().then(
+                        if (book.type == "pdf") Modifier else Modifier.pointerInput(selectedBook?.id, currentPage) {
+                            var horizontalDistance = 0f
+                            detectHorizontalDragGestures(
+                                onHorizontalDrag = { change, dragAmount ->
+                                    change.consume()
+                                    horizontalDistance += dragAmount
+                                },
+                                onDragEnd = {
+                                    val lastPage = bookContent?.pages?.lastIndex ?: -1
+                                    when {
+                                        horizontalDistance <= -72.dp.toPx() && currentPage < lastPage -> {
+                                            pageDirection = 1
+                                            currentPage++
+                                            saveProgress(currentPage)
+                                        }
+                                        horizontalDistance >= 72.dp.toPx() && currentPage > 0 -> {
+                                            pageDirection = -1
+                                            currentPage--
+                                            saveProgress(currentPage)
+                                        }
                                     }
-                                    horizontalDistance >= 72.dp.toPx() && currentPage > 0 -> {
-                                        pageDirection = -1
-                                        currentPage--
-                                        saveProgress(currentPage)
-                                    }
-                                }
-                                horizontalDistance = 0f
-                            },
-                            onDragCancel = { horizontalDistance = 0f }
-                        )
-                    },
+                                    horizontalDistance = 0f
+                                },
+                                onDragCancel = { horizontalDistance = 0f }
+                            )
+                        }
+                    ),
                     contentAlignment = Alignment.Center
                 ) {
                     val displayedPdfBitmap = pdfBitmap
@@ -1193,32 +1177,64 @@ internal fun BooksTool(onBack: () -> Unit) {
                             contentScale = ContentScale.Fit,
                             modifier = Modifier.fillMaxSize()
                                 .clipToBounds()
-                                .pointerInput(selectedBook?.id, currentPage, pdfScale) {
-                                    if (pdfScale <= 1f) {
-                                        var verticalDistance = 0f
-                                        detectVerticalDragGestures(
-                                            onVerticalDrag = { change, dragAmount ->
-                                                change.consume()
-                                                verticalDistance += dragAmount
-                                            },
-                                            onDragEnd = {
-                                                val lastPage = bookContent?.pages?.lastIndex ?: -1
-                                                when {
-                                                    verticalDistance <= -72.dp.toPx() && currentPage < lastPage -> {
-                                                        pageDirection = 1
-                                                        currentPage++
-                                                        saveProgress(currentPage)
-                                                    }
-                                                    verticalDistance >= 72.dp.toPx() && currentPage > 0 -> {
-                                                        pageDirection = -1
-                                                        currentPage--
-                                                        saveProgress(currentPage)
-                                                    }
-                                                }
-                                                verticalDistance = 0f
-                                            },
-                                            onDragCancel = { verticalDistance = 0f }
-                                        )
+                                .pointerInput(selectedBook?.id, currentPage, pdfScale, maxPdfZoom) {
+                                    var currentOffsetX = pdfOffsetX
+                                    var currentOffsetY = pdfOffsetY
+                                    var horizontalSwipe = 0f
+                                    var verticalSwipe = 0f
+                                    var pageChanged = false
+                                    detectTransformGestures { _, pan, zoom, _ ->
+                                        val nextScale = (pdfScale * zoom).coerceIn(1f, maxPdfZoom)
+                                        val isSingleFingerPageSwipe = pdfScale <= 1.01f &&
+                                            nextScale <= 1.01f && kotlin.math.abs(zoom - 1f) < 0.01f
+                                        if (isSingleFingerPageSwipe) {
+                                            if (kotlin.math.abs(pan.x) >= kotlin.math.abs(pan.y)) {
+                                                horizontalSwipe += pan.x
+                                            } else {
+                                                verticalSwipe += pan.y
+                                            }
+                                            val threshold = 72.dp.toPx()
+                                            if (!pageChanged && horizontalSwipe <= -threshold && currentPage < (bookContent?.pages?.lastIndex ?: 0)) {
+                                                pageDirection = 1
+                                                currentPage++
+                                                saveProgress(currentPage)
+                                                pageChanged = true
+                                            } else if (!pageChanged && horizontalSwipe >= threshold && currentPage > 0) {
+                                                pageDirection = -1
+                                                currentPage--
+                                                saveProgress(currentPage)
+                                                pageChanged = true
+                                            } else if (!pageChanged && verticalSwipe <= -threshold && currentPage < (bookContent?.pages?.lastIndex ?: 0)) {
+                                                pageDirection = 1
+                                                currentPage++
+                                                saveProgress(currentPage)
+                                                pageChanged = true
+                                            } else if (!pageChanged && verticalSwipe >= threshold && currentPage > 0) {
+                                                pageDirection = -1
+                                                currentPage--
+                                                saveProgress(currentPage)
+                                                pageChanged = true
+                                            }
+                                        } else {
+                                            horizontalSwipe = 0f
+                                            verticalSwipe = 0f
+                                            currentOffsetX += pan.x
+                                            currentOffsetY += pan.y
+                                            val nextOffsetX = if (nextScale <= 1f) 0f else currentOffsetX
+                                            val nextOffsetY = if (nextScale <= 1f) 0f else currentOffsetY
+                                            pdfScale = nextScale
+                                            pdfOffsetX = nextOffsetX
+                                            pdfOffsetY = nextOffsetY
+                                            currentOffsetX = nextOffsetX
+                                            currentOffsetY = nextOffsetY
+                                            selectedBook?.id?.let { bookId ->
+                                                pdfZoomPreferences.edit()
+                                                    .putFloat("scale_$bookId", nextScale)
+                                                    .putFloat("offset_x_$bookId", nextOffsetX)
+                                                    .putFloat("offset_y_$bookId", nextOffsetY)
+                                                    .apply()
+                                            }
+                                        }
                                     }
                                 }
                                 .graphicsLayer {
@@ -1227,7 +1243,6 @@ internal fun BooksTool(onBack: () -> Unit) {
                                     translationX = pdfOffsetX
                                     translationY = pdfOffsetY
                                 }
-                                .transformable(pdfTransformState)
                         )
                         else -> Box(Modifier.fillMaxSize()) {
                             Text(

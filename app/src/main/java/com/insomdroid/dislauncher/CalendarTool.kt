@@ -294,8 +294,12 @@ internal fun CalendarTool(
 
     Box(modifier = modifier) {
     Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space4)) {
-        LaunchedEffect(month) {
-            if (YearMonth.from(selectedDate) != month) selectedDate = month.atDay(1)
+        LaunchedEffect(month, isLandscape, showWeekView) {
+            // In week mode, keep the selected day when navigation crosses a month boundary.
+            // Only month-grid navigation should move selection to the first day of the new month.
+            if (!isLandscape && !showWeekView && YearMonth.from(selectedDate) != month) {
+                selectedDate = month.atDay(1)
+            }
         }
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(

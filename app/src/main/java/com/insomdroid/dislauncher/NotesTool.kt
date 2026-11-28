@@ -933,7 +933,7 @@ internal fun NotesTool(
                     }
                 }
                 Column(
-                    modifier = Modifier.weight(1f).fillMaxWidth().imePadding().padding(horizontal = BuiltInToolSpacing.space12, vertical = BuiltInToolSpacing.space4),
+                    modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = BuiltInToolSpacing.space12, vertical = BuiltInToolSpacing.space4),
                     verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.space6)
                 ) {
                     Surface(

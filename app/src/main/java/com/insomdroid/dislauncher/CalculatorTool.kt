@@ -102,7 +102,7 @@ internal fun CalculatorTool(
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
-    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
+    val isLandscape = configuration.screenHeightDp < 480
     val currentLocale = configuration.locales[0]
     var expression by remember { mutableStateOf("") }
     var result by remember { mutableStateOf("") }
@@ -129,11 +129,15 @@ internal fun CalculatorTool(
         } else {
             if (scientificMode) 240.dp else 170.dp
         }
+        val keyRowCount = keyRows.size
+        val verticalGaps = if (isLandscape) 2.dp * 6 else BuiltInToolSpacing.space4 * 6
+        val availableKeyHeight = (maxHeight - reservedDisplayHeight - verticalGaps)
+            .coerceAtLeast(0.dp) / keyRowCount
         val keySize = minOf(
             if (isLandscape) 44.dp else 72.dp,
             (maxWidth - BuiltInToolSpacing.space24) / 4,
-            (maxHeight - reservedDisplayHeight) / 5
-        ).coerceAtLeast(if (isLandscape) 30.dp else 36.dp)
+            availableKeyHeight
+        ).coerceAtLeast(if (isLandscape) 22.dp else 36.dp)
 
         if (showHistory) {
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(BuiltInToolSpacing.section)) {
