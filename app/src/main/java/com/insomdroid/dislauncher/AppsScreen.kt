@@ -68,6 +68,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
@@ -161,13 +162,14 @@ internal fun AppsScreen(
     var searchFocused by remember { mutableStateOf(false) }
     val searchColor = if (searchFocused || query.isNotEmpty()) mainText else secondary.copy(alpha = 0.65f)
     val allAlphabetLetters = remember { listOf("#") + ('A'..'Z').map(Char::toString) }
+    val scrubberLandscape = LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     var scrubberProgress by remember { mutableStateOf<Float?>(null) }
     var scrubberScrollJob by remember { mutableStateOf<Job?>(null) }
     val firstIndexByLetter = remember(filtered, filteredBuiltIns, filteredFolders, preferences.showBuiltInApps, searching) {
         val result = linkedMapOf<String, Int>()
         // A dedicated top marker returns to the start of the list, including
         // Built-in Tools and folders before the installed apps.
-        result["↑"] = 0
+        result["↓"] = 0
         // Built-in tools occupy one horizontal row in the first list item.
         val installedAppsOffset = (if (filteredBuiltIns.isNotEmpty() || (preferences.showBuiltInApps && !searching)) 1 else 0) +
             filteredFolders.size
@@ -179,7 +181,7 @@ internal fun AppsScreen(
         result
     }
     val alphabetLetters = remember(firstIndexByLetter) {
-        listOf("↑") + allAlphabetLetters.filter { it in firstIndexByLetter }
+        listOf("↓") + allAlphabetLetters.filter { it in firstIndexByLetter }
     }
     val scrollToLetter: (String, Boolean) -> Unit = { letter, animated ->
         firstIndexByLetter[letter]?.let { index ->
@@ -449,16 +451,16 @@ internal fun AppsScreen(
             ) {
                 BoxWithConstraints(
                     modifier = Modifier.align(Alignment.BottomEnd)
-                        .padding(bottom = 48.dp)
-                        .fillMaxHeight(0.56f)
-                        .width(116.dp)
+                        .padding(bottom = if (scrubberLandscape) 8.dp else 48.dp)
+                        .fillMaxHeight(if (scrubberLandscape) 0.92f else 0.56f)
+                        .width(if (scrubberLandscape) 76.dp else 116.dp)
                 ) {
                     val animatedProgress by animateFloatAsState(
                         targetValue = scrubberProgress ?: 0f,
                         animationSpec = spring(dampingRatio = 0.72f, stiffness = 520f),
                         label = "alphabet-scrubber-progress"
                     )
-                    val maxBellOffset = 78.dp
+                    val maxBellOffset = if (scrubberLandscape) 22.dp else 52.dp
                     val activeIndex = scrubberProgress?.let {
                         (it * alphabetLetters.lastIndex).toInt().coerceIn(0, alphabetLetters.lastIndex)
                     }
@@ -505,8 +507,8 @@ internal fun AppsScreen(
                                         } else {
                                             secondary.copy(alpha = 0.70f)
                                         },
-                                        fontSize = 11.sp,
-                                        lineHeight = 12.sp,
+                                        fontSize = if (scrubberLandscape) 9.sp else 11.sp,
+                                        lineHeight = if (scrubberLandscape) 10.sp else 12.sp,
                                         fontWeight = if (isActiveLetter) {
                                             androidx.compose.ui.text.font.FontWeight.Bold
                                         } else {
