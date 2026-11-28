@@ -450,11 +450,10 @@ internal fun AppsScreen(
                 preferences.showAlphabetIndex && !searching &&
                 (filtered.isNotEmpty() || filteredBuiltIns.isNotEmpty() || filteredFolders.isNotEmpty())
             ) {
-                {
                 BoxWithConstraints(
                     modifier = Modifier.align(Alignment.BottomEnd)
-                        .padding(bottom = 48.dp)
-                        .fillMaxHeight(0.56f)
+                        .padding(bottom = if (scrubberLandscape) 8.dp else 48.dp)
+                        .fillMaxHeight(if (scrubberLandscape) 0.92f else 0.56f)
                         .width(116.dp)
                 ) {
                     val animatedProgress by animateFloatAsState(
@@ -528,7 +527,7 @@ internal fun AppsScreen(
                         modifier = Modifier.align(Alignment.CenterEnd)
                             .width(24.dp)
                             .fillMaxHeight()
-                            .padding(bottom = 24.dp)
+                            .padding(bottom = if (scrubberLandscape) 8.dp else 24.dp)
                             .pointerInput(alphabetLetters, firstIndexByLetter) {
                                 fun letterAt(y: Float): String {
                                     val height = size.height.coerceAtLeast(1)
@@ -616,7 +615,6 @@ internal fun AppsScreen(
                             )
                         }
                     }
-                }
                 }
             }
         }
