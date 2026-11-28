@@ -729,7 +729,7 @@ internal fun BooksTool(onBack: () -> Unit) {
     var pageDirection by remember { mutableStateOf(1) }
     val pageScrollState = rememberScrollState()
     val readerConfiguration = LocalConfiguration.current
-    val readerLandscape = readerConfiguration.screenWidthDp > readerConfiguration.screenHeightDp
+    val readerLandscape = readerConfiguration.screenWidthDp >= 600 && readerConfiguration.screenHeightDp < 480
     var fontSize by remember(readerLandscape) { mutableStateOf(if (readerLandscape) 24f else 20f) }
     var showMenu by remember { mutableStateOf(false) }
     var menuSection by remember { mutableStateOf("") }

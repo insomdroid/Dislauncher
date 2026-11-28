@@ -162,7 +162,8 @@ internal fun AppsScreen(
     var searchFocused by remember { mutableStateOf(false) }
     val searchColor = if (searchFocused || query.isNotEmpty()) mainText else secondary.copy(alpha = 0.65f)
     val allAlphabetLetters = remember { listOf("#") + ('A'..'Z').map(Char::toString) }
-    val scrubberLandscape = LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val scrubberConfiguration = LocalConfiguration.current
+    val scrubberLandscape = scrubberConfiguration.screenWidthDp >= 600 && scrubberConfiguration.screenHeightDp < 480
     var scrubberProgress by remember { mutableStateOf<Float?>(null) }
     var scrubberScrollJob by remember { mutableStateOf<Job?>(null) }
     val firstIndexByLetter = remember(filtered, filteredBuiltIns, filteredFolders, preferences.showBuiltInApps, searching) {

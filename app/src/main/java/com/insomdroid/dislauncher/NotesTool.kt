@@ -547,7 +547,8 @@ internal fun NotesTool(
     }
     BackHandler(enabled = selectedId != null) { closeEditor() }
 
-    val isLandscape = LocalConfiguration.current.screenWidthDp > LocalConfiguration.current.screenHeightDp
+    val notesConfiguration = LocalConfiguration.current
+    val isLandscape = notesConfiguration.screenWidthDp >= 600 && notesConfiguration.screenHeightDp < 480
     val isKeyboardVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
 
     val visibleNotes = remember(notes, pinnedOnly, activeLabel, searchQuery, sortByTitle) {

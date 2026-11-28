@@ -52,7 +52,7 @@ internal fun WeatherScreen(
     val context = LocalContext.current
 
     val configuration = LocalConfiguration.current
-    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
+    val isLandscape = configuration.screenWidthDp >= 600 && configuration.screenHeightDp < 480
     val currentLocale = configuration.locales[0]
     val primary = MaterialTheme.colorScheme.onBackground
     val secondary = MaterialTheme.colorScheme.onSurfaceVariant

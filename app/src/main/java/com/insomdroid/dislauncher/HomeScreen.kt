@@ -94,7 +94,7 @@ internal fun HomeScreen(
     val configuration = LocalConfiguration.current
 
     val currentLocale = configuration.locales[0]
-    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
+    val isLandscape = configuration.screenWidthDp >= 600 && configuration.screenHeightDp < 480
     val homeVerticalGap = if (isLandscape) 10.dp else (configuration.screenHeightDp.dp * 0.35f).coerceIn(120.dp, 245.dp)
     val favoriteSize = if (isLandscape) 21.sp else HomeDesign.favoriteSize
     val favoriteLineHeight = if (isLandscape) 27.sp else HomeDesign.favoriteLineHeight
