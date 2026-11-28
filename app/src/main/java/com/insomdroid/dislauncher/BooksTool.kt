@@ -734,8 +734,6 @@ internal fun BooksTool(onBack: () -> Unit) {
     var menuSection by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    val readerConfiguration = LocalConfiguration.current
-    val readerLandscape = readerConfiguration.screenWidthDp > readerConfiguration.screenHeightDp
     var pdfBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var pdfScale by remember { mutableStateOf(1f) }
     var pdfOffsetX by remember { mutableStateOf(0f) }
