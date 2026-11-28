@@ -12,7 +12,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -1135,34 +1135,29 @@ internal fun BooksTool(onBack: () -> Unit) {
         ) {
             Column(Modifier.fillMaxSize()) {
                 Box(
-                    Modifier.weight(1f).fillMaxWidth().then(
-                        if (book.type == "pdf") Modifier else Modifier.pointerInput(selectedBook?.id, currentPage) {
-                            var horizontalDistance = 0f
-                            detectHorizontalDragGestures(
-                                onHorizontalDrag = { change, dragAmount ->
-                                    change.consume()
-                                    horizontalDistance += dragAmount
-                                },
-                                onDragEnd = {
-                                    val lastPage = bookContent?.pages?.lastIndex ?: -1
+                    Modifier.weight(1f).fillMaxWidth()
+                        .pointerInput(selectedBook?.id, currentPage, bookContent?.pages?.size) {
+                            detectTapGestures(
+                                onTap = { offset ->
+                                    val horizontalPosition = offset.x / size.width.coerceAtLeast(1)
                                     when {
-                                        horizontalDistance <= -72.dp.toPx() && currentPage < lastPage -> {
-                                            pageDirection = 1
-                                            currentPage++
-                                            saveProgress(currentPage)
-                                        }
-                                        horizontalDistance >= 72.dp.toPx() && currentPage > 0 -> {
+                                        horizontalPosition < 0.22f && currentPage > 0 -> {
                                             pageDirection = -1
                                             currentPage--
                                             saveProgress(currentPage)
                                         }
+                                        horizontalPosition > 0.78f -> {
+                                            val lastPage = bookContent?.pages?.lastIndex ?: -1
+                                            if (lastPage >= 0 && currentPage < lastPage) {
+                                                pageDirection = 1
+                                                currentPage++
+                                                saveProgress(currentPage)
+                                            }
+                                        }
                                     }
-                                    horizontalDistance = 0f
-                                },
-                                onDragCancel = { horizontalDistance = 0f }
+                                }
                             )
-                        }
-                    ),
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     val displayedPdfBitmap = pdfBitmap
